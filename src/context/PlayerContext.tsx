@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { Song, EQPreset } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { musicService } from '../services/musicService';
 
 interface PlayerContextType {
   currentSong: Song | null;
@@ -17,7 +18,11 @@ interface PlayerContextType {
   isExpanded: boolean;
   radioMode: boolean;
   adPlaying: boolean;
+  isShuffle: boolean;
+  repeatMode: 'off' | 'all' | 'one';
   toggleRadioMode: () => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
   playSong: (song: Song, newQueue?: Song[]) => void;
   togglePlay: () => void;
   pauseSong: () => void;
@@ -73,8 +78,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const previewLimitReached = useRef(false);
   const [songsPlayed, setSongsPlayed] = useState(0);
   const [adPlaying, setAdPlaying] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
+  const [shuffledQueue, setShuffledQueue] = useState<Song[]>([]);
   const { userProfile } = useAuth();
+  const lastIncrementedSongId = useRef<string | null>(null);
   
+  useEffect(() => {
+    if (isShuffle) {
+      const shuffled = [...queue].sort(() => Math.random() - 0.5);
+      setShuffledQueue(shuffled);
+    } else {
+      setShuffledQueue([]);
+    }
+  }, [isShuffle, queue.length]);
+
   useEffect(() => {
     if (sleepTimerRemaining !== null && sleepTimerRemaining > 0) {
       const interval = setInterval(() => {
@@ -137,24 +155,27 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     };
 
-    const incrementPlayCount = async (song_id: string) => {
-      try {
-        await supabase.rpc('increment_play_count', { song_id });
-      } catch (err) {
-        console.error('Increment play count error:', err);
-      }
-    };
-
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       previewLimitReached.current = false;
-      if (currentSong && !adPlaying) {
-        incrementPlayCount(currentSong.id);
+      
+      // Increment play count only if it hasn't been done for this song in this play session
+      if (currentSong && !adPlaying && lastIncrementedSongId.current !== currentSong.id) {
+        lastIncrementedSongId.current = currentSong.id;
+        musicService.incrementPlays(currentSong.id);
       }
     };
     const handleEnded = () => {
       const isFreeUser = !userProfile || (userProfile.subscription_tier !== 'premium' && userProfile.subscription_tier !== 'family');
       
+      if (repeatMode === 'one' && currentSong) {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+        }
+        return;
+      }
+
       if (radioMode && currentSong) {
         handleRadioNext();
         return;
@@ -298,6 +319,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [isPlaying, currentTime, duration, volume, currentSong]);
 
   const toggleRadioMode = () => setRadioMode(prev => !prev);
+  const toggleShuffle = () => setIsShuffle(prev => !prev);
+  const toggleRepeat = () => {
+    setRepeatMode(prev => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
+  };
 
   const playSong = (song: Song, newQueue?: Song[]) => {
     if (newQueue) setQueue(newQueue);
@@ -308,6 +337,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (currentSong?.id === song.id) {
       togglePlay();
     } else {
+      lastIncrementedSongId.current = null; // Reset for new song
       setCurrentSong(song);
       setIsPlaying(true);
       if (audioRef.current) {
@@ -346,22 +376,38 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const nextTrack = () => {
-    if (queue.length === 0 || !currentSong) return;
-    const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-    if (currentIndex < queue.length - 1) {
-      playSong(queue[currentIndex + 1]);
-    } else {
-      playSong(queue[0]); // Loop back to start
+    const activeQueue = isShuffle && shuffledQueue.length > 0 ? shuffledQueue : queue;
+    if (activeQueue.length === 0 || !currentSong) return;
+    
+    const currentIndex = activeQueue.findIndex(s => s.id === currentSong.id);
+    
+    if (currentIndex < activeQueue.length - 1) {
+      playSong(activeQueue[currentIndex + 1]);
+    } else if (repeatMode === 'all') {
+      playSong(activeQueue[0]); // Loop back to start
+    } else if (repeatMode === 'off') {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      if (audioRef.current) audioRef.current.currentTime = 0;
     }
   };
 
   const previousTrack = () => {
-    if (queue.length === 0 || !currentSong) return;
-    const currentIndex = queue.findIndex(s => s.id === currentSong.id);
+    const activeQueue = isShuffle && shuffledQueue.length > 0 ? shuffledQueue : queue;
+    if (activeQueue.length === 0 || !currentSong) return;
+    
+    const currentIndex = activeQueue.findIndex(s => s.id === currentSong.id);
+    
     if (currentIndex > 0) {
-      playSong(queue[currentIndex - 1]);
+      playSong(activeQueue[currentIndex - 1]);
+    } else if (repeatMode === 'all') {
+      playSong(activeQueue[activeQueue.length - 1]);
     } else {
-      playSong(queue[queue.length - 1]);
+      // Just restart current song
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+      }
     }
   };
 
@@ -390,7 +436,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isExpanded,
       radioMode,
       adPlaying,
+      isShuffle,
+      repeatMode,
       toggleRadioMode,
+      toggleShuffle,
+      toggleRepeat,
       playSong,
       togglePlay,
       pauseSong,

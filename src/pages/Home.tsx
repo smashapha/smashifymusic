@@ -117,14 +117,22 @@ const Home: React.FC = () => {
 
       {/* Search Bar */}
       <div className="max-w-xl mx-auto mb-20">
-         <div className="relative group">
+         <form 
+           className="relative group" 
+           onSubmit={(e) => {
+             e.preventDefault();
+             const q = new FormData(e.currentTarget).get('q');
+             if (q) navigate(`/search?q=${encodeURIComponent(q.toString())}`);
+           }}
+         >
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-smash-gray group-focus-within:text-smash-orange transition-colors" size={24} />
             <input 
               type="text" 
+              name="q"
               placeholder="Search for artists, songs, or vibes..."
               className="w-full pl-16 pr-8 py-6 bg-white/5 border border-white/10 rounded-[32px] text-lg font-bold placeholder:text-smash-gray focus:outline-none focus:ring-4 focus:ring-smash-orange/20 focus:border-smash-orange/50 transition-all"
             />
-         </div>
+         </form>
       </div>
 
       {/* Sections */}

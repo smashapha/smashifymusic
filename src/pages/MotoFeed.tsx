@@ -16,7 +16,15 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
   const navigate = useNavigate();
   const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume } = usePlayer();
   const { userProfile } = useAuth();
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(() => {
+    try {
+      const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+      return Array.isArray(liked) && liked.includes(song.id);
+    } catch (e) {
+      return false;
+    }
+  });
+  const [isFollowing, setIsFollowing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
 
   useEffect(() => {
@@ -25,9 +33,71 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
     }
   }, [active]);
 
-  const handleLike = (e: React.MouseEvent) => {
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (!userProfile || !song.artist_id) return;
+      const { data } = await supabase
+        .from('followers')
+        .select('*')
+        .eq('follower_id', userProfile.id)
+        .eq('artist_id', song.artist_id)
+        .maybeSingle();
+      if (data) setIsFollowing(true);
+    };
+    checkFollow();
+  }, [userProfile, song.artist_id]);
+
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
+    let liked: string[] = [];
+    try {
+      liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+      if (!Array.isArray(liked)) liked = [];
+    } catch (e) {
+      liked = [];
+    }
+    let newLiked;
+    
+    try {
+      if (isLiked) {
+        newLiked = liked.filter((id: string) => id !== song.id);
+        if (userProfile) {
+          const { error } = await supabase.from('likes').delete().eq('user_id', userProfile.id).eq('song_id', song.id);
+          if (error) throw error;
+        }
+      } else {
+        newLiked = [...liked, song.id];
+        if (userProfile) {
+          const { error } = await supabase.from('likes').insert({ user_id: userProfile.id, song_id: song.id });
+          if (error) throw error;
+        }
+      }
+      localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
+      setIsLiked(!isLiked);
+    } catch (err) {
+      console.error('Like error', err);
+    }
+  };
+
+  const handleFollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!userProfile) {
+       alert('Sign in to follow artists');
+       return;
+    }
+    try {
+       if (isFollowing) {
+          const { error } = await supabase.from('followers').delete().eq('follower_id', userProfile.id).eq('artist_id', song.artist_id);
+          if (error) throw error;
+          setIsFollowing(false);
+       } else {
+          const { error } = await supabase.from('followers').insert({ follower_id: userProfile.id, artist_id: song.artist_id });
+          if (error) throw error;
+          setIsFollowing(true);
+       }
+    } catch (err) {
+       console.error(err);
+    }
   };
 
   const handleBuy = (e: React.MouseEvent) => {
@@ -46,9 +116,9 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
   const isPreviewLimit = !song.is_purchased && currentTime >= 30;
 
   return (
-    <div className="relative h-full w-full bg-smash-black overflow-hidden">
+    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={togglePlay}>
       {/* Background Layer */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 bg-smash-black">
         <img 
           src={song.cover_url} 
           className="w-full h-full object-cover blur-3xl opacity-40 scale-150" 
@@ -58,12 +128,11 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative h-full flex flex-col items-center justify-center p-6 pb-40">
+      <div className="relative h-full w-full max-w-lg mx-auto flex flex-col items-center justify-center p-6 pb-40">
          <motion.div 
            initial={{ scale: 0.8, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
            className="relative aspect-square w-full max-w-[340px] md:max-w-[400px] shadow-[0_0_80px_rgba(255,95,0,0.3)] group"
-           onClick={togglePlay}
          >
             <img 
               src={song.cover_url} 
@@ -75,25 +144,30 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
                   {isPlaying ? <Pause size={40} /> : <Play size={40} className="ml-2" />}
                </div>
             </div>
-
-            {isPreviewLimit && (
-               <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px]">
-                  <ShoppingBag size={48} className="text-smash-orange mb-4" />
-                  <h3 className="text-2xl font-black font-display italic uppercase mb-2">Full Track Available</h3>
-                  <p className="text-sm text-smash-gray font-bold mb-6 italic tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
-                  <button 
-                    onClick={handleBuy}
-                    className="px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20"
-                  >
-                     BUY FOR MK {song.price}
-                  </button>
-               </div>
-            )}
          </motion.div>
 
+         {isPreviewLimit && !song.is_unreleased && (
+            <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px]">
+               <ShoppingBag size={48} className="text-smash-orange mb-4" />
+               <h3 className="text-2xl font-black font-display italic uppercase mb-2">Full Track Available</h3>
+               <p className="text-sm text-smash-gray font-bold mb-6 italic tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
+               <button 
+                 onClick={handleBuy}
+                 className="px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20"
+               >
+                  BUY FOR MK {song.price}
+               </button>
+            </div>
+         )}
+
          {/* Meta Overlay (Bottom) */}
-         <div className="absolute bottom-10 left-8 right-24 space-y-4">
+         <div className="absolute bottom-10 left-8 right-24 space-y-4 pointer-events-auto">
             <div className="flex flex-wrap gap-2">
+               {song.is_unreleased && (
+                  <span className="px-3 py-1 bg-smash-purple text-white text-[10px] font-black rounded-full uppercase tracking-widest flex items-center gap-1">
+                     <Flame size={12} /> Unreleased Snippet
+                  </span>
+               )}
                <span className="px-3 py-1 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase tracking-widest">{song.genre || 'Trending'}</span>
                {song.region && <span className="px-3 py-1 bg-white/10 text-white text-[10px] font-black rounded-full uppercase tracking-widest">{song.region}</span>}
             </div>
@@ -107,20 +181,32 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
          </div>
 
          {/* Action Bar (Right) */}
-         <div className="absolute right-6 bottom-32 flex flex-col items-center gap-8">
-            <div 
-               className="flex flex-col items-center gap-2 group cursor-pointer"
-               onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); }}
-            >
-               <div className="w-14 h-14 rounded-full border-4 border-smash-black overflow-hidden bg-smash-dark ring-2 ring-smash-orange relative hover:scale-110 transition-transform">
+         <div className="absolute right-6 bottom-32 flex flex-col items-center gap-8 pointer-events-auto">
+            <div className="flex flex-col items-center gap-0">
+               <div 
+                  className="w-14 h-14 rounded-full border-4 border-smash-black overflow-hidden bg-smash-dark ring-2 ring-smash-orange relative hover:scale-110 transition-transform cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); }}
+               >
                   <img src={song.profiles?.avatar_url || 'https://i.pravatar.cc/100'} className="w-full h-full object-cover" alt="" />
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-smash-orange rounded-full flex items-center justify-center text-white border-2 border-smash-black">
-                     <UserPlus size={12} />
-                  </div>
                </div>
+               <button 
+                  onClick={handleFollow}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-white border-2 border-smash-black z-10 -mt-3 hover:scale-110 transition-transform shadow-lg ${isFollowing ? 'bg-smash-green' : 'bg-smash-orange'}`}
+               >
+                  {isFollowing ? <Check size={14} className="text-black" /> : <UserPlus size={14} />}
+               </button>
             </div>
 
-            {song.is_for_sale && (
+            <div className="flex flex-col items-center gap-2">
+               <button 
+                  onClick={handleLike}
+                  className="w-14 h-14 bg-white/5 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:scale-110 transition-all border border-white/10"
+               >
+                  <Heart size={24} className={isLiked ? "fill-smash-orange text-smash-orange" : ""} />
+               </button>
+            </div>
+
+            {song.is_for_sale && !song.is_unreleased && (
                <div className="flex flex-col items-center gap-2">
                   <button 
                     onClick={handleBuy}
@@ -135,7 +221,8 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
             <motion.div 
                animate={{ rotate: isPlaying ? 360 : 0 }}
                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-               className="w-14 h-14 rounded-full bg-smash-dark border-4 border-white/20 flex items-center justify-center p-2 mt-4"
+               className="w-14 h-14 rounded-full bg-smash-dark border-4 border-white/20 flex items-center justify-center p-2 mt-4 cursor-pointer"
+               onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             >
                <Disc className="text-smash-gray" size={24} />
             </motion.div>

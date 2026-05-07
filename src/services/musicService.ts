@@ -71,5 +71,33 @@ export const musicService = {
 
     if (error) throw error;
     return count ? count > 0 : false;
+  },
+
+  /**
+   * Increments the play count for a song
+   */
+  async incrementPlays(songId: string) {
+    try {
+      // First try using the RPC function if it exists
+      const { error: rpcError } = await supabase.rpc('increment_song_plays', { song_id: songId });
+      
+      if (rpcError) {
+        // Fallback: Fetch, increment, and update (less efficient but works if RPC is missing)
+        const { data: song } = await supabase
+          .from('songs')
+          .select('plays')
+          .eq('id', songId)
+          .single();
+        
+        if (song) {
+          await supabase
+            .from('songs')
+            .update({ plays: (song.plays || 0) + 1 })
+            .eq('id', songId);
+        }
+      }
+    } catch (err) {
+      console.error('Error incrementing play count:', err);
+    }
   }
 };

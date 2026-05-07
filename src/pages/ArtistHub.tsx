@@ -4,7 +4,7 @@ import {
   BarChart3, Music2, Upload, Wallet, UserCircle, Settings, 
   TrendingUp, Users, Play, DollarSign, Plus, Trash2, 
   Edit3, CheckCircle2, AlertCircle, Sparkles, ChevronRight,
-  Smartphone, Image as ImageIcon, FileAudio, Info
+  Smartphone, Image as ImageIcon, FileAudio, Info, Flame
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -278,7 +278,7 @@ const MusicTab = ({ songs, onRefresh }: { songs: Song[], onRefresh: () => void }
 };
 
 const UploadTab = () => {
-   const [uploadMode, setUploadMode] = useState<'single' | 'album'>('single');
+   const [uploadMode, setUploadMode] = useState<'single' | 'album' | 'snippet'>('single');
    const [progress, setProgress] = useState(0);
    const [step, setStep] = useState(1);
    
@@ -310,9 +310,12 @@ const UploadTab = () => {
             <p className="text-smash-gray text-lg font-medium tracking-tight">Your music deserves the spotlight. Let's make it official.</p>
          </div>
 
-         <div className="flex p-2 bg-smash-dark rounded-3xl border border-white/5 w-fit mx-auto mb-12">
+         <div className="flex p-2 bg-smash-dark rounded-3xl border border-white/5 w-fit mx-auto mb-12 flex-wrap justify-center gap-2">
             <button onClick={() => setUploadMode('single')} className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest-xl transition-all ${uploadMode === 'single' ? 'bg-white text-smash-black' : 'text-smash-gray hover:text-white'}`}>Single Song</button>
             <button onClick={() => setUploadMode('album')} className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest-xl transition-all ${uploadMode === 'album' ? 'bg-white text-smash-black' : 'text-smash-gray hover:text-white'}`}>Full Album</button>
+            <button onClick={() => setUploadMode('snippet')} className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest-xl transition-all ${uploadMode === 'snippet' ? 'bg-smash-orange text-white shadow-lg shadow-smash-orange/20' : 'text-smash-gray hover:text-white'} flex items-center gap-2`}>
+               <Flame size={16} className={uploadMode === 'snippet' ? 'text-white' : 'text-smash-orange'} /> Snippet
+            </button>
          </div>
 
          <div className="bento-card p-12 bg-white/5 border-white/5">
@@ -341,37 +344,71 @@ const UploadTab = () => {
                                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-5 text-lg font-bold focus:outline-none focus:border-smash-orange transition-all text-white/80" />
                               </div>
                            )}
+                           {uploadMode === 'snippet' && (
+                              <div className="space-y-4 pt-4">
+                                 <label className="flex flex-row items-center gap-4 cursor-pointer">
+                                    <input type="checkbox" className="w-6 h-6 rounded bg-smash-dark border-white/10 text-smash-orange focus:ring-smash-orange" defaultChecked />
+                                    <div>
+                                       <p className="text-sm font-black uppercase tracking-widest italic text-white flex items-center gap-2"><Flame size={16} className="text-smash-orange" /> Unreleased</p>
+                                       <p className="text-[10px] text-smash-gray tracking-widest uppercase">Mark this as an unreleased sneak peek.</p>
+                                    </div>
+                                 </label>
+                              </div>
+                           )}
                         </div>
                         <div className="space-y-8">
-                           <div className="space-y-2">
-                              <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">{uploadMode === 'album' ? 'Full Album Price' : 'Is for sale?'}</label>
-                              <div className="flex gap-4">
-                                 <input type="number" placeholder="Price (MWK)" className="flex-1 bg-white/5 border border-white/10 rounded-[20px] px-8 py-5 text-lg font-bold focus:outline-none focus:border-smash-orange transition-all placeholder:text-smash-gray/30" />
-                                 <div className="w-20 bg-smash-orange/10 border border-smash-orange/20 rounded-[20px] flex items-center justify-center text-smash-orange font-black italic">MWK</div>
+                           {uploadMode !== 'snippet' && (
+                              <div className="space-y-2">
+                                 <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">{uploadMode === 'album' ? 'Full Album Price' : 'Is for sale?'}</label>
+                                 <div className="flex gap-4">
+                                    <input type="number" placeholder="Price (MWK)" className="flex-1 bg-white/5 border border-white/10 rounded-[20px] px-8 py-5 text-lg font-bold focus:outline-none focus:border-smash-orange transition-all placeholder:text-smash-gray/30" />
+                                    <div className="w-20 bg-smash-orange/10 border border-smash-orange/20 rounded-[20px] flex items-center justify-center text-smash-orange font-black italic">MWK</div>
+                                 </div>
                               </div>
-                           </div>
-                           {uploadMode === 'single' && (
+                           )}
+                           {(uploadMode === 'single' || uploadMode === 'snippet') && (
                               <div className="space-y-2">
                                  <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Lyrics (Optional)</label>
                                  <textarea rows={2} placeholder="Write or paste your lyrics here..." className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-5 text-sm font-medium focus:outline-none focus:border-smash-orange transition-all placeholder:text-smash-gray/30 resize-none" />
                               </div>
                            )}
+                           {uploadMode === 'snippet' && (
+                              <div className="space-y-2">
+                                 <div className="flex items-center gap-3 p-4 bg-smash-orange/5 border border-smash-orange/20 rounded-[20px]">
+                                    <Info size={24} className="text-smash-orange flex-shrink-0" />
+                                    <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest leading-relaxed">Snippets appear in the Moto Feed to build hype. They are limited to 30s-60s max.</p>
+                                 </div>
+                              </div>
+                           )}
                         </div>
                      </div>
 
-                     <div className={`grid grid-cols-1 ${uploadMode === 'single' ? 'md:grid-cols-2' : ''} gap-10`}>
+                     <div className={`grid grid-cols-1 md:grid-cols-2 gap-10`}>
                         <div className="relative group border-2 border-dashed border-white/10 hover:border-smash-orange transition-all rounded-[32px] p-12 text-center bg-white/5">
                            <ImageIcon size={48} className="mx-auto mb-6 text-smash-gray group-hover:text-smash-orange transition-colors" />
                            <h4 className="text-xl font-black font-display italic uppercase mb-2 group-hover:text-white transition-colors">{uploadMode === 'album' ? 'Album Cover Art' : 'Cover Art'}</h4>
                            <p className="text-xs text-smash-gray font-bold tracking-tight">JPG or PNG, max 10MB (Square 1:1 recommended)</p>
                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
                         </div>
-                        {uploadMode === 'single' && (
-                           <div className="relative group border-2 border-dashed border-white/10 hover:border-smash-cyan transition-all rounded-[32px] p-12 text-center bg-white/5">
-                              <FileAudio size={48} className="mx-auto mb-6 text-smash-gray group-hover:text-smash-cyan transition-colors" />
-                              <h4 className="text-xl font-black font-display italic uppercase mb-2 group-hover:text-white transition-colors">Audio File</h4>
-                              <p className="text-xs text-smash-gray font-bold tracking-tight">MP3, WAV or FLAC, max 50MB</p>
-                              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
+                        {uploadMode !== 'album' && (
+                           <div className="relative group border-2 border-dashed border-white/10 hover:border-smash-cyan transition-all rounded-[32px] p-12 text-center bg-white/5 overflow-hidden">
+                              {uploadMode === 'snippet' ? (
+                                 <>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-smash-purple/5 to-smash-orange/5" />
+                                    <div className="relative">
+                                       <FileAudio size={48} className="mx-auto mb-6 text-smash-purple group-hover:text-smash-orange transition-colors" />
+                                       <h4 className="text-xl font-black font-display italic uppercase mb-2 group-hover:text-white transition-colors">Audio Snippet</h4>
+                                       <p className="text-xs text-smash-gray font-bold tracking-tight">MP3, WAV or FLAC, max 60s</p>
+                                    </div>
+                                 </>
+                              ) : (
+                                 <>
+                                    <FileAudio size={48} className="mx-auto mb-6 text-smash-gray group-hover:text-smash-cyan transition-colors" />
+                                    <h4 className="text-xl font-black font-display italic uppercase mb-2 group-hover:text-white transition-colors">Audio File</h4>
+                                    <p className="text-xs text-smash-gray font-bold tracking-tight">MP3, WAV or FLAC, max 50MB</p>
+                                 </>
+                              )}
+                              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                            </div>
                         )}
                      </div>

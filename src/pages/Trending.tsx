@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Flame, TrendingUp, Filter, PlayCircle, Trophy } from 'lucide-react';
+import { Flame, TrendingUp, Filter, PlayCircle, Trophy, LayoutGrid, List } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
@@ -8,6 +8,7 @@ import SongCard from '../components/common/SongCard';
 const Trending: React.FC = () => {
    const [songs, setSongs] = useState<Song[]>([]);
    const [loading, setLoading] = useState(true);
+   const [view, setView] = useState<'grid' | 'list'>('list');
 
    useEffect(() => {
       fetchTrending();
@@ -68,9 +69,25 @@ const Trending: React.FC = () => {
                   <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter flex items-center gap-4">
                      <TrendingUp className="text-smash-orange" /> Current Standings
                   </h2>
-                  <button className="text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
-                     <Filter size={16} /> Filter Region
-                  </button>
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10">
+                        <button 
+                           onClick={() => setView('list')}
+                           className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-smash-orange text-white shadow-lg' : 'text-smash-gray hover:text-white'}`}
+                        >
+                           <List size={18} />
+                        </button>
+                        <button 
+                           onClick={() => setView('grid')}
+                           className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-smash-orange text-white shadow-lg' : 'text-smash-gray hover:text-white'}`}
+                        >
+                           <LayoutGrid size={18} />
+                        </button>
+                     </div>
+                     <button className="text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
+                        <Filter size={16} /> Filter Region
+                     </button>
+                  </div>
                </div>
 
                {loading ? (
@@ -80,32 +97,16 @@ const Trending: React.FC = () => {
                      ))}
                   </div>
                ) : (
-                  <div className="space-y-4">
+                  <div className={view === 'list' ? 'space-y-4' : 'grid grid-cols-2 lg:grid-cols-3 gap-6'}>
                      {songs.map((song, index) => (
                         <motion.div 
                           key={song.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="group relative"
+                          className="group"
                         >
-                           <div className="bg-white/5 border border-white/10 rounded-3xl p-4 md:p-6 flex items-center gap-6 group-hover:bg-white/10 transition-all">
-                              <span className="text-3xl md:text-4xl font-black font-display italic text-smash-gray/30 group-hover:text-smash-orange/50 transition-colors w-12 text-center">
-                                 {index + 1}
-                              </span>
-                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden flex-shrink-0 shadow-xl border border-white/5">
-                                 <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                 <h4 className="font-display font-black italic uppercase text-lg md:text-xl truncate leading-none mb-1">{song.title}</h4>
-                                 <p className="text-xs md:text-sm text-smash-gray font-bold tracking-tight">{song.artist_name}</p>
-                              </div>
-                              <div className="hidden md:flex flex-col items-end gap-2 px-8">
-                                 <span className="text-[10px] font-black uppercase text-smash-gray tracking-widest">Plays</span>
-                                 <span className="font-bold text-sm">{song.plays || 0}</span>
-                              </div>
-                              <SongCard song={song} queue={songs} className="!w-auto !bg-transparent !p-0 !border-0 !shadow-none [&_.song-card-info]:hidden" />
-                           </div>
+                           <SongCard song={song} queue={songs} variant={view} />
                         </motion.div>
                      ))}
                   </div>

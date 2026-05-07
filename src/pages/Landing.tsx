@@ -101,13 +101,13 @@ const Landing: React.FC = () => {
           >
             <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black text-smash-orange mb-10 shadow-inner">
               <Zap size={14} className="animate-pulse" />
-              <span className="tracking-widest uppercase italic">Music Unbound</span>
+              <span className="tracking-widest uppercase italic">Premium Streaming</span>
             </div>
             <h1 className="text-7xl md:text-[140px] font-black font-display leading-[0.8] tracking-tighter mb-10 italic uppercase">
-              OWN THE<br/><span className="text-smash-orange">RHYTHM</span>
+              ELEVATE YOUR<br/><span className="text-smash-orange">MUSIC</span>
             </h1>
             <p className="text-2xl text-smash-gray max-w-xl mb-12 leading-relaxed font-semibold">
-              Malawi's premium audio ecosystem. Blazing fast, zero-buffer, and built for the warm heart of Africa.
+              Experience the evolution of streaming in Malawi. Delivering studio-quality sound, empowering local creators, and connecting you to the artists you love.
             </p>
             <div className="flex flex-wrap gap-5">
               <button 

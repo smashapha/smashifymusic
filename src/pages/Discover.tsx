@@ -4,7 +4,7 @@ import { Search, Music2, Disc, User, Sparkles, Filter, ChevronRight, X, Zap } fr
 import { supabase } from '../lib/supabase';
 import { Song, UserProfile } from '../types';
 import SongCard from '../components/common/SongCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAiRecommendations } from '../services/aiService';
 
@@ -12,13 +12,22 @@ const GENRES = ['Afropop', 'Hip Hop', 'Gospel', 'Amapiano', 'Reggae', 'R&B', 'Da
 
 const Discover: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const initialQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [results, setResults] = useState<{ songs: Song[], artists: UserProfile[] }>({ songs: [], artists: [] });
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Song[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchTrending();

@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Song, UserProfile } from '../types';
 import SongCard from '../components/common/SongCard';
+import SupportArtistModal from '../components/common/SupportArtistModal';
+import { AnimatePresence } from 'motion/react';
 
 const ArtistProfile: React.FC = () => {
    const { id } = useParams<{ id: string }>();
@@ -19,6 +21,7 @@ const ArtistProfile: React.FC = () => {
    const [isFollowing, setIsFollowing] = useState(false);
    const [followLoading, setFollowLoading] = useState(false);
    const [copied, setCopied] = useState(false);
+   const [showSupportModal, setShowSupportModal] = useState(false);
 
    const handleShare = () => {
       navigator.clipboard.writeText(window.location.href);
@@ -34,7 +37,7 @@ const ArtistProfile: React.FC = () => {
             .select('*')
             .eq('follower_id', userProfile.id)
             .eq('artist_id', id)
-            .single();
+            .maybeSingle();
          if (data) setIsFollowing(true);
       };
       
@@ -87,10 +90,12 @@ const ArtistProfile: React.FC = () => {
       setFollowLoading(true);
       try {
          if (isFollowing) {
-            await supabase.from('followers').delete().eq('follower_id', userProfile.id).eq('artist_id', id);
+            const { error } = await supabase.from('followers').delete().eq('follower_id', userProfile.id).eq('artist_id', id);
+            if (error) throw error;
             setIsFollowing(false);
          } else {
-            await supabase.from('followers').insert({ follower_id: userProfile.id, artist_id: id });
+            const { error } = await supabase.from('followers').insert({ follower_id: userProfile.id, artist_id: id });
+            if (error) throw error;
             setIsFollowing(true);
          }
       } catch (err) {
@@ -171,7 +176,7 @@ const ArtistProfile: React.FC = () => {
                            )}
                         </button>
                         <button 
-                           onClick={() => window.open(`https://paychangu.com/donation/${artist.id}`, '_blank')}
+                           onClick={() => setShowSupportModal(true)}
                            className="px-8 py-4 bg-smash-purple hover:bg-purple-600 text-white rounded-full font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-smash-purple/20 flex items-center gap-2"
                         >
                            Support Artist
@@ -231,9 +236,9 @@ const ArtistProfile: React.FC = () => {
                </div>
                
                {songs.length > 0 ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-4">
                      {songs.map(song => (
-                        <SongCard key={song.id} song={song} queue={songs} />
+                        <SongCard key={song.id} song={song} queue={songs} variant="list" />
                      ))}
                   </div>
                ) : (
@@ -246,6 +251,15 @@ const ArtistProfile: React.FC = () => {
             </div>
 
          </div>
+
+         <AnimatePresence>
+            {showSupportModal && artist && (
+               <SupportArtistModal 
+                  artist={artist} 
+                  onClose={() => setShowSupportModal(false)} 
+               />
+            )}
+         </AnimatePresence>
       </div>
    );
 };

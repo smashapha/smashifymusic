@@ -10,6 +10,7 @@ export interface Song {
   trending?: boolean;
   is_purchased?: boolean;
   snippet_url?: string;
+  is_unreleased?: boolean;
   genre?: string;
   region?: string;
   lyrics?: string;

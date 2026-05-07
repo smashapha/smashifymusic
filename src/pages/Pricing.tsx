@@ -82,7 +82,7 @@ const Pricing = () => {
       </div>
 
       {activeTab === 'listeners' && (
-        <motion.div 
+         <motion.div 
           key="listeners"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -91,13 +91,13 @@ const Pricing = () => {
            <PricingCard 
               title="Free Plan" 
               price="0" 
-              features={["Stream unlimited Malawian music", "Discover via Moto Feed", "Create up to 3 playlists", "30-second song previews"]} 
+              features={["Stream with ads", "Discover via Moto Feed", "Create up to 3 playlists", "Support artists with tips"]} 
            />
            <PricingCard 
               title="Premium" 
               price="2,500" 
               badge="MOST POPULAR"
-              features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Unlimited playlists"]} 
+              features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Early access to unreleased snippets", "Unlimited playlists"]} 
            />
            <PricingCard 
               title="Family" 
@@ -118,26 +118,26 @@ const Pricing = () => {
               isArtist={true}
               title="Free Artist" 
               price="0" 
-              features={["3 Songs Limit", "Basic Profile", "Accept Donations", "Basic Analytics"]} 
+              features={["Upload 3 Songs", "Basic Profile", "Accept Fan Donations", "Basic Analytics"]} 
            />
            <PricingCard 
               isArtist={true}
               title="Rising Star" 
               price="15,000" 
-              features={["10 Songs/mo", "Earnings Dashboard", "Album Creation", "Accept Donations", "Song Sales"]} 
+              features={["Upload 10 Songs/yr", "Sell Songs & Snippets", "Earnings Dashboard", "Album Creation"]} 
            />
            <PricingCard 
               isArtist={true}
               title="Standard" 
               price="25,000" 
               badge="RECOMMENDED" 
-              features={["Unlimited Songs", "Full Analytics", "Priority Approval", "Featured Placement", "Fan Messaging"]} 
+              features={["Unlimited Uploads", "Full Detailed Analytics", "Push Notifications to Fans", "Featured in Moto Feed", "Priority Approval"]} 
            />
            <PricingCard 
               isArtist={true}
               title="Elite/Label" 
               price="45,000" 
-              features={["Manage Multiple Artists", "Label Branding", "Dedicated Manager", "Verified Priority", "Custom Profile URL"]} 
+              features={["Manage Multiple Artists", "Label Branding", "Dedicated Manager", "Verified Badge", "Custom Profile URL"]} 
            />
         </motion.div>
       )}

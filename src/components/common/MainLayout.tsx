@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, Menu, X } from 'lucide-react';
 import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from 'motion/react';
@@ -10,6 +10,7 @@ import Logo from './Logo';
 const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="h-20 flex items-center justify-between px-4 md:px-8 bg-smash-black/80 backdrop-blur-xl sticky top-0 z-30 border-b border-white/5">
@@ -21,14 +22,22 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
       </button>
 
       <div className="flex-1 max-w-xl hidden md:block">
-        <div className="relative group">
+        <form className="relative group" onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          const q = formData.get('q');
+          if (q) {
+             navigate(`/search?q=${encodeURIComponent(q.toString())}`);
+          }
+        }}>
            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-smash-gray group-focus-within:text-smash-orange transition-colors" />
            <input 
             type="text" 
+            name="q"
             placeholder="Search artists, songs, podcasts..." 
-            className="w-full bg-smash-dark/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-smash-orange/20 transition-all backdrop-blur-md"
+            className="w-full bg-smash-dark/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-smash-orange/20 transition-all backdrop-blur-md"
            />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-4 ml-auto">

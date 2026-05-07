@@ -19,7 +19,8 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
     playbackRate, setPlaybackRate,
     sleepTimerRemaining, setSleepTimer,
     pauseSong,
-    radioMode, toggleRadioMode, adPlaying
+    radioMode, toggleRadioMode, adPlaying,
+    isShuffle, toggleShuffle, repeatMode, toggleRepeat
   } = usePlayer();
   const [showQueue, setShowQueue] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -135,12 +136,11 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar">
-        <div className="flex items-center justify-between mb-8 md:mb-12">
-           <button onClick={onClose} className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors hidden md:block">
-              <ChevronDown size={28} />
-           </button>
-           <div className="w-10 h-10 md:hidden" /> {/* Spacer for centering on mobile */}
-           <div className="text-center flex-1">
+         <div className="flex items-center justify-between mb-8 md:mb-12">
+            <button onClick={onClose} className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+               <ChevronDown size={28} />
+            </button>
+            <div className="text-center flex-1">
               <p className="text-[10px] font-black text-smash-gray uppercase tracking-[0.4em] mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
               <h4 className="font-display font-black italic text-lg uppercase tracking-tight">{adPlaying ? 'ADVERTISEMENT' : currentSong?.genre}</h4>
            </div>
@@ -206,8 +206,12 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
            {/* Controls */}
            <div className="flex flex-col gap-6 md:gap-8">
               <div className="flex items-center justify-between">
-                <button disabled={adPlaying} className={`transition-colors ${adPlaying ? 'opacity-20 cursor-not-allowed' : 'text-smash-gray hover:text-smash-orange'}`}>
-                  <Shuffle size={20} className="md:w-6 md:h-6" />
+                <button 
+                  onClick={toggleShuffle}
+                  disabled={adPlaying} 
+                  className={`transition-all p-2 rounded-full ${adPlaying ? 'opacity-20 cursor-not-allowed' : isShuffle ? 'text-smash-orange bg-smash-orange/10 shadow-lg' : 'text-smash-gray hover:text-smash-orange'}`}
+                >
+                  <Shuffle size={24} />
                 </button>
                 
                 <div className="flex items-center gap-6 md:gap-10">
@@ -222,8 +226,15 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
                    </button>
                 </div>
 
-                <button disabled={adPlaying} className={`transition-colors ${adPlaying ? 'opacity-20 cursor-not-allowed' : 'text-smash-gray hover:text-white'}`}>
-                  <Repeat size={20} className="md:w-6 md:h-6" />
+                <button 
+                  onClick={toggleRepeat}
+                  disabled={adPlaying} 
+                  className={`transition-all p-2 rounded-full relative ${adPlaying ? 'opacity-20 cursor-not-allowed' : repeatMode !== 'off' ? 'text-smash-orange bg-smash-orange/10 shadow-lg' : 'text-smash-gray hover:text-white'}`}
+                >
+                  <Repeat size={24} />
+                  {repeatMode === 'one' && (
+                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-black pointer-events-none mt-0.5">1</span>
+                  )}
                 </button>
               </div>
 
@@ -382,7 +393,8 @@ const GlobalPlayer: React.FC = () => {
   const { 
     currentSong, isPlaying, togglePlay, currentTime, duration, 
     volume, setVolume, dataSaver, toggleDataSaver, isExpanded, setIsExpanded,
-    queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying
+    queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying,
+    isShuffle, toggleShuffle, repeatMode, toggleRepeat
   } = usePlayer();
 
   const [localVolume, setLocalVolume] = useState(volume);
@@ -487,6 +499,26 @@ const GlobalPlayer: React.FC = () => {
 
             {/* Desktop Controls */}
             <div className="hidden md:flex items-center gap-4 md:gap-8">
+              <div className="flex items-center gap-3">
+                 <button 
+                   onClick={toggleShuffle}
+                   disabled={adPlaying}
+                   className={`p-2 transition-all ${adPlaying ? 'opacity-20' : isShuffle ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
+                   title="Shuffle"
+                 >
+                    <Shuffle size={18} />
+                 </button>
+                 <button 
+                   onClick={toggleRepeat}
+                   disabled={adPlaying}
+                   className={`p-2 transition-all relative ${adPlaying ? 'opacity-20' : repeatMode !== 'off' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
+                   title="Repeat"
+                 >
+                    <Repeat size={18} />
+                    {repeatMode === 'one' && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-black mt-0.5">1</span>}
+                 </button>
+              </div>
+
               <button 
                 onClick={togglePlay}
                 className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white text-smash-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl"
