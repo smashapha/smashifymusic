@@ -21,6 +21,23 @@ const Discover: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Song[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
+  const [activeTab, setActiveTab] = useState<'songs' | 'artists'>('songs');
+
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = React.useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    const deltaY = e.changedTouches[0].clientY - startY.current;
+    if (deltaY > 80 && window.scrollY === 0) {
+      setRefreshing(true);
+      await Promise.all([fetchTrending(), fetchRecommendations(), handleSearch()]);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -117,10 +134,11 @@ const Discover: React.FC = () => {
       let artistsQuery = supabase
         .from('profiles')
         .select('*')
-        .eq('is_artist', true);
+        .eq('user_type', 'artist')
+        .eq('approved', true);
 
       if (searchQuery) {
-        artistsQuery = artistsQuery.ilike('full_name', `%${searchQuery}%`);
+        artistsQuery = artistsQuery.ilike('stage_name', `%${searchQuery}%`);
       }
       if (selectedGenre) {
         artistsQuery = artistsQuery.eq('genre', selectedGenre);
@@ -148,7 +166,16 @@ const Discover: React.FC = () => {
   };
 
   return (
-    <div className="space-y-12 pb-24">
+    <div 
+      className="space-y-12 pb-24"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {refreshing && (
+        <div className="flex justify-center -mt-8 pt-8">
+          <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {/* Header & Search */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-smash-orange/20 to-transparent blur-3xl rounded-full" />
@@ -205,64 +232,87 @@ const Discover: React.FC = () => {
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
              exit={{ opacity: 0 }}
-             className="flex justify-center py-20"
+             className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 animate-pulse mt-8"
            >
-             <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
+             {[1, 2, 3, 4, 5, 6].map(n => (
+               <div key={n} className="flex flex-col gap-3">
+                 <div className="w-full aspect-square bg-white/10 rounded-2xl"></div>
+                 <div className="h-4 w-3/4 bg-white/10 rounded"></div>
+                 <div className="h-3 w-1/2 bg-white/10 rounded"></div>
+               </div>
+             ))}
            </motion.div>
         ) : (searchQuery || selectedGenre) ? (
-           <motion.div 
+             <motion.div 
              key="results"
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
-             className="grid grid-cols-1 lg:grid-cols-3 gap-12"
+             className="space-y-8"
            >
-             {/* Search Results */}
-             <div className="lg:col-span-2 space-y-8">
-               <div className="flex items-center justify-between">
-                 <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter">Tracks Found</h2>
-                 <p className="text-xs font-black text-smash-gray uppercase tracking-widest">{results.songs.length} results</p>
-               </div>
-               {results.songs.length > 0 ? (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {results.songs.map((song, i) => (
-                      <SongCard key={song.id} song={song} queue={results.songs} />
-                    ))}
-                 </div>
-               ) : (
-                 <div className="p-12 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                    <Music2 size={48} className="mx-auto mb-4 text-smash-gray/30" />
-                    <p className="text-smash-gray font-bold uppercase tracking-widest text-xs">No tracks match your search</p>
-                 </div>
-               )}
+             <div className="flex gap-4 border-b border-white/10 pb-2 mb-6">
+                <button 
+                  onClick={() => setActiveTab('songs')}
+                  className={`text-sm font-black uppercase tracking-widest pb-2 border-b-2 transition-colors ${activeTab === 'songs' ? 'border-smash-orange text-white' : 'border-transparent text-smash-gray hover:text-white'}`}
+                >
+                  Songs
+                </button>
+                <button 
+                  onClick={() => setActiveTab('artists')}
+                  className={`text-sm font-black uppercase tracking-widest pb-2 border-b-2 transition-colors ${activeTab === 'artists' ? 'border-smash-orange text-white' : 'border-transparent text-smash-gray hover:text-white'}`}
+                >
+                  Artists
+                </button>
              </div>
 
-             <div className="space-y-8">
-               <div className="flex items-center justify-between">
-                 <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter">Artists</h2>
-               </div>
-               <div className="space-y-4">
-                 {results.artists.map(artist => (
-                   <motion.div 
-                     key={artist.id}
-                     whileHover={{ x: 10 }}
-                     onClick={() => navigate(`/artist/${artist.id}`)}
-                     className="p-4 bg-white/5 border border-white/10 rounded-[24px] flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-colors"
-                   >
-                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-smash-orange/20">
-                        <img src={artist.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full object-cover" alt="" />
-                     </div>
-                     <div className="flex-1 min-w-0">
-                        <h4 className="font-display font-black italic uppercase text-lg truncate leading-none mb-1">{artist.stage_name || artist.full_name}</h4>
-                        <p className="text-xs text-smash-gray font-bold uppercase tracking-widest">{artist.genre || 'Various'}</p>
-                     </div>
-                     <ChevronRight className="text-smash-gray" size={20} />
-                   </motion.div>
-                 ))}
-                 {results.artists.length === 0 && (
-                    <p className="text-center text-smash-gray py-12 font-bold uppercase tracking-widest text-[10px]">No artists found</p>
+             {activeTab === 'songs' ? (
+               <div className="space-y-8">
+                 <div className="flex items-center justify-between">
+                   <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter">Tracks Found</h2>
+                   <p className="text-xs font-black text-smash-gray uppercase tracking-widest">{results.songs.length} results</p>
+                 </div>
+                 {results.songs.length > 0 ? (
+                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                      {results.songs.map((song, i) => (
+                        <SongCard key={`discover-song-${song.id}-${i}`} song={song} queue={results.songs} />
+                      ))}
+                   </div>
+                 ) : (
+                   <div className="p-12 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                      <Music2 size={48} className="mx-auto mb-4 text-smash-gray/30" />
+                      <p className="text-smash-gray font-bold uppercase tracking-widest text-xs">No tracks match your search</p>
+                   </div>
                  )}
                </div>
-             </div>
+             ) : (
+               <div className="space-y-8">
+                 <div className="flex items-center justify-between">
+                   <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter">Artists Found</h2>
+                   <p className="text-xs font-black text-smash-gray uppercase tracking-widest">{results.artists.length} results</p>
+                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   {results.artists.map((artist, i) => (
+                     <motion.div 
+                       key={`discover-artist-${artist.id}-${i}`}
+                       whileHover={{ x: 10 }}
+                       onClick={() => navigate(`/artist/${artist.id}`)}
+                       className="p-4 bg-white/5 border border-white/10 rounded-[24px] flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-colors"
+                     >
+                       <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-smash-orange/20">
+                          <img src={artist.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full object-cover" alt="" />
+                       </div>
+                       <div className="flex-1 min-w-0">
+                          <h4 className="font-display font-black italic uppercase text-lg truncate leading-none mb-1">{artist.stage_name || artist.full_name}</h4>
+                          <p className="text-xs text-smash-gray font-bold uppercase tracking-widest">{artist.genre || 'Various'}</p>
+                       </div>
+                       <ChevronRight className="text-smash-gray" size={20} />
+                     </motion.div>
+                   ))}
+                   {results.artists.length === 0 && (
+                      <div className="col-span-full text-center text-smash-gray py-12 font-bold uppercase tracking-widest text-[10px]">No artists found</div>
+                   )}
+                 </div>
+               </div>
+             )}
            </motion.div>
         ) : (
            <motion.div 
@@ -279,8 +329,8 @@ const Discover: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                   {trending.map((song) => (
-                      <SongCard key={song.id} song={song} queue={trending} />
+                   {trending.map((song, i) => (
+                      <SongCard key={`discover-trending-${song.id}-${i}`} song={song} queue={trending} />
                    ))}
                 </div>
              </div>
@@ -297,8 +347,8 @@ const Discover: React.FC = () => {
                    </div>
 
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                      {recommendedSongs.map((song) => (
-                         <div key={song.id} className="relative group">
+                      {recommendedSongs.map((song, i) => (
+                         <div key={`discover-rec-${song.id}-${i}`} className="relative group">
                             <SongCard song={song} queue={recommendedSongs} />
                             <div className="absolute top-2 left-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                                <span className="bg-smash-black/80 backdrop-blur-md text-[8px] font-black uppercase px-2 py-1 rounded-md border border-white/10 text-smash-orange">Mixed for you</span>

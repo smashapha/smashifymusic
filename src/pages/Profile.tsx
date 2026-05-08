@@ -7,11 +7,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 const Profile: React.FC = () => {
-  const { user, userProfile, signOut, refreshProfile } = useAuth();
+  const { user, userProfile, signOut, refreshProfile, role } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -24,25 +26,46 @@ const Profile: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     const updates = {
       full_name: formData.get('full_name') as string,
-      phone: formData.get('phone') as string,
-      city: formData.get('city') as string,
-      bio: formData.get('bio') as string,
-      avatar_url: formData.get('avatar_url') as string,
     };
 
     try {
+      // Handle avatar upload if a file was selected
+      const avatarFile = (e.currentTarget.elements.namedItem('avatar_file') as HTMLInputElement).files?.[0];
+      let avatarUrl = userProfile?.avatar_url;
+
+      if (avatarFile) {
+        setUploading(true);
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user?.id}/avatar-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        
+        avatarUrl = publicUrl;
+      }
+
       const { error } = await supabase
-        .from('profiles')
-        .update(updates)
+        .from('user_profiles')
+        .update({
+          ...updates,
+          avatar_url: avatarUrl,
+        })
         .eq('id', user?.id);
       
       if (error) throw error;
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       if (refreshProfile) refreshProfile();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -51,7 +74,7 @@ const Profile: React.FC = () => {
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-12 text-center">
         <h2 className="text-4xl font-black font-display italic uppercase mb-4 text-smash-gray">Access Denied</h2>
         <p className="mb-8">Please sign in to view your profile.</p>
-        <button onClick={() => navigate('/auth')} className="btn-smash-orange">Sign In</button>
+        <button onClick={() => navigate('/auth/listener')} className="btn-smash-orange">Sign In</button>
       </div>
     );
   }
@@ -75,7 +98,7 @@ const Profile: React.FC = () => {
             <div className="pb-4 space-y-2">
                <div className="flex items-center gap-3">
                   <h1 className="text-5xl font-black font-display italic uppercase tracking-tighter drop-shadow-xl">{userProfile.full_name || 'Muzic Listener'}</h1>
-                  {userProfile.is_artist && <span className="px-3 py-1 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase">Artist</span>}
+                  {role === 'artist' && <span className="px-3 py-1 bg-smash-purple text-white text-[10px] font-black rounded-full uppercase">Artist</span>}
                </div>
                <p className="text-smash-gray font-bold tracking-tight flex items-center gap-2"><Mail size={16} /> {user?.email}</p>
             </div>
@@ -93,6 +116,24 @@ const Profile: React.FC = () => {
 
               <form onSubmit={handleUpdateProfile} className="space-y-8">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4 col-span-full">
+                        <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Profile Picture</label>
+                        <div className="flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[28px] group hover:border-smash-orange/30 transition-all">
+                           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shrink-0">
+                              <img src={userProfile.avatar_url || "https://i.pravatar.cc/300"} className="w-full h-full object-cover" />
+                           </div>
+                           <div className="flex-1 space-y-2">
+                              <p className="text-xs font-bold text-white uppercase tracking-tight">Upload New Avatar</p>
+                              <input 
+                                name="avatar_file"
+                                type="file" 
+                                accept="image/*"
+                                className="w-full text-[10px] font-black text-smash-gray file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-white/10 file:text-white hover:file:bg-smash-orange transition-all cursor-pointer" 
+                              />
+                           </div>
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Full Name</label>
                        <input 
@@ -102,53 +143,32 @@ const Profile: React.FC = () => {
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Phone Number</label>
-                       <input 
-                         name="phone"
-                         defaultValue={userProfile.phone}
-                         placeholder="+265..."
-                         className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-bold outline-none focus:border-smash-orange transition-all" 
-                       />
+                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Email Address</label>
+                       <div className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-bold text-smash-gray opacity-60">
+                          {user?.email}
+                       </div>
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Location (City)</label>
-                       <input 
-                         name="city"
-                         defaultValue={userProfile.city}
-                         className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-bold outline-none focus:border-smash-orange transition-all" 
-                       />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Avatar URL</label>
-                       <input 
-                         name="avatar_url"
-                         defaultValue={userProfile.avatar_url}
-                         className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-bold outline-none focus:border-smash-orange transition-all" 
-                       />
-                    </div>
-                    <div className="col-span-full space-y-2">
-                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Bio / About You</label>
-                       <textarea 
-                         name="bio"
-                         defaultValue={userProfile.bio}
-                         rows={4}
-                         className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-bold outline-none focus:border-smash-orange transition-all resize-none" 
-                       />
+                       <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Subscription Plan</label>
+                       <div className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-black uppercase text-xs tracking-widest flex items-center gap-3">
+                          <Sparkles size={16} className="text-smash-orange" />
+                          {userProfile.subscription_tier || 'Free'}
+                       </div>
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Account Type</label>
                        <div className="w-full bg-white/5 border border-white/10 rounded-[20px] px-8 py-4 font-black uppercase text-xs tracking-widest flex items-center gap-3">
-                          <Shield size={16} className="text-smash-orange" />
-                          {userProfile.is_artist ? 'Professional Artist' : 'Standard Listener'}
+                          <Shield size={16} className={role === 'artist' ? "text-smash-purple" : "text-smash-orange"} />
+                          {role === 'artist' ? 'Professional Artist' : role === 'pending' ? 'Application Pending' : 'Standard Listener'}
                        </div>
                     </div>
                  </div>
 
                  <button 
-                   disabled={loading}
+                   disabled={loading || uploading}
                    className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-xl uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all shadow-xl disabled:opacity-50"
                  >
-                   {loading ? 'SAVING...' : 'UPDATE PROFILE'}
+                   {loading || uploading ? 'SAVING...' : 'UPDATE PROFILE'}
                  </button>
               </form>
            </section>
@@ -163,13 +183,13 @@ const Profile: React.FC = () => {
                     </div>
                     <ChevronRight className="text-smash-gray group-hover:translate-x-2 transition-transform" />
                  </button>
-                 {userProfile.is_artist && (
-                    <button onClick={() => navigate('/artist-hub')} className="p-6 bg-smash-orange/10 border border-smash-orange/20 rounded-[24px] flex items-center justify-between group hover:bg-smash-orange/20 transition-all">
+                 {role === 'artist' && (
+                    <button onClick={() => navigate('/artist-hub')} className="p-6 bg-smash-purple/10 border border-smash-purple/20 rounded-[24px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all">
                        <div className="flex items-center gap-4">
-                          <Sparkles className="text-smash-orange" />
-                          <span className="font-black uppercase tracking-widest text-xs text-smash-orange">Artist Dashboard</span>
+                          <Sparkles className="text-smash-purple" />
+                          <span className="font-black uppercase tracking-widest text-xs text-smash-purple">Artist Dashboard</span>
                        </div>
-                       <ExternalLink className="text-smash-orange" size={18} />
+                       <ExternalLink className="text-smash-purple" size={18} />
                     </button>
                  )}
                  <button className="p-6 bg-white/5 border border-white/10 rounded-[24px] flex items-center justify-between group hover:bg-white/10 transition-all">

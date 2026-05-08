@@ -6,6 +6,7 @@ import { Song, Artist } from '../types';
 import SongCard from '../components/common/SongCard';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getAiRecommendations } from '../services/aiService';
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
@@ -14,11 +15,28 @@ const Home: React.FC = () => {
   const [forSaleSongs, setForSaleSongs] = useState<Song[]>([]);
   const [recentSongs, setRecentSongs] = useState<Song[]>([]);
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
+  const [aiPicks, setAiPicks] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ songs: Song[], artists: Artist[] }>({ songs: [], artists: [] });
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = React.useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    const deltaY = e.changedTouches[0].clientY - startY.current;
+    if (deltaY > 80 && window.scrollY === 0) {
+      setRefreshing(true);
+      await fetchData();
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -50,7 +68,8 @@ const Home: React.FC = () => {
       const { data: artistsData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('is_artist', true)
+        .eq('user_type', 'artist')
+        .eq('approved', true)
         .ilike('stage_name', `%${searchQuery}%`)
         .limit(5);
 
@@ -104,7 +123,8 @@ const Home: React.FC = () => {
       const { data: artistsData, error: artistsError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('is_artist', true)
+        .eq('user_type', 'artist')
+        .eq('approved', true)
         .not('stage_name', 'is', null)
         .limit(10);
 
@@ -145,6 +165,23 @@ const Home: React.FC = () => {
             });
           setRecentSongs(formattedRecent);
         }
+
+        // AI Picks based on likes
+        try {
+          const { data: likedData } = await supabase
+            .from('likes')
+            .select('songs (title, genre)')
+            .eq('user_id', userProfile.id)
+            .limit(20);
+            
+          if (likedData && likedData.length > 0) {
+            const likedStrings = likedData.filter((l: any) => l.songs).map((l: any) => `${l.songs.title} (${l.songs.genre})`);
+            const aiRecs = await getAiRecommendations(likedStrings, formattedSongs);
+            setAiPicks(aiRecs);
+          }
+        } catch(err) {
+          console.error("Failed to load AI Picks", err);
+        }
       }
     } catch (err) {
       console.error('Error fetching home data:', err);
@@ -155,12 +192,21 @@ const Home: React.FC = () => {
 
   if (loading) {
      return (
-        <div className="min-h-screen bg-smash-black flex items-center justify-center">
-           <motion.div 
-             animate={{ rotate: 360 }}
-             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-             className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full"
-           />
+        <div className="pb-32 px-4 md:px-12 pt-8 animate-pulse">
+           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10">
+              <div className="h-16 w-64 bg-white/10 rounded-2xl"></div>
+              <div className="w-full md:w-96 h-14 bg-white/10 rounded-2xl"></div>
+           </div>
+           <div className="h-[400px] md:h-[500px] w-full bg-white/10 rounded-[40px] md:rounded-[60px] mb-16"></div>
+           <div className="space-y-4 mb-20">
+              <div className="h-10 w-48 bg-white/10 rounded-xl mb-8"></div>
+              <div className="flex gap-6 overflow-hidden">
+                 <div className="min-w-[280px] h-32 bg-white/10 rounded-3xl"></div>
+                 <div className="min-w-[280px] h-32 bg-white/10 rounded-3xl"></div>
+                 <div className="min-w-[280px] h-32 bg-white/10 rounded-3xl"></div>
+                 <div className="min-w-[280px] h-32 bg-white/10 rounded-3xl"></div>
+              </div>
+           </div>
         </div>
      );
   }
@@ -175,7 +221,16 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="pb-32 px-4 md:px-12 pt-8">
+    <div 
+      className="pb-32 px-4 md:px-12 pt-8"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {refreshing && (
+        <div className="flex justify-center -mt-4 mb-4">
+          <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       {/* Welcome Message & Search */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10">
         {userProfile ? (
@@ -201,6 +256,11 @@ const Home: React.FC = () => {
             placeholder="Search artists or tracks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+               if (e.key === 'Enter' && searchQuery.trim().length > 0) {
+                 navigate(`/discover?q=${encodeURIComponent(searchQuery)}`);
+               }
+            }}
             className="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-4 text-sm font-bold focus:outline-none focus:border-smash-orange transition-all shadow-2xl"
           />
           <AnimatePresence>
@@ -223,9 +283,9 @@ const Home: React.FC = () => {
                       {searchResults.artists.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-2">Artists</p>
-                          {searchResults.artists.map(artist => (
+                          {searchResults.artists.map((artist, i) => (
                             <div 
-                              key={artist.id}
+                              key={`search-artist-${artist.id}-${i}`}
                               onClick={() => { navigate(`/artist/${artist.id}`); setSearchQuery(''); }}
                               className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl cursor-pointer transition-colors"
                             >
@@ -241,9 +301,9 @@ const Home: React.FC = () => {
                       {searchResults.songs.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-2">Tracks</p>
-                          {searchResults.songs.map(song => (
+                          {searchResults.songs.map((song, i) => (
                             <div 
-                              key={song.id}
+                              key={`search-song-${song.id}-${i}`}
                               onClick={() => { /* Play song? */ }}
                               className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl cursor-pointer transition-colors"
                             >
@@ -313,8 +373,18 @@ const Home: React.FC = () => {
       {recentSongs.length > 0 && (
         <HomeSection title="Recently Played" icon={<Clock className="text-smash-cyan" />} subtitle="Jump back into your recent jams.">
            <div className="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
-              {recentSongs.map(song => (
-                <SongCard key={`recent-${song.id}`} song={song} queue={recentSongs} className="min-w-[280px] md:min-w-[320px] snap-start" />
+              {recentSongs.map((song, i) => (
+                <SongCard key={`recent-${song.id}-${i}`} song={song} queue={recentSongs} className="min-w-[280px] md:min-w-[320px] snap-start" />
+              ))}
+           </div>
+        </HomeSection>
+      )}
+
+      {aiPicks.length > 0 && (
+        <HomeSection title="AI Picks For You" icon={<Sparkles className="text-smash-purple" />} subtitle="Powered by Gemini: tracks you'll love based on your likes.">
+           <div className="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
+              {aiPicks.map((song, i) => (
+                <SongCard key={`aipicks-${song.id}-${i}`} song={song} queue={aiPicks} className="min-w-[280px] md:min-w-[320px] snap-start" />
               ))}
            </div>
         </HomeSection>
@@ -322,8 +392,8 @@ const Home: React.FC = () => {
 
       <HomeSection title="Trending Hits" icon={<Flame className="text-smash-orange" />} subtitle="The biggest tracks in the Warm Heart right now.">
          <div className="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
-            {trendingSongs.length > 0 ? trendingSongs.map(song => (
-              <SongCard key={`trending-${song.id}`} song={song} queue={trendingSongs} className="min-w-[280px] md:min-w-[320px] snap-start" />
+            {trendingSongs.length > 0 ? trendingSongs.map((song, i) => (
+              <SongCard key={`trending-${song.id}-${i}`} song={song} queue={trendingSongs} className="min-w-[280px] md:min-w-[320px] snap-start" />
             )) : (
               <div className="py-12 px-8 bg-white/5 rounded-3xl border border-white/10 text-smash-gray font-bold uppercase tracking-widest text-xs">No trending tracks yet</div>
             )}
@@ -332,8 +402,8 @@ const Home: React.FC = () => {
 
       <HomeSection title="New Releases" icon={<Sparkles className="text-white" />} subtitle="Fresh drops from your favorite local superstars.">
          <div className="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
-            {newReleases.length > 0 ? newReleases.map(song => (
-              <SongCard key={`new-${song.id}`} song={song} queue={newReleases} className="min-w-[280px] snap-start" />
+            {newReleases.length > 0 ? newReleases.map((song, i) => (
+              <SongCard key={`new-${song.id}-${i}`} song={song} queue={newReleases} className="min-w-[280px] snap-start" />
             )) : (
               <div className="py-12 px-8 bg-white/5 rounded-3xl border border-white/10 text-smash-gray font-bold uppercase tracking-widest text-xs">No new releases yet</div>
             )}
@@ -342,8 +412,8 @@ const Home: React.FC = () => {
 
       <HomeSection title="For Sale" icon={<DollarSign className="text-smash-green" />} subtitle="Support artists directly by owning their music.">
          <div className="flex overflow-x-auto gap-6 pb-8 snap-x no-scrollbar">
-            {forSaleSongs.length > 0 ? forSaleSongs.map(song => (
-              <SongCard key={`sale-${song.id}`} song={song} queue={forSaleSongs} className="min-w-[280px] snap-start" />
+            {forSaleSongs.length > 0 ? forSaleSongs.map((song, i) => (
+              <SongCard key={`sale-${song.id}-${i}`} song={song} queue={forSaleSongs} className="min-w-[280px] snap-start" />
             )) : (
               <div className="py-12 px-8 bg-white/5 rounded-3xl border border-white/10 text-smash-gray font-bold uppercase tracking-widest text-xs">No tracks for sale yet</div>
             )}
@@ -352,9 +422,9 @@ const Home: React.FC = () => {
 
       <HomeSection title="Featured Artists" icon={<User className="text-white" />} subtitle="The visionaries shaping Malawian culture.">
          <div className="flex overflow-x-auto gap-8 pb-8 snap-x no-scrollbar">
-            {topArtists.length > 0 ? topArtists.map(artist => (
+            {topArtists.length > 0 ? topArtists.map((artist, i) => (
               <motion.div 
-                key={artist.id}
+                key={`artist-${artist.id}-${i}`}
                 whileHover={{ y: -5 }}
                 onClick={() => navigate(`/artist/${artist.id}`)}
                 className="flex flex-col items-center gap-4 min-w-[160px] cursor-pointer snap-start group"

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { 
   Play, Pause, Heart, Share2, ShoppingBag, Music2, 
-  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check
+  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check, X as XIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -13,7 +13,7 @@ import { buyTrack } from '../lib/paychangu';
 
 import { useNavigate } from 'react-router-dom';
 
-const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
+const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSkip: () => void }) => {
   const navigate = useNavigate();
   const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume } = usePlayer();
   const { userProfile } = useAuth();
@@ -27,6 +27,20 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
   });
   const [isFollowing, setIsFollowing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
+
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-150, 0, 150], [-15, 0, 15]);
+  const likeOpacity = useTransform(x, [50, 150], [0, 1]);
+  const passOpacity = useTransform(x, [-150, -50], [1, 0]);
+
+  const handleDragEnd = (_: any, info: any) => {
+    if (info.offset.x > 100) {
+      handleLike(new MouseEvent('click') as any); // swipe right = like
+    } else if (info.offset.x < -100) {
+      // swipe left = skip / pass
+      onSkip();
+    }
+  };
 
   useEffect(() => {
     if (active) {
@@ -48,8 +62,8 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
     checkFollow();
   }, [userProfile, song.artist_id]);
 
-  const handleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleLike = async (e?: React.MouseEvent | any) => {
+    if (e) e.stopPropagation();
     let liked: string[] = [];
     try {
       liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
@@ -57,10 +71,14 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
     } catch (e) {
       liked = [];
     }
-    let newLiked;
     
+    // Optimistic UI
+    const previouslyLiked = isLiked;
+    setIsLiked(!previouslyLiked);
+
     try {
-      if (isLiked) {
+      let newLiked;
+      if (previouslyLiked) {
         newLiked = liked.filter((id: string) => id !== song.id);
         if (userProfile) {
           const { error } = await supabase.from('likes').delete().eq('user_id', userProfile.id).eq('song_id', song.id);
@@ -74,9 +92,10 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
         }
       }
       localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
-      setIsLiked(!isLiked);
     } catch (err) {
       console.error('Like error', err);
+      // Rollback on offline or error
+      setIsLiked(previouslyLiked);
     }
   };
 
@@ -150,14 +169,26 @@ const MotoCard = ({ song, active }: { song: Song; active: boolean }) => {
          <motion.div 
            initial={{ scale: 0.8, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
+           style={{ x, rotate }}
+           drag="x"
+           dragConstraints={{ left: 0, right: 0 }}
+           onDragEnd={handleDragEnd}
            className="relative aspect-square w-full max-w-[340px] md:max-w-[400px] shadow-[0_0_80px_rgba(255,95,0,0.3)] group"
          >
             <img 
               src={song.cover_url} 
               className={`w-full h-full object-cover rounded-[40px] md:rounded-[60px] border-4 border-white/10 ${isPlaying ? 'animate-pulse' : ''}`} 
               alt={song.title} 
+              referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm rounded-[40px] md:rounded-[60px]">
+            {/* Swipe Indicators */}
+            <motion.div style={{ opacity: likeOpacity }} className="absolute inset-0 bg-smash-green/20 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
+               <Heart size={80} className="text-white fill-current" />
+            </motion.div>
+            <motion.div style={{ opacity: passOpacity }} className="absolute inset-0 bg-black/60 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
+               <XIcon size={80} className="text-white" />
+            </motion.div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm rounded-[40px] md:rounded-[60px] pointer-events-none">
                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-xl border border-white/30">
                   {isPlaying ? <Pause size={40} /> : <Play size={40} className="ml-2" />}
                </div>
@@ -376,7 +407,7 @@ const MotoFeed: React.FC = () => {
             dragElastic={0.2}
             className="h-full w-full absolute inset-0 cursor-grab active:cursor-grabbing"
           >
-             <MotoCard song={songs[currentIndex]} active={true} />
+             <MotoCard song={songs[currentIndex]} active={true} onSkip={handleNext} />
           </motion.div>
        </AnimatePresence>
     </div>

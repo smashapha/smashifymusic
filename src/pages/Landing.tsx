@@ -81,9 +81,9 @@ const Landing: React.FC = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-6 bg-smash-black/10 backdrop-blur-xl border-b border-white/5">
         <Logo size="md" className="cursor-pointer group" onClick={() => navigate('/')} />
         <div className="flex items-center gap-4 md:gap-8">
-          <button onClick={() => navigate('/auth?mode=login')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
+          <button onClick={() => navigate('/auth/listener')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
           <button 
-            onClick={() => navigate('/auth?mode=listener')} 
+            onClick={() => navigate('/auth/listener?mode=signup')} 
             className="px-8 py-3 bg-white text-smash-black rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all transform hover:-translate-y-1 shadow-xl shadow-white/5"
           >
             Sign Up Free
@@ -114,7 +114,7 @@ const Landing: React.FC = () => {
             </p>
             <div className="flex flex-wrap gap-5">
               <button 
-                 onClick={() => navigate('/auth?mode=listener')}
+                 onClick={() => navigate('/auth/listener?mode=signup')}
                  className="px-10 py-5 bg-white text-smash-black rounded-full font-black text-sm md:text-lg uppercase tracking-widest flex items-center gap-3 hover:bg-smash-orange hover:text-white transition-all transform hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
               >
                 Start Listening Free <Headphones size={24} />
@@ -281,20 +281,20 @@ const Landing: React.FC = () => {
              <PricingCard 
                 title="Free Plan" 
                 price="0" 
-                onAction={() => navigate('/auth?mode=listener')}
+                onAction={() => navigate('/auth/listener?mode=signup')}
                 features={["Stream unlimited Malawian music", "Discover via Moto Feed", "Create up to 3 playlists", "Standard quality streaming"]} 
              />
              <PricingCard 
                 title="Premium" 
                 price="2,500" 
                 badge="MOST POPULAR"
-                onAction={() => navigate('/auth?mode=listener')}
+                onAction={() => navigate('/auth/listener?mode=signup')}
                 features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Unlimited playlists"]} 
              />
              <PricingCard 
                 title="Family" 
                 price="4,500" 
-                onAction={() => navigate('/auth?mode=listener')}
+                onAction={() => navigate('/auth/listener?mode=signup')}
                 features={["Everything in Premium", "Up to 5 separate accounts", "Shared family queue", "Parental controls", "One billing for everyone"]} 
              />
           </div>

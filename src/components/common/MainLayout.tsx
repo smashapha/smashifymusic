@@ -5,14 +5,15 @@ import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import Logo from './Logo';
 
 const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
-  const { user, signOut, userProfile } = useAuth();
+  const { user, signOut, userProfile, role } = useAuth();
   const navigate = useNavigate();
 
-  const accentColor = userProfile?.is_artist ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
 
   return (
     <div className="h-20 flex items-center justify-between px-4 md:px-8 bg-smash-black/80 backdrop-blur-xl sticky top-0 z-30 border-b border-white/5">
@@ -65,8 +66,22 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
 };
 
 const Sidebar = ({ onClose }: { onClose?: () => void }) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, role } = useAuth();
   const navigate = useNavigate();
+  const { dataSaver, playSong } = usePlayer();
+  const [spotlightSong, setSpotlightSong] = useState<any>(null);
+
+  React.useEffect(() => {
+    supabase
+      .from('songs')
+      .select('*, profiles!artist_id(stage_name)')
+      .eq('approved', true)
+      .order('plays', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => { if (data) setSpotlightSong(data); });
+  }, []);
+
   const navItems = [
     { icon: Home, label: 'Home', path: '/' },
     { icon: Flame, label: 'Moto Feed', path: '/moto-feed' },
@@ -75,7 +90,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { icon: Library, label: 'Library', path: '/library' },
   ];
 
-  const accentColor = userProfile?.is_artist ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
 
   return (
     <aside className="flex flex-col h-full bg-smash-black p-6 overflow-y-auto scrollbar-hide">
@@ -121,7 +136,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       <div className="mt-10 space-y-1">
         <p className="px-4 text-[10px] font-black text-smash-gray uppercase tracking-widest mb-4">Your Studio</p>
         <NavLink
-            to={userProfile?.is_artist ? "/artist-hub" : "/artists"}
+            to={role === 'artist' ? "/artist-hub" : role === 'pending' ? "/application-pending" : "/artists"}
             className={({ isActive }) => 
               `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
                 isActive 
@@ -136,7 +151,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       </div>
 
       {/* Sidebar Promo Card for Artists */}
-      {!userProfile?.is_artist && (
+      {role !== 'artist' && role !== 'pending' && (
         <div className="mt-10 p-6 rounded-[32px] bg-gradient-to-br from-smash-purple to-smash-purple/60 relative overflow-hidden group cursor-pointer shadow-xl shadow-smash-purple/10 transform hover:-translate-y-1 transition-transform">
            <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-150 transition-transform">
               <Mic2 size={80} />
@@ -153,7 +168,8 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       )}
 
       {/* Mini Slider in Sidebar */}
-      <div className="mt-10 p-4 rounded-3xl bg-white/5 border border-white/5">
+      {spotlightSong && (
+      <div className="mt-10 p-4 rounded-3xl bg-white/5 border border-white/5 cursor-pointer" onClick={() => playSong(spotlightSong)}>
         <div className="flex items-center justify-between mb-4 px-1">
           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest leading-none">Spotlight</p>
           <div className="flex gap-1">
@@ -162,21 +178,29 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
           </div>
         </div>
         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden group">
-           <img 
-            src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=200&fit=crop" 
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-            alt="Spotlight"
-           />
+           {!dataSaver ? (
+             <img 
+               src={spotlightSong.cover_url || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=200&fit=crop"} 
+               className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+               alt="Spotlight"
+               referrerPolicy="no-referrer"
+             />
+           ) : (
+             <div className="w-full h-full bg-smash-dark flex items-center justify-center">
+               <Music size={32} className="text-smash-gray opacity-20" />
+             </div>
+           )}
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-3">
-              <p className="text-white font-bold text-xs truncate">Eli Njuchi</p>
-              <p className="text-smash-gray text-[10px] uppercase font-black tracking-tighter">Malawi Gold</p>
+              <p className="text-white font-bold text-xs truncate">{spotlightSong.title}</p>
+              <p className="text-smash-gray text-[10px] uppercase font-black tracking-tighter">{spotlightSong.profiles?.stage_name || 'Artist'}</p>
            </div>
         </div>
       </div>
+      )}
 
       <div className="mt-auto pt-6 border-t border-white/5">
         <NavLink
-          to={user ? "/profile" : "/auth"}
+          to={user ? "/profile" : "/auth/listener"}
           className="flex items-center gap-3 px-2 py-2 text-smash-gray hover:text-white transition-colors"
         >
           <div className="w-10 h-10 rounded-full bg-smash-dark flex items-center justify-center border border-white/10 overflow-hidden">
@@ -191,7 +215,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
               {userProfile?.full_name || (user ? 'My Account' : 'Join Smashify')}
             </span>
             <span className="text-xs truncate">
-              {userProfile?.is_artist ? 'Verified Artist' : (user ? 'Standard Profile' : 'Sign in or Register')}
+              {role === 'artist' ? 'Verified Artist' : (user ? 'Standard Profile' : 'Sign in or Register')}
             </span>
           </div>
         </NavLink>
@@ -201,8 +225,8 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
 };
 
 const BottomNav = () => {
-  const { userProfile } = useAuth();
-  const accentColor = userProfile?.is_artist ? 'smash-purple' : 'smash-orange';
+  const { role } = useAuth();
+  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-morphism border-t border-white/10 z-50 flex items-center justify-around px-2">

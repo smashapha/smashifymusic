@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Share2, Instagram, Twitter, Music2, MapPin, Users, Check, Crown, Heart, CheckCircle2 } from 'lucide-react';
+import { 
+  Play, Share2, Instagram, Twitter, Music2, MapPin, Users, Check, 
+  Crown, Heart, CheckCircle2, Disc, Trophy, Sparkles, TrendingUp,
+  Calendar, Info
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Song, UserProfile } from '../types';
+import { Song, UserProfile, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import SupportArtistModal from '../components/common/SupportArtistModal';
 import { usePlayer } from '../context/PlayerContext';
@@ -18,12 +22,14 @@ const ArtistProfile: React.FC = () => {
    
    const [artist, setArtist] = useState<UserProfile | null>(null);
    const [songs, setSongs] = useState<Song[]>([]);
+   const [albums, setAlbums] = useState<Album[]>([]);
    const [loading, setLoading] = useState(true);
 
    const [isFollowing, setIsFollowing] = useState(false);
    const [followLoading, setFollowLoading] = useState(false);
    const [copied, setCopied] = useState(false);
    const [showSupportModal, setShowSupportModal] = useState(false);
+   const [activeTab, setActiveTab] = useState<'tracks' | 'albums' | 'about'>('tracks');
 
    const handleShare = () => {
       navigator.clipboard.writeText(window.location.href);
@@ -47,6 +53,7 @@ const ArtistProfile: React.FC = () => {
          if (!id) return;
          setLoading(true);
          try {
+            // Fetch Artist Profile
             const { data: artistData, error: artistError } = await supabase
                .from('profiles')
                .select('*')
@@ -57,13 +64,24 @@ const ArtistProfile: React.FC = () => {
             setArtist(artistData);
             checkFollow();
 
+            // Fetch Tracks
             const { data: songsData, error: songsError } = await supabase
                .from('songs')
                .select('*')
                .eq('artist_id', id)
-               .eq('approved', true);
+               .eq('approved', true)
+               .order('created_at', { ascending: false });
 
             if (songsError) throw songsError;
+
+            // Fetch Albums
+            const { data: albumsData } = await supabase
+               .from('albums')
+               .select('*')
+               .eq('artist_id', id)
+               .order('release_year', { ascending: false });
+
+            setAlbums(albumsData || []);
 
             const formattedSongs = (songsData || []).map((s: any) => ({
                ...s,
@@ -137,166 +155,228 @@ const ArtistProfile: React.FC = () => {
       return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
    };
 
+   // Sort songs by plays for popular tracks
+   const popularTracks = [...songs].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
+   const latestRelease = songs[0];
+
    return (
-      <div className="space-y-12">
+      <div className="space-y-12 pb-24">
          {/* Hero Section */}
-         <div className="relative h-auto md:h-96 rounded-[32px] overflow-hidden mb-16 shadow-2xl mt-4 pb-8 md:pb-0">
-            <div className="absolute inset-0 bg-gradient-to-t from-smash-black via-smash-dark/90 to-transparent z-10" />
-            <img src={artist.banner_url || artist.avatar_url || "https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop"} alt={artist.full_name} className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay" />
-            <div className="absolute bottom-0 left-0 p-8 md:p-12 z-20 w-full flex flex-col md:flex-row md:items-end justify-between gap-6">
-               <div className="flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-smash-orange overflow-hidden shadow-xl shadow-smash-orange/20 relative md:top-12 flex-shrink-0">
+         <div className="relative h-auto md:h-[500px] rounded-[48px] overflow-hidden shadow-2xl mt-4 pb-8 md:pb-0 group">
+            <div className="absolute inset-0 bg-gradient-to-t from-smash-black via-smash-black/40 to-transparent z-10" />
+            <motion.img 
+              initial={{ scale: 1.1 }}
+              animate={{ scale: 1 }}
+              src={artist.banner_url || artist.avatar_url || "https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop"} 
+              alt={artist.full_name} 
+              className="absolute inset-0 w-full h-full object-cover opacity-70 transition-transform duration-700 group-hover:scale-105" 
+            />
+            
+            {/* Overlay Content */}
+            <div className="relative z-20 h-full flex flex-col justify-end p-8 md:p-16">
+               <div className="flex flex-col md:flex-row items-center md:items-end gap-10">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-44 h-44 md:w-56 md:h-56 rounded-full border-8 border-smash-black overflow-hidden shadow-2xl relative shrink-0"
+                  >
                      <img src={artist.avatar_url || "https://i.pravatar.cc/300"} className="w-full h-full object-cover" alt="" />
-                  </div>
-                  <div className="space-y-3">
-                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  </motion.div>
+                  
+                  <div className="flex-1 text-center md:text-left space-y-4">
+                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                        {artist.verified && (
+                           <span className="px-4 py-1.5 bg-smash-cyan text-black rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                             <CheckCircle2 size={14} /> Verified Artist
+                           </span>
+                        )}
                         {artist.genre && (
-                           <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5">
-                              <Music2 size={12} /> {artist.genre}
+                           <span className="px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                              {artist.genre}
                            </span>
                         )}
                         {artist.city && (
-                           <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5">
+                           <span className="px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-2">
                               <MapPin size={12} /> {artist.city}
                            </span>
                         )}
-                        {(artist.subscription_tier === 'pro' || artist.subscription_tier === 'label' || artist.subscription_tier === 'standard') && (
-                           <span className="px-3 py-1 bg-smash-orange/20 text-smash-orange border border-smash-orange/30 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5">
-                              <Crown size={12} /> PRO
-                           </span>
-                        )}
                      </div>
-                     <h1 className="text-4xl md:text-7xl font-black font-display italic uppercase tracking-tighter drop-shadow-lg leading-none flex items-center justify-center md:justify-start gap-3">
-                        {artist.stage_name || artist.full_name || 'Unknown Artist'}
-                        {artist.verified && <div className="w-8 h-8 bg-smash-cyan rounded-full flex items-center justify-center shrink-0"><Check size={16} className="text-black" /></div>}
+                     
+                     <h1 className="text-5xl md:text-9xl font-black font-studio italic uppercase tracking-tighter leading-[0.8] mb-4">
+                        {artist.stage_name || artist.full_name}
                      </h1>
                      
-                     <div className="flex items-center justify-center md:justify-start gap-8 pt-2">
-                        <div>
-                           <p className="text-xl md:text-2xl font-black font-display italic text-white">{formatCompact(artist.followers_count || 0)}</p>
-                           <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray">Followers</p>
-                        </div>
-                        <div>
-                           <p className="text-xl md:text-2xl font-black font-display italic text-white">{songs.length}</p>
-                           <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray">Songs</p>
-                        </div>
-                        <div>
-                           <p className="text-xl md:text-2xl font-black font-display italic text-white">{formatCompact(artist.total_plays || 0)}</p>
-                           <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray">Plays</p>
-                        </div>
+                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-8 md:gap-12">
+                        <StatItem value={formatCompact(artist.followers_count || 0)} label="Followers" />
+                        <StatItem value={songs.length} label="Tracks" />
+                        <StatItem value={formatCompact(artist.total_plays || 0)} label="Total Plays" />
                      </div>
                   </div>
-               </div>
-               
-               <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 mt-4 md:mt-0">
-                  {isOwner ? (
-                     <button onClick={() => navigate('/artist-hub')} className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all backdrop-blur-lg">
-                        Edit Profile
+
+                  <div className="flex flex-col gap-4 w-full md:w-auto">
+                     <button 
+                        onClick={handleFollow} 
+                        disabled={followLoading}
+                        className={`w-full md:w-48 py-5 rounded-full font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center justify-center gap-3 ${
+                           isFollowing ? 'bg-white/10 border border-white/20 text-white' : 'bg-white text-black hover:bg-smash-orange hover:text-white'
+                        }`}
+                     >
+                        {isFollowing ? <Check size={20} /> : <Users size={20} />}
+                        {isFollowing ? 'Following' : 'Follow'}
                      </button>
-                  ) : (
-                     <div className="flex flex-wrap justify-center gap-3">
-                        <button 
-                           onClick={handleFollow}
-                           disabled={followLoading}
-                           className={`px-6 py-3.5 ${isFollowing ? 'bg-white/10 border border-white/10' : 'bg-smash-orange hover:bg-orange-600'} text-white rounded-full font-black uppercase tracking-widest text-xs transition-all shadow-xl flex items-center gap-2`}
-                        >
-                           <Users size={16} /> {isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                        <button 
-                           onClick={handleShare}
-                           className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-full font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 border border-white/10"
-                        >
-                           {copied ? (
-                              <><Check size={16} className="text-smash-green" /> Copied</>
-                           ) : (
-                              <><Share2 size={16} /> Share</>
-                           )}
-                        </button>
-                        <button 
-                           onClick={() => setShowSupportModal(true)}
-                           className="px-6 py-3.5 bg-smash-purple hover:bg-purple-600 text-white rounded-full font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-smash-purple/20 flex items-center gap-2"
-                        >
+                     <div className="flex gap-3">
+                        <button onClick={() => setShowSupportModal(true)} className="flex-1 py-4 bg-smash-purple text-white rounded-full font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:scale-105 transition-all">
                            <Heart size={16} /> Support
                         </button>
+                        <button onClick={handleShare} className="w-14 h-14 bg-white/5 border border-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/10 transition-all">
+                           <Share2 size={20} />
+                        </button>
                      </div>
-                  )}
+                  </div>
                </div>
             </div>
          </div>
 
-         {/* Content Grid */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:ml-4 px-4 lg:px-0">
-            
-            {/* Left Column - Details */}
-            <div className="lg:col-span-1 space-y-8">
-               <div className="bento-card p-8 space-y-6 bg-white/5 border border-white/5 rounded-3xl">
-                  <h3 className="text-xl font-black font-display italic uppercase border-b border-white/10 pb-4">About the Artist</h3>
-                  {artist.bio ? (
-                     <p className="text-smash-gray font-medium leading-relaxed">{artist.bio}</p>
-                  ) : (
-                     <p className="text-smash-gray/50 font-medium italic">No bio available yet.</p>
-                  )}
-                  
-                  {/* Social Links */}
-                  <div className="pt-4 border-t border-white/10 flex gap-4">
-                     {artist.instagram && (
-                        <a href={artist.instagram} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-smash-gray hover:text-white hover:bg-smash-orange transition-all">
-                           <Instagram size={20} />
-                        </a>
-                     )}
-                     {artist.twitter && (
-                        <a href={artist.twitter} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-smash-gray hover:text-white hover:bg-smash-purple transition-all">
-                           <Twitter size={20} />
-                        </a>
-                     )}
-                     <button onClick={handleShare} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-smash-gray hover:text-white transition-all ml-auto relative">
-                        {copied ? <Check size={20} className="text-smash-green" /> : <Share2 size={20} />}
-                        {copied && (
-                           <motion.span 
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="absolute -top-10 right-0 bg-smash-green text-white text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest whitespace-nowrap"
-                           >
-                              Copied!
-                           </motion.span>
+         {/* Navigation Tabs */}
+         <div className="flex justify-center border-b border-white/5">
+            <TabButton active={activeTab === 'tracks'} onClick={() => setActiveTab('tracks')} label="Tracks" icon={<Music2 size={16} />} />
+            <TabButton active={activeTab === 'albums'} onClick={() => setActiveTab('albums')} label="Albums" icon={<Disc size={16} />} />
+            <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} label="About" icon={<Info size={16} />} />
+         </div>
+
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div className="lg:col-span-8 space-y-12">
+               <AnimatePresence mode="wait">
+                  {activeTab === 'tracks' && (
+                     <motion.div key="tracks" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+                        {/* Popular Section */}
+                        {popularTracks.length > 0 && (
+                           <section>
+                              <div className="flex items-center gap-3 mb-8">
+                                 <TrendingUp className="text-smash-orange" />
+                                 <h2 className="text-3xl font-black font-studio italic uppercase tracking-tighter">Most <span className="text-smash-orange">Popped</span></h2>
+                              </div>
+                              <div className="space-y-4">
+                                 {popularTracks.map((song) => (
+                                    <SongCard key={`popular-${song.id}`} song={song} queue={popularTracks} variant="list" />
+                                 ))}
+                              </div>
+                           </section>
                         )}
-                     </button>
-                  </div>
-               </div>
+
+                        {/* All Releases */}
+                        <section>
+                           <div className="flex items-center justify-between mb-8">
+                              <h2 className="text-3xl font-black font-studio italic uppercase tracking-tighter">All Releases</h2>
+                              <button onClick={() => playQueue(songs, 0)} className="text-[10px] font-black uppercase tracking-widest text-smash-gray hover:text-white transition-colors">Play All &rarr;</button>
+                           </div>
+                           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                              {songs.map((song) => (
+                                 <SongCard key={`all-${song.id}`} song={song} queue={songs} variant="grid" />
+                              ))}
+                           </div>
+                        </section>
+                     </motion.div>
+                  )}
+
+                  {activeTab === 'albums' && (
+                     <motion.div key="albums" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
+                        <h2 className="text-3xl font-black font-studio italic uppercase tracking-tighter mb-8">Discography</h2>
+                        {albums.length > 0 ? (
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                              {albums.map((album) => (
+                                 <div key={album.id} className="group cursor-pointer" onClick={() => navigate(`/discover?album=${album.id}`)}>
+                                    <div className="aspect-square rounded-3xl overflow-hidden mb-4 relative shadow-2xl">
+                                       <img src={album.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black">
+                                             <Play size={20} fill="currentColor" />
+                                          </div>
+                                       </div>
+                                    </div>
+                                    <h3 className="font-black uppercase tracking-tight text-sm truncate">{album.title}</h3>
+                                    <p className="text-[10px] font-bold text-smash-gray uppercase tracking-widest">{album.release_year}</p>
+                                 </div>
+                              ))}
+                           </div>
+                        ) : (
+                           <div className="p-20 bg-white/5 border border-white/5 rounded-[40px] text-center space-y-4">
+                              <Disc size={48} className="mx-auto text-smash-gray/20" />
+                              <p className="text-smash-gray font-bold uppercase tracking-widest">No albums released yet</p>
+                           </div>
+                        )}
+                     </motion.div>
+                  )}
+
+                  {activeTab === 'about' && (
+                     <motion.div key="about" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+                        <section className="bg-white/5 border border-white/5 p-12 rounded-[48px] space-y-8">
+                           <h2 className="text-4xl font-black font-studio italic uppercase tracking-tighter">The <span className="text-smash-purple">Story</span></h2>
+                           <p className="text-xl text-smash-gray font-medium leading-relaxed max-w-3xl">
+                              {artist.bio || "This artist is letting the music speak for itself. Check back later for their official bio."}
+                           </p>
+                           <div className="flex gap-4 pt-6 border-t border-white/5">
+                              {artist.instagram && <SocialLink href={artist.instagram} icon={<Instagram size={20} />} label="Instagram" />}
+                              {artist.twitter && <SocialLink href={artist.twitter} icon={<Twitter size={20} />} label="Twitter" />}
+                           </div>
+                        </section>
+
+                        <div className="grid md:grid-cols-2 gap-8">
+                           <section className="p-8 bg-smash-purple/10 border border-smash-purple/20 rounded-[32px]">
+                              <Trophy className="text-smash-purple mb-4" size={32} />
+                              <h3 className="text-xl font-black uppercase italic mb-2">Artist Achievements</h3>
+                              <p className="text-sm font-bold text-smash-gray uppercase tracking-widest">Top 100 Artist in Malawi</p>
+                           </section>
+                           <section className="p-8 bg-smash-cyan/10 border border-smash-cyan/20 rounded-[32px]">
+                              <Sparkles className="text-smash-cyan mb-4" size={32} />
+                              <h3 className="text-xl font-black uppercase italic mb-2">Professional Grade</h3>
+                              <p className="text-sm font-bold text-smash-gray uppercase tracking-widest">Smashify Verified Professional</p>
+                           </section>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
             </div>
 
-            {/* Right Column - Music */}
-            <div className="lg:col-span-2 space-y-8">
-               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                  <div>
-                     <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter">Releases</h2>
-                     <p className="text-sm font-bold text-smash-gray uppercase tracking-widest">{songs.length} Tracks</p>
+            {/* Sidebar */}
+            <div className="lg:col-span-4 space-y-8">
+               {latestRelease && (
+                  <div className="bg-white/5 border border-white/5 rounded-[40px] p-8 space-y-6">
+                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-orange">Latest Drop</p>
+                     <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl group cursor-pointer" onClick={() => playQueue([latestRelease], 0)}>
+                        <img src={latestRelease.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                           <Play size={48} className="text-white" fill="currentColor" />
+                        </div>
+                     </div>
+                     <div className="space-y-1">
+                        <h4 className="text-xl font-black uppercase tracking-tight">{latestRelease.title}</h4>
+                        <p className="text-xs font-bold text-smash-gray uppercase tracking-widest">{latestRelease.genre}</p>
+                     </div>
                   </div>
-                  {songs.length > 0 && (
-                     <button 
-                        onClick={() => playQueue(songs, 0)}
-                        className="px-6 py-3 bg-white text-black rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-smash-orange hover:text-white transition-all"
-                     >
-                        <Play size={14} fill="currentColor" /> Play All
-                     </button>
-                  )}
+               )}
+
+               <div className="bg-gradient-to-br from-smash-purple/20 to-transparent border border-smash-purple/20 rounded-[40px] p-8 text-center space-y-6">
+                  <Heart size={40} className="mx-auto text-smash-purple" />
+                  <h3 className="text-2xl font-black font-studio italic uppercase tracking-tighter">Support {artist.stage_name || artist.full_name}</h3>
+                  <p className="text-sm font-bold text-smash-gray leading-relaxed">
+                     Your support directly helps Malawian artists create more music and build their careers.
+                  </p>
+                  <button onClick={() => setShowSupportModal(true)} className="w-full py-4 bg-smash-purple text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/20">
+                     TIP ARTIST
+                  </button>
                </div>
-               
-               {songs.length > 0 ? (
-                  <div className="space-y-4">
-                     {songs.map(song => (
-                        <SongCard key={song.id} song={song} queue={songs} variant="list" />
-                     ))}
-                  </div>
-               ) : (
-                  <div className="bento-card p-12 text-center flex flex-col items-center justify-center">
-                     <Music2 size={48} className="text-smash-gray/30 mb-6" />
-                     <h3 className="text-2xl font-black font-display italic uppercase mb-2 text-smash-gray">No Music Yet</h3>
-                     <p className="text-smash-gray/60 font-bold max-w-sm">This artist hasn't uploaded any tracks yet.</p>
+
+               {isOwner && (
+                  <div className="p-8 bg-white/5 border border-white/10 rounded-[32px] space-y-4">
+                     <h4 className="text-xs font-black uppercase tracking-widest text-smash-gray flex items-center gap-2">
+                        <Trophy size={14} /> Artist Insight
+                     </h4>
+                     <p className="text-xs font-bold leading-relaxed">Your profile is seen by an average of 1,200 listeners per week. Keep uploading to grow your stats!</p>
+                     <button onClick={() => navigate('/artist-hub')} className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Artist Hub &rarr;</button>
                   </div>
                )}
             </div>
-
          </div>
 
          <AnimatePresence>
@@ -310,5 +390,35 @@ const ArtistProfile: React.FC = () => {
       </div>
    );
 };
+
+const StatItem = ({ value, label }: { value: string|number, label: string }) => (
+   <div className="text-center md:text-left">
+      <p className="text-2xl md:text-4xl font-black font-display italic text-white leading-none mb-1">{value}</p>
+      <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray/60">{label}</p>
+   </div>
+);
+
+const TabButton = ({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon: React.ReactNode }) => (
+   <button 
+      onClick={onClick}
+      className={`px-8 py-5 flex items-center gap-2 font-black uppercase tracking-[0.2em] text-xs transition-all relative ${
+         active ? 'text-white' : 'text-smash-gray hover:text-white'
+      }`}
+   >
+      {icon} {label}
+      {active && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-smash-orange" />}
+   </button>
+);
+
+const SocialLink = ({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) => (
+   <a 
+     href={href} 
+     target="_blank" 
+     rel="noreferrer" 
+     className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 font-black uppercase tracking-widest text-[10px] text-smash-gray hover:text-white hover:bg-white/10 transition-all"
+   >
+      {icon} {label}
+   </a>
+);
 
 export default ArtistProfile;

@@ -19,7 +19,7 @@ interface SongCardProps {
 
 const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', variant = 'list' }) => {
   const navigate = useNavigate();
-  const { currentSong, isPlaying, playSong, addToQueue, playQueue } = usePlayer();
+  const { currentSong, isPlaying, playSong, addToQueue, playQueue, dataSaver } = usePlayer();
   const { userProfile } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
@@ -43,10 +43,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
     } catch (e) {
       liked = [];
     }
-    let newLiked;
     
+    // Optimistic UI update
+    const previouslyLiked = isLiked;
+    setIsLiked(!previouslyLiked);
+
     try {
-      if (isLiked) {
+      let newLiked;
+      if (previouslyLiked) {
         newLiked = liked.filter((id: string) => id !== song.id);
         if (userProfile) {
           const { error } = await supabase
@@ -69,9 +73,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
         }
       }
       localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
-      setIsLiked(!isLiked);
     } catch (err) {
       console.error('Like error:', err);
+      // Rollback
+      setIsLiked(previouslyLiked);
     }
   };
 
@@ -102,9 +107,15 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
 
   if (variant === 'list') {
     return (
-      <div className={`group flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 hover:bg-white/10 transition-all cursor-pointer ${className}`} onClick={handlePlay}>
+      <div className={`group flex items-center gap-4 bg-white/5 border rounded-2xl p-3 md:p-4 hover:bg-white/10 transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/10'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-lg border border-white/5">
-          <img src={song.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+          {!dataSaver ? (
+            <img src={song.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+          ) : (
+            <div className="w-full h-full bg-smash-dark flex items-center justify-center">
+               <Music2 size={24} className="text-white/20" />
+            </div>
+          )}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             {isCurrent && isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
           </div>
@@ -163,16 +174,22 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
   return (
     <motion.div
       whileHover={{ y: -5, scale: 1.02 }}
-      className={`group relative bento-card p-4 bg-smash-dark/40 border-white/5 hover:border-smash-orange/30 transition-all cursor-pointer ${className}`}
+      className={`group relative bento-card p-4 bg-smash-dark/40 ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/5 hover:border-smash-orange/30'} transition-all cursor-pointer ${className}`}
       onClick={handlePlay}
     >
       <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 shadow-2xl">
-        <img 
-          src={song.cover_url} 
-          alt={song.title} 
-          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
-          referrerPolicy="no-referrer"
-        />
+        {!dataSaver ? (
+          <img 
+            src={song.cover_url} 
+            alt={song.title} 
+            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full bg-white/5 flex items-center justify-center">
+             <Music2 size={48} className="text-white/10" />
+          </div>
+        )}
         
         {/* Play Overlay */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">

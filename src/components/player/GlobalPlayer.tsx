@@ -24,8 +24,8 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
     radioMode, toggleRadioMode, adPlaying,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat
   } = usePlayer();
-  const { userProfile } = useAuth();
-  const accentColor = userProfile?.is_artist ? 'smash-purple' : 'smash-orange';
+  const { role } = useAuth();
+  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
   const [showQueue, setShowQueue] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
@@ -361,16 +361,20 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
          <div className="p-8 h-full flex flex-col">
             <h3 className="text-2xl font-black font-display italic uppercase mb-8">Up Next</h3>
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-               {/* Simplified Queue Item */}
-               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl bg-${accentColor} flex items-center justify-center flex-shrink-0`}>
-                     <Play size={20} fill="white" />
-                  </div>
-                  <div className="min-w-0">
-                     <p className="font-bold text-sm truncate uppercase tracking-tight italic">Upcoming Track</p>
-                     <p className="text-xs text-smash-gray font-bold">In Rotation</p>
-                  </div>
-               </div>
+               {usePlayer().queue.slice(0, 10).map((song, i) => (
+                 <div key={`${song.id}-${i}`} className={`p-4 rounded-2xl ${currentSong?.id === song.id ? `bg-${accentColor}/10 border border-${accentColor}/20` : 'bg-white/5 border border-white/10'} flex items-center gap-4`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+                       <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <div className="min-w-0">
+                       <p className="font-bold text-sm truncate uppercase tracking-tight italic">{song.title}</p>
+                       <p className="text-xs text-smash-gray font-bold truncate">{song.artist_name}</p>
+                    </div>
+                 </div>
+               ))}
+               {usePlayer().queue.length === 0 && (
+                 <p className="text-smash-gray text-center text-sm font-bold uppercase py-8">Queue is empty</p>
+               )}
             </div>
          </div>
       </div>
@@ -426,12 +430,19 @@ const GlobalPlayer: React.FC = () => {
     queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, seek, removeFromQueue
   } = usePlayer();
-  const { userProfile } = useAuth();
-  const accentColor = userProfile?.is_artist ? 'smash-purple' : 'smash-orange';
+  const { role } = useAuth();
+  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
 
   const [localVolume, setLocalVolume] = useState(volume);
   const [lastVolume, setLastVolume] = useState(volume || 0.8);
   const [showQueueModal, setShowQueueModal] = useState(false);
+  const currentSongRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showQueueModal && currentSongRef.current) {
+      currentSongRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [currentSong, showQueueModal]);
 
   useEffect(() => {
     setLocalVolume(volume);
@@ -643,6 +654,7 @@ const GlobalPlayer: React.FC = () => {
                 {queue.length > 0 ? queue.map((song, i) => (
                   <div 
                     key={`${song.id}-${i}`}
+                    ref={currentSong?.id === song.id ? currentSongRef : null}
                     className={`p-4 rounded-2xl flex items-center gap-4 group transition-colors cursor-pointer ${currentSong?.id === song.id ? `bg-${accentColor}/10 border border-${accentColor}/20` : 'bg-white/5 border border-white/5 hover:bg-white/10'}`}
                     onClick={() => playSong(song)}
                   >

@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ArtistLanding: React.FC = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { role } = useAuth();
 
   const features = [
     { icon: Music2, title: 'Easy Upload', desc: 'Upload single songs or full albums. Cover art, lyrics, price — all in one place.' },
@@ -65,12 +65,12 @@ const ArtistLanding: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/auth?mode=login')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
+          <button onClick={() => navigate('/auth/artist')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
           <button 
-            onClick={() => navigate(userProfile?.is_artist ? '/artist-hub' : '/auth?mode=artist')} 
+            onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')} 
             className="px-8 py-3 bg-smash-purple text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-smash-purple transition-all shadow-lg active:scale-95"
           >
-            {userProfile?.is_artist ? 'Open Studio' : 'Apply Now'}
+            {role === 'artist' ? 'Open Studio' : role === 'pending' ? 'Application Pending' : 'Apply Now'}
           </button>
         </div>
       </nav>
@@ -98,16 +98,16 @@ const ArtistLanding: React.FC = () => {
 
           <div className="flex flex-wrap justify-center gap-6 mb-20">
             <button 
-              onClick={() => navigate(userProfile?.is_artist ? '/artist-hub' : '/auth?mode=artist')}
+              onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')}
               className="px-10 py-5 bg-white text-smash-black rounded-full font-black text-sm md:text-lg uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all transform hover:scale-105 shadow-2xl active:scale-95"
             >
-              {userProfile?.is_artist ? 'Go to Studio' : 'Start as an Artist'} <Mic2 size={24} className="inline ml-2" />
+              {role === 'artist' ? 'Go to Studio' : role === 'pending' ? 'Review Application' : 'Start as an Artist'} <Mic2 size={24} className="inline ml-2" />
             </button>
             <button 
-              onClick={() => navigate(userProfile?.is_artist ? '/artist-hub' : '/auth?mode=login')}
+              onClick={() => navigate(role === 'artist' ? '/artist-hub' : '/auth/artist')}
               className="px-10 py-5 bg-white/5 border border-white/10 rounded-full font-black text-sm md:text-lg uppercase tracking-widest hover:bg-white/10 transition-all"
             >
-              {userProfile?.is_artist ? 'Manage Music' : 'Artist Login'}
+              {role === 'artist' ? 'Manage Music' : 'Artist Login'}
             </button>
           </div>
 
@@ -200,12 +200,12 @@ const ArtistLanding: React.FC = () => {
                   ))}
                 </ul>
                 <button 
-                  onClick={() => navigate(userProfile?.is_artist ? '/artist-hub' : '/auth?mode=artist')}
+                  onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')}
                   className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all ${
                     p.featured ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'bg-white/10 hover:bg-white/20 text-white'
                   }`}
                 >
-                  {userProfile?.is_artist ? 'Switch Plan' : 'Get Started'}
+                  {role === 'artist' ? 'Switch Plan' : role === 'pending' ? 'Application Pending' : 'Get Started'}
                 </button>
               </div>
             ))}
@@ -221,7 +221,7 @@ const ArtistLanding: React.FC = () => {
           <h2 className="text-5xl md:text-8xl font-black font-studio italic uppercase tracking-tighter mb-8 leading-none">Ready to Start Earning?</h2>
           <p className="text-xl md:text-2xl text-smash-gray mb-12 font-semibold">Join hundreds of Malawian artists already monetising their music. Keep control, keep your rights, keep 90%.</p>
           <button 
-            onClick={() => navigate('/auth?mode=artist')}
+            onClick={() => navigate('/auth/artist?mode=signup')}
             className="px-16 py-8 bg-smash-purple text-white rounded-[40px] font-black text-2xl uppercase tracking-widest shadow-[0_20px_50px_rgba(124,58,237,0.4)] hover:scale-105 active:scale-95 transition-all font-studio"
           >
             Apply as Artist Today

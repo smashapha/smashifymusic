@@ -330,11 +330,31 @@ const MetricCard = ({ label, value, icon }: any) => (
 );
 
 const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
-  const handleDelete = async (id: string) => {
+  const extractStoragePath = (url: string, bucket: string) => {
+    if(!url) return null;
+    try {
+      const parts = url.split(`/public/${bucket}/`);
+      return parts.length > 1 ? parts[1] : null;
+    } catch(e) { return null; }
+  };
+
+  const handleDelete = async (song: any) => {
     if(!confirm('Are you sure you want to delete this track?')) return;
-    const { error } = await supabase.from('songs').delete().eq('id', id);
-    if(error) alert(error.message);
-    else onRefresh();
+    try {
+      const audioPath = extractStoragePath(song.audio_url, 'songs');
+      if (audioPath) await supabase.storage.from('songs').remove([audioPath]);
+      
+      const coverPath = extractStoragePath(song.cover_url, 'covers');
+      if (coverPath) await supabase.storage.from('covers').remove([coverPath]);
+
+      const { error } = await supabase.from('songs').delete().eq('id', song.id);
+      if(error) throw error;
+      
+      toast.success('Track deleted.');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -395,7 +415,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
                     <td className="p-4 font-bold">{song.plays || 0}</td>
                     <td className="p-4 text-right flex items-center justify-end gap-2">
                        <button className="p-2 bg-white/5 rounded-lg text-smash-gray hover:text-white transition-colors" title="Edit"><Edit3 size={16} /></button>
-                       <button onClick={()=>handleDelete(song.id)} className="p-2 bg-white/5 rounded-lg text-smash-red/60 hover:text-smash-red hover:bg-smash-red/10 transition-colors" title="Delete"><Trash2 size={16} /></button>
+                       <button onClick={()=>handleDelete(song)} className="p-2 bg-white/5 rounded-lg text-smash-red/60 hover:text-smash-red hover:bg-smash-red/10 transition-colors" title="Delete"><Trash2 size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -452,12 +472,13 @@ const UploadTab = ({ onComplete, albums }: any) => {
   const [mode, setMode] = useState<'single'|'album'|'snippet'>('single');
   const [uploading, setUploading] = useState(false);
   const [songFile, setSongFile] = useState<File|null>(null);
+  const [albumFiles, setAlbumFiles] = useState<File[]>([]);
   const [coverFile, setCoverFile] = useState<File|null>(null);
   const { userProfile } = useAuth();
   
   const handleUploadSingle = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(!songFile) return alert('Audio/Video file required');
+    if(!songFile) return toast.error('Audio/Video file required');
     setUploading(true);
     const fd = new FormData(e.currentTarget);
     const title = fd.get('title') as string;
@@ -499,13 +520,13 @@ const UploadTab = ({ onComplete, albums }: any) => {
         if(error) throw error;
       }
       
-      alert(mode === 'snippet' ? 'Moto Feed snippet uploaded!' : 'Upload complete! Under review.');
+      toast.success(mode === 'snippet' ? 'Moto Feed snippet uploaded!' : 'Upload complete! Under review.');
       setMode('single');
       setSongFile(null);
       setCoverFile(null);
       onComplete();
     } catch(err:any) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
     } finally {
       setUploading(false);
     }
@@ -513,33 +534,66 @@ const UploadTab = ({ onComplete, albums }: any) => {
 
   const handleUploadAlbum = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(albumFiles.length === 0) return toast.error('At least one track required for an album.');
+    if(!coverFile) return toast.error('Album cover art required.');
+    
     setUploading(true);
     const fd = new FormData(e.currentTarget);
     const title = fd.get('title') as string;
+    const genre = fd.get('genre') as string;
     
     try {
-      let coverUrl = null;
-      if (coverFile) {
-        const coverExt = coverFile.name.split('.').pop();
-        const coverPath = `covers/${userProfile?.id}/${Date.now()}.${coverExt}`;
-        const { error:ce } = await supabase.storage.from('covers').upload(coverPath, coverFile);
-        if(!ce) {
-          coverUrl = supabase.storage.from('covers').getPublicUrl(coverPath).data.publicUrl;
-        }
-      }
+      // 1. Upload Album Cover
+      const coverExt = coverFile.name.split('.').pop();
+      const coverPath = `covers/${userProfile?.id}/album-${Date.now()}.${coverExt}`;
+      const { error:ce } = await supabase.storage.from('covers').upload(coverPath, coverFile);
+      if(ce) throw ce;
+      const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
-      const { error } = await supabase.from('albums').insert({
+      // 2. Create Album Record
+      const { data: albumData, error: albumError } = await supabase.from('albums').insert({
         artist_id: userProfile?.id,
-        title, cover_url: coverUrl, release_year: new Date().getFullYear()
-      });
-      if(error) throw error;
+        title, cover_url: coverUrl, release_year: new Date().getFullYear(),
+        genre
+      }).select().single();
       
-      alert('Album created! You can now add songs to it.');
+      if(albumError) throw albumError;
+
+      // 3. Upload Songs in parallel
+      toast.loading(`Uploading ${albumFiles.length} tracks...`);
+      const songUploads = albumFiles.map(async (file, index) => {
+        const audioExt = file.name.split('.').pop();
+        const audioPath = `songs/${userProfile?.id}/alb-${albumData.id}-${index}-${Date.now()}.${audioExt}`;
+        const { error:ae } = await supabase.storage.from('songs').upload(audioPath, file);
+        if(ae) throw ae;
+        
+        const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
+        
+        return {
+          artist_id: userProfile?.id,
+          album_id: albumData.id,
+          title: file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' '), // fallback title from filename
+          audio_url: audioUrl,
+          cover_url: coverUrl,
+          genre: genre,
+          approved: false,
+          plays: 0
+        };
+      });
+
+      const songsToInsert = await Promise.all(songUploads);
+      const { error: insertError } = await supabase.from('songs').insert(songsToInsert);
+      if(insertError) throw insertError;
+      
+      toast.dismiss();
+      toast.success('Album and all tracks uploaded successfully!');
       setMode('single');
+      setAlbumFiles([]);
       setCoverFile(null);
       onComplete();
     } catch(err:any) {
-      alert("Error: " + err.message);
+      toast.dismiss();
+      toast.error("Album Upload Failed: " + err.message);
     } finally {
       setUploading(false);
     }
@@ -554,7 +608,7 @@ const UploadTab = ({ onComplete, albums }: any) => {
 
       <div className="flex flex-wrap bg-white/5 p-1 rounded-full w-fit mx-auto md:mx-0 mb-6 gap-1 border border-white/5">
         <button onClick={()=>setMode('single')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${mode==='single'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'}`}>Single Track</button>
-        <button onClick={()=>setMode('album')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${mode==='album'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'}`}>New Album</button>
+        <button onClick={()=>setMode('album')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${mode==='album'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'}`}>Full Album</button>
         <button onClick={()=>setMode('snippet')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode==='snippet'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'}`}><Flame size={14}/> Feed Snippet</button>
       </div>
 
@@ -566,25 +620,60 @@ const UploadTab = ({ onComplete, albums }: any) => {
                     <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">Album Title *</label>
                     <input name="title" required placeholder="THE RECOVERY" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-smash-purple transition-all placeholder:text-white/20" />
                  </div>
+                 <div>
+                    <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">Album Genre *</label>
+                    <select name="genre" required className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-smash-purple transition-all appearance-none cursor-pointer">
+                      <option value="">Select album genre</option>
+                      <option value="Afropop">Afropop</option>
+                      <option value="Gospel">Gospel</option>
+                      <option value="Hip Hop">Hip Hop</option>
+                      <option value="R&B">R&B</option>
+                      <option value="Compilation">Compilation</option>
+                    </select>
+                 </div>
+                 <div className="space-y-4">
+                    <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">Select All Tracks (Multiple MP3s) *</label>
+                    <div className="relative">
+                       <input 
+                         type="file" 
+                         required 
+                         multiple
+                         accept="audio/*" 
+                         onChange={e=>setAlbumFiles(Array.from(e.target.files || []))} 
+                         className="w-full text-xs font-black text-smash-gray file:mr-6 file:py-3 file:px-8 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-smash-purple file:text-white hover:file:bg-white hover:file:text-smash-purple transition-all cursor-pointer bg-white/5 border border-white/10 rounded-2xl p-2" 
+                       />
+                    </div>
+                    {albumFiles.length > 0 && (
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mb-3">{albumFiles.length} Tracks Selected:</p>
+                        {albumFiles.map((f, idx) => (
+                          <div key={idx} className="flex items-center gap-3 text-xs font-bold text-white/60">
+                             <Music2 size={12} className="text-smash-purple" /> {f.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                 </div>
               </div>
               <div className="md:col-span-2 space-y-6">
-                 <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-1">Cover Art *</label>
+                 <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-1">Album Art *</label>
                  <div className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group" onClick={()=>document.getElementById('cover-file')?.click()}>
                    {coverFile ? (
                       <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover" />
                    ):(
                       <>
                         <ImageIcon size={40} className="text-white/20 mb-4 group-hover:text-smash-purple transition-colors" />
-                        <p className="text-xs font-black uppercase tracking-widest">Select Image</p>
-                        <p className="text-[10px] text-smash-gray mt-2 uppercase tracking-widest font-bold">1:1 Square Art</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-white">Select Cover</p>
+                        <p className="text-[10px] text-smash-gray mt-2 uppercase tracking-widest font-bold">1:1 High Res</p>
                       </>
                    )}
                    <input required id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
                  </div>
 
-                 <button disabled={uploading} type="submit" className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-smash-purple active:scale-95 transition-all text-xs disabled:opacity-50 shadow-xl shadow-smash-purple/20">
-                    {uploading ? 'LOADING...' : 'CREATE ALBUM'}
+                 <button disabled={uploading || albumFiles.length === 0} type="submit" className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-smash-purple active:scale-95 transition-all text-xs disabled:opacity-50 shadow-xl shadow-smash-purple/20">
+                    {uploading ? 'UPLOADING ALBUM...' : 'UPLOAD FULL ALBUM'}
                  </button>
+                 <p className="text-[10px] text-center text-smash-gray font-bold italic uppercase tracking-widest leading-relaxed">Tracks will be named after file names. You can edit them later in the Songs tab.</p>
               </div>
            </form>
          ) : (
@@ -682,19 +771,95 @@ const WalletTab = ({ balance, userProfile }: any) => {
      fetchHist();
   },[userProfile]);
 
+  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(balance);
+  const [requesting, setRequesting] = useState(false);
+
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (balance <= 0) return toast.error('No funds to withdraw.');
+    if (withdrawalAmount <= 0) return toast.error('Please enter a valid amount.');
+    if (withdrawalAmount > balance) return toast.error('Insufficient balance.');
+
+    const network = prompt('Enter network (Airtel/TNM)?', 'Airtel');
+    if (!network) return;
+    const phone = prompt('Enter mobile number for payment?', userProfile?.phone || '');
+    if (!phone) return;
+    
+    setRequesting(true);
+    const toastId = toast.loading('Processing request...');
+    try {
+      const { error } = await supabase.rpc('request_payout', { 
+        payout_amount: withdrawalAmount, 
+        mobile_number: phone, 
+        network_name: network 
+      });
+      
+      if (error) {
+         console.warn('RPC failed, falling back to manual inserts', error);
+         await supabase.from('payout_requests').insert({
+           artist_id: userProfile?.id,
+           amount: withdrawalAmount,
+           mobile_number: phone,
+           network: network,
+           status: 'pending'
+         });
+         
+         const { error: txError } = await supabase.from('transactions').insert({
+           user_id: userProfile?.id,
+           type: 'withdrawal',
+           amount: withdrawalAmount,
+           status: 'pending',
+           description: `To ${network} - ${phone}`
+         });
+         if (txError && txError.code !== '42P01') throw txError;
+         
+         const { error: updateError } = await supabase.from('profiles')
+           .update({ wallet_balance: balance - withdrawalAmount })
+           .eq('id', userProfile?.id);
+         if (updateError) throw updateError;
+      }
+      toast.success('Payout requested successfully!', { id: toastId });
+      setTimeout(() => window.location.reload(), 1500);
+    } catch(err: any) {
+      toast.error('Failed to request payout: ' + err.message, { id: toastId });
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
          <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><Wallet className="text-smash-purple" /> Earnings & Wallet</h2>
        </div>
 
-       <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[40px] p-10 flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple mb-3">Total Artist Credit</p>
-            <h3 className="text-6xl font-black font-studio text-white uppercase italic">MK {balance.toLocaleString()}</h3>
-            <p className="text-xs text-smash-gray mt-4 font-bold">Available for withdrawal to Airtel Money / Mpamba</p>
+       <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[40px] p-10 shadow-2xl space-y-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple mb-3">Total Artist Credit</p>
+              <h3 className="text-6xl font-black font-studio text-white uppercase italic">MK {balance.toLocaleString()}</h3>
+              <p className="text-xs text-smash-gray mt-4 font-bold">Available for withdrawal to Airtel Money / Mpamba</p>
+            </div>
+            <div className="w-full md:w-auto p-8 bg-white/5 border border-white/10 rounded-[32px] space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray block ml-2">Amount to Withdraw (MWK)</label>
+                <input 
+                  type="number" 
+                  value={withdrawalAmount}
+                  max={balance}
+                  onChange={(e) => setWithdrawalAmount(Number(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-studio font-black text-2xl italic outline-none focus:border-smash-purple transition-all"
+                />
+              </div>
+              <button 
+                onClick={handleWithdraw} 
+                disabled={requesting || balance <= 0}
+                className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-xs rounded-full hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95 disabled:opacity-50"
+              >
+                {requesting ? 'Processing...' : 'Request Payout'}
+              </button>
+            </div>
           </div>
-          <button className="px-10 py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-xs rounded-full hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95">Withdraw Funds</button>
        </div>
 
        <div className="bg-white/5 border border-white/5 rounded-3xl p-6">
@@ -726,10 +891,36 @@ const WalletTab = ({ balance, userProfile }: any) => {
 const ProfileTab = ({ userProfile }: any) => {
   const { refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File|null>(null);
+  const [bannerFile, setBannerFile] = useState<File|null>(null);
+
   const handleSave = async(e:React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); 
+    setSaving(true);
     const fd = new FormData(e.currentTarget);
+    
     try {
+      let avatarUrl = userProfile?.avatar_url;
+      let bannerUrl = userProfile?.banner_url;
+
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${userProfile.id}/avatar-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, avatarFile, { upsert: true });
+        if (!uploadError) {
+          avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName).data.publicUrl;
+        }
+      }
+
+      if (bannerFile) {
+        const fileExt = bannerFile.name.split('.').pop();
+        const fileName = `${userProfile.id}/banner-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('banners').upload(fileName, bannerFile, { upsert: true });
+        if (!uploadError) {
+          bannerUrl = supabase.storage.from('banners').getPublicUrl(fileName).data.publicUrl;
+        }
+      }
+
       const { error } = await supabase.from('profiles').update({
         full_name: fd.get('full_name'),
         stage_name: fd.get('stage_name'),
@@ -738,33 +929,63 @@ const ProfileTab = ({ userProfile }: any) => {
         bio: fd.get('bio'),
         instagram: fd.get('instagram'),
         twitter: fd.get('twitter'),
-        avatar_url: fd.get('avatar_url'),
-        banner_url: fd.get('banner_url'),
-        phone: fd.get('phone')
+        avatar_url: avatarUrl,
+        banner_url: bannerUrl,
+        // Phone is not updated if it already exists to protect withdrawal routing
+        ...(userProfile?.phone ? {} : { phone: fd.get('phone') })
       }).eq('id', userProfile?.id);
+
       if(error) throw error;
-      alert('Profile updated');
+      toast.success('Studio Profile Updated!');
+      setAvatarFile(null);
+      setBannerFile(null);
       if(refreshProfile) refreshProfile();
-    } catch(err:any) { alert(err.message); } finally { setSaving(false); }
+    } catch(err:any) { 
+      toast.error(err.message); 
+    } finally { 
+      setSaving(false); 
+    }
   };
+
   return (
-    <div className="space-y-8 max-w-2xl text-left">
+    <div className="space-y-8 max-w-4xl text-left">
       <h2 className="text-3xl font-studio font-black flex items-center justify-start gap-4 uppercase italic"><UserCircle className="text-smash-purple" /> Studio Settings</h2>
       <form onSubmit={handleSave} className="bg-white/5 border border-white/5 rounded-[40px] p-8 md:p-12 space-y-8 shadow-2xl">
-         <div className="flex items-center gap-8 mb-4">
-            <div className="relative group">
-              <img src={userProfile?.avatar_url||"https://placehold.co/100"} className="w-24 h-24 rounded-full object-cover border-2 border-smash-purple ring-8 ring-smash-purple/10" />
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                <Edit3 size={20} className="text-white" />
+         <div className="grid md:grid-cols-2 gap-10">
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] block ml-2">Studio Avatar</label>
+              <div 
+                className="aspect-square w-40 rounded-full border-2 border-dashed border-white/10 flex flex-col items-center justify-center p-2 cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-2xl mx-auto md:mx-0"
+                onClick={() => document.getElementById('artist-avatar-input')?.click()}
+              >
+                <img 
+                  src={avatarFile ? URL.createObjectURL(avatarFile) : (userProfile?.avatar_url || "https://placehold.co/160")} 
+                  className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform" 
+                />
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload size={24} className="text-white mb-1" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Change</span>
+                </div>
+                <input id="artist-avatar-input" type="file" accept="image/*" onChange={e => setAvatarFile(e.target.files?.[0] || null)} className="hidden" />
               </div>
             </div>
-            <div className="flex-1">
-               <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] mb-3 block">Avatar Source URL</label>
-               <input name="avatar_url" defaultValue={userProfile?.avatar_url} className="w-full bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-xs font-bold outline-none focus:border-smash-purple transition-all" />
-            </div>
-            <div className="flex-1">
-               <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] mb-3 block">Banner Source URL</label>
-               <input name="banner_url" defaultValue={userProfile?.banner_url} className="w-full bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-xs font-bold outline-none focus:border-smash-purple transition-all" />
+
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] block ml-2">Studio Banner</label>
+              <div 
+                className="h-40 w-full rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center p-2 cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-2xl"
+                onClick={() => document.getElementById('artist-banner-input')?.click()}
+              >
+                <img 
+                  src={bannerFile ? URL.createObjectURL(bannerFile) : (userProfile?.banner_url || "https://placehold.co/800x200")} 
+                  className="w-full h-full rounded-xl object-cover group-hover:scale-105 transition-transform" 
+                />
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload size={24} className="text-white mb-1" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Upload Banner</span>
+                </div>
+                <input id="artist-banner-input" type="file" accept="image/*" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="hidden" />
+              </div>
             </div>
          </div>
          <div className="grid grid-cols-2 gap-6">
@@ -779,12 +1000,21 @@ const ProfileTab = ({ userProfile }: any) => {
          </div>
          <div className="grid grid-cols-2 gap-6">
             <div>
-               <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] mb-3 block">Phone Number (For Withdrawals)</label>
-               <input name="phone" defaultValue={userProfile?.phone} className="w-full bg-white/5 border border-white/10 py-4 px-5 rounded-2xl text-sm font-bold outline-none focus:border-smash-purple transition-all" />
+               <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] mb-3 block">Phone Number (Withdrawals)</label>
+               <input 
+                 name="phone" 
+                 defaultValue={userProfile?.phone} 
+                 disabled={!!userProfile?.phone}
+                 placeholder="+265..."
+                 className={`w-full bg-white/5 border border-white/10 py-4 px-5 rounded-2xl text-sm font-bold outline-none focus:border-smash-purple transition-all ${userProfile?.phone ? 'opacity-50 cursor-not-allowed' : ''}`} 
+               />
+               {userProfile?.phone && (
+                 <p className="text-[9px] text-smash-gray mt-2 font-bold uppercase tracking-widest italic">Locked for security. Contact support to change.</p>
+               )}
             </div>
             <div>
                <label className="text-[10px] uppercase font-black text-smash-purple tracking-[0.2em] mb-3 block">Core Genre</label>
-               <select name="genre" defaultValue={userProfile?.genre} className="w-full bg-white/5 border border-white/10 py-4 px-5 rounded-2xl text-sm font-bold outline-none focus:border-smash-purple transition-all appearance-none">
+               <select name="genre" defaultValue={userProfile?.genre} className="w-full bg-white/5 border border-white/10 py-4 px-5 rounded-2xl text-sm font-bold outline-none focus:border-smash-purple transition-all appearance-none cursor-pointer">
                  <option>Afropop</option><option>Gospel</option><option>Hip Hop</option><option>R&B</option>
                </select>
             </div>
@@ -880,11 +1110,13 @@ const SubscriptionTab = ({ userProfile }: any) => {
 };
 
 const AdminTab = () => {
-  const [artists, setArtists] = useState<any[]>([]);
+  const [artists, setArtists] = useState<any[]>([]); // Approved artists
+  const [applications, setApplications] = useState<any[]>([]); // Pending artists
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchArtists();
+    fetchApplications();
   }, []);
 
   const fetchArtists = async () => {
@@ -892,7 +1124,8 @@ const AdminTab = () => {
     const { data: artistsData, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('is_artist', true)
+      .eq('user_type', 'artist')
+      .eq('approved', true)
       .order('created_at', { ascending: false });
     
     if (artistsData) {
@@ -906,12 +1139,70 @@ const AdminTab = () => {
     setLoading(false);
   };
 
-  const approveArtist = async (id: string) => {
-    const { error } = await supabase.from('profiles').update({ approved: true }).eq('id', id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Artist approved!');
+  const fetchApplications = async () => {
+    const { data } = await supabase
+      .from('artist_applications')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+    setApplications(data || []);
+  };
+
+  const approveArtist = async (application: any) => {
+    try {
+      // 1. Create the artist's row in 'profiles' (the artist table)
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: application.profile_id,      // links to auth.users
+        full_name: application.full_name,
+        stage_name: application.stage_name,
+        email: application.email,
+        genre: application.genre,
+        city: application.city,
+        phone: application.phone,
+        approved: true,
+        verified: false,
+        wallet_balance: 0,
+        user_type: 'artist',
+      });
+      if (profileError) throw profileError;
+
+      // 2. Update the application status
+      const { error: appError } = await supabase
+        .from('artist_applications')
+        .update({ status: 'approved' })
+        .eq('id', application.id);
+      if (appError) throw appError;
+
+      toast.success(`${application.stage_name} approved! They can now access the Artist Hub.`);
+      fetchApplications();
       fetchArtists();
+
+    } catch (err: any) {
+      toast.error('Approval failed: ' + err.message);
+    }
+  };
+
+  const rejectArtist = async (application: any, reason: string = "Not eligible") => {
+    try {
+      // 1. Update application status
+      await supabase.from('artist_applications')
+        .update({ status: 'rejected', admin_notes: reason })
+        .eq('id', application.id);
+
+      // 2. Create a listener profile for them instead
+      await supabase.from('user_profiles').upsert({
+        id: application.profile_id,
+        full_name: application.full_name,
+        email: application.email,
+        subscription_tier: 'Free',
+        user_type: 'listener',
+      });
+
+      toast.success('Application rejected. User downgraded to listener account.');
+      fetchApplications();
+
+    } catch (err: any) {
+      toast.error('Rejection failed: ' + err.message);
     }
   };
 
@@ -934,10 +1225,10 @@ const AdminTab = () => {
       const { error } = await supabase.from('profiles').delete().eq('id', id);
       
       if (error) throw error;
-      alert('Artist removed successfully.');
+      toast.success('Artist removed successfully.');
       fetchArtists();
     } catch (err: any) {
-      alert('Error deleting artist: ' + err.message);
+      toast.error('Error deleting artist: ' + err.message);
     }
   };
 
@@ -948,95 +1239,157 @@ const AdminTab = () => {
         <div className="bg-smash-red/10 text-smash-red px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-smash-red/20">Authorized Access Only</div>
       </div>
 
-      <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-           <div>
-              <p className="text-sm font-bold">Platform Artists</p>
-              <p className="text-[10px] text-smash-gray uppercase tracking-widest font-bold">Manage and clean up fake or inactive profiles</p>
-           </div>
-           <p className="text-xs font-black text-smash-gray uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-              Total Artists: {artists.length}
-           </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          {loading ? (
-             <div className="p-20 flex justify-center">
-                <div className="w-8 h-8 border-4 border-smash-red border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-8">
+        
+        {/* Pending Applications Section */}
+        <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+             <div>
+                <p className="text-sm font-bold">Pending Applications</p>
+                <p className="text-[10px] text-smash-gray uppercase tracking-widest font-bold">Review aspiring artists</p>
              </div>
-          ) : artists.length > 0 ? (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
-                <tr>
-                  <th className="p-6 font-bold">Artist</th>
-                  <th className="p-6 font-bold">Location</th>
-                  <th className="p-6 font-bold">Status</th>
-                  <th className="p-6 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {artists.map((artist) => {
-                  const isFake = !artist.stage_name || !artist.avatar_url;
-                  return (
-                    <tr key={artist.id} className="hover:bg-white/5 transition-colors group">
+             <p className="text-xs font-black text-smash-gray uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                Total Pending: {applications.length}
+             </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            {loading ? (
+               <div className="p-10 flex justify-center">
+                  <div className="w-8 h-8 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
+               </div>
+            ) : applications.length > 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
+                  <tr>
+                    <th className="p-6 font-bold">Artist / Details</th>
+                    <th className="p-6 font-bold">ID Doc</th>
+                    <th className="p-6 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {applications.map((app) => (
+                    <tr key={app.id} className="hover:bg-white/5 transition-colors group">
                       <td className="p-6">
-                        <div className="flex items-center gap-4">
-                           <div className="relative">
-                              <img src={artist.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-12 h-12 rounded-full object-cover border border-white/10" />
-                              {artist.verified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-smash-cyan rounded-full border-2 border-[#111] flex items-center justify-center text-black font-black text-[8px] italic">V</div>}
-                           </div>
-                           <div>
-                              <p className="font-bold flex items-center gap-2">
-                                {artist.stage_name || artist.full_name || 'Anonymous Artist'}
-                                {isFake && <span className="text-[10px] bg-smash-orange/20 text-smash-orange px-2 py-0.5 rounded-full uppercase italic">Potential Fake</span>}
-                              </p>
-                              <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{artist.email}</p>
-                           </div>
+                        <div className="flex flex-col">
+                           <p className="font-bold">{app.stage_name || app.full_name}</p>
+                           <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{app.email} • {app.phone}</p>
+                           <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{app.city} • {app.genre}</p>
                         </div>
                       </td>
-                      <td className="p-6 text-smash-gray font-medium">{artist.city || artist.location || 'Unknown'}</td>
                       <td className="p-6">
-                         <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${artist.approved ? 'bg-smash-green/20 text-smash-green' : 'bg-smash-orange/20 text-smash-orange'}`}>
-                           {artist.approved ? 'Active' : 'Unverified'}
-                         </span>
+                        {app.id_document_url ? (
+                          <a href={app.id_document_url} target="_blank" rel="noopener noreferrer" className="text-smash-cyan hover:underline text-[10px] font-black uppercase tracking-widest">
+                            View Document
+                          </a>
+                        ) : (
+                          <span className="text-smash-red text-[10px] font-black uppercase tracking-widest">Missing</span>
+                        )}
                       </td>
                       <td className="p-6 text-right flex items-center justify-end gap-2">
-                        {!artist.approved && (
-                          <button 
-                            onClick={() => approveArtist(artist.id)}
-                            className="p-3 bg-smash-green/10 text-smash-green rounded-xl hover:bg-smash-green hover:text-white transition-all transform active:scale-90"
-                            title="Approve Artist"
-                          >
-                            <CheckCircle2 size={18} />
-                          </button>
-                        )}
-                        {artist.pending_songs > 0 && (
-                          <button 
-                            onClick={() => approveAllSongs(artist.id)}
-                            className="p-3 bg-smash-purple/10 text-smash-purple rounded-xl hover:bg-smash-purple hover:text-white transition-all transform active:scale-90"
-                            title="Approve All Songs"
-                          >
-                            <Music2 size={18} />
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => deleteArtist(artist.id, artist.stage_name || artist.full_name || artist.email)}
-                          className="p-3 bg-smash-red/10 text-smash-red rounded-xl hover:bg-smash-red hover:text-white transition-all transform active:scale-90"
-                          title="Delete Artist"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                         <button 
+                             onClick={() => approveArtist(app)}
+                             className="p-3 bg-smash-green/10 text-smash-green rounded-xl hover:bg-smash-green hover:text-white transition-all transform active:scale-90"
+                             title="Approve Artist"
+                           >
+                             <CheckCircle2 size={18} />
+                         </button>
+                         <button 
+                             onClick={() => rejectArtist(app, 'Declined by Admin.')}
+                             className="p-3 bg-smash-red/10 text-smash-red rounded-xl hover:bg-smash-red hover:text-white transition-all transform active:scale-90"
+                             title="Reject Artist"
+                           >
+                             <Trash2 size={18} />
+                         </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest text-xs italic">
-               No artists found on the platform.
-            </div>
-          )}
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-10 text-center text-smash-gray font-bold uppercase tracking-widest text-xs italic">
+                 No pending applications.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Existing Artists Section */}
+        <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+             <div>
+                <p className="text-sm font-bold">Platform Artists</p>
+                <p className="text-[10px] text-smash-gray uppercase tracking-widest font-bold">Manage and clean up fake or inactive profiles</p>
+             </div>
+             <p className="text-xs font-black text-smash-gray uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                Total Artists: {artists.length}
+             </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            {loading ? (
+               <div className="p-20 flex justify-center">
+                  <div className="w-8 h-8 border-4 border-smash-red border-t-transparent rounded-full animate-spin" />
+               </div>
+            ) : artists.length > 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
+                  <tr>
+                    <th className="p-6 font-bold">Artist</th>
+                    <th className="p-6 font-bold">Location</th>
+                    <th className="p-6 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {artists.map((artist) => {
+                    const isFake = !artist.stage_name || !artist.avatar_url;
+                    return (
+                      <tr key={artist.id} className="hover:bg-white/5 transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                             <div className="relative">
+                                <img src={artist.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-12 h-12 rounded-full object-cover border border-white/10" />
+                                {artist.verified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-smash-cyan rounded-full border-2 border-[#111] flex items-center justify-center text-black font-black text-[8px] italic">V</div>}
+                             </div>
+                             <div>
+                                <p className="font-bold flex items-center gap-2">
+                                  {artist.stage_name || artist.full_name || 'Anonymous Artist'}
+                                  {isFake && <span className="text-[10px] bg-smash-orange/20 text-smash-orange px-2 py-0.5 rounded-full uppercase italic">Potential Fake</span>}
+                                </p>
+                                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{artist.email}</p>
+                             </div>
+                          </div>
+                        </td>
+                        <td className="p-6 text-smash-gray font-medium">{artist.city || artist.location || 'Unknown'}</td>
+                        <td className="p-6 text-right flex items-center justify-end gap-2">
+                          {artist.pending_songs > 0 && (
+                            <button 
+                              onClick={() => approveAllSongs(artist.id)}
+                              className="p-3 bg-smash-purple/10 text-smash-purple rounded-xl hover:bg-smash-purple hover:text-white transition-all transform active:scale-90"
+                              title="Approve All Songs"
+                            >
+                              <Music2 size={18} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => deleteArtist(artist.id, artist.stage_name || artist.full_name || artist.email)}
+                            className="p-3 bg-smash-red/10 text-smash-red rounded-xl hover:bg-smash-red hover:text-white transition-all transform active:scale-90"
+                            title="Delete Artist"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest text-xs italic">
+                 No artists found on the platform.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

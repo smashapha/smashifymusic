@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { PlayerProvider } from './context/PlayerContext';
@@ -7,7 +7,8 @@ import MainLayout from './components/common/MainLayout';
 import Home from './pages/Home';
 import ArtistHub from './pages/ArtistHub';
 import MotoFeed from './pages/MotoFeed';
-import Auth from './pages/Auth';
+import AuthArtist from './pages/AuthArtist';
+import AuthListener from './pages/AuthListener';
 import Landing from './pages/Landing';
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
@@ -15,6 +16,7 @@ import { supabase } from './lib/supabase';
 import About from './pages/About';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 import Pricing from './pages/Pricing';
 
@@ -25,9 +27,28 @@ import Discover from './pages/Discover';
 import Library from './pages/Library';
 import Profile from './pages/Profile';
 import Trending from './pages/Trending';
+import ApplicationPending from './pages/ApplicationPending';
 
 import { Mail, Phone, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const ArtistRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, role, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth/artist" />;
+  if (role === 'pending') return <Navigate to="/application-pending" />;
+  if (role !== 'artist') return <Navigate to="/" />;
+  return <>{children}</>;
+};
+
+const ListenerRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, role, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth/listener" />;
+  // Optionally redirect artists away from listener-only pages if desired,
+  // but for now, we'll let them access library/profile if they want.
+  return <>{children}</>;
+};
 
 const Contact = () => {
   const [loading, setLoading] = useState(false);
@@ -128,8 +149,40 @@ const Contact = () => {
   );
 };
 
+const NotFound = () => {
+  return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center text-center px-4">
+      <h1 className="text-9xl font-black font-display italic tracking-tighter text-smash-purple mb-4 drop-shadow-2xl">404</h1>
+      <h2 className="text-3xl font-bold uppercase tracking-widest mb-6">Track Not Found</h2>
+      <p className="text-smash-gray font-medium max-w-md mb-8">
+        Looks like you've skipped too far. The page you're looking for doesn't exist or has been removed.
+      </p>
+      <a href="/" className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-full hover:bg-smash-orange hover:text-white transition-all shadow-xl active:scale-95">
+        Go Back Home
+      </a>
+    </div>
+  );
+};
+
 function AppContent() {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    const handleOffline = () => {
+      toast.error('You are offline. Some features may not be available.', { duration: 5000 });
+    };
+    const handleOnline = () => {
+      toast.success('Back online!', { duration: 3000 });
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -141,17 +194,41 @@ function AppContent() {
 
   return (
     <Routes>
-      <Route path="/auth" element={<Auth />} />
+      <Route path="/auth" element={<Navigate to="/auth/listener" replace />} />
+      <Route path="/auth/listener" element={<AuthListener />} />
+      <Route path="/auth/artist" element={<AuthArtist />} />
       <Route path="/artists" element={<ArtistLanding />} />
+      <Route path="/application-pending" element={<ApplicationPending />} />
       <Route path="/moto-feed" element={<MotoFeed />} />
-      <Route path="/artist-hub" element={user ? <ArtistHub /> : <Navigate to="/auth?mode=artist" />} />
+      <Route 
+        path="/artist-hub" 
+        element={
+          <ArtistRoute>
+            <ArtistHub />
+          </ArtistRoute>
+        } 
+      />
       <Route element={<MainLayout />}>
         <Route index element={user ? <Home /> : <Landing />} />
         <Route path="home" element={user ? <Home /> : <Navigate to="/" />} />
         <Route path="discover" element={<Discover />} />
         <Route path="trending" element={<Trending />} />
-        <Route path="library" element={<Library />} />
-        <Route path="profile" element={<Profile />} />
+        <Route 
+          path="library" 
+          element={
+            <ListenerRoute>
+              <Library />
+            </ListenerRoute>
+          } 
+        />
+        <Route 
+          path="profile" 
+          element={
+            <ListenerRoute>
+              <Profile />
+            </ListenerRoute>
+          } 
+        />
         <Route path="artist/:id" element={<ArtistProfile />} />
         <Route path="search" element={<Discover />} />
         <Route path="pricing" element={<Pricing />} />
@@ -160,27 +237,29 @@ function AppContent() {
         <Route path="privacy" element={<Privacy />} />
         <Route path="contact" element={<Contact />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
     </Routes>
   );
 }
 
 export default function App() {
   return (
-    <Router>
-      <Toaster position="bottom-center" toastOptions={{
-        style: {
-          background: '#1A1A1A',
-          color: '#FFF',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '16px',
-        }
-      }} />
-      <AuthProvider>
-        <PlayerProvider>
-          <AppContent />
-        </PlayerProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Toaster position="bottom-center" toastOptions={{
+          style: {
+            background: '#1A1A1A',
+            color: '#FFF',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '16px',
+          }
+        }} />
+        <AuthProvider>
+          <PlayerProvider>
+            <AppContent />
+          </PlayerProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }

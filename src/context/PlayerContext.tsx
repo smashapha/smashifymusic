@@ -3,6 +3,7 @@ import { Song, EQPreset } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { musicService } from '../services/musicService';
+import { getRadioNextSong } from '../services/aiService';
 
 interface PlayerContextType {
   currentSong: Song | null;
@@ -85,6 +86,85 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { userProfile } = useAuth();
   const lastIncrementedSongId = useRef<string | null>(null);
   
+  // Restore session
+  useEffect(() => {
+    try {
+      const lastSong = localStorage.getItem('smash_last_song');
+      const lastTime = localStorage.getItem('smash_last_time');
+      if (lastSong) {
+        const song = JSON.parse(lastSong);
+        setCurrentSong(song);
+        if (lastTime) {
+           setTimeout(() => {
+             if(audioRef.current) audioRef.current.currentTime = parseFloat(lastTime);
+           }, 500);
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  // Save session
+  useEffect(() => {
+    if (currentSong) {
+      localStorage.setItem('smash_last_song', JSON.stringify(currentSong));
+    }
+  }, [currentSong?.id]);
+
+  useEffect(() => {
+    if (currentSong && currentTime > 0) {
+      localStorage.setItem('smash_last_time', String(currentTime));
+    }
+  }, [currentSong?.id, Math.floor(currentTime / 5)]);
+
+  // Record recently played
+  const recordRecentlyPlayed = async (song: Song) => {
+    if (!userProfile) return;
+    try {
+      await supabase.from('recently_played').upsert({
+        user_id: userProfile.id,
+        song_id: song.id,
+        played_at: new Date().toISOString()
+      }, { onConflict: 'user_id,song_id' });
+    } catch(err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    if (currentSong && isPlaying) {
+      recordRecentlyPlayed(currentSong);
+    }
+  }, [currentSong?.id]);
+
+  // Tab Title
+  useEffect(() => {
+    if (currentSong && isPlaying) {
+      document.title = `▶ ${currentSong.title} — ${currentSong.artist_name} | Smashify`;
+    } else if (currentSong) {
+      document.title = `⏸ ${currentSong.title} | Smashify`;
+    } else {
+      document.title = 'Smashify — Malawi Music';
+    }
+  }, [currentSong, isPlaying]);
+
+  // Media Session API
+  useEffect(() => {
+    if (!currentSong || !('mediaSession' in navigator)) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentSong.title,
+      artist: currentSong.artist_name,
+      album: 'Smashify',
+      artwork: [{ src: currentSong.cover_url || '', sizes: '512x512', type: 'image/jpeg' }]
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => togglePlay());
+    navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+    navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+    navigator.mediaSession.setActionHandler('previoustrack', () => previousTrack());
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime) seek(details.seekTime);
+    });
+  }, [currentSong]);
+  
   useEffect(() => {
     if (isShuffle) {
       const shuffled = [...queue].sort(() => Math.random() - 0.5);
@@ -128,8 +208,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     previewLimitReached.current = false;
     
     // Only set src if we have a current song and it differs from the current audio src
-    if (currentSong && currentSong.audio_url && audio.src !== currentSong.audio_url) {
-      audio.src = currentSong.audio_url;
+    const srcToUse = dataSaver && currentSong?.snippet_url 
+      ? currentSong.snippet_url 
+      : currentSong?.audio_url;
+
+    if (currentSong && srcToUse && audio.src !== srcToUse) {
+      audio.src = srcToUse;
       audio.load();
     }
 
@@ -235,15 +319,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
              profiles: s.profiles
           }));
 
-          // Use the prompt from aiService if it was exported, or just pick similar genre
-          const currentGenre = currentSong?.genre;
-          const similarSongs = formatted.filter(s => s.genre === currentGenre && s.id !== currentSong?.id);
-          const next = similarSongs.length > 0 
-            ? similarSongs[Math.floor(Math.random() * similarSongs.length)]
-            : formatted[Math.floor(Math.random() * formatted.length)];
-          
-          if (next) {
-            playSong(next, [next]);
+          if (currentSong) {
+            const next = await getRadioNextSong(currentSong, formatted);
+            if (next) {
+              playSong(next, [next]);
+            } else {
+              nextTrack();
+            }
+          } else {
+            const next = formatted[Math.floor(Math.random() * formatted.length)];
+            if (next) playSong(next, [next]);
           }
         }
       } catch (err) {
@@ -293,9 +378,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           togglePlay();
           break;
         case 'ArrowRight':
+          e.preventDefault();
           seek(Math.min(duration, currentTime + 10));
           break;
         case 'ArrowLeft':
+          e.preventDefault();
           seek(Math.max(0, currentTime - 10));
           break;
         case 'ArrowUp':
@@ -305,6 +392,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'ArrowDown':
           e.preventDefault();
           setVolume(Math.max(0, volume - 0.1));
+          break;
+        case 'KeyN':
+          nextTrack();
+          break;
+        case 'KeyP':
+          previousTrack();
           break;
         case 'KeyM':
           setVolume(volume === 0 ? 0.8 : 0);

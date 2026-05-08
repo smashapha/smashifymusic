@@ -10,6 +10,22 @@ const Trending: React.FC = () => {
    const [loading, setLoading] = useState(true);
    const [view, setView] = useState<'grid' | 'list'>('list');
 
+   const [refreshing, setRefreshing] = useState(false);
+   const startY = React.useRef(0);
+
+   const handleTouchStart = (e: React.TouchEvent) => {
+     startY.current = e.touches[0].clientY;
+   };
+
+   const handleTouchEnd = async (e: React.TouchEvent) => {
+     const deltaY = e.changedTouches[0].clientY - startY.current;
+     if (deltaY > 80 && window.scrollY === 0) {
+       setRefreshing(true);
+       await fetchTrending();
+       setRefreshing(false);
+     }
+   };
+
    useEffect(() => {
       fetchTrending();
    }, []);
@@ -41,7 +57,16 @@ const Trending: React.FC = () => {
    };
 
    return (
-      <div className="space-y-12 pb-24">
+      <div 
+         className="space-y-12 pb-24"
+         onTouchStart={handleTouchStart}
+         onTouchEnd={handleTouchEnd}
+      >
+         {refreshing && (
+           <div className="flex justify-center -mt-8 pt-8">
+             <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+           </div>
+         )}
          {/* Hero Header */}
          <div className="relative p-12 rounded-[40px] overflow-hidden bg-gradient-to-br from-smash-orange to-smash-red text-white shadow-2xl">
             <div className="absolute top-0 right-0 p-12 opacity-10">
@@ -100,7 +125,7 @@ const Trending: React.FC = () => {
                   <div className={view === 'list' ? 'space-y-4' : 'grid grid-cols-2 lg:grid-cols-3 gap-6'}>
                      {songs.map((song, index) => (
                         <motion.div 
-                          key={song.id}
+                          key={`trending-song-${song.id}-${index}`}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
