@@ -85,78 +85,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      // STRATEGY: Check 'user_profiles' (listener table) first, then 'profiles' (artist table)
-      // Whichever has a row for this user determines their role.
+      // 1. Get user role from metadata to decide which table to check first
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const metaRole = authUser?.user_metadata?.role;
+      
+      const checkListener = async () => {
+        const { data: listenerData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-      // 1. Check if they are a listener (row in 'user_profiles')
-      const { data: listenerData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (listenerData) {
-        let currentListenerData = listenerData;
-        // Check array for subscription_ends
-        if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && listenerData.subscription_tier !== 'free') {
-           const { data: updatedListener } = await supabase
-             .from('user_profiles')
-             .update({ subscription_tier: 'free' })
-             .eq('id', userId)
-             .select()
-             .single();
-           if (updatedListener) {
-              currentListenerData = updatedListener;
-           }
+        if (listenerData) {
+          let currentListenerData = listenerData;
+          if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && listenerData.subscription_tier !== 'free') {
+             const { data: updatedListener } = await supabase
+               .from('user_profiles')
+               .update({ subscription_tier: 'free' })
+               .eq('id', userId)
+               .select()
+               .single();
+             if (updatedListener) {
+                currentListenerData = updatedListener;
+             }
+          }
+          
+          setRole('listener');
+          setListenerProfile({ ...currentListenerData, user_type: 'listener' });
+          setArtistProfile(null);
+          return true;
         }
-        
-        setRole('listener');
-        setListenerProfile({ ...currentListenerData, user_type: 'listener' });
-        setArtistProfile(null);
-        setLoading(false);
-        return;
+        return false;
+      };
+
+      const checkArtist = async () => {
+        const { data: artistData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (artistData) {
+          let currentArtistData = artistData;
+          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && artistData.subscription_tier !== 'free') {
+             const { data: updatedArtist } = await supabase
+               .from('profiles')
+               .update({ subscription_tier: 'free' })
+               .eq('id', userId)
+               .select()
+               .single();
+             if (updatedArtist) {
+                currentArtistData = updatedArtist;
+             }
+          }
+          
+          if (currentArtistData.approved === false) {
+            setRole('pending');
+          } else {
+            setRole('artist');
+          }
+          setArtistProfile({ ...currentArtistData, user_type: 'artist' });
+          setListenerProfile(null);
+          return true;
+        }
+        return false;
+      };
+
+      // Execution based on metaRole
+      if (metaRole === 'artist' || metaRole === 'pending') {
+        if (await checkArtist()) return;
+        if (await checkListener()) return;
+      } else {
+        if (await checkListener()) return;
+        if (await checkArtist()) return;
       }
 
-      // 2. If not in 'user_profiles', check 'profiles' (artist table)
-      const { data: artistData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (artistData) {
-        let currentArtistData = artistData;
-        // Check for artist subscription expiry
-        if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && artistData.subscription_tier !== 'free') {
-           const { data: updatedArtist } = await supabase
-             .from('profiles')
-             .update({ subscription_tier: 'free' })
-             .eq('id', userId)
-             .select()
-             .single();
-           if (updatedArtist) {
-              currentArtistData = updatedArtist;
-           }
-        }
-        
-        // Check if they are approved or still pending
-        if (currentArtistData.approved === false) {
-          setRole('pending');
-        } else {
-          setRole('artist');
-        }
-        setArtistProfile({ ...currentArtistData, user_type: 'artist' });
-        setListenerProfile(null);
-        setLoading(false);
-        return;
+      // 3. Neither table has a row
+      const intent = localStorage.getItem('smashify_auth_intent');
+      
+      if (metaRole === 'artist' || metaRole === 'pending' || intent === 'artist') {
+          // Auto-create artist profile if it came from OAuth and is missing
+          const profileData: any = {
+            id: userId,
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Artist',
+            stage_name: authUser.user_metadata?.stage_name || authUser.email?.split('@')[0] || 'New Artist',
+            email: authUser.email,
+            approved: false,
+            user_type: 'artist'
+          };
+          const { error: createError } = await supabase.from('profiles').upsert(profileData);
+          if (!createError) {
+             setRole('pending');
+             setArtistProfile(profileData);
+             localStorage.removeItem('smashify_auth_intent');
+          }
+      } else {
+          // Default to listener (or if metaRole is 'listener' or intent is 'listener')
+          const profileData: any = {
+            id: userId,
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Listener',
+            email: authUser.email,
+            subscription_tier: 'Free',
+            user_type: 'listener'
+          };
+          const { error: createError } = await supabase.from('user_profiles').upsert(profileData);
+          if (!createError) {
+             setRole('listener');
+             setListenerProfile(profileData);
+             localStorage.removeItem('smashify_auth_intent');
+          }
       }
-
-      // 3. Neither table has a row — user just signed up, profile not created yet
-      // Check auth metadata for a hint
-      const { data: { user } } = await supabase.auth.getUser();
-      const metaRole = user?.user_metadata?.role;
-      if (metaRole === 'pending') setRole('pending');
-      else setRole(null);
 
     } catch (err) {
       console.error('Error fetching profile:', err);

@@ -35,6 +35,38 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
     }
   });
 
+  // Sync likes with global events and DB
+  useEffect(() => {
+    const handleLikesUpdate = (e: any) => {
+      if (e.detail.songId === song.id) {
+        setIsLiked(e.detail.isLiked);
+      }
+    };
+    window.addEventListener('smash_likes_updated', handleLikesUpdate);
+
+    // Initial DB check
+    const checkLikeStatus = async () => {
+      if (!userProfile) return;
+      const { data } = await supabase
+        .from('likes')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .eq('song_id', song.id)
+        .maybeSingle();
+      
+      if (data) {
+        setIsLiked(true);
+        const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+        if (Array.isArray(liked) && !liked.includes(song.id)) {
+           localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, song.id]));
+        }
+      }
+    };
+    checkLikeStatus();
+
+    return () => window.removeEventListener('smash_likes_updated', handleLikesUpdate);
+  }, [song.id, userProfile?.id]);
+
   const isCurrent = currentSong?.id === song.id;
 
   const handleSupportClick = async (e: React.MouseEvent) => {
@@ -96,6 +128,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
         }
       }
       localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
+      // Broadcast update
+      window.dispatchEvent(new CustomEvent('smash_likes_updated', { 
+        detail: { songId: song.id, isLiked: !previouslyLiked } 
+      }));
     } catch (err) {
       console.error('Like error:', err);
       // Rollback

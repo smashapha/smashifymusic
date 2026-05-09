@@ -20,6 +20,8 @@ interface PlayerContextType {
   isExpanded: boolean;
   radioMode: boolean;
   adPlaying: boolean;
+  adSkipAvailable: boolean;
+  skipAd: () => void;
   isShuffle: boolean;
   repeatMode: 'off' | 'all' | 'one';
   toggleRadioMode: () => void;
@@ -81,11 +83,47 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const previewLimitReached = useRef(false);
   const [songsPlayed, setSongsPlayed] = useState(0);
   const [adPlaying, setAdPlaying] = useState(false);
+  const [adSkipAvailable, setAdSkipAvailable] = useState(false);
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
   const [shuffledQueue, setShuffledQueue] = useState<Song[]>([]);
   const { userProfile } = useAuth();
   const lastIncrementedSongId = useRef<string | null>(null);
+
+  const ADS: (Song & { cta_url?: string })[] = [
+    {
+      id: 'ad-smashify-premium',
+      title: 'Upgrade to Smashify Premium',
+      artist_id: 'system-ad',
+      artist_name: 'Smashify Ad',
+      audio_url: 'https://cdn.pixabay.com/download/audio/2022/10/30/audio_f535f21226.mp3?filename=advertisement-124434.mp3',
+      cover_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+      price: 0,
+      duration: 30,
+      is_for_sale: false,
+      cta_url: '/pricing'
+    },
+    {
+      id: 'ad-malawi-talent',
+      title: 'Support Local Malawian Talent',
+      artist_id: 'system-ad',
+      artist_name: 'Smashify Community',
+      audio_url: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb6304856a.mp3?filename=short-ad-11862.mp3', // Generic short ad
+      cover_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop',
+      price: 0,
+      duration: 30,
+      is_for_sale: false,
+      cta_url: '/artist-landing'
+    }
+  ];
+
+  const skipAd = () => {
+    if (adPlaying && adSkipAvailable) {
+      setAdPlaying(false);
+      setAdSkipAvailable(false);
+      nextTrack();
+    }
+  };
   
   useEffect(() => {
     try {
@@ -164,31 +202,90 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Media Session API
   useEffect(() => {
-    if (!currentSong) return;
+    if (!currentSong || !('mediaSession' in navigator)) {
+      if ('mediaSession' in navigator) navigator.mediaSession.metadata = null;
+      return;
+    }
 
-    if ('mediaSession' in navigator && typeof (window as any).MediaMetadata === 'function') {
+    try {
+      const cover = currentSong.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=1024&h=1024&fit=crop';
+      
+      const metadata: any = {
+        title: currentSong.title,
+        artist: currentSong.artist_name,
+        album: 'Smashify',
+        artwork: [
+          { src: cover, sizes: '96x96', type: 'image/jpeg' },
+          { src: cover, sizes: '128x128', type: 'image/jpeg' },
+          { src: cover, sizes: '192x192', type: 'image/jpeg' },
+          { src: cover, sizes: '256x256', type: 'image/jpeg' },
+          { src: cover, sizes: '384x384', type: 'image/jpeg' },
+          { src: cover, sizes: '512x512', type: 'image/jpeg' },
+        ]
+      };
+
+      if (typeof (window as any).MediaMetadata === 'function') {
+        navigator.mediaSession.metadata = new (window as any).MediaMetadata(metadata);
+      }
+    } catch (err) {
+      console.warn('MediaMetadata failed:', err);
+    }
+
+    const handlers: [MediaSessionAction, (details: MediaSessionActionDetails) => void][] = [
+      ['play', () => setIsPlaying(true)],
+      ['pause', () => setIsPlaying(false)],
+      ['nexttrack', () => nextTrack()],
+      ['previoustrack', () => previousTrack()],
+      ['seekbackward', (details) => {
+        const skipTime = details.seekOffset || 10;
+        if (audioRef.current) seek(Math.max(0, audioRef.current.currentTime - skipTime));
+      }],
+      ['seekforward', (details) => {
+        const skipTime = details.seekOffset || 10;
+        if (audioRef.current) seek(Math.min(duration, audioRef.current.currentTime + skipTime));
+      }],
+      ['seekto', (details) => { if (details.seekTime !== undefined) seek(details.seekTime); }],
+      ['stop', () => { setIsPlaying(false); if (audioRef.current) audioRef.current.currentTime = 0; }]
+    ];
+
+    handlers.forEach(([action, handler]) => {
       try {
-        navigator.mediaSession.metadata = new (window as any).MediaMetadata({
-          title: currentSong.title,
-          artist: currentSong.artist_name,
-          album: 'Smashify',
-          artwork: [{ src: currentSong.cover_url || '', sizes: '512x512', type: 'image/jpeg' }]
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch (error) {
+        console.warn(`Media session action "${action}" not supported.`);
+      }
+    });
+
+    return () => {
+      handlers.forEach(([action]) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, null);
+        } catch (error) {}
+      });
+    };
+  }, [currentSong?.id, duration]);
+
+  // Sync playback state to media session
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [isPlaying]);
+
+  // Sync position state to media session
+  useEffect(() => {
+    if ('mediaSession' in navigator && navigator.mediaSession.setPositionState && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: playbackRate,
+          position: Math.min(currentTime, duration)
         });
       } catch (err) {
-        console.warn('MediaMetadata failed:', err);
+        console.warn('setPositionState failed:', err);
       }
     }
-
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => togglePlay());
-      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-      navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
-      navigator.mediaSession.setActionHandler('previoustrack', () => previousTrack());
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime) seek(details.seekTime);
-      });
-    }
-  }, [currentSong]);
+  }, [currentTime, duration, playbackRate]);
   
   useEffect(() => {
     if (isShuffle) {
@@ -254,12 +351,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       
-      if (adPlaying && audio.currentTime >= 30) {
-        audio.pause();
-        audio.currentTime = 30;
-        setAdPlaying(false);
-        nextTrack();
-        return;
+      if (adPlaying) {
+        if (audio.currentTime >= 5 && !adSkipAvailable) {
+          setAdSkipAvailable(true);
+        }
+        if (audio.currentTime >= 30) {
+          audio.pause();
+          audio.currentTime = 30;
+          setAdPlaying(false);
+          setAdSkipAvailable(false);
+          nextTrack();
+          return;
+        }
       }
       
       // 30-second preview logic - ONLY for songs on sale and NOT purchased
@@ -325,18 +428,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     const playAd = () => {
-      const adSong: Song = {
-        id: 'ad-' + Date.now(),
-        title: 'Advertisement',
-        artist_id: 'system-ad',
-        artist_name: 'Smashify Ad',
-        audio_url: 'https://cdn.pixabay.com/download/audio/2022/10/30/audio_f535f21226.mp3?filename=advertisement-124434.mp3',
-        cover_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-        price: 0,
-        duration: 30,
-        is_for_sale: false,
-      };
+      const adSong = ADS[Math.floor(Math.random() * ADS.length)];
       setAdPlaying(true);
+      setAdSkipAvailable(false);
       setCurrentSong(adSong);
       setIsPlaying(true);
       if (audioRef.current) {
@@ -514,6 +608,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const seek = (time: number) => {
     if (audioRef.current && !isNaN(time)) {
+      if (adPlaying) return;
+      
       // Respect preview limit
       if (currentSong && !currentSong.is_purchased && time >= 30) {
         audioRef.current.currentTime = 29.9;
@@ -584,6 +680,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isExpanded,
     radioMode,
     adPlaying,
+    adSkipAvailable,
+    skipAd,
     isShuffle,
     repeatMode,
     toggleRadioMode,
@@ -607,7 +705,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }), [
     currentSong, isPlaying, currentTime, duration, volume, queue, dataSaver,
     eqPreset, playbackRate, sleepTimerRemaining, isExpanded, radioMode,
-    adPlaying, isShuffle, repeatMode
+    adPlaying, adSkipAvailable, isShuffle, repeatMode
   ]);
 
   return (

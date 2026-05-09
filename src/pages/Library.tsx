@@ -29,6 +29,24 @@ const Library: React.FC = () => {
     }
   }, [userProfile, activeTab]);
 
+  useEffect(() => {
+    const handleLikesUpdate = (e: any) => {
+      if (activeTab === 'likes') {
+        if (!e.detail.isLiked) {
+          // If unliked, remove from library list
+          setSongs(prev => prev.filter(s => s.id !== e.detail.songId));
+        } else {
+          // If liked, we might want to refresh to get the full song data, 
+          // but usually likes are added from other screens, so an optimistic local add is hard without the full song object.
+          // For now, let's just re-fetch if they are on the likes tab and something was liked.
+          fetchLibrary();
+        }
+      }
+    };
+    window.addEventListener('smash_likes_updated', handleLikesUpdate);
+    return () => window.removeEventListener('smash_likes_updated', handleLikesUpdate);
+  }, [activeTab, userProfile?.id]);
+
   const fetchLibrary = async () => {
     setLoading(true);
     try {

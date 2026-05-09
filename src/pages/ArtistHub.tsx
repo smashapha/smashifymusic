@@ -1342,11 +1342,6 @@ const SubscriptionTab = ({ userProfile, isPending }: any) => {
   const { refreshProfile } = useAuth();
   
   const handleSubscribe = (plan: 'rising_star' | 'standard' | 'elite') => {
-    if (isPending && !userProfile?.approved) {
-      toast.error('Your application must be approved before subscribing.');
-      return;
-    }
-    
     subscribeArtist({
       plan,
       user: userProfile,

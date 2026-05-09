@@ -16,7 +16,7 @@ import { Share2, Trash2 } from 'lucide-react';
 
 import { getListenerTier, getListenerLimits } from '../../lib/tierUtils';
 
-const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
+const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void, isLiked: boolean, handleLike: () => void }) => {
   const { 
     currentSong, isPlaying, togglePlay, currentTime, duration, 
     seek, volume, setVolume, nextTrack, previousTrack, 
@@ -24,14 +24,13 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
     playbackRate, setPlaybackRate,
     sleepTimerRemaining, setSleepTimer,
     pauseSong,
-    radioMode, toggleRadioMode, adPlaying,
+    radioMode, toggleRadioMode, adPlaying, adSkipAvailable, skipAd,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat
   } = usePlayer();
   const { role, userProfile } = useAuth();
   const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
   const displayDuration = adPlaying ? Math.min(30, duration || 30) : duration;
   const [showQueue, setShowQueue] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   
@@ -219,6 +218,16 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
               <p className="text-[10px] font-black text-smash-gray uppercase tracking-[0.4em] mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
               <h4 className="font-display font-black italic text-lg uppercase tracking-tight">{adPlaying ? 'ADVERTISEMENT' : currentSong?.genre}</h4>
            </div>
+           {adPlaying && (currentSong as any).cta_url && (
+             <a 
+               href={(currentSong as any).cta_url}
+               target="_blank"
+               rel="noopener noreferrer"
+               className={`p-3 bg-${accentColor}/20 hover:bg-${accentColor}/30 text-${accentColor} rounded-full transition-colors flex items-center gap-2`}
+             >
+               <Zap size={20} /> <span className="text-xs font-black uppercase">More Info</span>
+             </a>
+           )}
            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
               <Info size={24} />
            </button>
@@ -260,7 +269,22 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
 
          <div className="mt-auto w-full max-w-4xl mx-auto pt-6 pb-2">
            {/* Progress Bar */}
-           <div className="space-y-3 mb-6 md:mb-8">
+           <div className="space-y-3 mb-6 md:mb-8 relative">
+              {adPlaying && (
+                <div className="absolute -top-12 left-0 right-0 flex justify-center">
+                  <button
+                    disabled={!adSkipAvailable}
+                    onClick={skipAd}
+                    className={`px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs transition-all ${
+                      adSkipAvailable 
+                        ? 'bg-white text-smash-black hover:scale-105 active:scale-95 shadow-xl' 
+                        : 'bg-white/10 text-white/40 cursor-not-allowed'
+                    }`}
+                  >
+                    {adSkipAvailable ? 'Skip Advertisement' : `Skip Ad in ${Math.max(0, 5 - Math.floor(currentTime))}s`}
+                  </button>
+                </div>
+              )}
               <ProgressBar current={currentTime} total={displayDuration} onSeek={seek} disabled={adPlaying} />
               <div className="flex justify-between text-xs font-black text-smash-gray tracking-widest uppercase">
                 <span>{formatTime(currentTime)}</span>
@@ -329,7 +353,7 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
                    </button>
                  )}
                  <button 
-                   onClick={() => setIsLiked(!isLiked)}
+                   onClick={handleLike}
                    className={`transition-colors ${isLiked ? 'text-smash-red' : 'text-smash-gray hover:text-white'}`}
                  >
                    <Heart size={24} md:size={28} fill={isLiked ? "currentColor" : "none"} />
@@ -485,7 +509,7 @@ const GlobalPlayer: React.FC = () => {
   const { 
     currentSong, isPlaying, togglePlay, currentTime, duration, 
     volume, setVolume, dataSaver, toggleDataSaver, isExpanded, setIsExpanded,
-    queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying,
+    queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying, adSkipAvailable, skipAd,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, seek, removeFromQueue
   } = usePlayer();
   const { role, userProfile } = useAuth();
@@ -495,7 +519,100 @@ const GlobalPlayer: React.FC = () => {
   const [localVolume, setLocalVolume] = useState(volume);
   const [lastVolume, setLastVolume] = useState(volume || 0.8);
   const [showQueueModal, setShowQueueModal] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const currentSongRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync liked state with localStorage and DB
+  useEffect(() => {
+    if (!currentSong) return;
+    
+    // Check localStorage first for speed
+    const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+    setIsLiked(Array.isArray(liked) && liked.includes(currentSong.id));
+
+    // Then check DB if user is logged in for accuracy
+    const checkLikeStatus = async () => {
+      if (!userProfile) return;
+      const { data } = await supabase
+        .from('likes')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .eq('song_id', currentSong.id)
+        .maybeSingle();
+      
+      if (data) {
+        setIsLiked(true);
+        // Sync back to localStorage if missing
+        if (!liked.includes(currentSong.id)) {
+           localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, currentSong.id]));
+        }
+      } else {
+        setIsLiked(false);
+        // Remove from localStorage if found there but not in DB
+        if (liked.includes(currentSong.id)) {
+           localStorage.setItem('smash_liked_songs', JSON.stringify(liked.filter((id: string) => id !== currentSong.id)));
+        }
+      }
+    };
+
+    checkLikeStatus();
+  }, [currentSong?.id, userProfile?.id]);
+
+  useEffect(() => {
+    const handleLikesUpdate = (e: any) => {
+      if (currentSong && e.detail.songId === currentSong.id) {
+        setIsLiked(e.detail.isLiked);
+      }
+    };
+    window.addEventListener('smash_likes_updated', handleLikesUpdate);
+    return () => window.removeEventListener('smash_likes_updated', handleLikesUpdate);
+  }, [currentSong?.id]);
+
+  const handleLike = async () => {
+    if (!currentSong) return;
+    
+    const previouslyLiked = isLiked;
+    setIsLiked(!previouslyLiked);
+    
+    try {
+      let liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+      if (!Array.isArray(liked)) liked = [];
+
+      if (previouslyLiked) {
+        // Unlike
+        const newLiked = liked.filter((id: string) => id !== currentSong.id);
+        localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
+        
+        if (userProfile) {
+          const { error } = await supabase
+            .from('likes')
+            .delete()
+            .eq('user_id', userProfile.id)
+            .eq('song_id', currentSong.id);
+          if (error) throw error;
+        }
+      } else {
+        // Like
+        const newLiked = [...liked, currentSong.id];
+        localStorage.setItem('smash_liked_songs', JSON.stringify(newLiked));
+        
+        if (userProfile) {
+          const { error } = await supabase
+            .from('likes')
+            .insert({ user_id: userProfile.id, song_id: currentSong.id });
+          if (error) throw error;
+        }
+      }
+      // Broadcast event so other components (like SongCard) can update
+      window.dispatchEvent(new CustomEvent('smash_likes_updated', { 
+        detail: { songId: currentSong.id, isLiked: !previouslyLiked } 
+      }));
+    } catch (err) {
+      console.error('Like error:', err);
+      setIsLiked(previouslyLiked);
+      toast.error('Failed to update like status');
+    }
+  };
 
   useEffect(() => {
     if (showQueueModal && currentSongRef.current) {
@@ -598,6 +715,12 @@ const GlobalPlayer: React.FC = () => {
                   {currentSong.profiles?.stage_name || currentSong.artist_name}
                 </p>
               </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleLike(); }}
+                className={`ml-2 p-2 transition-colors ${isLiked ? 'text-smash-red' : 'text-smash-gray hover:text-white'}`}
+              >
+                <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+              </button>
             </div>
 
             {/* Mobile/Tablet Controls */}
@@ -615,6 +738,14 @@ const GlobalPlayer: React.FC = () => {
                 >
                   {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                 </button>
+                {adPlaying && adSkipAvailable && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); skipAd(); }}
+                    className="px-3 py-1 bg-white text-smash-black rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse"
+                  >
+                    Skip
+                  </button>
+                )}
                 <button 
                   onClick={(e) => { e.stopPropagation(); nextTrack(); }}
                   disabled={adPlaying}
@@ -652,6 +783,19 @@ const GlobalPlayer: React.FC = () => {
               >
                 {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
               </button>
+              {adPlaying && (
+                <button 
+                  disabled={!adSkipAvailable}
+                  onClick={(e) => { e.stopPropagation(); skipAd(); }}
+                  className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                    adSkipAvailable 
+                      ? 'bg-white text-smash-black hover:scale-105 active:scale-95 shadow-xl' 
+                      : 'bg-white/10 text-white/40 cursor-not-allowed'
+                  }`}
+                >
+                  {adSkipAvailable ? 'Skip Ad' : `Skip in ${Math.max(0, 5 - Math.floor(currentTime))}s`}
+                </button>
+              )}
 
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-3 w-24 lg:w-32 group">
@@ -715,7 +859,7 @@ const GlobalPlayer: React.FC = () => {
       </div>
 
       <AnimatePresence>
-        {isExpanded && <ExpandedPlayer onClose={() => setIsExpanded(false)} />}
+        {isExpanded && <ExpandedPlayer onClose={() => setIsExpanded(false)} isLiked={isLiked} handleLike={handleLike} />}
       </AnimatePresence>
 
       {/* Preview Limit Modal Overlay */}
