@@ -36,7 +36,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleDragEnd = (_: any, info: any) => {
     if (info.offset.x > 100) {
-      handleLike(new MouseEvent('click') as any); // swipe right = like
+      handleLike({ stopPropagation: () => {} }); // swipe right = like
     } else if (info.offset.x < -100) {
       // swipe left = skip / pass
       onSkip();
@@ -293,6 +293,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
 const MotoFeed: React.FC = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);

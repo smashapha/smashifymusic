@@ -169,23 +169,33 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
+           {!song.is_purchased && song.is_for_sale && (
+             <button 
+               onClick={handleBuy}
+               className="flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-xs font-black uppercase tracking-widest rounded-full transition-all hover:text-white"
+               title={`Buy track for MK ${song.price}`}
+             >
+               <ShoppingBag size={14} />
+               <span className="hidden sm:inline">MK {song.price}</span>
+             </button>
+           )}
            <button 
              onClick={handleSupportClick}
-             className="p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors opacity-0 group-hover:opacity-100"
+             className="p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors opacity-40 group-hover:opacity-100"
              title="Support Artist"
            >
               <Gift size={16} />
            </button>
            <button 
              onClick={handleLike}
-             className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isLiked ? 'text-smash-red opacity-100' : 'text-smash-gray opacity-0 group-hover:opacity-100'}`}
+             className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isLiked ? 'text-smash-red opacity-100' : 'text-smash-gray opacity-40 group-hover:opacity-100'}`}
            >
               <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
            </button>
            <div className="relative">
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all opacity-60 group-hover:opacity-100"
               >
                  <MoreVertical size={16} />
               </button>
@@ -266,24 +276,33 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-100">
+           {!song.is_purchased && song.is_for_sale && (
+             <button 
+               onClick={handleBuy}
+               className="p-2 rounded-full bg-smash-orange text-white hover:scale-110 transition-transform shadow-lg"
+               title={`Buy track for MK ${song.price}`}
+             >
+                <ShoppingBag size={18} />
+             </button>
+           )}
            <button 
              onClick={handleSupportClick}
-             className="p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors"
+             className="p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors opacity-60 hover:opacity-100"
              title="Support Artist"
            >
               <Gift size={18} />
            </button>
            <button 
              onClick={handleLike}
-             className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isLiked ? 'text-smash-red opacity-100' : 'text-smash-gray'}`}
+             className={`p-2 rounded-full hover:bg-white/10 transition-colors opacity-60 hover:opacity-100 ${isLiked ? 'text-smash-red !opacity-100' : 'text-smash-gray'}`}
            >
               <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
            </button>
            <div className="relative">
              <button 
                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-               className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all"
+               className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all opacity-60 hover:opacity-100"
              >
                 <MoreVertical size={18} />
              </button>

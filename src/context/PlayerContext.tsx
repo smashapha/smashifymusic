@@ -164,22 +164,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Media Session API
   useEffect(() => {
-    if (!currentSong || !('mediaSession' in navigator)) return;
+    if (!currentSong) return;
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentSong.title,
-      artist: currentSong.artist_name,
-      album: 'Smashify',
-      artwork: [{ src: currentSong.cover_url || '', sizes: '512x512', type: 'image/jpeg' }]
-    });
+    if ('mediaSession' in navigator && typeof window.MediaMetadata === 'function') {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: currentSong.title,
+        artist: currentSong.artist_name,
+        album: 'Smashify',
+        artwork: [{ src: currentSong.cover_url || '', sizes: '512x512', type: 'image/jpeg' }]
+      });
+    }
 
-    navigator.mediaSession.setActionHandler('play', () => togglePlay());
-    navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-    navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
-    navigator.mediaSession.setActionHandler('previoustrack', () => previousTrack());
-    navigator.mediaSession.setActionHandler('seekto', (details) => {
-      if (details.seekTime) seek(details.seekTime);
-    });
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => togglePlay());
+      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+      navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+      navigator.mediaSession.setActionHandler('previoustrack', () => previousTrack());
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime) seek(details.seekTime);
+      });
+    }
   }, [currentSong]);
   
   useEffect(() => {
@@ -208,7 +212,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSleepTimerRemaining(minutes);
   };
   
-  const audioRef = useRef<HTMLAudioElement>(new Audio());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Lazy initialize audio element on first render in browser
+  if (!audioRef.current && typeof document !== 'undefined') {
+    audioRef.current = document.createElement('audio');
+  }
+  const audio = audioRef.current as HTMLAudioElement;
 
   useEffect(() => {
     localStorage.setItem('smash_datasaver', String(dataSaver));
@@ -220,6 +230,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     const audio = audioRef.current;
+    if (!audio) return;
     
     // Reset limit reached ref when song changes
     previewLimitReached.current = false;

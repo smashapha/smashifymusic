@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, 
   ChevronDown, ListMusic, Heart, Shuffle, Repeat, Info, Zap, 
-  Wifi, WifiOff, Clock, Headphones, Music2, Gauge, X, Download, Lock
+  Wifi, WifiOff, Clock, Headphones, Music2, Gauge, X, Download, Lock,
+  ShoppingBag
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { usePlayer } from '../../context/PlayerContext';
@@ -127,9 +128,13 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
       const link = document.createElement('a');
       link.href = url;
       link.download = `${currentSong.title} - ${currentSong.artist_name}.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (document.body) {
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        link.click();
+      }
       window.URL.revokeObjectURL(url);
 
       toast.success('Download started!', { id: toastId });
@@ -147,6 +152,23 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
       console.error('Download failed:', err);
       alert('Failed to download track.');
     }
+  };
+
+  const handleBuy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentSong) return;
+    if (!userProfile) {
+      toast.error('Please sign in to buy tracks');
+      return;
+    }
+    buyTrack({
+      song: currentSong,
+      user: userProfile,
+      onSuccess: () => {
+        toast.success(`Purchase successful! You now own ${currentSong.title}`);
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    });
   };
 
   const presets: EQPreset[] = ['normal', 'bass', 'treble', 'vocal', 'club'];
@@ -288,6 +310,15 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
            {/* Bottom Toolbar */}
            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-white/5 relative">
               <div className="flex items-center gap-3 md:gap-4 flex-1">
+                 {!currentSong?.is_purchased && currentSong?.is_for_sale && (
+                   <button 
+                     onClick={(e: any) => handleBuy(e)}
+                     className="flex items-center gap-2 px-6 py-3 bg-smash-orange text-white rounded-full font-black uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20 mr-4"
+                   >
+                     <ShoppingBag size={20} />
+                     Buy MK {currentSong.price}
+                   </button>
+                 )}
                  <button 
                    onClick={() => setIsLiked(!isLiked)}
                    className={`transition-colors ${isLiked ? 'text-smash-red' : 'text-smash-gray hover:text-white'}`}
@@ -478,6 +509,23 @@ const GlobalPlayer: React.FC = () => {
     }
   };
 
+  const handleBuy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentSong) return;
+    if (!userProfile) {
+      toast.error('Please sign in to buy tracks');
+      return;
+    }
+    buyTrack({
+      song: currentSong,
+      user: userProfile,
+      onSuccess: () => {
+        toast.success(`Purchase successful! You now own ${currentSong.title}`);
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    });
+  };
+
   if (!currentSong) return null;
 
   return (
@@ -519,13 +567,22 @@ const GlobalPlayer: React.FC = () => {
                   <Maximize2 size={16} md:size={20} className="text-white" />
                 </div>
               </div>
-              <div className="min-w-0 cursor-pointer">
+              <div className="min-w-0 cursor-pointer flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className={`font-display font-black text-sm md:text-xl italic uppercase tracking-tighter truncate leading-none group-hover:text-${accentColor} transition-colors`}>
                     {currentSong.title}
                   </h3>
                   {adPlaying && (
                     <span className={`bg-${accentColor} text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest`}>AD</span>
+                  )}
+                  {!currentSong.is_purchased && currentSong.is_for_sale && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleBuy(e); }}
+                      className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1 bg-smash-orange text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
+                    >
+                       <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" />
+                       <span className="hidden xs:inline">MK {currentSong.price}</span>
+                    </button>
                   )}
                 </div>
                 <p className="text-[10px] md:text-sm text-smash-gray font-bold truncate tracking-tight">

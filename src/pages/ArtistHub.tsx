@@ -692,7 +692,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
       <div className="bg-white/5 border border-white/5 rounded-[40px] p-6 md:p-10 shadow-2xl">
          {hasReachedLimit && mode === 'single' ? (
            <div className="text-center p-10 bg-smash-red/10 border border-smash-red/20 rounded-3xl">
-             <AlertCircleIcon className="mx-auto mb-4 text-smash-red" size={40} />
+             <AlertCircle className="mx-auto mb-4 text-smash-red" size={40} />
              <h3 className="text-xl font-bold text-white mb-2">Upload Limit Reached</h3>
              <p className="text-sm text-smash-gray mb-6 max-w-md mx-auto">
               {isFree 
