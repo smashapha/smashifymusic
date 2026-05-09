@@ -113,6 +113,13 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
   const handleDownload = async () => {
     if (!currentSong) return;
     
+    // Check listener limits (Free tier cannot download)
+    const limits = getListenerLimits(userProfile);
+    if (!limits.canDownload && !currentSong.is_purchased) {
+      toast.error("Downloads are for Premium and Family plans only.");
+      return;
+    }
+    
     // Only allow download if free or purchased
     if (currentSong.is_for_sale && !currentSong.is_purchased) {
       toast.error("Please purchase the track to download.");

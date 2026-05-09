@@ -30,7 +30,7 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
           const formData = new FormData(e.currentTarget);
           const q = formData.get('q');
           if (q) {
-             navigate(`/search?q=${encodeURIComponent(q.toString())}`);
+             navigate(`/discover?q=${encodeURIComponent(q.toString())}`);
           }
         }}>
            <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 text-smash-gray group-focus-within:text-${accentColor} transition-colors`} />
@@ -136,7 +136,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       <div className="mt-10 space-y-1">
         <p className="px-4 text-[10px] font-black text-smash-gray uppercase tracking-widest mb-4">Your Studio</p>
         <NavLink
-            to={role === 'artist' ? "/artist-hub" : role === 'pending' ? "/application-pending" : "/artists"}
+            to={role === 'artist' || role === 'pending' ? "/artist-hub" : "/artists"}
             className={({ isActive }) => 
               `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
                 isActive 
@@ -236,7 +236,7 @@ const BottomNav = () => {
       <NavLink to="/moto-feed" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
         <Flame size={24} />
       </NavLink>
-      <NavLink to="/search" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
+      <NavLink to="/discover" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
         <Search size={24} />
       </NavLink>
       <NavLink to="/library" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>

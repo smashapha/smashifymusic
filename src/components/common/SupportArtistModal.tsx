@@ -24,8 +24,8 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
   ];
 
   const handleSupport = async () => {
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      toast.error('Please enter a valid amount');
+    if (!amount || isNaN(Number(amount)) || Number(amount) < 500) {
+      toast.error('Minimum support is MK 500');
       return;
     }
 
@@ -108,6 +108,7 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter Custom Amount"
+                    min="500"
                     className="w-full bg-white/5 border border-white/10 rounded-[28px] pl-16 pr-8 py-5 text-xl font-studio font-black italic outline-none focus:border-smash-purple transition-all"
                  />
               </div>

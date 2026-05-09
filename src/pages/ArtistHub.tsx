@@ -295,10 +295,10 @@ export default function ArtistHub() {
                   {activeTab === 'analytics' && <AnalyticsTab stats={stats} songs={songs} userProfile={userProfile} setActiveTab={setActiveTab} />}
                   {activeTab === 'songs' && <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} />}
                   {activeTab === 'albums' && <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />}
-                  {activeTab === 'upload' && <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={setActiveTab} />}
+                  {activeTab === 'upload' && <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={setActiveTab} role={role} />}
                   {activeTab === 'wallet' && <WalletTab balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
                   {activeTab === 'profile' && <ProfileTab userProfile={userProfile} />}
-                  {activeTab === 'subscription' && <SubscriptionTab userProfile={userProfile} isPending={isPending} />}
+                  {activeTab === 'subscription' && <SubscriptionTab userProfile={userProfile} role={role} />}
                   {activeTab === 'admin' && <AdminTab />}
                 </motion.div>
             </AnimatePresence>
@@ -520,7 +520,7 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
   );
 };
 
-const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
+const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [mode, setMode] = useState<'single'|'album'|'snippet'>('single');
   const [uploading, setUploading] = useState(false);
   const [songFile, setSongFile] = useState<File|null>(null);
@@ -529,9 +529,19 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
   const { userProfile } = useAuth();
   
   const limits = getTierLimits(userProfile);
-  const isPending = userProfile?.artist_role === 'pending';
+  const isPending = role === 'pending';
   const isFree = getArtistTier(userProfile) === 'free';
-  const songsUploadedThisMonth = getSongsUploadedThisMonth(songs, userProfile?.id);
+  
+  // Calculate songs uploaded this month locally since we have all songs
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  
+  const songsUploadedThisMonth = songs.filter((s: any) => {
+    const createdDate = new Date(s.created_at);
+    return createdDate >= startOfMonth;
+  }).length;
+
   const totalSongsUploaded = songs.length;
   
   const hasReachedLimit = (limits.songLimit !== null && totalSongsUploaded >= limits.songLimit) || 
@@ -1337,8 +1347,9 @@ const ProfileTab = ({ userProfile }: any) => {
 
 import { subscribeArtist } from '../lib/paychangu';
 
-const SubscriptionTab = ({ userProfile, isPending }: any) => {
+const SubscriptionTab = ({ userProfile, role }: any) => {
   const currentTier = userProfile?.subscription_tier || 'free';
+  const isPending = role === 'pending';
   const { refreshProfile } = useAuth();
   
   const handleSubscribe = (plan: 'rising_star' | 'standard' | 'elite') => {
@@ -1353,15 +1364,27 @@ const SubscriptionTab = ({ userProfile, isPending }: any) => {
   };
 
   return (
-    <div className={`space-y-12 max-w-5xl mx-auto ${isPending ? 'opacity-80' : ''}`}>
+    <div className={`space-y-12 max-w-5xl mx-auto`}>
       <div className="text-center">
         <h2 className="text-4xl font-studio font-black mb-4 uppercase italic"><Sparkles className="inline text-smash-purple mr-3 mb-2"/> Studio Access</h2>
         <p className="text-smash-gray text-lg font-medium">Choose a level that matches your career goals.</p>
-        {isPending && <div className="mt-4 inline-flex items-center gap-2 bg-smash-purple/20 text-smash-purple px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest"><AppLockIcon size={14} /> Available after approval</div>}
+        {isPending && (
+          <div className="mt-6 p-6 bg-smash-purple/10 border border-smash-purple/20 rounded-[32px] max-w-2xl mx-auto">
+             <div className="flex items-center gap-4 text-left">
+                <div className="w-12 h-12 rounded-full bg-smash-purple/20 flex items-center justify-center shrink-0">
+                   <ShieldCheck className="text-smash-purple" />
+                </div>
+                <div>
+                   <p className="text-sm font-black uppercase tracking-widest text-white mb-1">Pending Application</p>
+                   <p className="text-xs font-medium text-smash-gray leading-relaxed text-left">You can still subscribe to unlock Studio features! <span className="text-smash-purple font-bold">Subscribing while pending grants instant approval</span> so you can start distributing your music immediately.</p>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
 
       <div className="p-5 bg-smash-green/10 border border-smash-green/20 rounded-2xl text-center shadow-inner">
-         <p className="text-xs font-black uppercase tracking-[0.2em] text-smash-green"><i className="fas fa-check-circle mr-2"></i> Current Status: <strong>{currentTier === 'free' ? 'FREE PENDING' : currentTier.replace('_', ' ').toUpperCase()}</strong></p>
+         <p className="text-xs font-black uppercase tracking-[0.2em] text-smash-green"><i className="fas fa-check-circle mr-2"></i> Current Status: <strong>{currentTier === 'free' ? (isPending ? 'PENDING' : 'FREE') : currentTier.replace('_', ' ').toUpperCase()}</strong></p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">

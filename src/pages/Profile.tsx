@@ -17,7 +17,7 @@ const Profile: React.FC = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/landing');
+    navigate('/auth/listener');
   };
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {

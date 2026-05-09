@@ -59,7 +59,7 @@ export const ARTIST_TIER_LIMITS = {
 
 export function getArtistTier(profile: any): ArtistTier {
   if (!profile?.approved) return 'free'; // pending = free tier
-  const tier = profile?.subscription_tier;
+  const tier = profile?.subscription_tier?.toLowerCase();
   if (tier === 'rising_star') return 'rising_star';
   if (tier === 'standard') return 'standard';
   if (tier === 'elite') return 'elite';

@@ -25,6 +25,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
   const [showMenu, setShowMenu] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [artistData, setArtistData] = useState<UserProfile | null>(null);
   const [isLiked, setIsLiked] = useState(() => {
     try {
@@ -91,6 +92,8 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isLikeLoading) return;
+    
     let liked: string[] = [];
     try {
       liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
@@ -102,6 +105,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
     // Optimistic UI update
     const previouslyLiked = isLiked;
     setIsLiked(!previouslyLiked);
+    setIsLikeLoading(true);
 
     try {
       let newLiked;
@@ -136,6 +140,8 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
       console.error('Like error:', err);
       // Rollback
       setIsLiked(previouslyLiked);
+    } finally {
+      setIsLikeLoading(false);
     }
   };
 
@@ -331,9 +337,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
            </button>
            <button 
              onClick={handleLike}
-             className={`p-2 rounded-full hover:bg-white/10 transition-colors opacity-60 hover:opacity-100 ${isLiked ? 'text-smash-red !opacity-100' : 'text-smash-gray'}`}
+             disabled={isLikeLoading}
+             className={`p-2 rounded-full hover:bg-white/10 transition-colors opacity-60 hover:opacity-100 disabled:opacity-30 ${isLiked ? 'text-smash-red !opacity-100' : 'text-smash-gray'}`}
            >
-              <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+              <Heart size={18} fill={isLiked ? "currentColor" : "none"} className={isLikeLoading ? 'animate-pulse' : ''} />
            </button>
            <div className="relative">
              <button 

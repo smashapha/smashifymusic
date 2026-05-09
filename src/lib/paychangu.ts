@@ -70,14 +70,12 @@ export function subscribeArtist({
         const expiresAt = new Date();
         expiresAt.setFullYear(expiresAt.getFullYear() + 1);
         
-        await supabase.from('profiles').upsert({
-          ...user,
-          id: user.id,
+        await supabase.from('profiles').update({
           subscription_tier: plan,
           subscription_ends: expiresAt.toISOString(),
           approved: true,  // subscribing auto-approves pending artists
           user_type: 'artist'
-        });
+        }).eq('id', user.id);
 
         // Also update auth metadata to reflect role change if needed
         await supabase.auth.updateUser({
@@ -144,13 +142,11 @@ export function subscribeListener({
         const expiresAt = new Date();
         expiresAt.setMonth(expiresAt.getMonth() + 1);
         
-        await supabase.from('user_profiles').upsert({
-          ...user,
-          id: user.id,
+        await supabase.from('user_profiles').update({
           subscription_tier: plan,
           subscription_ends: expiresAt.toISOString(),
           user_type: 'listener'
-        });
+        }).eq('id', user.id);
 
         // Ensure metadata reflects listener role
         await supabase.auth.updateUser({

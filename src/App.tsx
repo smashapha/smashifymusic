@@ -165,7 +165,7 @@ const NotFound = () => {
 };
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
   useEffect(() => {
     const handleOffline = () => {
@@ -198,7 +198,7 @@ function AppContent() {
       <Route path="/auth/listener" element={<AuthListener />} />
       <Route path="/auth/artist" element={<AuthArtist />} />
       <Route path="/artists" element={<ArtistLanding />} />
-      <Route path="/application-pending" element={<ApplicationPending />} />
+      <Route path="/application-pending" element={role === 'pending' || role === 'artist' ? <Navigate to="/artist-hub" replace /> : <ApplicationPending />} />
       <Route path="/moto-feed" element={<MotoFeed />} />
       <Route 
         path="/artist-hub" 
