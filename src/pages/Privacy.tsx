@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Lock, ChevronRight } from 'lucide-react';
+import { Lock as AppLockIcon, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Privacy = () => {
@@ -18,7 +18,7 @@ const Privacy = () => {
         </div>
 
       <div className="flex items-center gap-4 mb-4">
-        <Lock size={32} className="text-smash-orange" />
+        <AppLockIcon size={32} className="text-smash-orange" />
         <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter">Privacy Policy</h1>
       </div>
       <p className="text-smash-gray font-medium mb-12">Effective: 1 January 2026</p>
@@ -79,7 +79,7 @@ const Privacy = () => {
         <section>
           <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">8. CONTACT</h2>
           <div className="bg-white/5 p-6 rounded-2xl border border-white/5 text-smash-gray flex items-center gap-3 mt-4">
-             <Lock size={20} className="text-smash-orange" /> <strong className="text-white">Privacy Officer:</strong> privacy@smashify.mw
+             <AppLockIcon size={20} className="text-smash-orange" /> <strong className="text-white">Privacy Officer:</strong> privacy@smashify.mw
           </div>
         </section>
       </div>

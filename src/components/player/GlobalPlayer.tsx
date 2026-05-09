@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, 
   ChevronDown, ListMusic, Heart, Shuffle, Repeat, Info, Zap, 
-  Wifi, WifiOff, Clock, Headphones, Music2, Gauge, X, Download, Lock as LockIcon,
+  Wifi, WifiOff, Clock, Headphones, Music2, Gauge, X, Download, Lock as AppLockIcon,
   ShoppingBag
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -128,19 +128,28 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
       const link = document.createElement('a');
       link.href = url;
       link.download = `${currentSong.title} - ${currentSong.artist_name}.mp3`;
-      if (document.body) {
-        document.body.appendChild(link);
+      
+      // Robust download handling
+      const body = document.body;
+      if (body) {
+        body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        setTimeout(() => {
+          if (body.contains(link)) {
+            body.removeChild(link);
+          }
+        }, 100);
       } else {
         link.click();
       }
-      window.URL.revokeObjectURL(url);
+      
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
       toast.success('Download started!', { id: toastId });
       let downloads: string[] = [];
       try {
-        downloads = JSON.parse(localStorage.getItem('smash_downloads') || '[]');
+        const stored = localStorage.getItem('smash_downloads');
+        downloads = JSON.parse(stored || '[]');
       } catch (e) {
         console.error('Error parsing downloads:', e);
       }
@@ -150,7 +159,7 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
       }
     } catch (err) {
       console.error('Download failed:', err);
-      alert('Failed to download track.');
+      toast.error('Failed to download track.', { id: toastId });
     }
   };
 
@@ -398,7 +407,7 @@ const ExpandedPlayer = ({ onClose }: { onClose: () => void }) => {
                    }} 
                    className={`flex items-center gap-2 font-black uppercase transition-colors ${!getListenerLimits(userProfile).canDownload ? 'text-smash-red/80' : 'text-smash-gray hover:text-white'}`}
                  >
-                   {!getListenerLimits(userProfile).canDownload ? <LockIcon size={15} className="mr-1" /> : <Download size={18} />} Download
+                   {!getListenerLimits(userProfile).canDownload ? <AppLockIcon size={15} className="mr-1" /> : <Download size={18} />} Download
                  </button>
               </div>
            </div>

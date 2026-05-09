@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Mail, Lock, User, ChevronLeft, Chrome, AlertCircle, Headphones
+  Mail, Lock as AppLockIcon, User, ChevronLeft, Chrome, AlertCircle, Headphones
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -162,7 +162,7 @@ const AuthListener: React.FC = () => {
                   <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleAuth}>
                      <div className="space-y-6">
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
-                        <AuthInput icon={<Lock size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
+                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
                      </div>
                      <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-orange hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
                         {loadingState ? 'Entering...' : 'Sign In'}
@@ -182,7 +182,7 @@ const AuthListener: React.FC = () => {
                      <div className="space-y-6">
                         <AuthInput icon={<User size={20} />} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} />
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
-                        <AuthInput icon={<Lock size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
+                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
                      </div>
                      <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
                         {loadingState ? 'Joining...' : 'Join as Listener'}

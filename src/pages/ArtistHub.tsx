@@ -6,7 +6,7 @@ import {
   Edit3, CheckCircle2, AlertCircle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, Menu, Clock, ExternalLink, ShieldCheck,
-  ShoppingBag, Heart
+  ShoppingBag, Heart, Lock as AppLockIcon
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -333,7 +333,7 @@ const AnalyticsTab = ({ stats, songs, userProfile, setActiveTab }: any) => {
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
         {!limits.hasFullAnalytics && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-smash-black/80 backdrop-blur-sm rounded-3xl">
-            <Lock size={32} className="text-smash-purple mb-3" />
+            <AppLockIcon size={32} className="text-smash-purple mb-3" />
             <p className="font-black text-white uppercase tracking-widest text-sm mb-2">Full Analytics</p>
             <p className="text-smash-gray text-xs font-bold text-center max-w-xs">
               Detailed charts, revenue breakdown, and listener demographics unlock with Standard plan.
@@ -486,7 +486,7 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
           </button>
         ) : (
           <button onClick={() => setActiveTab('subscription')} className="px-6 py-2.5 bg-smash-purple/50 border border-smash-purple/30 text-white/50 font-black text-xs uppercase tracking-widest rounded-full flex items-center gap-2 hover:bg-smash-purple hover:text-white transition-all shadow-lg">
-            <Lock size={14} /> Unlock Albums
+            <AppLockIcon size={14} /> Unlock Albums
           </button>
         )}
       </div>
@@ -676,7 +676,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
           }
           setMode('album');
         }} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode==='album'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'} ${!limits.canCreateAlbums ? 'opacity-50 cursor-not-allowed' : ''}`}>
-           {!limits.canCreateAlbums && <Lock size={12}/>} Full Album
+           {!limits.canCreateAlbums && <AppLockIcon size={12}/>} Full Album
         </button>
         <button onClick={()=>{
           if (!limits.canPostSnippets) {
@@ -685,7 +685,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
           }
           setMode('snippet');
         }} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${mode==='snippet'?'bg-smash-purple text-white shadow-lg':'text-smash-gray hover:text-white'} ${!limits.canPostSnippets ? 'opacity-50 cursor-not-allowed' : ''}`}>
-           {!limits.canPostSnippets ? <Lock size={12}/> : <Flame size={14}/>} Feed Snippet
+           {!limits.canPostSnippets ? <AppLockIcon size={12}/> : <Flame size={14}/>} Feed Snippet
         </button>
       </div>
 
@@ -810,7 +810,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab }: any) => {
                         <option value="false">Free Stream Only</option>
                         {limits.canSellSongs && <option value="true">Paid Download (Buy)</option>}
                       </select>
-                      {!limits.canSellSongs && <p className="text-[10px] text-smash-red/70 mt-2 font-bold uppercase tracking-widest"><Lock size={10} className="inline mr-1"/> Unlock paid downloads</p>}
+                      {!limits.canSellSongs && <p className="text-[10px] text-smash-red/70 mt-2 font-bold uppercase tracking-widest"><AppLockIcon size={10} className="inline mr-1"/> Unlock paid downloads</p>}
                     </div>
                     <div>
                       <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">Set Price (MWK)</label>
@@ -1070,7 +1070,7 @@ const WalletTab = ({ balance, userProfile, setActiveTab }: any) => {
                disabled={limits.canWithdraw && (requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance)}
                className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
              >
-               {!limits.canWithdraw && <Lock size={14} />} {requesting ? 'Processing...' : 'Request Payout'}
+               {!limits.canWithdraw && <AppLockIcon size={14} />} {requesting ? 'Processing...' : 'Request Payout'}
              </button>
              <p className="text-[9px] text-center text-smash-gray font-bold uppercase tracking-widest leading-relaxed">Funds arrive via Airtel/Mpamba within 5-30 minutes.</p>
           </div>
@@ -1362,7 +1362,7 @@ const SubscriptionTab = ({ userProfile, isPending }: any) => {
       <div className="text-center">
         <h2 className="text-4xl font-studio font-black mb-4 uppercase italic"><Sparkles className="inline text-smash-purple mr-3 mb-2"/> Studio Access</h2>
         <p className="text-smash-gray text-lg font-medium">Choose a level that matches your career goals.</p>
-        {isPending && <div className="mt-4 inline-flex items-center gap-2 bg-smash-purple/20 text-smash-purple px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest"><Lock size={14} /> Available after approval</div>}
+        {isPending && <div className="mt-4 inline-flex items-center gap-2 bg-smash-purple/20 text-smash-purple px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest"><AppLockIcon size={14} /> Available after approval</div>}
       </div>
 
       <div className="p-5 bg-smash-green/10 border border-smash-green/20 rounded-2xl text-center shadow-inner">

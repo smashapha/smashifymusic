@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Music2, Check, Lock, Globe, Loader2 } from 'lucide-react';
+import { 
+  X, Plus, Music2, Check, Lock as AppLockIcon, Globe, Loader2 
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Playlist, Song } from '../../types';
@@ -199,7 +201,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                         <div className="text-left">
                           <p className="font-display font-black italic uppercase text-sm group-hover:text-smash-orange transition-colors">{playlist.name}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {playlist.is_public ? <Globe size={10} className="text-smash-gray" /> : <Lock size={10} className="text-smash-gray" />}
+                            {playlist.is_public ? <Globe size={10} className="text-smash-gray" /> : <AppLockIcon size={10} className="text-smash-gray" />}
                             <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest">{playlist.is_public ? 'Public' : 'Private'}</p>
                           </div>
                         </div>
@@ -239,7 +241,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
 
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                 <div className="flex items-center gap-3">
-                  {isPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
+                  {isPublic ? <Globe size={18} className="text-smash-orange" /> : <AppLockIcon size={18} className="text-smash-gray" />}
                   <div>
                     <p className="text-sm font-black uppercase tracking-widest">Public Playlist</p>
                     <p className="text-[10px] text-smash-gray font-medium">Anyone can see this playlist</p>

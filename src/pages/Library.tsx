@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock } from 'lucide-react';
+import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -227,7 +227,7 @@ const Library: React.FC = () => {
                   <Plus size={40} className="text-white/20 group-hover:text-smash-orange transition-colors" />
                   <p className="text-[10px] font-black uppercase tracking-widest mt-4">Create New</p>
                   {playlists.length >= limits.maxPlaylists && (
-                     <div className="absolute top-4 right-4 text-smash-red"><Lock size={16} /></div>
+                     <div className="absolute top-4 right-4 text-smash-red"><AppLockIcon size={16} /></div>
                   )}
                </motion.div>
 

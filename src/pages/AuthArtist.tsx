@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Mail, Lock, User, Check, ArrowRight, ShieldCheck, 
+  Mail, Lock as AppLockIcon, User, Check, ArrowRight, ShieldCheck, 
   Mic2, AlertCircle, Phone, MapPin, 
   Music, ChevronLeft, Disc, Chrome
 } from 'lucide-react';
@@ -218,7 +218,7 @@ const AuthArtist: React.FC = () => {
                   <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleAuth}>
                      <div className="space-y-6">
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Artist Email" value={email} onChange={setEmail} />
-                        <AuthInput icon={<Lock size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
+                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
                      </div>
                      <button type="submit" disabled={loadingState} className="w-full py-6 bg-smash-purple text-white rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl shadow-smash-purple/30 hover:scale-[1.02] active:scale-95 transition-all italic">
                         {loadingState ? 'Connecting...' : 'Unlock Studio'}
@@ -280,7 +280,7 @@ const AuthArtist: React.FC = () => {
                         {artistStep === 3 && (
                            <motion.div key="as3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                               <div className="space-y-6">
-                                 <AuthInput icon={<Lock size={20} />} type="password" placeholder="Secure Password" value={password} onChange={setPassword} />
+                                 <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Secure Password" value={password} onChange={setPassword} />
                                  <div className="p-6 rounded-[32px] bg-white/5 border border-white/5 space-y-4 text-left">
                                     <div className="flex items-center gap-3">
                                        <ShieldCheck className="text-smash-purple" size={20} />
