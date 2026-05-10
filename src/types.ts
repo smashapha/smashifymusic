@@ -173,7 +173,7 @@ export interface PayoutRequest {
 
 export interface Playlist {
   id: string;
-  user_id: string;
+  profile_id: string;
   name: string;
   description?: string;
   cover_url?: string;

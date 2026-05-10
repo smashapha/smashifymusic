@@ -46,7 +46,7 @@ export const musicService = {
     const { data, error } = await supabase
       .from('purchases')
       .insert({
-        user_id: userId,
+        profile_id: userId,
         song_id: songId,
         amount,
         transaction_id: tx_ref,

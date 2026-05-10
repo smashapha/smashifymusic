@@ -168,10 +168,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const profileData: any = {
             id: userId,
             full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Artist',
-            stage_name: authUser.user_metadata?.stage_name || authUser.email?.split('@')[0] || 'New Artist',
+            stage_name: authUser.user_metadata?.stage_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Artist',
             email: authUser.email,
+            phone: authUser.user_metadata?.phone || null,
             approved: false,
-            user_type: 'artist'
+            user_type: 'artist',
+            artist_tier: 'Free',
+            subscription_tier: 'Free'
           };
           const { error: createError } = await supabase.from('profiles').upsert(profileData);
           if (!createError) {
@@ -185,6 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: userId,
             full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Listener',
             email: authUser.email,
+            phone: authUser.user_metadata?.phone || null,
             subscription_tier: 'Free',
             user_type: 'listener'
           };

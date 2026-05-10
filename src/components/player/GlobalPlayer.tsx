@@ -531,7 +531,7 @@ const GlobalPlayer: React.FC = () => {
       const { data } = await supabase
         .from('likes')
         .select('*')
-        .eq('user_id', userProfile.id)
+        .eq('profile_id', userProfile.id)
         .eq('song_id', currentSong.id)
         .maybeSingle();
       
@@ -582,7 +582,7 @@ const GlobalPlayer: React.FC = () => {
           const { error } = await supabase
             .from('likes')
             .delete()
-            .eq('user_id', userProfile.id)
+            .eq('profile_id', userProfile.id)
             .eq('song_id', currentSong.id);
           if (error) throw error;
         }
@@ -594,7 +594,7 @@ const GlobalPlayer: React.FC = () => {
         if (userProfile) {
           const { error } = await supabase
             .from('likes')
-            .insert({ user_id: userProfile.id, song_id: currentSong.id });
+            .insert({ profile_id: userProfile.id, song_id: currentSong.id });
           if (error) throw error;
         }
       }

@@ -158,7 +158,7 @@ const Pricing = () => {
                 title="Premium" 
                 price="750" 
                 badge="MOST POPULAR"
-                onAction={() => handleAction('premium')}
+                onAction={() => handleAction('Premium')}
                 features={[
                   "Ad-free listening", 
                   "High quality audio (320kbps)", 
@@ -171,7 +171,7 @@ const Pricing = () => {
              <PricingCard 
                 title="Family" 
                 price="3,500" 
-                onAction={() => handleAction('family')}
+                onAction={() => handleAction('Family')}
                 features={[
                   "5 Premium accounts included", 
                   "Ad-free listening for everyone",

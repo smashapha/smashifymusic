@@ -153,10 +153,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!userProfile) return;
     try {
       await supabase.from('recently_played').upsert({
-        user_id: userProfile.id,
+        profile_id: userProfile.id,
         song_id: song.id,
         played_at: new Date().toISOString()
-      }, { onConflict: 'user_id,song_id' });
+      }, { onConflict: 'profile_id,song_id' });
     } catch(err) { console.error(err); }
   };
 

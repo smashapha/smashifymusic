@@ -34,7 +34,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
       const { data, error } = await supabase
         .from('playlists')
         .select('*')
-        .eq('user_id', userProfile?.id)
+        .eq('profile_id', userProfile?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -71,7 +71,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
         .from('playlists')
         .insert({
           name: newName.trim(),
-          user_id: userProfile.id,
+          profile_id: userProfile.id,
           is_public: isPublic,
           cover_url: song.cover_url
         })
@@ -104,7 +104,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
         .insert({
           playlist_id: playlistId,
           song_id: song.id,
-          user_id: userProfile?.id
+          profile_id: userProfile?.id
         });
 
       if (error) {

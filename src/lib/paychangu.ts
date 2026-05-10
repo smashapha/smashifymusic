@@ -125,9 +125,10 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
 /**
  * Upgrade listener account to Premium or Family
  */
-export async function upgradeListenerPlan({ user, plan }: { user: UserProfile; plan: 'Premium' | 'Family' }) {
-  const amount = plan === 'Premium' ? 750 : 3500;
-  const type = plan === 'Premium' ? 'listener_premium' : 'listener_family';
+export async function upgradeListenerPlan({ user, plan }: { user: any; plan: string }) {
+  const normalizedPlan = plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
+  const amount = normalizedPlan === 'Premium' ? 750 : 3500;
+  const type = normalizedPlan === 'Premium' ? 'listener_premium' : 'listener_family';
 
   return initiatePayment({
     amount,
@@ -135,10 +136,10 @@ export async function upgradeListenerPlan({ user, plan }: { user: UserProfile; p
     first_name: user.full_name?.split(' ')[0] || 'Listener',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/upgrade-success?plan=${plan}`,
+    return_url: `${APP_URL}/upgrade-success?plan=${normalizedPlan}`,
     meta: {
       userId: user.id,
-      plan
+      plan: normalizedPlan
     }
   });
 }

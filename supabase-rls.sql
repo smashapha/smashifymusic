@@ -7,6 +7,22 @@
 -- ==============================================================================
 
 -- ═════════════════════════════════════════════════════════════════════════════
+-- -1. TABLE UPDATES (ENSURE COLUMNS EXIST)
+-- ═════════════════════════════════════════════════════════════════════════════
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stage_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS artist_tier TEXT DEFAULT 'Free';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'Free';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+
+-- ═════════════════════════════════════════════════════════════════════════════
 -- 0. SCHEMA UPDATES (AUDIO ADS)
 -- ═════════════════════════════════════════════════════════════════════════════
 
@@ -423,10 +439,10 @@ DROP POLICY IF EXISTS "likes_select_all" ON likes;
 CREATE POLICY "likes_select_all" ON likes FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "likes_insert_auth" ON likes;
-CREATE POLICY "likes_insert_auth" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "likes_insert_auth" ON likes FOR INSERT WITH CHECK (auth.uid() = profile_id);
 
 DROP POLICY IF EXISTS "likes_delete_owner" ON likes;
-CREATE POLICY "likes_delete_owner" ON likes FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "likes_delete_owner" ON likes FOR DELETE USING (auth.uid() = profile_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TABLE: followers
@@ -452,7 +468,7 @@ CREATE POLICY "albums_delete_artist" ON albums FOR DELETE USING (auth.uid() = ar
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE recently_played ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "recently_played_owner" ON recently_played FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "recently_played_owner" ON recently_played FOR ALL USING (auth.uid() = profile_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TABLE: fan_purchases (formerly purchases)
@@ -499,7 +515,7 @@ CREATE POLICY "family_update_owner" ON family_plans FOR UPDATE USING (auth.uid()
 -- ─────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL,
+  profile_id UUID NOT NULL,
   user_type TEXT CHECK (user_type IN ('listener', 'artist')),
   type TEXT,
   message TEXT,
@@ -510,8 +526,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "notifications_owner_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "notifications_owner_update" ON notifications FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "notifications_owner_select" ON notifications FOR SELECT USING (auth.uid() = profile_id);
+CREATE POLICY "notifications_owner_update" ON notifications FOR UPDATE USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
 -- No client side inserts/deletes for security logic
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -533,12 +549,12 @@ CREATE POLICY "webhook_logs_admin_select" ON webhook_logs FOR SELECT USING (is_a
 -- ─────────────────────────────────────────────────────────────────────────────
 -- RPC: wallet and sales increments
 -- ─────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION increment_wallet_balance(user_id UUID, amount NUMERIC)
+CREATE OR REPLACE FUNCTION increment_wallet_balance(p_id UUID, amount NUMERIC)
 RETURNS VOID AS $$
 BEGIN
   UPDATE profiles
   SET wallet_balance = COALESCE(wallet_balance, 0) + amount
-  WHERE id = user_id;
+  WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

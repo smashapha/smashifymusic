@@ -46,6 +46,7 @@ const AuthArtist: React.FC = () => {
   }, [user, loading, role, navigate, mode, artistStep]);
 
   useEffect(() => {
+    localStorage.removeItem('smashify_auth_intent'); // Clear any stale intent on entry
     const qMode = searchParams.get('mode');
     if (qMode === 'signup') setMode('signup');
     else setMode('login');
@@ -209,6 +210,25 @@ const AuthArtist: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-smash-black flex flex-col md:flex-row relative overflow-hidden">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+         {loadingState && (
+            <motion.div 
+               initial={{ opacity: 0 }} 
+               animate={{ opacity: 1 }} 
+               exit={{ opacity: 0 }}
+               className="fixed inset-0 z-[100] bg-smash-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
+            >
+               <div className="relative mb-8">
+                  <div className="w-24 h-24 border-b-4 border-smash-purple rounded-full animate-spin" />
+                  <Disc className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-smash-purple animate-pulse" size={32} />
+               </div>
+               <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Powering up the Studio...</h2>
+               <p className="text-smash-gray font-medium">Securing your session and preparing your artist dashboard.</p>
+            </motion.div>
+         )}
+      </AnimatePresence>
+
       <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-smash-purple/5 rounded-full blur-[140px] -ml-64 -mt-64" />
       <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-smash-orange/5 rounded-full blur-[140px] -mr-64 -mb-64" />
 

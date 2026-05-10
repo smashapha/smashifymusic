@@ -115,7 +115,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
           const { error } = await supabase
             .from('likes')
             .delete()
-            .eq('user_id', userProfile.id)
+            .eq('profile_id', userProfile.id)
             .eq('song_id', song.id);
           if (error) throw error;
         }
@@ -125,7 +125,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
           const { error } = await supabase
             .from('likes')
             .insert({
-              user_id: userProfile.id,
+              profile_id: userProfile.id,
               song_id: song.id
             });
           if (error) throw error;

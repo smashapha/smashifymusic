@@ -54,7 +54,7 @@ const Library: React.FC = () => {
         const { data: purchases, error: pError } = await supabase
           .from('purchases')
           .select('*, songs(*, profiles!artist_id(full_name))')
-          .eq('user_id', userProfile?.id);
+          .eq('profile_id', userProfile?.id);
 
         if (pError) throw pError;
 
@@ -70,7 +70,7 @@ const Library: React.FC = () => {
         const { data: likes, error: lError } = await supabase
           .from('likes')
           .select('*, songs(*, profiles!artist_id(full_name, stage_name))')
-          .eq('user_id', userProfile?.id);
+          .eq('profile_id', userProfile?.id);
 
         if (lError) {
            setSongs([]); 
@@ -114,7 +114,7 @@ const Library: React.FC = () => {
         const { data: playlistsData, error: plError } = await supabase
           .from('playlists')
           .select('*, playlist_songs(songs(*, profiles!artist_id(full_name, stage_name)))')
-          .eq('user_id', userProfile?.id);
+          .eq('profile_id', userProfile?.id);
         
         if (plError) throw plError;
         setPlaylists(playlistsData || []);
@@ -135,7 +135,7 @@ const Library: React.FC = () => {
     if (!newPlaylistName.trim()) return;
     try {
       const { error } = await supabase.from('playlists').insert({
-        user_id: userProfile?.id,
+        profile_id: userProfile?.id,
         name: newPlaylistName,
         is_public: false
       });

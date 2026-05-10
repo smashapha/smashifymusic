@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 type AuthMode = 'login' | 'signup';
 type SignupStep = 1 | 2;
-type PlanChoice = 'free' | 'premium' | 'family';
+type PlanChoice = 'Free' | 'Premium' | 'Family';
 
 const AuthListener: React.FC = () => {
   const { user, role, loading, refreshProfile } = useAuth();
@@ -34,6 +34,7 @@ const AuthListener: React.FC = () => {
   }, [user, loading, role, navigate]);
 
   useEffect(() => {
+    localStorage.removeItem('smashify_auth_intent'); // Clear any stale intent on entry
     const qMode = searchParams.get('mode');
     if (qMode === 'signup') setMode('signup');
     else setMode('login');
@@ -73,12 +74,14 @@ const AuthListener: React.FC = () => {
     }
   };
 
-  const nextStep = () => {
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!email) { toast.error('Email is required'); return; }
     if (!password || password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     if (!fullName) { toast.error('Full name is required'); return; }
     if (!phone) { toast.error('Phone is required'); return; }
-    setSignupStep(2);
+    
+    await handleSignupAndSubscribe('Free');
   };
 
   const handleSignupAndSubscribe = async (plan: PlanChoice) => {
@@ -109,7 +112,7 @@ const AuthListener: React.FC = () => {
       
       const userProfileObj = { id: data.user.id, email, full_name: fullName, is_artist: false };
 
-      if (plan === 'free') {
+      if (plan === 'Free') {
         toast.success('Account created! Vibes loading...');
         await refreshProfile();
         navigate('/');
@@ -164,6 +167,25 @@ const AuthListener: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-smash-black flex flex-col md:flex-row relative overflow-hidden">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+         {loadingState && (
+            <motion.div 
+               initial={{ opacity: 0 }} 
+               animate={{ opacity: 1 }} 
+               exit={{ opacity: 0 }}
+               className="fixed inset-0 z-[100] bg-smash-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
+            >
+               <div className="relative mb-8">
+                  <div className="w-24 h-24 border-b-4 border-smash-orange rounded-full animate-spin" />
+                  <Headphones className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-smash-orange animate-pulse" size={32} />
+               </div>
+               <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Setting up your vibe...</h2>
+               <p className="text-smash-gray font-medium">Sit tight, we're crafting your personalized experience.</p>
+            </motion.div>
+         )}
+      </AnimatePresence>
+
       <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-smash-orange/5 rounded-full blur-[140px] -ml-64 -mt-64" />
       <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-smash-cyan/5 rounded-full blur-[140px] -mr-64 -mb-64" />
 
@@ -200,81 +222,43 @@ const AuthListener: React.FC = () => {
             </div>
 
             <AnimatePresence mode="wait">
-               {mode === 'login' ? (
+                {mode === 'login' ? (
                   <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleLogin}>
                      <div className="space-y-6">
-                        <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
-                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
+                        <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} disabled={loadingState} />
+                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} disabled={loadingState} />
                      </div>
-                     <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-orange hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
+                     <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-orange hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                         {loadingState ? 'Entering...' : 'Sign In'}
                      </button>
                      <div className="flex justify-between px-2">
-                        <button type="button" onClick={handleForgotPassword} className="text-[10px] font-black text-smash-gray uppercase tracking-widest hover:text-white transition-colors">Forgot Password?</button>
+                        <button type="button" onClick={handleForgotPassword} disabled={loadingState} className="text-[10px] font-black text-smash-gray uppercase tracking-widest hover:text-white transition-colors disabled:opacity-50">Forgot Password?</button>
                      </div>
                      <div className="pt-4 border-t border-white/5 space-y-4">
-                        <button type="button" onClick={() => handleOAuth('google')} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all">
+                        <button type="button" onClick={() => handleOAuth('google')} disabled={loadingState} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all disabled:opacity-50">
                            <Chrome size={20} /> Continue with Google
                         </button>
-                        <button type="button" onClick={() => navigate('/auth/artist')} className="w-full text-center text-[10px] font-black text-smash-gray uppercase tracking-widest hover:text-smash-purple transition-colors">Are you an Artist? Studio Access &rarr;</button>
+                        <button type="button" onClick={() => navigate('/auth/artist')} disabled={loadingState} className="w-full text-center text-[10px] font-black text-smash-gray uppercase tracking-widest hover:text-smash-purple transition-colors disabled:opacity-50">Are you an Artist? Studio Access &rarr;</button>
                      </div>
                   </motion.form>
                ) : (
                   <motion.div key="signup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
-                     {signupStep === 1 ? (
-                        <>
-                           <div className="space-y-6">
-                              <AuthInput icon={<User size={20} />} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} />
-                              <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
-                              <AuthInput icon={<Phone size={20} />} type="tel" placeholder="Phone (Airtel / TNM)" value={phone} onChange={setPhone} />
-                              <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
-                           </div>
-                           <button onClick={nextStep} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
-                              Next: Choose Plan
-                           </button>
-                           <div className="pt-4 border-t border-white/5">
-                              <button type="button" onClick={() => handleOAuth('google')} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all">
-                                 <Chrome size={20} /> Join with Google
-                              </button>
-                           </div>
-                        </>
-                     ) : (
+                     <form onSubmit={handleSignup} className="space-y-6">
                         <div className="space-y-6">
-                           <h3 className="text-xl font-black uppercase tracking-widest text-center mb-6">Choose Your Plan</h3>
-                           
-                           <div onClick={() => handleSignupAndSubscribe('free')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer group">
-                              <div className="flex justify-between items-center mb-2">
-                                 <h4 className="font-black text-xl">FREE</h4>
-                                 <span className="text-smash-gray font-bold group-hover:text-white transition-colors">MK 0</span>
-                              </div>
-                              <p className="text-sm text-smash-gray mb-4">Ad-supported listening, tips, limits on skips.</p>
-                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-cyan">Select Free &rarr;</div>
-                           </div>
-
-                           <div onClick={() => handleSignupAndSubscribe('premium')} className="p-6 rounded-3xl border-2 border-smash-orange bg-smash-orange/10 hover:bg-smash-orange/20 transition-all cursor-pointer relative overflow-hidden">
-                              <div className="absolute top-4 right-4 bg-smash-orange text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Recommended</div>
-                              <div className="flex justify-between items-center mb-2">
-                                 <h4 className="font-black text-xl text-smash-orange">PREMIUM</h4>
-                                 <span className="font-bold text-white mt-4">MK 750 /mo</span>
-                              </div>
-                              <p className="text-sm text-smash-gray mb-4">Ad-free, offline downloads, direct fan support.</p>
-                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-orange">Select Premium &rarr;</div>
-                           </div>
-
-                           <div onClick={() => handleSignupAndSubscribe('family')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer group">
-                              <div className="flex justify-between items-center mb-2">
-                                 <h4 className="font-black text-xl">FAMILY</h4>
-                                 <span className="text-smash-gray font-bold group-hover:text-white transition-colors">MK 3,500 /mo</span>
-                              </div>
-                              <p className="text-sm text-smash-gray mb-4">Up to 5 accounts, sharing allowed.</p>
-                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-cyan">Select Family &rarr;</div>
-                           </div>
-                           
-                           <button onClick={() => setSignupStep(1)} className="w-full text-center mt-4 text-xs font-black uppercase tracking-widest text-smash-gray hover:text-white py-4">
-                              <ChevronLeft size={16} className="inline mr-1" /> Back
+                           <AuthInput icon={<User size={20} />} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} disabled={loadingState} />
+                           <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} disabled={loadingState} />
+                           <AuthInput icon={<Phone size={20} />} type="tel" placeholder="Phone (Airtel / TNM)" value={phone} onChange={setPhone} disabled={loadingState} />
+                           <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} disabled={loadingState} />
+                        </div>
+                        <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                           {loadingState ? 'Preparing...' : 'Create Account'}
+                        </button>
+                        <div className="pt-4 border-t border-white/5">
+                           <button type="button" onClick={() => handleOAuth('google')} disabled={loadingState} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all disabled:opacity-50">
+                              <Chrome size={20} /> Join with Google
                            </button>
                         </div>
-                     )}
+                     </form>
                   </motion.div>
                )}
             </AnimatePresence>

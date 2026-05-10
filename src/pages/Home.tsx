@@ -148,7 +148,7 @@ const Home: React.FC = () => {
               )
             )
           `)
-          .eq('user_id', userProfile.id)
+          .eq('profile_id', userProfile.id)
           .order('played_at', { ascending: false })
           .limit(10);
 
@@ -172,7 +172,7 @@ const Home: React.FC = () => {
           const { data: likedData } = await supabase
             .from('likes')
             .select('songs (title, genre)')
-            .eq('user_id', userProfile.id)
+            .eq('profile_id', userProfile.id)
             .limit(20);
             
           if (likedData && likedData.length > 0) {

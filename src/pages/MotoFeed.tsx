@@ -25,7 +25,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       if (!song.id || eventType === 'play_started') return; // ignore initial load spam
       await supabase.from('moto_events').insert({
          song_id: song.id,
-         user_id: userProfile?.id,
+         profile_id: userProfile?.id,
          event_type: eventType
       });
     } catch (e) {}
@@ -158,13 +158,13 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       if (previouslyLiked) {
         newLiked = liked.filter((id: string) => id !== song.id);
         if (userProfile) {
-          const { error } = await supabase.from('likes').delete().eq('user_id', userProfile.id).eq('song_id', song.id);
+          const { error } = await supabase.from('likes').delete().eq('profile_id', userProfile.id).eq('song_id', song.id);
           if (error) throw error;
         }
       } else {
         newLiked = [...liked, song.id];
         if (userProfile) {
-          const { error } = await supabase.from('likes').insert({ user_id: userProfile.id, song_id: song.id });
+          const { error } = await supabase.from('likes').insert({ profile_id: userProfile.id, song_id: song.id });
           if (error) throw error;
         }
       }
