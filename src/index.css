@@ -6,55 +6,64 @@
   --font-display: "Outfit", sans-serif;
   --font-studio: "Syne", sans-serif;
 
-  --color-smash-black: #0f0f12;
-  --color-smash-dark: #1a1a1f;
+  --color-smash-black: var(--color-smash-black);
+  --color-smash-dark: var(--color-smash-dark);
   --color-smash-orange: #ff5f00;
   --color-smash-red: #e60000;
-  --color-smash-gray: #8e8e93;
+  --color-smash-gray: var(--color-smash-gray);
   --color-smash-purple: #7c3aed;
   --color-smash-green: #00d68f;
   --color-smash-cyan: #00d4ff;
-
-  --animate-fade-in: fade-in 0.3s ease-out;
-  --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-spin-slow: spin 8s linear infinite;
-  --animate-bounce-slow: bounce 3s ease-in-out infinite;
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes slide-up {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
 }
 
 @layer base {
+  :root {
+    --color-smash-black: #e5e7eb;
+    --color-smash-dark: #d1d5db;
+    --color-smash-gray: #4b5563;
+    --text-primary: #111827;
+  }
+
+  [data-theme='dark'] {
+    --color-smash-black: #0f0f12;
+    --color-smash-dark: #1a1a1f;
+    --color-smash-gray: #8e8e93;
+    --text-primary: #ffffff;
+  }
+
   body {
-    @apply bg-smash-black text-white font-sans antialiased selection:bg-smash-orange/30;
+    @apply bg-smash-black text-[var(--text-primary)] font-sans antialiased selection:bg-smash-orange/30;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-white;
+    @apply font-display tracking-tight text-[var(--text-primary)];
   }
 }
 
 .glass-morphism {
-  @apply bg-smash-dark/80 backdrop-blur-md border border-white/5;
+  @apply bg-[var(--color-smash-dark)]/80 backdrop-blur-md border border-[var(--color-smash-black)]/5;
 }
 
 .bento-card {
-  @apply bg-smash-dark rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-smash-dark/80 border border-white/5;
+  @apply bg-[var(--color-smash-dark)] rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-smash-dark)]/80 border border-[var(--color-smash-black)]/5;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }

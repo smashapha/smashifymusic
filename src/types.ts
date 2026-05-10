@@ -28,6 +28,7 @@ export interface Song {
   album_id?: string;
   profiles?: { 
     full_name: string; 
+    stage_name?: string;
     avatar_url: string; 
     verified: boolean; 
   };

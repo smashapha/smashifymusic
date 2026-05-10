@@ -4,6 +4,7 @@ import {
   User, CreditCard, ShoppingBag, Settings, LogOut, 
   ChevronRight, BadgeCheck, Shield, ExternalLink, Sparkles, Mail, Phone, MapPin
 } from 'lucide-react';
+import Avatar from '../components/common/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -90,7 +91,7 @@ const Profile: React.FC = () => {
          
          <div className="absolute -bottom-16 left-12 z-20 flex items-end gap-8">
             <div className="w-40 h-40 rounded-full border-8 border-smash-black overflow-hidden shadow-2xl relative group">
-               <img src={userProfile.avatar_url || "https://i.pravatar.cc/300"} className="w-full h-full object-cover" alt="" />
+               <Avatar src={userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full rounded-full" />
                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
                   <BadgeCheck className="text-white" size={32} />
                </div>
@@ -120,7 +121,7 @@ const Profile: React.FC = () => {
                         <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-4">Profile Picture</label>
                         <div className="flex items-center gap-6 p-6 bg-white/5 border border-white/10 rounded-[28px] group hover:border-smash-orange/30 transition-all">
                            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shrink-0">
-                              <img src={userProfile.avatar_url || "https://i.pravatar.cc/300"} className="w-full h-full object-cover" />
+                              <Avatar src={userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full" />
                            </div>
                            <div className="flex-1 space-y-2">
                               <p className="text-xs font-bold text-white uppercase tracking-tight">Upload New Avatar</p>

@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
+import Avatar from '../components/common/Avatar';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { buyTrack } from '../lib/paychangu';
@@ -274,7 +275,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   className="w-14 h-14 rounded-full border-4 border-smash-black overflow-hidden bg-smash-dark ring-2 ring-smash-orange relative hover:scale-110 transition-transform cursor-pointer"
                   onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); }}
                >
-                  <img src={song.profiles?.avatar_url || 'https://i.pravatar.cc/100'} className="w-full h-full object-cover" alt="" />
+                  <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-full h-full" />
                </div>
                <button 
                   onClick={handleFollow}

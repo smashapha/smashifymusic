@@ -15,10 +15,10 @@ interface SongCardProps {
   song: Song;
   queue: Song[];
   className?: string;
-  variant?: 'grid' | 'list';
+  layout?: 'grid' | 'list';
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', variant = 'list' }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout = 'list' }) => {
   const navigate = useNavigate();
   const { currentSong, isPlaying, playSong, addToQueue, playQueue, dataSaver } = usePlayer();
   const { userProfile } = useAuth();
@@ -170,9 +170,16 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
     });
   };
 
-  if (variant === 'list') {
+  if (layout === 'grid') {
     return (
-      <div className={`group flex items-center gap-4 bg-white/5 border rounded-2xl p-3 md:p-4 hover:bg-white/10 transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/10'} ${className}`} onClick={handlePlay}>
+       <div className={`group relative bento-card p-4 bg-smash-dark/40 ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/5 hover:border-smash-orange/30'} transition-all cursor-pointer ${className}`} onClick={handlePlay}>
+         <h3 className="text-white truncate">{song.title}</h3>
+       </div>
+    );
+  }
+
+  return (
+    <div className={`group flex items-center gap-4 bg-white/5 border rounded-2xl p-3 md:p-4 hover:bg-white/10 transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/10'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-lg border border-white/5">
           {!dataSaver ? (
             <img src={song.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
@@ -250,130 +257,6 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', varian
           {showPlaylistModal && <AddToPlaylistModal song={song} onClose={() => setShowPlaylistModal(false)} />}
         </AnimatePresence>
       </div>
-    );
-  }
-
-  return (
-    <motion.div
-      whileHover={{ y: -5, scale: 1.02 }}
-      className={`group relative bento-card p-4 bg-smash-dark/40 ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/5 hover:border-smash-orange/30'} transition-all cursor-pointer ${className}`}
-      onClick={handlePlay}
-    >
-      <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 shadow-2xl">
-        {!dataSaver ? (
-          <img 
-            src={song.cover_url} 
-            alt={song.title} 
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" 
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="w-full h-full bg-white/5 flex items-center justify-center">
-             <Music2 size={48} className="text-white/10" />
-          </div>
-        )}
-        
-        {/* Play Overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-          <div className="w-14 h-14 rounded-full bg-smash-orange text-white flex items-center justify-center shadow-2xl transform scale-75 group-hover:scale-100 transition-transform">
-            {isCurrent && isPlaying ? <Pause size={28} fill="white" /> : <Play size={28} fill="white" className="ml-1" />}
-          </div>
-        </div>
-
-        {/* Status Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-           {song.is_purchased ? (
-             <div className="px-3 py-1 bg-smash-green text-black text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg">OWNED</div>
-           ) : song.is_for_sale ? (
-             <div className="px-3 py-1 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg">MK {song.price}</div>
-           ) : null}
-        </div>
-
-        {/* Equalizer Animation */}
-        {isCurrent && isPlaying && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-end gap-1 h-6">
-            {[...Array(4)].map((_, i) => (
-              <motion.div
-                key={i}
-                animate={{ height: [4, 24, 8, 16, 4] }}
-                transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
-                className="w-1 bg-smash-orange rounded-full"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between items-start gap-2">
-        <div className="min-w-0">
-          <h3 className={`font-display font-black text-lg italic uppercase tracking-tight truncate ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
-            {song.title}
-          </h3>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-smash-gray font-bold truncate hover:text-white transition-colors">{song.artist_name}</p>
-            {song.plays !== undefined && (
-              <span className="text-[10px] text-smash-gray flex items-center gap-1">
-                <Play size={8} fill="currentColor" /> {song.plays.toLocaleString()}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 opacity-100">
-           {!song.is_purchased && song.is_for_sale && (
-             <button 
-               onClick={handleBuy}
-               className="p-2 rounded-full bg-smash-orange text-white hover:scale-110 transition-transform shadow-lg"
-               title={`Buy track for MK ${song.price}`}
-             >
-                <ShoppingBag size={18} />
-             </button>
-           )}
-           <button 
-             onClick={handleSupportClick}
-             className="p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors opacity-60 hover:opacity-100"
-             title="Support Artist"
-           >
-              <Gift size={18} />
-           </button>
-           <button 
-             onClick={handleLike}
-             disabled={isLikeLoading}
-             className={`p-2 rounded-full hover:bg-white/10 transition-colors opacity-60 hover:opacity-100 disabled:opacity-30 ${isLiked ? 'text-smash-red !opacity-100' : 'text-smash-gray'}`}
-           >
-              <Heart size={18} fill={isLiked ? "currentColor" : "none"} className={isLikeLoading ? 'animate-pulse' : ''} />
-           </button>
-           <div className="relative">
-             <button 
-               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-               className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all opacity-60 hover:opacity-100"
-             >
-                <MoreVertical size={18} />
-             </button>
-             
-             <AnimatePresence>
-               {showMenu && <SongMenu song={song} onClose={() => setShowMenu(false)} onBuy={handleBuy} onAddToPlaylist={() => setShowPlaylistModal(true)} />}
-             </AnimatePresence>
-           </div>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {showPlaylistModal && (
-          <AddToPlaylistModal 
-            song={song} 
-            onClose={() => setShowPlaylistModal(false)} 
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {showSupportModal && artistData && (
-          <SupportArtistModal 
-            artist={artistData} 
-            onClose={() => setShowSupportModal(false)} 
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
   );
 };
 
@@ -408,7 +291,7 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist }: any) => {
         initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 10 }}
-        className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 mb-2 w-48 glass-morphism border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+        className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 mb-2 w-48 glass-morphism border border-white/10 rounded-2xl shadow-2xl z-[100]"
       >
         <button 
           onClick={(e) => { e.stopPropagation(); addToQueue(song); onClose(); }}

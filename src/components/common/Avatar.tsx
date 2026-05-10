@@ -1,0 +1,37 @@
+import React from 'react';
+import { User } from 'lucide-react';
+
+interface AvatarProps {
+  src?: string | null;
+  name?: string;
+  className?: string;
+}
+
+const Avatar: React.FC<AvatarProps> = ({ src, name, className = "" }) => {
+  if (src) {
+    return <img src={src} className={`object-cover ${className}`} alt={name || "Avatar"} />;
+  }
+
+  // Fallback: Initial or placeholder
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
+  const initials = name ? getInitials(name) : '?';
+  
+  return (
+    <div className={`flex items-center justify-center bg-white/10 text-white ${className}`}>
+      {name ? (
+        <span className="text-xl font-black">{initials}</span>
+      ) : (
+        <User className="text-smash-gray" size={Number(className.match(/w-(\d+)/)?.[1] || 24) / 2} />
+      )}
+    </div>
+  );
+};
+
+export default Avatar;

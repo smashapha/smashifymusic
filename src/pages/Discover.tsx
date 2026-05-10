@@ -4,6 +4,7 @@ import { Search, Music2, Disc, User, Sparkles, Filter, ChevronRight, X, Zap } fr
 import { supabase } from '../lib/supabase';
 import { Song, UserProfile } from '../types';
 import SongCard from '../components/common/SongCard';
+import Avatar from '../components/common/Avatar';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAiRecommendations } from '../services/aiService';
@@ -298,7 +299,7 @@ const Discover: React.FC = () => {
                        className="p-4 bg-white/5 border border-white/10 rounded-[24px] flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-colors"
                      >
                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-smash-orange/20">
-                          <img src={artist.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full object-cover" alt="" />
+                          <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full" />
                        </div>
                        <div className="flex-1 min-w-0">
                           <h4 className="font-display font-black italic uppercase text-lg truncate leading-none mb-1">{artist.stage_name || artist.full_name}</h4>

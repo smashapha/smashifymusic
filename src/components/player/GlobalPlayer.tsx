@@ -134,20 +134,13 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       const link = document.createElement('a');
       link.href = url;
       link.download = `${currentSong.title} - ${currentSong.artist_name}.mp3`;
-      
-      // Robust download handling
-      const body = document.body;
-      if (body) {
-        body.appendChild(link);
+      link.style.display = 'none';
+      if (document.body) {
+        document.body.appendChild(link);
         link.click();
-        setTimeout(() => {
-          if (body.contains(link)) {
-            body.removeChild(link);
-          }
-        }, 100);
-      } else {
-        link.click();
+        document.body.removeChild(link);
       }
+
       
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 

@@ -300,7 +300,7 @@ const Library: React.FC = () => {
         ) : filteredSongs.length > 0 ? (
            <div className="space-y-4">
               {filteredSongs.map((song, i) => (
-                 <SongCard key={`library-${song.id}-${i}`} song={song} queue={filteredSongs} variant="list" />
+                 <SongCard key={`library-${song.id}-${i}`} song={song} queue={filteredSongs} />
               ))}
            </div>
         ) : (

@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Song, UserProfile, Album } from '../types';
 import SongCard from '../components/common/SongCard';
+import Avatar from '../components/common/Avatar';
 import SupportArtistModal from '../components/common/SupportArtistModal';
 import { usePlayer } from '../context/PlayerContext';
 
@@ -30,6 +31,7 @@ const ArtistProfile: React.FC = () => {
    const [copied, setCopied] = useState(false);
    const [showSupportModal, setShowSupportModal] = useState(false);
    const [activeTab, setActiveTab] = useState<'tracks' | 'albums' | 'about'>('tracks');
+   const [topSupporters, setTopSupporters] = useState<any[]>([]);
 
    const handleShare = () => {
       navigator.clipboard.writeText(window.location.href);
@@ -49,6 +51,35 @@ const ArtistProfile: React.FC = () => {
          if (data) setIsFollowing(true);
       };
       
+      const fetchTopSupporters = async () => {
+         if (!id) return;
+         const { data } = await supabase
+            .from('transactions')
+            .select('fan_id, net_amount, user_profiles(full_name, avatar_url)')
+            .eq('artist_id', id)
+            .eq('type', 'donation')
+            .eq('status', 'completed');
+         
+         if (data) {
+            const supportersMap = data.reduce((acc: any, curr: any) => {
+               if (!acc[curr.fan_id]) {
+                  acc[curr.fan_id] = { 
+                     name: curr.user_profiles?.full_name || 'Fan', 
+                     avatar_url: curr.user_profiles?.avatar_url,
+                     total: 0 
+                  };
+               }
+               acc[curr.fan_id].total += curr.net_amount;
+               return acc;
+            }, {});
+            
+            const sorted = Object.values(supportersMap)
+               .sort((a: any, b: any) => b.total - a.total)
+               .slice(0, 3);
+            setTopSupporters(sorted);
+         }
+      };
+
       const fetchArtist = async () => {
          if (!id) return;
          setLoading(true);
@@ -63,6 +94,7 @@ const ArtistProfile: React.FC = () => {
             if (artistError) throw artistError;
             setArtist(artistData);
             checkFollow();
+            fetchTopSupporters();
 
             // Fetch Tracks
             const { data: songsData, error: songsError } = await supabase
@@ -180,7 +212,7 @@ const ArtistProfile: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="w-44 h-44 md:w-56 md:h-56 rounded-full border-8 border-smash-black overflow-hidden shadow-2xl relative shrink-0"
                   >
-                     <img src={artist.avatar_url || "https://i.pravatar.cc/300"} className="w-full h-full object-cover" alt="" />
+                     <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full" />
                   </motion.div>
                   
                   <div className="flex-1 text-center md:text-left space-y-4">
@@ -272,7 +304,7 @@ const ArtistProfile: React.FC = () => {
                            </div>
                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                               {songs.map((song) => (
-                                 <SongCard key={`all-${song.id}`} song={song} queue={songs} variant="grid" />
+                                 <SongCard key={`all-${song.id}`} song={song} queue={songs} variant="list" />
                               ))}
                            </div>
                         </section>
@@ -373,17 +405,21 @@ const ArtistProfile: React.FC = () => {
                      <Crown size={14} className="text-smash-purple" /> Top Supporters
                   </h4>
                   <div className="space-y-4">
-                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden">
-                              <img src={`https://i.pravatar.cc/100?u=${i}`} className="w-full h-full object-cover" />
+                     {topSupporters.length > 0 ? (
+                        topSupporters.map((supporter, i) => (
+                           <div key={i} className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                                 <Avatar src={supporter.avatar_url} name={supporter.name} className="w-full h-full" />
+                              </div>
+                              <div className="flex-1">
+                                 <p className="text-[10px] font-black uppercase tracking-tight truncate">{supporter.name}</p>
+                              </div>
+                              <div className="px-2 py-1 bg-smash-purple/10 rounded text-[8px] font-black text-smash-purple uppercase">MK {supporter.total.toLocaleString()}</div>
                            </div>
-                           <div className="flex-1">
-                              <p className="text-[10px] font-black uppercase tracking-tight">Supporter #{i}</p>
-                           </div>
-                           <div className="px-2 py-1 bg-smash-purple/10 rounded text-[8px] font-black text-smash-purple uppercase">LEVEL {4-i}</div>
-                        </div>
-                     ))}
+                        ))
+                     ) : (
+                        <p className="text-xs text-smash-gray text-center italic">No supporters yet.</p>
+                     )}
                   </div>
                   <p className="text-[9px] text-smash-gray font-bold text-center uppercase tracking-widest italic pt-2 border-t border-white/5">Be the next to support!</p>
                </div>

@@ -286,14 +286,14 @@ const Landing: React.FC = () => {
              />
              <PricingCard 
                 title="Premium" 
-                price="2,500" 
+                price="750" 
                 badge="MOST POPULAR"
                 onAction={() => navigate('/auth/listener?mode=signup')}
                 features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Unlimited playlists"]} 
              />
              <PricingCard 
                 title="Family" 
-                price="4,500" 
+                price="3,500" 
                 onAction={() => navigate('/auth/listener?mode=signup')}
                 features={["Everything in Premium", "Up to 5 separate accounts", "Shared family queue", "Parental controls", "One billing for everyone"]} 
              />

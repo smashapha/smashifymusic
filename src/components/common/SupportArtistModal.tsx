@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, Heart, ShieldCheck, ChevronRight, Zap, Coffee, Crown } from 'lucide-react';
+import Avatar from './Avatar';
 import { UserProfile } from '../../types';
 import { supportArtist } from '../../lib/paychangu';
 import { useAuth } from '../../context/AuthContext';
@@ -64,7 +65,7 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-smash-purple">
-                    <img src={artist.avatar_url || "https://i.pravatar.cc/100"} className="w-full h-full object-cover" alt="" />
+                    <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full" />
                  </div>
                  <div>
                     <h3 className="font-black uppercase tracking-tight text-white leading-none">Support Artist</h3>

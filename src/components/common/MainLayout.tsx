@@ -7,6 +7,7 @@ import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 
 const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
@@ -44,6 +45,7 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
+        <ThemeToggle />
         <button 
            onClick={toggleDataSaver}
            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg ${dataSaver ? `bg-${accentColor} text-white shadow-${accentColor}/20` : 'bg-smash-dark text-smash-gray hover:text-white border border-white/5'}`}

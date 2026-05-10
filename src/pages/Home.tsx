@@ -4,6 +4,7 @@ import { Search, Flame, Music, Disc, User, ChevronRight, TrendingUp, Sparkles, D
 import { supabase } from '../lib/supabase';
 import { Song, Artist } from '../types';
 import SongCard from '../components/common/SongCard';
+import Avatar from '../components/common/Avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAiRecommendations } from '../services/aiService';
@@ -289,7 +290,7 @@ const Home: React.FC = () => {
                               onClick={() => { navigate(`/artist/${artist.id}`); setSearchQuery(''); }}
                               className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl cursor-pointer transition-colors"
                             >
-                              <img src={artist.avatar_url || 'https://i.pravatar.cc/100'} className="w-10 h-10 rounded-full object-cover" />
+                              <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-10 h-10 rounded-full" />
                               <div>
                                 <p className="text-sm font-bold truncate leading-tight">{(artist as any).name}</p>
                                 <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{artist.genre || 'Artist'}</p>
@@ -360,7 +361,7 @@ const Home: React.FC = () => {
               </h1>
               <div className="flex items-center gap-4">
                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
-                    <img src={featured.profiles?.avatar_url || 'https://i.pravatar.cc/100'} className="w-full h-full object-cover" alt="" />
+                    <Avatar src={featured.profiles?.avatar_url} name={featured.profiles?.stage_name || featured.profiles?.full_name} className="w-full h-full" />
                  </div>
                  <p className="text-2xl font-black font-display italic uppercase tracking-tight">{featured.artist_name}</p>
                  {featured.profiles?.verified && <div className="w-6 h-6 bg-smash-cyan rounded-full flex items-center justify-center"><Check size={14} className="text-black" /></div>}
@@ -431,7 +432,7 @@ const Home: React.FC = () => {
               >
                  <div className="relative p-1 rounded-full bg-gradient-to-tr from-smash-orange to-smash-purple group-hover:p-1.5 transition-all">
                     <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-smash-black">
-                       <img src={artist.avatar_url || 'https://i.pravatar.cc/200'} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform" alt="" />
+                       <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full transform group-hover:scale-110 transition-transform" />
                     </div>
                     {artist.verified && (
                        <div className="absolute bottom-1 right-1 w-8 h-8 bg-smash-cyan rounded-full border-4 border-smash-black flex items-center justify-center">

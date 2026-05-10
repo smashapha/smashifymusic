@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Flame, TrendingUp, Filter, PlayCircle, Trophy, LayoutGrid, List } from 'lucide-react';
+import { Flame, TrendingUp, Filter, PlayCircle, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
@@ -11,7 +11,6 @@ const Trending: React.FC = () => {
    const { userProfile } = useAuth();
    const [songs, setSongs] = useState<Song[]>([]);
    const [loading, setLoading] = useState(true);
-   const [view, setView] = useState<'grid' | 'list'>('list');
 
    const [refreshing, setRefreshing] = useState(false);
    const startY = React.useRef(0);
@@ -104,21 +103,8 @@ const Trending: React.FC = () => {
                   <h2 className="text-3xl font-black font-display italic uppercase tracking-tighter flex items-center gap-4">
                      <TrendingUp className="text-smash-orange" /> Current Standings
                   </h2>
+
                   <div className="flex items-center gap-4">
-                     <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10">
-                        <button 
-                           onClick={() => setView('list')}
-                           className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-smash-orange text-white shadow-lg' : 'text-smash-gray hover:text-white'}`}
-                        >
-                           <List size={18} />
-                        </button>
-                        <button 
-                           onClick={() => setView('grid')}
-                           className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-smash-orange text-white shadow-lg' : 'text-smash-gray hover:text-white'}`}
-                        >
-                           <LayoutGrid size={18} />
-                        </button>
-                     </div>
                      <button className="text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
                         <Filter size={16} /> Filter Region
                      </button>
@@ -132,7 +118,7 @@ const Trending: React.FC = () => {
                      ))}
                   </div>
                ) : (
-                  <div className={view === 'list' ? 'space-y-4' : 'grid grid-cols-2 lg:grid-cols-3 gap-6'}>
+                  <div className="space-y-4">
                      {songs.map((song, index) => (
                         <motion.div 
                           key={`trending-song-${song.id}-${index}`}
@@ -141,7 +127,7 @@ const Trending: React.FC = () => {
                           transition={{ delay: index * 0.05 }}
                           className="group"
                         >
-                           <SongCard song={song} queue={songs} variant={view} />
+                           <SongCard song={song} queue={songs} />
                         </motion.div>
                      ))}
                   </div>

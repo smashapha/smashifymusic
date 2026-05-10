@@ -21,8 +21,8 @@ const SUBSCRIPTION_PRICES = {
 };
 
 const LISTENER_SUBSCRIPTION_PRICES = {
-  premium: 2500, // MWK/month
-  family: 4500,  // MWK/month
+  premium: 750, // MWK/month
+  family: 3500,  // MWK/month
 };
 
 export function subscribeArtist({

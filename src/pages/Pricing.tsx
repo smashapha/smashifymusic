@@ -144,14 +144,14 @@ const Pricing = () => {
            />
            <PricingCard 
               title="Premium" 
-              price="2,500" 
+              price="750" 
               badge="MOST POPULAR"
               onAction={() => handleAction('premium')}
               features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Early access to unreleased snippets", "Unlimited playlists"]} 
            />
            <PricingCard 
               title="Family" 
-              price="4,500" 
+              price="3,500" 
               onAction={() => handleAction('family')}
               features={["Everything in Premium", "Up to 5 separate accounts", "Shared family queue", "Parental controls", "One billing for everyone"]} 
            />
