@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { EQPreset } from '../../types';
-import { buyTrack } from '../../lib/paychangu';
+import { purchaseTrack } from '../../lib/paychangu';
 import toast from 'react-hot-toast';
 import { Share2, Trash2 } from 'lucide-react';
 
@@ -169,13 +169,9 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       toast.error('Please sign in to buy tracks');
       return;
     }
-    buyTrack({
+    purchaseTrack({
       song: currentSong,
-      user: userProfile,
-      onSuccess: () => {
-        toast.success(`Purchase successful! You now own ${currentSong.title}`);
-        setTimeout(() => window.location.reload(), 1500);
-      }
+      user: userProfile
     });
   };
 
@@ -216,17 +212,15 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
             </button>
             <div className="text-center flex-1">
               <p className="text-[10px] font-black text-smash-gray uppercase tracking-[0.4em] mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
-              <h4 className="font-display font-black italic text-lg uppercase tracking-tight">{adPlaying ? 'ADVERTISEMENT' : currentSong?.genre}</h4>
+              <h4 className="font-display font-black italic text-lg uppercase tracking-tight">{adPlaying ? 'AUDIO ADVERTISEMENT' : currentSong?.genre}</h4>
            </div>
-           {adPlaying && (currentSong as any).cta_url && (
-             <a 
-               href={(currentSong as any).cta_url}
-               target="_blank"
-               rel="noopener noreferrer"
-               className={`p-3 bg-${accentColor}/20 hover:bg-${accentColor}/30 text-${accentColor} rounded-full transition-colors flex items-center gap-2`}
+           {adPlaying && (
+             <button 
+               onClick={() => setVolume(volume === 0 ? 0.8 : 0)}
+               className={`p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2`}
              >
-               <Zap size={20} /> <span className="text-xs font-black uppercase">More Info</span>
-             </a>
+               {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+             </button>
            )}
            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
               <Info size={24} />
@@ -254,7 +248,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 animate={{ y: 0, opacity: 1 }}
                 className="text-3xl sm:text-4xl md:text-6xl font-black font-display tracking-tighter italic uppercase mb-2 md:mb-4 leading-none"
               >
-                {currentSong?.title}
+                {adPlaying ? currentSong?.artist_name : currentSong?.title}
               </motion.h1>
               <motion.p 
                 initial={{ y: 20, opacity: 0 }}
@@ -262,30 +256,31 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 transition={{ delay: 0.1 }}
                 className="text-lg md:text-2xl text-smash-gray font-bold"
               >
-                {currentSong?.profiles?.stage_name || currentSong?.artist_name}
+                {adPlaying ? currentSong?.title : (currentSong?.profiles?.stage_name || currentSong?.artist_name)}
               </motion.p>
+              {adPlaying && (
+                 <div className="mt-8">
+                   <p className="text-xs font-black uppercase tracking-widest text-smash-gray mb-4">Malaŵi's No.1 Music Platform</p>
+                   <a 
+                     href="/pricing"
+                     className="inline-block px-8 py-4 bg-gradient-to-r from-smash-orange to-smash-red text-white rounded-full font-black uppercase text-sm tracking-widest shadow-2xl hover:scale-105 transition-transform"
+                   >
+                     Remove ads — Premium MK 750/month
+                   </a>
+                 </div>
+              )}
            </div>
         </div>
 
          <div className="mt-auto w-full max-w-4xl mx-auto pt-6 pb-2">
            {/* Progress Bar */}
            <div className="space-y-3 mb-6 md:mb-8 relative">
-              {adPlaying && (
-                <div className="absolute -top-12 left-0 right-0 flex justify-center">
-                  <button
-                    disabled={!adSkipAvailable}
-                    onClick={skipAd}
-                    className={`px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs transition-all ${
-                      adSkipAvailable 
-                        ? 'bg-white text-smash-black hover:scale-105 active:scale-95 shadow-xl' 
-                        : 'bg-white/10 text-white/40 cursor-not-allowed'
-                    }`}
-                  >
-                    {adSkipAvailable ? 'Skip Advertisement' : `Skip Ad in ${Math.max(0, 5 - Math.floor(currentTime))}s`}
-                  </button>
-                </div>
-              )}
-              <ProgressBar current={currentTime} total={displayDuration} onSeek={seek} disabled={adPlaying} />
+              <ProgressBar 
+                current={currentTime} 
+                total={displayDuration} 
+                onSeek={seek} 
+                disabled={adPlaying} 
+              />
               <div className="flex justify-between text-xs font-black text-smash-gray tracking-widest uppercase">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(displayDuration)}</span>
@@ -305,13 +300,13 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 
                 <div className="flex items-center gap-6 md:gap-10">
                    <button onClick={previousTrack} disabled={adPlaying} className={`transition-colors active:scale-90 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-white hover:text-${accentColor}`}`}>
-                     <SkipBack size={32} md:size={40} fill="white" />
+                     <SkipBack className="w-8 h-8 md:w-10 md:h-10" fill="white" />
                    </button>
                    <button onClick={togglePlay} className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white text-smash-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-white/20">
-                      {isPlaying ? <Pause size={40} md:size={48} fill="currentColor" /> : <Play size={40} md:size={48} fill="currentColor" className="ml-2" />}
+                      {isPlaying ? <Pause className="w-10 h-10 md:w-12 md:h-12" fill="currentColor" /> : <Play className="w-10 h-10 md:w-12 md:h-12 ml-2" fill="currentColor" />}
                    </button>
                    <button onClick={nextTrack} disabled={adPlaying} className={`transition-colors active:scale-90 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-white hover:text-${accentColor}`}`}>
-                     <SkipForward size={32} md:size={40} fill="white" />
+                     <SkipForward className="w-8 h-8 md:w-10 md:h-10" fill="white" />
                    </button>
                 </div>
 
@@ -642,13 +637,9 @@ const GlobalPlayer: React.FC = () => {
       toast.error('Please sign in to buy tracks');
       return;
     }
-    buyTrack({
+    purchaseTrack({
       song: currentSong,
-      user: userProfile,
-      onSuccess: () => {
-        toast.success(`Purchase successful! You now own ${currentSong.title}`);
-        setTimeout(() => window.location.reload(), 1500);
-      }
+      user: userProfile
     });
   };
 
@@ -690,7 +681,7 @@ const GlobalPlayer: React.FC = () => {
                   <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                 </motion.div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl md:rounded-2xl transition-opacity">
-                  <Maximize2 size={16} md:size={20} className="text-white" />
+                  <Maximize2 className="text-white w-4 h-4 md:w-5 md:h-5" />
                 </div>
               </div>
               <div className="min-w-0 cursor-pointer flex-1">
@@ -706,7 +697,7 @@ const GlobalPlayer: React.FC = () => {
                       onClick={(e) => { e.stopPropagation(); handleBuy(e); }}
                       className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1 bg-smash-orange text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
                     >
-                       <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" />
+                       <ShoppingBag className="w-3 h-3 md:w-3.5 md:h-3.5" />
                        <span className="hidden xs:inline">MK {currentSong.price}</span>
                     </button>
                   )}
@@ -738,14 +729,6 @@ const GlobalPlayer: React.FC = () => {
                 >
                   {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                 </button>
-                {adPlaying && adSkipAvailable && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); skipAd(); }}
-                    className="px-3 py-1 bg-white text-smash-black rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse"
-                  >
-                    Skip
-                  </button>
-                )}
                 <button 
                   onClick={(e) => { e.stopPropagation(); nextTrack(); }}
                   disabled={adPlaying}
@@ -783,19 +766,6 @@ const GlobalPlayer: React.FC = () => {
               >
                 {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
               </button>
-              {adPlaying && (
-                <button 
-                  disabled={!adSkipAvailable}
-                  onClick={(e) => { e.stopPropagation(); skipAd(); }}
-                  className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                    adSkipAvailable 
-                      ? 'bg-white text-smash-black hover:scale-105 active:scale-95 shadow-xl' 
-                      : 'bg-white/10 text-white/40 cursor-not-allowed'
-                  }`}
-                >
-                  {adSkipAvailable ? 'Skip Ad' : `Skip in ${Math.max(0, 5 - Math.floor(currentTime))}s`}
-                </button>
-              )}
 
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-3 w-24 lg:w-32 group">
@@ -969,14 +939,9 @@ const PreviewModal = () => {
          toast.error('Please sign in to purchase tracks.');
          return;
       }
-      buyTrack({
+      purchaseTrack({
          song,
-         user: userProfile,
-         onSuccess: () => {
-            toast.success('Track purchased successfully!');
-            setSong(null);
-            setTimeout(() => window.location.reload(), 1500);
-         }
+         user: userProfile
       });
    };
 

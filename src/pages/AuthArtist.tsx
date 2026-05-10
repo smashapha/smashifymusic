@@ -9,34 +9,19 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
+import { upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 
 type AuthMode = 'login' | 'signup';
-type ArtistStep = 1 | 2 | 3;
+type ArtistStep = 1 | 2 | 3 | 4;
 
 const AuthArtist: React.FC = () => {
-  const { user, role, loading } = useAuth();
+  const { user, userProfile, role, loading, refreshProfile } = useAuth();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
   const [loadingState, setLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user && !loading && role !== null) {
-      if (role === 'artist' || role === 'pending') navigate('/artist-hub');
-      else {
-        toast.error('You are logged in as a Listener. Please apply if you wish to use the Artist Studio.');
-        navigate('/');
-      }
-    }
-  }, [user, loading, role, navigate]);
-
-  useEffect(() => {
-    const qMode = searchParams.get('mode');
-    if (qMode === 'signup') setMode('signup');
-    else setMode('login');
-  }, [searchParams]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,6 +33,24 @@ const AuthArtist: React.FC = () => {
   const [artistStep, setArtistStep] = useState<ArtistStep>(1);
   const [idPhoto, setIdPhoto] = useState<File | null>(null);
 
+  useEffect(() => {
+    if (user && !loading && role !== null) {
+      if (mode !== 'signup' || artistStep !== 4) {
+         if (role === 'artist' || role === 'pending') navigate('/artist-hub');
+         else {
+           toast.error('You are logged in as a Listener. Please apply if you wish to use the Artist Studio.');
+           navigate('/');
+         }
+      }
+    }
+  }, [user, loading, role, navigate, mode, artistStep]);
+
+  useEffect(() => {
+    const qMode = searchParams.get('mode');
+    if (qMode === 'signup') setMode('signup');
+    else setMode('login');
+  }, [searchParams]);
+
   if (loading && !user) {
     return (
        <div className="min-h-screen bg-smash-black flex items-center justify-center">
@@ -56,85 +59,107 @@ const AuthArtist: React.FC = () => {
     );
   }
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!email) { toast.error('Email is required'); return; }
-    if (mode === 'login' && !password) { toast.error('Password is required'); return; }
+    if (!password) { toast.error('Password is required'); return; }
     
-    if (mode === 'signup' && artistStep === 3) {
-      if (password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-      if (!idPhoto) { toast.error('Verification ID is required'); return; }
+    setLoadingState(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success('Studio unlocked!');
+    } catch (err: any) {
+      setError(err.message);
+      toast.error(err.message);
+    } finally {
+      setLoadingState(false);
     }
+  };
+
+  const submitApplication = async () => {
+    if (password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (!idPhoto) { toast.error('Verification ID is required'); return; }
 
     setLoadingState(true);
     setError(null);
 
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success('Studio unlocked!');
-      } else if (mode === 'signup' && artistStep === 3) {
-        const { data, error } = await supabase.auth.signUp({ 
-           email, 
-           password,
-           options: { data: { full_name: fullName, stage_name: stageName, role: 'pending' } }
-        });
-        if (error) throw error;
-        if (data.user) {
-           let idUrl = null;
-           if (idPhoto) {
-             const fileExt = idPhoto.name.split('.').pop();
-             const fileName = `${data.user.id}/id-document.${fileExt}`;
-             const { error: uploadError } = await supabase.storage
-               .from('artist-verifications')
-               .upload(fileName, idPhoto, { upsert: true });
-             
-             if (!uploadError) {
-               const { data: urlData } = supabase.storage
-                 .from('artist-verifications')
-                 .getPublicUrl(fileName);
-               idUrl = urlData.publicUrl;
-             }
-           }
+      const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: { data: { full_name: fullName, stage_name: stageName, role: 'pending', phone } }
+      });
+      if (error) throw error;
+      
+      if (data.user) {
+          let idUrl = null;
+          if (idPhoto) {
+            const fileExt = idPhoto.name.split('.').pop();
+            const fileName = `${data.user.id}/id-document.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+              .from('artist-verifications')
+              .upload(fileName, idPhoto, { upsert: true });
+            
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage
+                .from('artist-verifications')
+                .getPublicUrl(fileName);
+              idUrl = urlData.publicUrl;
+            }
+          }
 
-           const { error: appError } = await supabase.from('artist_applications').insert({
-              profile_id: data.user.id,
-              full_name: fullName,
-              stage_name: stageName,
-              email: email,
-              genre: genre,
-              city: city,
-              phone: phone,
-              id_document_url: idUrl,
-              status: 'pending'
-           });
-           if (appError) throw appError;
+          const { error: appError } = await supabase.from('artist_applications').insert({
+            profile_id: data.user.id,
+            full_name: fullName,
+            stage_name: stageName,
+            email: email,
+            genre: genre,
+            city: city,
+            phone: phone,
+            id_document_url: idUrl,
+            status: 'pending'
+          });
+          if (appError) throw appError;
 
-           // Insert a profile row immediately with approved: false
-           const { error: profileError } = await supabase.from('profiles').insert({
-              id: data.user.id,
-              full_name: fullName,
-              stage_name: stageName,
-              email: email,
-              genre: genre,
-              city: city,
-              phone: phone,
-              approved: false,
-              user_type: 'artist'
-           });
-           if (profileError) throw profileError;
+          // Insert a profile row immediately with approved: false
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            full_name: fullName,
+            stage_name: stageName,
+            email: email,
+            genre: genre,
+            city: city,
+            phone: phone,
+            approved: false,
+            user_type: 'artist',
+            artist_tier: 'Free'
+          });
+          if (profileError) throw profileError;
 
-           toast.success('Application submitted! Under review.');
-           navigate('/artist-hub');
-        }
+          toast.success('Application submitted!');
+          setArtistStep(4);
       }
     } catch (err: any) {
       setError(err.message);
       toast.error(err.message);
     } finally {
       setLoadingState(false);
+    }
+  };
+
+  const handlePlanSelection = async (plan: 'Free' | 'RisingStar' | 'Standard' | 'Elite') => {
+    if (plan === 'Free') {
+       toast.success('Your Free Studio application is under review.');
+       await refreshProfile();
+       navigate('/artist-hub');
+    } else {
+       if (!userProfile) return;
+       upgradeArtistTier({
+          tier: plan,
+          artist: userProfile
+       });
     }
   };
 
@@ -210,18 +235,18 @@ const AuthArtist: React.FC = () => {
          </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center px-6 py-20 md:px-24 md:py-32 relative z-10">
+      <div className="flex-1 flex flex-col justify-center px-6 py-20 md:px-24 md:py-32 relative z-10 overflow-y-auto">
          <div className="max-w-xl w-full mx-auto">
             <h1 className="text-4xl font-black font-display uppercase italic tracking-tighter mb-8 text-smash-purple">Artist Studio</h1>
             
             <div className="flex gap-4 mb-12">
-               <button onClick={() => setMode('login')} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'login' ? 'bg-smash-purple text-white shadow-xl shadow-smash-purple/20' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Artist Mission Control</button>
+               <button onClick={() => { setMode('login'); setArtistStep(1); }} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'login' ? 'bg-smash-purple text-white shadow-xl shadow-smash-purple/20' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Artist Mission Control</button>
                <button onClick={() => setMode('signup')} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'signup' ? 'bg-smash-purple text-white shadow-xl shadow-smash-purple/20' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Apply for Studio</button>
             </div>
 
             <AnimatePresence mode="wait">
                {mode === 'login' ? (
-                  <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleAuth}>
+                  <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleLogin}>
                      <div className="space-y-6">
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Artist Email" value={email} onChange={setEmail} />
                         <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
@@ -239,13 +264,15 @@ const AuthArtist: React.FC = () => {
                ) : (
                   <motion.div key="artist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
                      {/* Stepper */}
-                     <div className="flex items-center gap-4">
-                        {[1, 2, 3].map(s => (
-                           <div key={s} className="h-2 flex-1 rounded-full overflow-hidden bg-white/5">
-                              <motion.div initial={{ width: 0 }} animate={{ width: artistStep >= s ? '100%' : '0%' }} className="h-full bg-smash-purple shadow-[0_0_15px_rgba(155,93,229,0.5)]" />
-                           </div>
-                        ))}
-                     </div>
+                     {artistStep < 4 && (
+                        <div className="flex items-center gap-4">
+                           {[1, 2, 3].map(s => (
+                              <div key={s} className="h-2 flex-1 rounded-full overflow-hidden bg-white/5">
+                                 <motion.div initial={{ width: 0 }} animate={{ width: artistStep >= s ? '100%' : '0%' }} className="h-full bg-smash-purple shadow-[0_0_15px_rgba(155,93,229,0.5)]" />
+                              </div>
+                           ))}
+                        </div>
+                     )}
 
                      <AnimatePresence mode="wait">
                         {artistStep === 1 && (
@@ -297,9 +324,47 @@ const AuthArtist: React.FC = () => {
                               </div>
                               <div className="flex gap-4">
                                  <button onClick={prevArtistStep} className="p-6 bg-white/5 text-white rounded-[32px] hover:bg-white/10 transition-all"><ChevronLeft size={32} /></button>
-                                 <button onClick={handleAuth} disabled={loadingState} className="flex-1 py-6 bg-smash-purple text-white rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl shadow-smash-purple/20 hover:scale-[1.02] transition-all italic">
+                                 <button onClick={submitApplication} disabled={loadingState} className="flex-1 py-6 bg-smash-purple text-white rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl shadow-smash-purple/20 hover:scale-[1.02] transition-all italic">
                                     {loadingState ? 'Launching Studio...' : 'Submit Application'}
                                  </button>
+                              </div>
+                           </motion.div>
+                        )}
+                        {artistStep === 4 && (
+                           <motion.div key="as4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                              <h3 className="text-xl font-black uppercase tracking-widest text-center mb-6">Choose Your Studio Plan</h3>
+                              
+                              <div onClick={() => handlePlanSelection('Free')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer group">
+                                 <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-black text-xl">Free Studio</h4>
+                                    <span className="text-smash-gray font-bold group-hover:text-white transition-colors">MK 0</span>
+                                 </div>
+                                 <p className="text-sm text-smash-gray mb-4">5 Uploads, 15% fee, basic analytics. Requires manual review.</p>
+                              </div>
+
+                              <div onClick={() => handlePlanSelection('RisingStar')} className="p-6 rounded-3xl border border-smash-purple/30 bg-smash-purple/10 hover:border-smash-purple transition-all cursor-pointer">
+                                 <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-black text-xl text-smash-purple">Rising Star</h4>
+                                    <span className="font-bold text-white">MK 15,000 /yr</span>
+                                 </div>
+                                 <p className="text-sm text-smash-gray mb-4">30 Uploads, 10% fee, fan subscriptions, Auto-Approve.</p>
+                              </div>
+
+                              <div onClick={() => handlePlanSelection('Standard')} className="p-6 rounded-3xl border-2 border-smash-orange bg-smash-orange/10 hover:bg-smash-orange/20 transition-all cursor-pointer relative overflow-hidden">
+                                 <div className="absolute top-4 right-4 bg-smash-orange text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Recommended</div>
+                                 <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-black text-xl text-smash-orange">Standard</h4>
+                                    <span className="font-bold text-white mt-4">MK 25,000 /yr</span>
+                                 </div>
+                                 <p className="text-sm text-smash-gray mb-4">Unlimited uploads, 7% fee, advanced analytics, featured placements.</p>
+                              </div>
+
+                              <div onClick={() => handlePlanSelection('Elite')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer">
+                                 <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-black text-xl">Elite Label</h4>
+                                    <span className="font-bold text-white">MK 45,000 /yr</span>
+                                 </div>
+                                 <p className="text-sm text-smash-gray mb-4">Multiple profiles, 5% fee, dedicated API and management.</p>
                               </div>
                            </motion.div>
                         )}

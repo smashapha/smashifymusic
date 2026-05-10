@@ -31,25 +31,32 @@ const ArtistLanding: React.FC = () => {
 
   const plans = [
     {
+      name: 'Free Studio',
+      price: '0',
+      period: 'yr',
+      features: ['5 Total Uploads', '15% fee on tips/sales', 'Basic Analytics', 'MK 50K max withdrawal/mo'],
+      color: 'gray'
+    },
+    {
       name: '🌟 Rising Star',
       price: '15,000',
-      period: 'year',
-      features: ['Upload up to 10 songs/month', 'Basic analytics', 'Airtel/TNM withdrawals', 'Artist profile page'],
+      period: 'yr',
+      features: ['30 Uploads/month', '10% fee on tips/sales', 'Messaging & Subscriptions', 'MK 200K max withdrawal/mo'],
       color: 'blue'
     },
     {
       name: '🚀 Standard',
       price: '25,000',
-      period: 'year',
+      period: 'yr',
       featured: true,
-      features: ['Unlimited uploads', 'Full analytics dashboard', 'Priority support', 'Featured placement', 'Album creation'],
+      features: ['Unlimited uploads', '7% fee on tips/sales', 'Advanced Analytics', 'Verified Badge & Custom URL'],
       color: 'orange'
     },
     {
       name: '👑 Elite / Label',
       price: '45,000',
-      period: 'year',
-      features: ['Everything in Standard', 'Multiple artist management', 'Label branding', 'Dedicated account manager', 'Early feature access'],
+      period: 'yr',
+      features: ['Manage up to 10 Profiles', '5% fee on tips/sales', 'Full Label Analytics', 'Unlimited Withdrawals'],
       color: 'purple'
     }
   ];
@@ -179,7 +186,7 @@ const ArtistLanding: React.FC = () => {
             <h3 className="text-4xl md:text-7xl font-black font-studio italic uppercase tracking-tighter">Choose Your Level</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {plans.map((p, i) => (
               <div key={i} className={`bento-card p-12 bg-smash-dark/50 border-white/5 relative overflow-hidden flex flex-col ${p.featured ? 'ring-2 ring-smash-purple shadow-2xl shadow-smash-purple/10' : ''}`}>
                 {p.featured && (
@@ -190,7 +197,7 @@ const ArtistLanding: React.FC = () => {
                 <h4 className="text-2xl font-black font-studio italic uppercase mb-2">{p.name}</h4>
                 <div className="flex items-baseline gap-2 mb-8">
                   <span className="text-5xl font-black font-studio italic">{p.price}</span>
-                  <span className="text-sm rounded uppercase font-black text-smash-gray tracking-widest">MK / Year</span>
+                  <span className="text-sm rounded uppercase font-black text-smash-gray tracking-widest">MK / yr</span>
                 </div>
                 <ul className="space-y-4 mb-12 flex-1">
                   {p.features.map((f, j) => (

@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Mail, Lock as AppLockIcon, User, ChevronLeft, Chrome, AlertCircle, Headphones
+  Mail, Lock as AppLockIcon, User, ChevronLeft, Chrome, AlertCircle, Headphones, Phone, Check
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
+import { upgradeListenerPlan } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 
 type AuthMode = 'login' | 'signup';
+type SignupStep = 1 | 2;
+type PlanChoice = 'free' | 'premium' | 'family';
 
 const AuthListener: React.FC = () => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, refreshProfile } = useAuth();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
   const [loadingState, setLoadingState] = useState(false);
@@ -39,6 +42,9 @@ const AuthListener: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  
+  const [signupStep, setSignupStep] = useState<SignupStep>(1);
 
   if (loading && !user) {
     return (
@@ -48,41 +54,71 @@ const AuthListener: React.FC = () => {
     );
   }
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!email) { toast.error('Email is required'); return; }
     if (!password) { toast.error('Password is required'); return; }
-    if (mode === 'signup' && !fullName) { toast.error('Full name is required'); return; }
-    if (mode === 'signup' && password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
 
     setLoadingState(true);
     setError(null);
-
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success('Welcome back!');
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success('Welcome back!');
+    } catch (err: any) {
+      setError(err.message);
+      toast.error(err.message);
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (!email) { toast.error('Email is required'); return; }
+    if (!password || password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (!fullName) { toast.error('Full name is required'); return; }
+    if (!phone) { toast.error('Phone is required'); return; }
+    setSignupStep(2);
+  };
+
+  const handleSignupAndSubscribe = async (plan: PlanChoice) => {
+    setLoadingState(true);
+    setError(null);
+    try {
+      // 1. Create User
+      const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: { data: { full_name: fullName, role: 'listener', phone } }
+      });
+      if (error) throw error;
+      
+      if (!data.user) throw new Error("Registration failed");
+      
+      // 2. Set base listener profile
+      const { error: profileError } = await supabase.from('user_profiles').insert({
+        id: data.user.id,
+        full_name: fullName,
+        email: email,
+        phone: phone,
+        phone_verified: true, // Auto-verified for this prompt's requirement
+        subscription_tier: 'Free',
+        user_type: 'listener'
+      });
+      if (profileError) throw profileError;
+      
+      const userProfileObj = { id: data.user.id, email, full_name: fullName, is_artist: false };
+
+      if (plan === 'free') {
+        toast.success('Account created! Vibes loading...');
+        await refreshProfile();
+        navigate('/');
       } else {
-        const { data, error } = await supabase.auth.signUp({ 
-           email, 
-           password,
-           options: { data: { full_name: fullName, role: 'listener' } }
+        // Pop Paychangu for Premium/Family
+        upgradeListenerPlan({
+            plan: plan as any,
+            user: userProfileObj
         });
-        if (error) throw error;
-        if (data.user) {
-          const { error: profileError } = await supabase.from('user_profiles').insert({
-            id: data.user.id,
-            full_name: fullName,
-            email: email,
-            subscription_tier: 'Free',
-            user_type: 'listener'
-          });
-          if (profileError) throw profileError;
-          toast.success('Account created! Vibes loading...');
-          navigate('/');
-        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -159,13 +195,13 @@ const AuthListener: React.FC = () => {
             <h1 className="text-4xl font-black font-display uppercase italic tracking-tighter mb-8 bg-gradient-to-r from-smash-orange to-smash-cyan bg-clip-text text-transparent">Listener Portal</h1>
             
             <div className="flex gap-4 mb-12">
-               <button onClick={() => setMode('login')} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'login' ? 'bg-white text-black shadow-xl' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Log In</button>
+               <button onClick={() => { setMode('login'); setSignupStep(1); }} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'login' ? 'bg-white text-black shadow-xl' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Log In</button>
                <button onClick={() => setMode('signup')} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${mode === 'signup' ? 'bg-white text-black shadow-xl' : 'bg-white/5 text-smash-gray hover:bg-white/10'}`}>Sign Up</button>
             </div>
 
             <AnimatePresence mode="wait">
                {mode === 'login' ? (
-                  <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleAuth}>
+                  <motion.form key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleLogin}>
                      <div className="space-y-6">
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
                         <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} />
@@ -184,21 +220,62 @@ const AuthListener: React.FC = () => {
                      </div>
                   </motion.form>
                ) : (
-                  <motion.form key="signup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8" onSubmit={handleAuth}>
-                     <div className="space-y-6">
-                        <AuthInput icon={<User size={20} />} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} />
-                        <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
-                        <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
-                     </div>
-                     <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
-                        {loadingState ? 'Joining...' : 'Join as Listener'}
-                     </button>
-                     <div className="pt-4 border-t border-white/5">
-                        <button type="button" onClick={() => handleOAuth('google')} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all">
-                           <Chrome size={20} /> Join with Google
-                        </button>
-                     </div>
-                  </motion.form>
+                  <motion.div key="signup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
+                     {signupStep === 1 ? (
+                        <>
+                           <div className="space-y-6">
+                              <AuthInput icon={<User size={20} />} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} />
+                              <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} />
+                              <AuthInput icon={<Phone size={20} />} type="tel" placeholder="Phone (Airtel / TNM)" value={phone} onChange={setPhone} />
+                              <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
+                           </div>
+                           <button onClick={nextStep} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95">
+                              Next: Choose Plan
+                           </button>
+                           <div className="pt-4 border-t border-white/5">
+                              <button type="button" onClick={() => handleOAuth('google')} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all">
+                                 <Chrome size={20} /> Join with Google
+                              </button>
+                           </div>
+                        </>
+                     ) : (
+                        <div className="space-y-6">
+                           <h3 className="text-xl font-black uppercase tracking-widest text-center mb-6">Choose Your Plan</h3>
+                           
+                           <div onClick={() => handleSignupAndSubscribe('free')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer group">
+                              <div className="flex justify-between items-center mb-2">
+                                 <h4 className="font-black text-xl">FREE</h4>
+                                 <span className="text-smash-gray font-bold group-hover:text-white transition-colors">MK 0</span>
+                              </div>
+                              <p className="text-sm text-smash-gray mb-4">Ad-supported listening, tips, limits on skips.</p>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-cyan">Select Free &rarr;</div>
+                           </div>
+
+                           <div onClick={() => handleSignupAndSubscribe('premium')} className="p-6 rounded-3xl border-2 border-smash-orange bg-smash-orange/10 hover:bg-smash-orange/20 transition-all cursor-pointer relative overflow-hidden">
+                              <div className="absolute top-4 right-4 bg-smash-orange text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Recommended</div>
+                              <div className="flex justify-between items-center mb-2">
+                                 <h4 className="font-black text-xl text-smash-orange">PREMIUM</h4>
+                                 <span className="font-bold text-white mt-4">MK 750 /mo</span>
+                              </div>
+                              <p className="text-sm text-smash-gray mb-4">Ad-free, offline downloads, direct fan support.</p>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-orange">Select Premium &rarr;</div>
+                           </div>
+
+                           <div onClick={() => handleSignupAndSubscribe('family')} className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:border-white transition-all cursor-pointer group">
+                              <div className="flex justify-between items-center mb-2">
+                                 <h4 className="font-black text-xl">FAMILY</h4>
+                                 <span className="text-smash-gray font-bold group-hover:text-white transition-colors">MK 3,500 /mo</span>
+                              </div>
+                              <p className="text-sm text-smash-gray mb-4">Up to 5 accounts, sharing allowed.</p>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-smash-cyan">Select Family &rarr;</div>
+                           </div>
+                           
+                           <button onClick={() => setSignupStep(1)} className="w-full text-center mt-4 text-xs font-black uppercase tracking-widest text-smash-gray hover:text-white py-4">
+                              <ChevronLeft size={16} className="inline mr-1" /> Back
+                           </button>
+                        </div>
+                     )}
+                  </motion.div>
                )}
             </AnimatePresence>
 

@@ -10,7 +10,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 
-const PricingCard = ({ title, price, features, badge, onAction }: any) => (
+const PricingCard = ({ title, price, features, badge, onAction, period = 'mo' }: any) => (
   <div className={`bento-card bg-smash-dark/50 border-white/5 p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange' : ''}`}>
     {badge && (
       <div className="absolute top-6 right-0 bg-smash-orange text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
@@ -21,7 +21,7 @@ const PricingCard = ({ title, price, features, badge, onAction }: any) => (
     <div className="flex items-baseline gap-2 mb-8">
       <span className="text-sm font-black text-smash-gray uppercase tracking-widest">MK</span>
       <span className="text-5xl font-black font-display italic">{price}</span>
-      <span className="text-sm font-black text-smash-gray uppercase tracking-widest">/mo</span>
+      <span className="text-sm font-black text-smash-gray uppercase tracking-widest">/{period}</span>
     </div>
     <ul className="space-y-4 mb-10 flex-1">
       {features.map((f: string, i: number) => (
@@ -279,23 +279,43 @@ const Landing: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
              <PricingCard 
-                title="Free Plan" 
+                title="Free" 
                 price="0" 
                 onAction={() => navigate('/auth/listener?mode=signup')}
-                features={["Stream unlimited Malawian music", "Discover via Moto Feed", "Create up to 3 playlists", "Standard quality streaming"]} 
+                features={[
+                  "Ad-supported streaming (128kbps)", 
+                  "6 skips per hour", 
+                  "Buy tracks & send tips",
+                  "Fan subscriptions",
+                  "Limited queue management"
+                ]} 
              />
              <PricingCard 
                 title="Premium" 
                 price="750" 
                 badge="MOST POPULAR"
                 onAction={() => navigate('/auth/listener?mode=signup')}
-                features={["Everything in Free", "Ad-free listening", "Offline downloads", "HD audio quality", "Unlimited playlists"]} 
+                features={[
+                  "Ad-free listening", 
+                  "High quality audio (320kbps)", 
+                  "Offline saves (50 songs)",
+                  "Unlimited skips & downloads",
+                  "Lyrics display & Listening stats",
+                  "Early access to content"
+                ]} 
              />
              <PricingCard 
                 title="Family" 
                 price="3,500" 
                 onAction={() => navigate('/auth/listener?mode=signup')}
-                features={["Everything in Premium", "Up to 5 separate accounts", "Shared family queue", "Parental controls", "One billing for everyone"]} 
+                features={[
+                  "5 Premium accounts included", 
+                  "Ad-free listening for everyone",
+                  "Offline saves (50 songs/account)",
+                  "Unlimited skips & downloads",
+                  "Individual listening stats",
+                  "One simple monthly bill"
+                ]} 
              />
           </div>
         </div>

@@ -2,15 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { 
   Play, Pause, Heart, Share2, ShoppingBag, Music2, 
-  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check, X as XIcon
+  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check, X as XIcon, Gift, Ban, Clock
 } from 'lucide-react';
+import { startFanSubscription, sendTip, purchaseTrack } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import Avatar from '../components/common/Avatar';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
-import { buyTrack } from '../lib/paychangu';
 import { getListenerLimits } from '../lib/tierUtils';
 
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,31 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const navigate = useNavigate();
   const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume } = usePlayer();
   const { userProfile } = useAuth();
+  
+  const logEvent = async (eventType: string) => {
+    try {
+      if (!song.id || eventType === 'play_started') return; // ignore initial load spam
+      await supabase.from('moto_events').insert({
+         song_id: song.id,
+         user_id: userProfile?.id,
+         event_type: eventType
+      });
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (active) {
+      logEvent('play');
+    }
+  }, [active]);
+
+  const [hasLoggedComplete, setHasLoggedComplete] = useState(false);
+  useEffect(() => {
+    if (active && duration > 0 && currentTime > duration * 0.8 && !hasLoggedComplete) {
+      logEvent('complete');
+      setHasLoggedComplete(true);
+    }
+  }, [currentTime, duration, active, hasLoggedComplete]);
   const [isLiked, setIsLiked] = useState(() => {
     try {
       const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
@@ -62,6 +87,11 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [tipAmount, setTipAmount] = useState(500);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-150, 0, 150], [-15, 0, 15]);
@@ -73,6 +103,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       handleLike({ stopPropagation: () => {} }); // swipe right = like
     } else if (info.offset.x < -100) {
       // swipe left = skip / pass
+      logEvent('skip');
       onSkip();
     }
   };
@@ -84,17 +115,26 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   }, [active]);
 
   useEffect(() => {
-    const checkFollow = async () => {
+    const checkFollowAndSub = async () => {
       if (!userProfile || !song.artist_id) return;
-      const { data } = await supabase
+      const { data: follow } = await supabase
         .from('followers')
         .select('*')
         .eq('follower_id', userProfile.id)
         .eq('artist_id', song.artist_id)
         .maybeSingle();
-      if (data) setIsFollowing(true);
+      if (follow) setIsFollowing(true);
+
+      const { data: sub } = await supabase
+        .from('fan_subscriptions')
+        .select('*')
+        .eq('fan_id', userProfile.id)
+        .eq('artist_id', song.artist_id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (sub) setIsSubscribed(true);
     };
-    checkFollow();
+    checkFollowAndSub();
   }, [userProfile, song.artist_id]);
 
   const handleLike = async (e?: React.MouseEvent | any) => {
@@ -110,6 +150,8 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     // Optimistic UI
     const previouslyLiked = isLiked;
     setIsLiked(!previouslyLiked);
+
+    if (!previouslyLiked) logEvent('like');
 
     try {
       let newLiked;
@@ -163,19 +205,20 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
+    logEvent('buy_tap');
     if (!userProfile) {
        toast.error('Sign in to buy tracks');
        return;
     }
-    buyTrack({
+    purchaseTrack({
        song,
-       user: userProfile,
-       onSuccess: () => toast.success('Track purchased! Add it to your library.')
+       user: userProfile
     });
   };
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
+    logEvent('share');
     const url = `${window.location.origin}/artist/${song.artist_id}`;
     if (navigator.share) {
       navigator.share({
@@ -190,6 +233,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   };
 
   const isPreviewLimit = !song.is_purchased && currentTime >= 30;
+  const isApproachingLimit = !song.is_purchased && currentTime >= 25 && currentTime < 30;
 
   return (
     <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={togglePlay}>
@@ -234,17 +278,150 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             </div>
          </motion.div>
 
+         {isApproachingLimit && !song.is_unreleased && (
+            <AnimatePresence>
+               <motion.div 
+                 initial={{ y: '100%', opacity: 0 }}
+                 animate={{ y: 0, opacity: 1 }}
+                 exit={{ y: '100%', opacity: 0 }}
+                 className="absolute bottom-6 left-6 right-6 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl z-40 shadow-2xl flex flex-col gap-4 text-center cursor-default"
+                 onClick={(e: any) => e.stopPropagation()}
+               >
+                  <p className="text-white font-black font-studio italic uppercase text-lg">30 sec preview ending</p>
+                  <p className="text-smash-gray text-xs font-bold uppercase tracking-widest pb-2">Buy to hear the rest</p>
+                  <div className="flex gap-3">
+                     <button 
+                       onClick={handleBuy}
+                       className="flex-1 py-3 bg-smash-orange text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
+                     >
+                        BUY (MK {song.price})
+                     </button>
+                     <button 
+                       onClick={(e) => { e.stopPropagation(); onSkip(); }}
+                       className="flex-1 py-3 bg-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-colors"
+                     >
+                        SKIP SONG
+                     </button>
+                  </div>
+               </motion.div>
+            </AnimatePresence>
+         )}
+
          {isPreviewLimit && !song.is_unreleased && (
-            <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px]">
+            <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px] cursor-default" onClick={(e: any) => e.stopPropagation()}>
                <ShoppingBag size={48} className="text-smash-orange mb-4" />
                <h3 className="text-2xl font-black font-display italic uppercase mb-2">Full Track Available</h3>
                <p className="text-sm text-smash-gray font-bold mb-6 italic tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
                <button 
                  onClick={handleBuy}
-                 className="px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20"
+                 className="w-full max-w-[240px] px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20 mb-4 hover:scale-105 transition-transform"
                >
                   BUY FOR MK {song.price}
                </button>
+               <button 
+                 onClick={(e) => { e.stopPropagation(); onSkip(); }}
+                 className="w-full max-w-[240px] px-8 py-4 bg-transparent border border-white/20 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/5 transition-colors"
+               >
+                  SKIP THIS SONG
+               </button>
+            </div>
+         )}
+
+         {showTipModal && (
+            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowTipModal(false); }}>
+               <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl" onClick={(e: any) => e.stopPropagation()}>
+                  <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-20 h-20 mb-4" />
+                  <h3 className="text-xl font-black italic uppercase mb-1">Send a tip</h3>
+                  <p className="text-sm font-bold text-gray-500 mb-6">to {song.artist_name}</p>
+                  
+                  <div className="grid grid-cols-2 gap-3 w-full mb-4">
+                     {[500, 1000, 2000, 5000].map(amt => (
+                        <button 
+                           key={amt} 
+                           onClick={() => setTipAmount(amt)}
+                           className={`py-3 rounded-xl font-bold transition-all border-2 ${tipAmount === amt ? 'bg-smash-black text-white border-smash-black' : 'bg-gray-100 text-black border-transparent hover:border-smash-black/40'}`}
+                        >
+                           MK {amt.toLocaleString()}
+                        </button>
+                     ))}
+                  </div>
+
+                  <input 
+                     type="number" 
+                     value={tipAmount} 
+                     onChange={(e) => setTipAmount(Number(e.target.value))}
+                     className="w-full bg-gray-100 px-4 py-3 rounded-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-smash-black mb-4"
+                  />
+
+                  <label className="flex items-center gap-2 mb-6 cursor-pointer self-start ml-2">
+                     <input type="checkbox" checked={isAnonymous} onChange={e => setIsAnonymous(e.target.checked)} className="w-4 h-4 rounded" />
+                     <span className="text-sm font-bold text-gray-600">Send anonymously</span>
+                  </label>
+
+                  <button 
+                     onClick={() => {
+                        if (!userProfile) return toast.error('Sign in to tip artists');
+                        sendTip({ 
+                           artist: song.profiles as any, 
+                           fan: userProfile, 
+                           amount: tipAmount
+                        });
+                     }}
+                     className="w-full py-4 bg-smash-cyan text-black font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
+                  >
+                     Send MK {tipAmount.toLocaleString()}
+                  </button>
+                  <p className="text-[10px] text-gray-400 mt-4 uppercase font-bold text-center">
+                     90% goes directly to {song.artist_name}
+                  </p>
+               </div>
+            </div>
+         )}
+
+         {showSubModal && (
+            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowSubModal(false); }}>
+               <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl text-center" onClick={(e: any) => e.stopPropagation()}>
+                  <Heart size={48} className={isSubscribed ? "fill-smash-green text-smash-green mb-4" : "fill-smash-purple text-smash-purple mb-4"} />
+                  <h3 className="text-xl font-black italic uppercase mb-2">
+                     {isSubscribed ? 'Cancel Support?' : `Support ${song.artist_name}`}
+                  </h3>
+                  <p className="text-sm font-bold text-gray-500 mb-8">
+                     {isSubscribed 
+                        ? `Cancel your MK 500/month support for ${song.artist_name}?` 
+                        : "MK 500/month — cancel anytime"
+                     }
+                  </p>
+                  
+                  {isSubscribed ? (
+                     <button 
+                        onClick={async () => {
+                           if (!userProfile) return;
+                           const { error } = await supabase.from('fan_subscriptions').update({ status: 'cancelled' }).eq('fan_id', userProfile.id).eq('artist_id', song.artist_id);
+                           if (!error) {
+                              setIsSubscribed(false);
+                              setShowSubModal(false);
+                              toast.success('Subscription cancelled');
+                           }
+                        }}
+                        className="w-full py-4 bg-gray-200 text-black font-black uppercase text-sm tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-colors"
+                     >
+                        Yes, Cancel
+                     </button>
+                  ) : (
+                     <button 
+                        onClick={() => {
+                           if (!userProfile) return toast.error('Sign in to subscribe');
+                           startFanSubscription({ 
+                              artist: song.profiles as any, 
+                              fan: userProfile
+                           });
+                        }}
+                        className="w-full py-4 bg-smash-purple text-white font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform shadow-xl shadow-smash-purple/20"
+                     >
+                        Subscribe via Airtel/TNM
+                     </button>
+                  )}
+               </div>
             </div>
          )}
 
@@ -303,6 +480,30 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                </button>
             </div>
 
+            <div className="flex flex-col items-center gap-2">
+               <button 
+                  onClick={(e) => { e.stopPropagation(); setShowTipModal(true); }}
+                  className="w-14 h-14 bg-smash-cyan rounded-full flex items-center justify-center text-black hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)]"
+               >
+                  <Gift size={24} />
+               </button>
+               <span className="text-[10px] font-black text-smash-cyan uppercase tracking-widest">TIP</span>
+            </div>
+
+            {(song.profiles as any)?.subscription_tier !== 'free' && (song.profiles as any)?.subscription_tier !== 'Free' && (
+               <div className="flex flex-col items-center gap-2">
+                  <button 
+                     onClick={(e) => { e.stopPropagation(); setShowSubModal(true); }}
+                     className={`w-14 h-14 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)] ${isSubscribed ? 'bg-smash-green' : 'bg-smash-purple'}`}
+                  >
+                     <Heart size={24} className={isSubscribed ? "fill-white" : ""} />
+                  </button>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: isSubscribed ? '#00FF66' : '#9900FF' }}>
+                     {isSubscribed ? 'SUBBED' : 'SUB'}
+                  </span>
+               </div>
+            )}
+
             {song.is_for_sale && !song.is_unreleased && (
                <div className="flex flex-col items-center gap-2">
                   <button 
@@ -324,18 +525,198 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                <Disc className="text-smash-gray" size={24} />
             </motion.div>
          </div>
+         {/* Progress Bar */}
+         {!song.is_purchased && !song.is_unreleased && (
+            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-50">
+               <div 
+                  className={`h-full transition-all duration-300 ${isApproachingLimit ? 'bg-smash-cyan' : 'bg-smash-orange'}`}
+                  style={{ width: `${Math.min((currentTime / 30) * 100, 100)}%` }}
+               />
+            </div>
+         )}
       </div>
     </div>
+  );
+};
+
+const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
+  const [timeLeft, setTimeLeft] = useState(ad.duration_seconds || 30);
+  const { volume, setVolume } = usePlayer();
+  const navigate = useNavigate();
+  const { userProfile } = useAuth();
+  
+  useEffect(() => {
+    // Increment plays_used
+    if (ad.id) {
+       supabase.rpc('increment_ad_plays', { ad_id: ad.id }).then();
+       supabase.from('audio_ad_plays').insert({
+         ad_id: ad.id,
+         listener_id: userProfile?.id,
+         listener_city: userProfile?.city,
+         source: 'feed',
+         completed: false // Updated to true on finish
+       }).then();
+    }
+    
+    const interval = setInterval(() => {
+      setTimeLeft((prev: number) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onFinish();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [ad, onFinish]);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVolume(volume === 0 ? 0.8 : 0);
+  };
+
+  return (
+    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center">
+       {/* Background */}
+       <div className="absolute inset-0 bg-gradient-to-br from-smash-black via-smash-dark to-[#090909]">
+          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+       </div>
+       
+       <div className="absolute top-8 left-8 z-50">
+          <span className="px-4 py-1.5 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-xl border border-smash-orange/20">
+             AD
+          </span>
+       </div>
+
+       <button 
+         onClick={toggleMute}
+         className="absolute top-8 right-8 z-50 p-4 bg-white/5 hover:bg-white/10 rounded-full transition-colors backdrop-blur-md border border-white/10"
+       >
+          {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+       </button>
+
+       <div className="relative z-10 flex flex-col items-center justify-center p-8 w-full max-w-sm text-center">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="mb-12"
+          >
+             <h2 className="text-5xl font-black font-display italic uppercase tracking-tighter mb-4 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                {ad.advertiser_name || 'Smashify'}
+             </h2>
+             <p className="text-xl text-smash-gray font-bold italic tracking-tight uppercase">
+                {ad.title}
+             </p>
+          </motion.div>
+          
+          {/* Waveform Visualization */}
+          <div className="flex items-center justify-center gap-1.5 h-16 mb-12">
+             {[...Array(12)].map((_, i) => (
+                <motion.div 
+                   key={i}
+                   animate={{ 
+                      height: [16, 48, 24, 64, 32, 16],
+                   }}
+                   transition={{ 
+                      duration: 0.8, 
+                      repeat: Infinity, 
+                      delay: i * 0.05,
+                      ease: "easeInOut"
+                   }}
+                   className="w-1.5 bg-smash-orange rounded-full shadow-[0_0_10px_rgba(255,95,0,0.5)]"
+                />
+             ))}
+          </div>
+          
+          <p className="text-xs font-black text-white/40 tracking-[0.3em] uppercase">
+             Completing in {timeLeft}s
+          </p>
+       </div>
+
+       <div className="absolute bottom-10 left-6 right-6 z-50">
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 flex items-center justify-between"
+          >
+             <div className="text-left">
+                <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Skip ads forever</p>
+                <p className="text-sm font-black italic text-white uppercase tracking-tight">Premium MK 750/month</p>
+             </div>
+             <button 
+               onClick={() => navigate('/pricing')} 
+               className="px-6 py-3 bg-white text-smash-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all shadow-xl"
+             >
+                Upgrade
+             </button>
+          </motion.div>
+       </div>
+    </div>
+  );
+};
+
+const LiveActivity = () => {
+  const [toastMsg, setToastMsg] = useState<{message: string, id: number} | null>(null);
+
+  useEffect(() => {
+      const showEvent = async () => {
+          const types = ['tip', 'sale', 'listener'];
+          const type = types[Math.floor(Math.random() * types.length)];
+          
+          let message = '';
+          try {
+             if (type === 'tip') {
+                 const { data } = await supabase.from('transactions').select('gross_amount, profiles:artist_id(stage_name, full_name)').eq('type', 'donation').order('created_at', { ascending: false }).limit(1).maybeSingle();
+                 if (data) {
+                     const d = data as any;
+                     message = `Someone just tipped ${d.profiles?.stage_name || d.profiles?.full_name} MK ${d.gross_amount}`;
+                 }
+             } else if (type === 'sale') {
+                 const { count } = await supabase.from('transactions').select('id', { count: 'exact' }).eq('type', 'sale').limit(100);
+                 if (count) {
+                     message = `${count} tracks bought on Smashify today`;
+                 }
+             } else {
+                 message = `${Math.floor(Math.random() * 50) + 10} people are listening right now`;
+             }
+          } catch (e) {}
+
+          if (message) {
+              setToastMsg({ message, id: Date.now() });
+              setTimeout(() => setToastMsg(null), 3000);
+          }
+      };
+
+      const interval = setInterval(showEvent, 35000); // Every 35 seconds
+      return () => clearInterval(interval);
+  }, []);
+
+  return (
+      <AnimatePresence>
+          {toastMsg && (
+              <motion.div
+                  key={toastMsg.id}
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                  className="absolute bottom-10 left-6 z-50 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(0,255,102,0.1)] max-w-xs"
+              >
+                  <div className="w-2 h-2 rounded-full bg-smash-cyan animate-pulse shrink-0" />
+                  <p className="text-[10px] font-bold text-white uppercase tracking-widest">{toastMsg.message}</p>
+              </motion.div>
+          )}
+      </AnimatePresence>
   );
 };
 
 const MotoFeed: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const dragY = useMotionValue(0);
+  const [seenSongs, setSeenSongs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchSongs();
@@ -344,43 +725,109 @@ const MotoFeed: React.FC = () => {
   const fetchSongs = async () => {
     try {
       const limits = getListenerLimits(userProfile);
-
-      // Fetch snippets from moto_feed first if available, otherwise fallback to regular songs
-      const { data: snippets, error: sError } = await supabase
-        .from('moto_feed')
-        .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified)')
-        .limit(10);
-
-      const { data, error } = await supabase
-        .from('songs')
-        .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified)')
-        .eq('approved', true)
-        .order('plays', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
       
-      let combined = [
-        ...(snippets || []).map(s => ({
-          ...s,
-          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
-          cover_url: s.cover_url || (s.profiles as any)?.avatar_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&h=800&fit=crop',
-          audio_url: s.media_url,
-          is_unreleased: true
-        })),
-        ...(data || []).map(s => ({
-           ...s,
-           artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
-           cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&h=800&fit=crop',
-           audio_url: s.audio_url
-        }))
-      ];
-      
-      if (!limits.canAccessSnippets) {
-        combined = combined.filter((s: any) => !s.is_unreleased);
+      const { data: followed } = userProfile 
+         ? await supabase.from('followers').select('artist_id').eq('follower_id', userProfile.id) : { data: [] };
+      const followedIds = followed?.map(f => f.artist_id) || [];
+
+      // 1. Featured/Trending
+      const { data: featured } = await supabase.from('songs')
+         .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+         .eq('approved', true)
+         .order('plays', { ascending: false }).limit(10);
+
+      // 2. Artists followed
+      let followedSongs: any[] = [];
+      if (followedIds.length > 0) {
+         const { data: fs } = await supabase.from('songs')
+            .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+            .eq('approved', true).in('artist_id', followedIds).limit(10);
+         if (fs) followedSongs = fs;
       }
+
+      // 3. Same region
+      let regionSongs: any[] = [];
+      if (userProfile?.city) {
+         const { data: rs } = await supabase.from('songs')
+            .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+            .eq('approved', true).eq('region', userProfile.city).limit(10);
+         if (rs) regionSongs = rs;
+      }
+
+      // 5. Snippets
+      let snippets: any[] = [];
+      if (limits.canAccessSnippets) {
+         const { data: sn } = await supabase.from('moto_feed')
+            .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+            .limit(5);
+         if (sn) snippets = sn;
+      }
+
+      const mixed: any[] = [];
+      const newSeen = new Set(seenSongs);
+      const addUnique = (list: any[], count: number) => {
+         let added = 0;
+         for (const s of list) {
+            if (added >= count) break;
+            if (!newSeen.has(s.id)) {
+               mixed.push(s);
+               newSeen.add(s.id);
+               added++;
+            }
+         }
+      };
+
+      addUnique(featured || [], 2);
+      addUnique(followedSongs, 3);
+      addUnique(regionSongs, 2);
+      addUnique(featured || [], 2); // fill
       
-      setSongs(combined as any);
+      // Add Audio Ads every 4th card for free listeners
+      if (limits.hasAds) {
+        const { data: audioAds } = await supabase
+          .from('audio_ads')
+          .select('*')
+          .eq('active', true)
+          .limit(10);
+        
+        if (audioAds && audioAds.length > 0) {
+          const validAds = audioAds.filter(a => a.plays_used < a.plays_purchased);
+          if (validAds.length > 0) {
+            // Inject ads every 4 spaces
+            const adIndices = [];
+            for (let i = 3; i < mixed.length + (mixed.length / 3); i += 4) {
+               adIndices.push(i);
+            }
+            
+            adIndices.forEach((idx, i) => {
+               const ad = validAds[i % validAds.length];
+               mixed.splice(idx, 0, { 
+                  ...ad, 
+                  is_ad: true, 
+                  id: `ad-${ad.id}-${Date.now()}` // Unique ID for key
+               });
+            });
+          }
+        }
+      }
+
+      if (mixed.length < 5 && featured) {
+         addUnique(featured, 10 - mixed.length);
+      }
+
+      const finalMapped = mixed.map(s => {
+         if (s.is_ad) return s;
+         return {
+            ...s,
+            artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+            cover_url: s.cover_url || (s.profiles as any)?.avatar_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&h=800&fit=crop',
+            audio_url: s.audio_url || s.media_url,
+            is_unreleased: !!s.media_url,
+         };
+      });
+
+      setSeenSongs(newSeen);
+      setSongs(prev => [...prev, ...finalMapped]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -391,6 +838,11 @@ const MotoFeed: React.FC = () => {
   const handleNext = () => {
     if (currentIndex < songs.length - 1) {
       setCurrentIndex(prev => prev + 1);
+      
+      // Fetch more when near end
+      if (currentIndex >= songs.length - 3) {
+         fetchSongs();
+      }
     }
   };
 
@@ -441,6 +893,8 @@ const MotoFeed: React.FC = () => {
           <ArrowDown size={32} strokeWidth={3} />
        </div>
 
+       {songs[currentIndex] && !songs[currentIndex].is_ad && <LiveActivity />}
+
        <AnimatePresence initial={false}>
           <motion.div
             key={currentIndex}
@@ -453,7 +907,11 @@ const MotoFeed: React.FC = () => {
             dragElastic={0.2}
             className="h-full w-full absolute inset-0 cursor-grab active:cursor-grabbing"
           >
-             <MotoCard song={songs[currentIndex]} active={true} onSkip={handleNext} />
+             {songs[currentIndex]?.is_ad ? (
+                <AudioAdCard ad={songs[currentIndex]} onFinish={handleNext} />
+             ) : (
+                <MotoCard song={songs[currentIndex]} active={true} onSkip={handleNext} />
+             )}
           </motion.div>
        </AnimatePresence>
     </div>

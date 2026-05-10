@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { X, Heart, ShieldCheck, ChevronRight, Zap, Coffee, Crown } from 'lucide-react';
 import Avatar from './Avatar';
 import { UserProfile } from '../../types';
-import { supportArtist } from '../../lib/paychangu';
+import { sendTip } from '../../lib/paychangu';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -37,15 +37,10 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
 
     setLoading(true);
     try {
-      supportArtist({
+      sendTip({
         artist,
-        user: userProfile,
-        amount: Number(amount),
-        onSuccess: () => {
-          toast.success(`You sent MK ${Number(amount).toLocaleString()} to ${artist.stage_name || artist.full_name}!`);
-          onClose();
-        },
-        onClose: () => setLoading(false)
+        fan: userProfile,
+        amount: Number(amount)
       });
     } catch (err: any) {
       toast.error('Payment failed: ' + err.message);

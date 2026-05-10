@@ -28,6 +28,7 @@ import Library from './pages/Library';
 import Profile from './pages/Profile';
 import Trending from './pages/Trending';
 import ApplicationPending from './pages/ApplicationPending';
+import Admin from './pages/Admin';
 
 import { Mail, Phone, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -164,6 +165,9 @@ const NotFound = () => {
   );
 };
 
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
+
 function AppContent() {
   const { user, role, loading } = useAuth();
 
@@ -200,6 +204,16 @@ function AppContent() {
       <Route path="/artists" element={<ArtistLanding />} />
       <Route path="/application-pending" element={role === 'pending' || role === 'artist' ? <Navigate to="/artist-hub" replace /> : <ApplicationPending />} />
       <Route path="/moto-feed" element={<MotoFeed />} />
+      
+      {/* Payment Routes */}
+      <Route path="/purchase-success" element={<PaymentSuccess />} />
+      <Route path="/tip-success" element={<PaymentSuccess />} />
+      <Route path="/subscribe-success" element={<PaymentSuccess />} />
+      <Route path="/upgrade-success" element={<PaymentSuccess />} />
+      <Route path="/tier-success" element={<PaymentSuccess />} />
+      <Route path="/ad-success" element={<PaymentSuccess />} />
+      <Route path="/payment-failed" element={<PaymentFailed />} />
+
       <Route 
         path="/artist-hub" 
         element={
@@ -236,6 +250,7 @@ function AppContent() {
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="admin" element={<Admin />} />
       </Route>
       <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
     </Routes>

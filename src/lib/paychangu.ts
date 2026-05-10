@@ -2,317 +2,219 @@ import { supabase } from './supabase';
 import { Song, UserProfile } from '../types';
 import toast from 'react-hot-toast';
 
-declare const PaychanguCheckout: (config: any) => void;
+export type PaymentType = 
+  | 'listener_premium' 
+  | 'listener_family' 
+  | 'artist_rising_star' 
+  | 'artist_standard' 
+  | 'artist_elite' 
+  | 'track_purchase' 
+  | 'tip' 
+  | 'fan_subscription' 
+  | 'artist_ad_campaign' 
+  | 'featured_placement';
 
-const PUBLIC_KEY = import.meta.env.VITE_PAYCHANGU_PUBLIC_KEY;
-
-interface BuyTrackParams {
-  song: Song;
-  user: UserProfile;
-  onSuccess?: () => void;
-  onClose?: () => void;
+interface InitiatePaymentParams {
+  amount: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  type: PaymentType;
+  meta: Record<string, any>;
+  return_url: string;
 }
 
-// Fixed subscription prices — not editable by user
-const SUBSCRIPTION_PRICES = {
-  rising_star: 15000,  // MWK/year
-  standard: 25000,     // MWK/year
-  elite: 45000,        // MWK/year
-};
+const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
 
-const LISTENER_SUBSCRIPTION_PRICES = {
-  premium: 750, // MWK/month
-  family: 3500,  // MWK/month
-};
-
-export function subscribeArtist({
-  plan,
-  user,
-  onSuccess,
-  onClose,
-}: {
-  plan: 'rising_star' | 'standard' | 'elite';
-  user: any;
-  onSuccess?: () => void;
-  onClose?: () => void;
-}) {
-  if (typeof PaychanguCheckout === 'undefined') {
-    toast.error('Payment system unavailable. Please refresh the page.');
-    return;
-  }
-  const amount = SUBSCRIPTION_PRICES[plan];
-  if (!amount || amount <= 0) {
-    toast.error('Invalid payment amount.');
-    return;
-  }
-
-  const planNames = { rising_star: 'Rising Star', standard: 'Standard', elite: 'Elite/Label' };
-
-  PaychanguCheckout({
-    public_key: PUBLIC_KEY,
-    tx_ref: `SUB-${plan.toUpperCase()}-${Date.now()}-${user.id}`,
-    amount,               // FIXED — user cannot change this
-    currency: 'MWK',
-    callback_url: window.location.href, // keep on same page
-    return_url: window.location.href,
-    customer: {
-      email: user.email,
-      first_name: user.full_name?.split(' ')[0] || 'Artist',
-      last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
-    },
-    customization: {
-      title: `Smashify ${planNames[plan]} Plan`,
-      description: `Annual subscription — MWK ${amount.toLocaleString()}/yr`,
-    },
-    onclose: onClose,
-    callback: async (response: any) => {
-      if (response?.status === 'successful') {
-        const expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-        
-        await supabase.from('profiles').update({
-          subscription_tier: plan,
-          subscription_ends: expiresAt.toISOString(),
-          approved: true,  // subscribing auto-approves pending artists
-          user_type: 'artist'
-        }).eq('id', user.id);
-
-        // Also update auth metadata to reflect role change if needed
-        await supabase.auth.updateUser({
-           data: { role: 'artist' }
-        });
-
-        await supabase.from('transactions').insert({
-          artist_id: user.id,
-          type: 'subscription',
-          amount,
-          status: 'completed',
-          paychangu_ref: response.tx_ref,
-          description: `${planNames[plan]} annual subscription`,
-        });
-
-        onSuccess?.();
+/**
+ * Common function to initiate payment via Edge Function
+ */
+export async function initiatePayment(params: InitiatePaymentParams) {
+  const toastId = toast.loading('Initializing secure payment...');
+  
+  try {
+    const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${Date.now()}`;
+    
+    const { data, error } = await supabase.functions.invoke('create-payment', {
+      body: {
+        ...params,
+        tx_ref,
+        currency: 'MWK',
+        callback_url: `${APP_URL}/api/paychangu-webhook`,
       }
-    },
-  });
+    });
+
+    if (error) throw error;
+    if (!data?.checkout_url) throw new Error('Failed to get checkout URL');
+
+    toast.success('Redirecting to PayChangu...', { id: toastId });
+    
+    // Redirect user to hosted checkout
+    window.location.href = data.checkout_url;
+  } catch (err: any) {
+    console.error('Payment error:', err);
+    toast.error(err.message || 'Payment initialization failed', { id: toastId });
+    throw err;
+  }
 }
 
-export function subscribeListener({
-  plan,
-  user,
-  onSuccess,
-  onClose,
-}: {
-  plan: 'premium' | 'family';
-  user: any;
-  onSuccess?: () => void;
-  onClose?: () => void;
-}) {
-  if (typeof PaychanguCheckout === 'undefined') {
-    toast.error('Payment system unavailable. Please refresh the page.');
-    return;
-  }
-  const amount = LISTENER_SUBSCRIPTION_PRICES[plan];
-  if (!amount || amount <= 0) {
-    toast.error('Invalid payment amount.');
-    return;
-  }
-
-  const planNames = { premium: 'Premium', family: 'Family' };
-
-  PaychanguCheckout({
-    public_key: PUBLIC_KEY,
-    tx_ref: `SUB-${plan.toUpperCase()}-${Date.now()}-${user.id}`,
-    amount,               // FIXED — user cannot change this
-    currency: 'MWK',
-    callback_url: window.location.href, // keep on same page
-    return_url: window.location.href,
-    customer: {
-      email: user.email,
-      first_name: user.full_name?.split(' ')[0] || 'Listener',
-      last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
-    },
-    customization: {
-      title: `Smashify ${planNames[plan]} Plan`,
-      description: `Monthly subscription — MWK ${amount.toLocaleString()}/mo`,
-    },
-    onclose: onClose,
-    callback: async (response: any) => {
-      if (response?.status === 'successful') {
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
-        
-        await supabase.from('user_profiles').update({
-          subscription_tier: plan,
-          subscription_ends: expiresAt.toISOString(),
-          user_type: 'listener'
-        }).eq('id', user.id);
-
-        // Ensure metadata reflects listener role
-        await supabase.auth.updateUser({
-           data: { role: 'listener' }
-        });
-
-        await supabase.from('transactions').insert({
-          fan_id: user.id,
-          type: 'subscription',
-          amount,
-          status: 'completed',
-          paychangu_ref: response.tx_ref,
-          description: `${planNames[plan]} monthly subscription`,
-        });
-
-        onSuccess?.();
-      }
-    },
-  });
-}
-
-export function supportArtist({ artist, user, amount, onSuccess, onClose }: { artist: UserProfile, user: UserProfile, amount: number, onSuccess?: () => void, onClose?: () => void }) {
-  if (typeof PaychanguCheckout === 'undefined') {
-    toast.error('Payment system unavailable. Please refresh the page.');
-    return;
-  }
-  if (!amount || amount <= 0 || amount < 500) {
-    toast.error('Invalid payment amount. Minimum is 500 MWK.');
-    return;
-  }
-
-  PaychanguCheckout({
-    public_key: PUBLIC_KEY,
-    tx_ref: 'TIP-' + Date.now() + '-' + artist.id,
-    amount: amount,
-    currency: 'MWK',
-    callback_url: window.location.href,
-    return_url: window.location.href,
-    customer: {
-      email: user.email,
-      name: user.full_name || 'Fan',
-    },
-    customization: {
-      title: 'Support ' + artist.stage_name,
-      description: 'Support for ' + artist.stage_name,
-    },
-    onclose: onClose,
-    callback: async (response: any) => {
-      if (response?.status === 'successful') {
-        try {
-          const grossAmount = amount; // what the fan paid
-          const platformFee = Math.round(grossAmount * 0.10); // 10% to Smashify
-          const artistReceives = grossAmount - platformFee;   // 90% to artist — always
-
-          // 1. Record the transaction with full fee breakdown
-          await supabase.from('transactions').insert({
-            artist_id: artist.id,
-            fan_id: user.id,
-            type: 'donation',
-            gross_amount: grossAmount,
-            platform_fee: platformFee,
-            net_amount: artistReceives,
-            status: 'completed',
-            paychangu_ref: response.tx_ref,
-            description: `Donation to ${artist.stage_name}`
-          });
-
-          // 2. Credit artist wallet immediately — 90% only, never gross
-          const { error: rpcError } = await supabase.rpc('increment_wallet_balance', { 
-            user_id: artist.id, 
-            amount_to_add: artistReceives 
-          });
-          
-          // 3. Fallback if RPC not set up
-          if (rpcError) {
-             const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', artist.id).single();
-             await supabase.from('profiles').update({
-               wallet_balance: (profile?.wallet_balance || 0) + artistReceives
-             }).eq('id', artist.id);
-          }
-          onSuccess?.();
-        } catch (error) {
-          console.error("Donation sync failed: ", error);
-        }
-      }
+/**
+ * Buy a specific track
+ */
+export async function purchaseTrack({ song, user }: { song: Song; user: UserProfile }) {
+  return initiatePayment({
+    amount: song.price || 500,
+    email: user.email,
+    first_name: user.full_name?.split(' ')[0] || 'Fan',
+    last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
+    type: 'track_purchase',
+    return_url: `${APP_URL}/purchase-success?song_id=${song.id}&tx_ref=`, // ref appended by PayChangu or handled by our success page
+    meta: {
+      userId: user.id,
+      songId: song.id,
+      artistId: song.artist_id
     }
   });
 }
 
-export function buyTrack({ song, user, onSuccess, onClose }: BuyTrackParams) {
-  if (typeof PaychanguCheckout === 'undefined') {
-    toast.error('Payment system unavailable. Please refresh the page.');
+/**
+ * Send a tip to an artist
+ */
+export async function sendTip({ artist, fan, amount, anonymous = false }: { artist: UserProfile; fan: UserProfile; amount: number; anonymous?: boolean }) {
+  if (amount < 500) {
+    toast.error('Minimum tip is MK 500');
     return;
   }
-  if (!song.price || song.price <= 0) {
-    toast.error('Invalid payment amount.');
-    return;
-  }
 
-  PaychanguCheckout({
-    public_key: PUBLIC_KEY,
-    tx_ref: 'SMASH-' + Date.now() + '-' + song.id,
-    amount: song.price,
-    currency: 'MWK',
-    callback_url: window.location.href,
-    return_url: window.location.href,
-    customer: {
-      email: user.email,
-      first_name: user.full_name?.split(' ')[0] || 'Listener',
-      last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
-    },
-    customization: {
-      title: 'Buy: ' + song.title,
-      description: song.title + ' by ' + song.artist_name,
-    },
-    onclose: onClose,
-    callback: async (response: any) => {
-      if (response?.status === 'successful') {
-        try {
-          // Record purchase
-          const { error: purchaseError } = await supabase.from('purchases').insert({
-            user_id: user.id,
-            song_id: song.id,
-            artist_id: song.artist_id,
-            amount: song.price,
-            paychangu_ref: response.tx_ref
-          });
-
-          if (purchaseError) throw purchaseError;
-
-          const grossAmount = song.price; // what the fan paid
-          const platformFee = Math.round(grossAmount * 0.10); // 10% to Smashify
-          const artistReceives = grossAmount - platformFee;   // 90% to artist — always
-
-          // 1. Record the transaction with full fee breakdown
-          await supabase.from('transactions').insert({
-            artist_id: song.artist_id,
-            fan_id: user.id,
-            type: 'sale',
-            gross_amount: grossAmount,
-            platform_fee: platformFee,
-            net_amount: artistReceives,
-            status: 'completed',
-            paychangu_ref: response.tx_ref,
-            description: `Sale of "${song.title}"`
-          });
-
-          // 2. Credit artist wallet immediately — 90% only, never gross
-          const { error: rpcError } = await supabase.rpc('increment_wallet_balance', { 
-            user_id: song.artist_id, 
-            amount_to_add: artistReceives 
-          });
-          
-          // 3. Fallback if RPC not set up
-          if (rpcError) {
-             const { data: profile } = await supabase.from('profiles').select('wallet_balance').eq('id', song.artist_id).single();
-             await supabase.from('profiles').update({
-               wallet_balance: (profile?.wallet_balance || 0) + artistReceives
-             }).eq('id', song.artist_id);
-          }
-
-          onSuccess?.();
-        } catch (error) {
-          console.error("Payment sync failed: ", error);
-        }
-      }
+  return initiatePayment({
+    amount,
+    email: fan.email,
+    first_name: fan.full_name?.split(' ')[0] || 'Fan',
+    last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
+    type: 'tip',
+    return_url: `${APP_URL}/tip-success?artist_id=${artist.id}`,
+    meta: {
+      userId: fan.id,
+      artistId: artist.id,
+      anonymous
     }
   });
+}
+
+/**
+ * Start a monthly subscription to an artist
+ */
+export async function startFanSubscription({ artist, fan }: { artist: UserProfile; fan: UserProfile }) {
+  const amount = artist.subscription_price || 500;
+  
+  return initiatePayment({
+    amount,
+    email: fan.email,
+    first_name: fan.full_name?.split(' ')[0] || 'Fan',
+    last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
+    type: 'fan_subscription',
+    return_url: `${APP_URL}/subscribe-success?artist_id=${artist.id}`,
+    meta: {
+      userId: fan.id,
+      artistId: artist.id
+    }
+  });
+}
+
+/**
+ * Upgrade listener account to Premium or Family
+ */
+export async function upgradeListenerPlan({ user, plan }: { user: UserProfile; plan: 'Premium' | 'Family' }) {
+  const amount = plan === 'Premium' ? 750 : 3500;
+  const type = plan === 'Premium' ? 'listener_premium' : 'listener_family';
+
+  return initiatePayment({
+    amount,
+    email: user.email,
+    first_name: user.full_name?.split(' ')[0] || 'Listener',
+    last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
+    type,
+    return_url: `${APP_URL}/upgrade-success?plan=${plan}`,
+    meta: {
+      userId: user.id,
+      plan
+    }
+  });
+}
+
+/**
+ * Upgrade artist tier
+ */
+export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile; tier: 'RisingStar' | 'Standard' | 'Elite' }) {
+  const tierPricing: Record<string, number> = {
+    'RisingStar': 15000,
+    'Standard': 25000,
+    'Elite': 45000
+  };
+  
+  const amount = tierPricing[tier];
+  const type = `artist_${tier.toLowerCase().replace('star', '_star')}` as PaymentType;
+
+  return initiatePayment({
+    amount,
+    email: artist.email,
+    first_name: artist.full_name?.split(' ')[0] || 'Artist',
+    last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
+    type,
+    return_url: `${APP_URL}/tier-success?tier=${tier}`,
+    meta: {
+      userId: artist.id,
+      tier
+    }
+  });
+}
+
+/**
+ * Pay for an ad campaign
+ */
+export async function payForAdCampaign({ artist, plays, amount }: { artist: UserProfile; plays: number; amount: number }) {
+  return initiatePayment({
+    amount,
+    email: artist.email,
+    first_name: artist.full_name?.split(' ')[0] || 'Artist',
+    last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
+    type: 'artist_ad_campaign',
+    return_url: `${APP_URL}/ad-success`,
+    meta: {
+      userId: artist.id,
+      plays
+    }
+  });
+}
+
+/**
+ * Withdraw funds (Payout)
+ * This is a direct call to the process-payout function, not a checkout redirect
+ */
+export async function requestPayout({ 
+  amount, 
+  phone, 
+  network 
+}: { 
+  amount: number; 
+  phone: string; 
+  network: 'AIRTEL' | 'TNM';
+}) {
+  const toastId = toast.loading('Processing withdrawal...');
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('process-payout', {
+      body: { amount, phone, network }
+    });
+
+    if (error) throw error;
+    
+    toast.success('Withdrawal successful! Funds will land in your mobile wallet shortly.', { id: toastId });
+    return data;
+  } catch (err: any) {
+    console.error('Payout error:', err);
+    toast.error(err.message || 'Withdrawal failed. Please check your balance and phone number.', { id: toastId });
+    throw err;
+  }
 }

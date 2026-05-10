@@ -1,70 +1,513 @@
--- Smashify Row Level Security (RLS) Policies
+-- ==============================================================================
+-- Smashify Hardened Supabase Schema & RLS Policies
+-- ==============================================================================
+-- This file implements the complete security layer for Smashify.
+-- It covers roles, granular RLS, triggers for business logic, 
+-- and the new Audio Ad system structure.
+-- ==============================================================================
 
--- 1. Profiles Table (Artists)
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone." ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile." ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update own profile." ON profiles FOR UPDATE USING (auth.uid() = id);
+-- ═════════════════════════════════════════════════════════════════════════════
+-- 0. SCHEMA UPDATES (AUDIO ADS)
+-- ═════════════════════════════════════════════════════════════════════════════
 
--- 2. User Profiles Table (Listeners)
+-- Drop old visual ads table if it exists
+DROP TABLE IF EXISTS ads CASCADE;
+
+-- Create the new Audio Ad system
+CREATE TABLE IF NOT EXISTS audio_ads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  artist_id UUID REFERENCES profiles(id), -- Null if platform ad
+  type TEXT CHECK (type IN ('platform', 'promo')),
+  title TEXT,
+  advertiser_name TEXT,
+  audio_url TEXT,
+  duration_seconds INTEGER DEFAULT 30,
+  target_city TEXT,
+  target_genre TEXT,
+  plays_purchased INTEGER DEFAULT 1000,
+  plays_used INTEGER DEFAULT 0,
+  active BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS audio_ad_plays (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ad_id UUID REFERENCES audio_ads(id) ON DELETE CASCADE,
+  listener_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  listener_city TEXT,
+  source TEXT, -- 'player' or 'feed'
+  completed BOOLEAN DEFAULT false,
+  played_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- 1. SECURITY HELPERS & FUNCTIONS
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- Admin Check Logic
+CREATE OR REPLACE FUNCTION is_admin(u_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM user_profiles WHERE id = u_id AND is_admin = true
+    UNION
+    SELECT 1 FROM profiles WHERE id = u_id AND is_admin = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Check Upload Limit Logic
+-- Prevents artists from uploading beyond their monthly tier limit
+CREATE OR REPLACE FUNCTION check_upload_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_tier TEXT;
+  v_count INTEGER;
+  v_limit INTEGER;
+BEGIN
+  -- Get artist tier
+  SELECT subscription_tier INTO v_tier FROM profiles WHERE id = NEW.artist_id;
+  
+  -- Determine limit
+  IF v_tier = 'standard' THEN v_limit := 20;
+  ELSIF v_tier = 'elite' THEN v_limit := 9999;
+  ELSE v_limit := 3; -- Free/Rising Star
+  END IF;
+
+  -- Count uploads in current month
+  SELECT COUNT(*) INTO v_count 
+  FROM songs 
+  WHERE artist_id = NEW.artist_id 
+    AND created_at >= date_trunc('month', now());
+
+  IF v_count >= v_limit THEN
+    RAISE EXCEPTION 'Monthly upload limit reached for your tier.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Payout Eligibility Logic
+CREATE OR REPLACE FUNCTION check_payout_eligibility()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_balance DECIMAL;
+BEGIN
+  SELECT wallet_balance INTO v_balance FROM profiles WHERE id = NEW.artist_id;
+  
+  IF v_balance < NEW.requested_amount THEN
+    RAISE EXCEPTION 'Insufficient balance for payout.';
+  END IF;
+
+  IF NEW.requested_amount < 5000 THEN
+    RAISE EXCEPTION 'Minimum payout is MK 5,000.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update Wallet on Transaction
+CREATE OR REPLACE FUNCTION update_wallet_on_transaction()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'success' AND NEW.type IN ('sale', 'donation', 'subscription') THEN
+    UPDATE profiles 
+    SET wallet_balance = wallet_balance + NEW.net_amount
+    WHERE id = NEW.artist_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Deduct Wallet on Payout Approval
+CREATE OR REPLACE FUNCTION deduct_wallet_on_payout()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- If status changed to approved/completed
+  IF OLD.status = 'pending' AND NEW.status IN ('processed', 'completed') THEN
+    UPDATE profiles 
+    SET wallet_balance = wallet_balance - NEW.requested_amount
+    WHERE id = NEW.artist_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Batch increment ad plays for performance and concurrency
+CREATE OR REPLACE FUNCTION increment_ad_plays(ad_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE audio_ads 
+  SET plays_used = plays_used + 1 
+  WHERE id = ad_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger Attachments
+DROP TRIGGER IF EXISTS tr_songs_upload_limit ON songs;
+CREATE TRIGGER tr_songs_upload_limit
+  BEFORE INSERT ON songs
+  FOR EACH ROW EXECUTE FUNCTION check_upload_limit();
+
+DROP TRIGGER IF EXISTS tr_payout_eligibility ON payout_requests;
+CREATE TRIGGER tr_payout_eligibility
+  BEFORE INSERT ON payout_requests
+  FOR EACH ROW EXECUTE FUNCTION check_payout_eligibility();
+
+DROP TRIGGER IF EXISTS tr_wallet_transaction ON transactions;
+CREATE TRIGGER tr_wallet_transaction
+  AFTER INSERT ON transactions
+  FOR EACH ROW EXECUTE FUNCTION update_wallet_on_transaction();
+
+DROP TRIGGER IF EXISTS tr_wallet_payout ON payout_requests;
+CREATE TRIGGER tr_wallet_payout
+  AFTER UPDATE OF status ON payout_requests
+  FOR EACH ROW EXECUTE FUNCTION deduct_wallet_on_payout();
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- 2. ROW LEVEL SECURITY (RLS) POLICIES
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- DEFAULT DENY (Handled by Supabase by enabling RLS without policies)
+-- But we will be explicit.
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: user_profiles (Listeners)
+-- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own profile." ON user_profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can insert their own profile." ON user_profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update own profile." ON user_profiles FOR UPDATE USING (auth.uid() = id);
 
--- 3. Songs Table
+CREATE POLICY "user_profiles_select_owner" 
+ON user_profiles FOR SELECT 
+USING (auth.uid() = id OR is_admin(auth.uid()));
+
+CREATE POLICY "user_profiles_update_owner" 
+ON user_profiles FOR UPDATE 
+USING (auth.uid() = id OR is_admin(auth.uid()))
+WITH CHECK (
+  (auth.uid() = id AND (OLD.is_admin = NEW.is_admin)) -- Owner cannot self-promote to admin
+  OR is_admin(auth.uid())
+);
+
+CREATE POLICY "user_profiles_insert_auth" 
+ON user_profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+COMMENT ON POLICY "user_profiles_select_owner" ON user_profiles IS 'Owners read their own profile; Admins read all.';
+COMMENT ON POLICY "user_profiles_update_owner" ON user_profiles IS 'Owners update their profile; cannot change admin status.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: profiles (Artists)
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "profiles_select_public" 
+ON profiles FOR SELECT 
+USING (approved = true OR auth.uid() = id OR is_admin(auth.uid()));
+
+CREATE POLICY "profiles_insert_auth" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "profiles_update_owner" 
+ON profiles FOR UPDATE 
+USING (auth.uid() = id OR is_admin(auth.uid()))
+WITH CHECK (
+  (auth.uid() = id AND (OLD.is_admin = NEW.is_admin OR is_admin(auth.uid()))) -- Identity integrity
+);
+
+COMMENT ON POLICY "profiles_select_public" ON profiles IS 'Approved artists visible to all; unapproved visible to owner/admin.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: artist_applications
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE artist_applications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "artist_app_select" 
+ON artist_applications FOR SELECT 
+USING (auth.uid() = profile_id OR is_admin(auth.uid()));
+
+CREATE POLICY "artist_app_insert" 
+ON artist_applications FOR INSERT 
+WITH CHECK (auth.uid() = profile_id);
+
+CREATE POLICY "artist_app_update_admin" 
+ON artist_applications FOR UPDATE 
+USING (is_admin(auth.uid()));
+
+COMMENT ON POLICY "artist_app_select" ON artist_applications IS 'Applicants read their own; Admins read all.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: songs
+-- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE songs ENABLE ROW LEVEL SECURITY;
--- Everyone can view approved songs, or artists can view their own unapproved songs
-CREATE POLICY "Songs are viewable by everyone if approved." ON songs FOR SELECT USING (approved = true OR auth.uid() = artist_id);
--- Artists can insert their own songs
-CREATE POLICY "Artists can insert their own songs." ON songs FOR INSERT WITH CHECK (auth.uid() = artist_id);
--- Artists can update their own songs
-CREATE POLICY "Artists can update their own songs." ON songs FOR UPDATE USING (auth.uid() = artist_id);
--- Artists can delete their own songs
-CREATE POLICY "Artists can delete their own songs." ON songs FOR DELETE USING (auth.uid() = artist_id);
 
--- 4. Albums Table
-ALTER TABLE albums ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Albums are viewable by everyone." ON albums FOR SELECT USING (true);
-CREATE POLICY "Artists can insert their own albums." ON albums FOR INSERT WITH CHECK (auth.uid() = artist_id);
-CREATE POLICY "Artists can update their own albums." ON albums FOR UPDATE USING (auth.uid() = artist_id);
-CREATE POLICY "Artists can delete their own albums." ON albums FOR DELETE USING (auth.uid() = artist_id);
+CREATE POLICY "songs_select_public" 
+ON songs FOR SELECT 
+USING (approved = true OR auth.uid() = artist_id OR is_admin(auth.uid()));
 
--- 5. Likes Table
-ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own likes." ON likes FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own likes." ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own likes." ON likes FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "songs_insert_artist" 
+ON songs FOR INSERT 
+WITH CHECK (auth.uid() = artist_id);
 
--- 6. Recently Played
-ALTER TABLE recently_played ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own history." ON recently_played FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own history." ON recently_played FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own history." ON recently_played FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own history." ON recently_played FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "songs_update_artist" 
+ON songs FOR UPDATE 
+USING (auth.uid() = artist_id OR is_admin(auth.uid()));
 
--- 7. Purchases
-ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own purchases." ON purchases FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own purchases." ON purchases FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "songs_delete_artist" 
+ON songs FOR DELETE 
+USING (auth.uid() = artist_id OR is_admin(auth.uid()));
 
--- 8. Payout Requests
-ALTER TABLE payout_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Artists can view their own payout requests." ON payout_requests FOR SELECT USING (auth.uid() = artist_id);
-CREATE POLICY "Artists can insert their own payout requests." ON payout_requests FOR INSERT WITH CHECK (auth.uid() = artist_id);
+COMMENT ON POLICY "songs_select_public" ON songs IS 'Public reads approved; Artists read their own uploads.';
 
--- 9. Transactions
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: transactions
+-- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own transactions." ON transactions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own transactions." ON transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 10. Contact Messages
+-- CRITICAL: Prevent ANY client-side modifications. 
+-- Service role only handles INSERT/UPDATE/DELETE.
+CREATE POLICY "transactions_select_parties" 
+ON transactions FOR SELECT 
+USING (auth.uid() = artist_id OR auth.uid() = fan_id OR is_admin(auth.uid()));
+
+COMMENT ON POLICY "transactions_select_parties" ON transactions IS 'Parties read their own transactions. No client-side writes.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: fan_subscriptions
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE fan_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "fan_sub_select" 
+ON fan_subscriptions FOR SELECT 
+USING (auth.uid() = fan_id OR auth.uid() = artist_id OR is_admin(auth.uid()));
+
+CREATE POLICY "fan_sub_update_status" 
+ON fan_subscriptions FOR UPDATE 
+USING (auth.uid() = fan_id)
+WITH CHECK (NEW.status = 'cancelled' AND OLD.status = 'active');
+
+COMMENT ON POLICY "fan_sub_select" ON fan_subscriptions IS 'Parties to sub read info. Fans can cancel via status update.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: payout_requests
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE payout_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "payout_select" 
+ON payout_requests FOR SELECT 
+USING (auth.uid() = artist_id OR is_admin(auth.uid()));
+
+CREATE POLICY "payout_insert" 
+ON payout_requests FOR INSERT 
+WITH CHECK (auth.uid() = artist_id);
+
+CREATE POLICY "payout_update_admin" 
+ON payout_requests FOR UPDATE 
+USING (is_admin(auth.uid()));
+
+COMMENT ON POLICY "payout_select" ON payout_requests IS 'Artists view their own requests. Admins manage state.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: audio_ads
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE audio_ads ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "audio_ads_select_active" 
+ON audio_ads FOR SELECT 
+USING (active = true OR auth.uid() = artist_id OR is_admin(auth.uid()));
+
+CREATE POLICY "audio_ads_insert" 
+ON audio_ads FOR INSERT 
+WITH CHECK (
+  (auth.uid() = artist_id AND type = 'promo' AND active = false) -- Artists insert pending promos
+  OR is_admin(auth.uid()) -- Admins insert platform/any ads
+);
+
+CREATE POLICY "audio_ads_update" 
+ON audio_ads FOR UPDATE 
+USING (auth.uid() = artist_id OR is_admin(auth.uid()))
+WITH CHECK (
+  is_admin(auth.uid()) 
+  OR (auth.uid() = artist_id AND OLD.active = false) -- Artists can only update inactive promos
+);
+
+CREATE POLICY "audio_ads_delete" 
+ON audio_ads FOR DELETE 
+USING (is_admin(auth.uid()));
+
+COMMENT ON POLICY "audio_ads_select_active" ON audio_ads IS 'Active ads visible to all. Owners/Admins see all.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: audio_ad_plays
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE audio_ad_plays ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "audio_ad_plays_select_admin" 
+ON audio_ad_plays FOR SELECT 
+USING (is_admin(auth.uid()));
+
+-- No client side insert directly - handled by Rpc or Edge Function typically,
+-- but if using client SDK:
+CREATE POLICY "audio_ad_plays_insert_auth" 
+ON audio_ad_plays FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+COMMENT ON POLICY "audio_ad_plays_select_admin" ON audio_ad_plays IS 'Only admins view raw play metrics.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: moto_feed (Snippets)
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE moto_feed ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "moto_feed_select" ON moto_feed FOR SELECT USING (true);
+CREATE POLICY "moto_feed_insert" ON moto_feed FOR INSERT WITH CHECK (auth.uid() = artist_id);
+CREATE POLICY "moto_feed_update" ON moto_feed FOR UPDATE USING (auth.uid() = artist_id);
+CREATE POLICY "moto_feed_delete" ON moto_feed FOR DELETE USING (auth.uid() = artist_id OR is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: moto_events
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE moto_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "moto_events_select_admin" ON moto_events FOR SELECT USING (is_admin(auth.uid()));
+CREATE POLICY "moto_events_insert_all" ON moto_events FOR INSERT WITH CHECK (true);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: likes
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "likes_select_all" ON likes FOR SELECT USING (true);
+CREATE POLICY "likes_insert_auth" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "likes_delete_owner" ON likes FOR DELETE USING (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: followers
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE followers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "followers_select_all" ON followers FOR SELECT USING (true);
+CREATE POLICY "followers_insert_auth" ON followers FOR INSERT WITH CHECK (auth.uid() = follower_id AND follower_id != artist_id);
+CREATE POLICY "followers_delete_owner" ON followers FOR DELETE USING (auth.uid() = follower_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: albums
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE albums ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "albums_select_public" ON albums FOR SELECT USING (true);
+CREATE POLICY "albums_insert_artist" ON albums FOR INSERT WITH CHECK (auth.uid() = artist_id);
+CREATE POLICY "albums_update_artist" ON albums FOR UPDATE USING (auth.uid() = artist_id OR is_admin(auth.uid()));
+CREATE POLICY "albums_delete_artist" ON albums FOR DELETE USING (auth.uid() = artist_id OR is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: recently_played
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE recently_played ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "recently_played_owner" ON recently_played FOR ALL USING (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: fan_purchases (formerly purchases)
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE fan_purchases ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "fan_purchases_select" ON fan_purchases FOR SELECT USING (auth.uid() = fan_id OR auth.uid() = artist_id OR is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: contact_messages
+-- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can insert contact messages." ON contact_messages FOR INSERT WITH CHECK (true);
 
--- 11. Storage Buckets (Optional, requires storage.objects policies)
--- NOTE: For Supabase Storage, you also need to set up policies in the `storage.objects` table.
--- e.g. 
--- CREATE POLICY "Anyone can view covers" ON storage.objects FOR SELECT USING (bucket_id = 'covers');
--- CREATE POLICY "Artists can upload covers" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.role() = 'authenticated');
--- CREATE POLICY "Artists can delete their covers" ON storage.objects FOR DELETE USING (bucket_id = 'covers' AND auth.uid() = owner);
+CREATE POLICY "contact_insert_all" ON contact_messages FOR INSERT WITH CHECK (true);
+CREATE POLICY "contact_select_admin" ON contact_messages FOR SELECT USING (is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: featured_placements
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE featured_placements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "featured_select_public" ON featured_placements FOR SELECT USING (active = true OR auth.uid() = artist_id OR is_admin(auth.uid()));
+CREATE POLICY "featured_insert_artist" ON featured_placements FOR INSERT WITH CHECK (auth.uid() = artist_id AND active = false);
+CREATE POLICY "featured_admin_update" ON featured_placements FOR UPDATE USING (is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: family_plans
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE family_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "family_select" 
+ON family_plans FOR SELECT 
+USING (
+  auth.uid() = owner_id 
+  OR auth.uid()::text = ANY(member_ids) 
+  OR is_admin(auth.uid())
+);
+
+CREATE POLICY "family_insert" ON family_plans FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "family_update_owner" ON family_plans FOR UPDATE USING (auth.uid() = owner_id OR is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: notifications
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  user_type TEXT CHECK (user_type IN ('listener', 'artist')),
+  type TEXT,
+  message TEXT,
+  read BOOLEAN DEFAULT false,
+  link TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "notifications_owner_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "notifications_owner_update" ON notifications FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+-- No client side inserts/deletes for security logic
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: webhook_logs
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS webhook_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tx_ref TEXT,
+  type TEXT,
+  status TEXT,
+  payload TEXT,
+  processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE webhook_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "webhook_logs_admin_select" ON webhook_logs FOR SELECT USING (is_admin(auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- RPC: wallet and sales increments
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION increment_wallet_balance(user_id UUID, amount NUMERIC)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE profiles
+  SET wallet_balance = COALESCE(wallet_balance, 0) + amount
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_song_sales(s_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE songs
+  SET sales_count = COALESCE(sales_count, 0) + 1
+  WHERE id = s_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- FINAL COMMENT
+-- ─────────────────────────────────────────────────────────────────────────────
+COMMENT ON DATABASE postgres IS 'Smashify Production Database - Security Level 1 (Hardened RLS)';

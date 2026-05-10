@@ -6,7 +6,7 @@ import {
   Edit3, CheckCircle2, AlertCircle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, Menu, Clock, ExternalLink, ShieldCheck,
-  ShoppingBag, Heart, Lock as AppLockIcon
+  ShoppingBag, Heart, Lock as AppLockIcon, X, Bell
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -14,14 +14,75 @@ import { Song, Album } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
+import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 
-type TabType = 'analytics' | 'songs' | 'albums' | 'upload' | 'wallet' | 'profile' | 'subscription' | 'admin';
-const ADMIN_EMAILS = ['admin@smashify.mw', 'user@example.com']; // Placeholder for admins
+type TabType = 'dashboard' | 'music' | 'promotion' | 'profile' | 'subscription' | 'notifications';
+
+const NotificationsTab = ({ userProfile }: any) => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [userProfile]);
+
+  const fetchNotifications = async () => {
+    if (!userProfile?.id) return;
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('created_at', { ascending: false });
+    setNotifications(data || []);
+    setLoading(false);
+  };
+
+  const markAsRead = async (id: string) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><Bell className="text-smash-purple" /> Notifications</h2>
+      
+      <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-smash-gray font-bold uppercase tracking-widest animate-pulse italic">Loading alerts...</div>
+        ) : notifications.length > 0 ? (
+          <div className="divide-y divide-white/5">
+            {notifications.map(n => (
+              <div key={n.id} className={`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? 'bg-smash-purple/5' : ''}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? 'bg-smash-purple text-white' : 'bg-white/5 text-smash-gray'}`}>
+                  <Bell size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className={`text-sm font-bold ${!n.read ? 'text-white' : 'text-white/60'}`}>{n.message}</p>
+                    <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
+                  </div>
+                  {n.link && (
+                    <Link to={n.link} className="text-[10px] font-black uppercase tracking-widest text-smash-purple hover:text-white transition-colors">View Details →</Link>
+                  )}
+                </div>
+                {!n.read && (
+                  <button onClick={() => markAsRead(n.id)} className="w-2 h-2 rounded-full bg-smash-purple mt-2" title="Mark as read" />
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest italic opacity-50">No notifications yet.</div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('analytics');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const isAdmin = userProfile?.is_admin || false;
@@ -92,15 +153,10 @@ export default function ArtistHub() {
   const navGroups = [
     {
       items: [
-        { id: 'songs', label: 'My Songs', icon: Music2 },
-        { id: 'albums', label: 'Albums', icon: Disc },
-        { id: 'upload', label: 'Upload', icon: Upload },
-      ]
-    },
-    {
-      items: [
-        { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-        { id: 'wallet', label: 'Earnings', icon: DollarSign },
+        { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+        { id: 'music', label: 'Music & Upload', icon: Music2 },
+        { id: 'promotion', label: 'Promote', icon: Flame },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
       ]
     },
     {
@@ -108,12 +164,7 @@ export default function ArtistHub() {
         { id: 'profile', label: 'Edit Profile', icon: UserCircle },
         { id: 'subscription', label: 'Subscription', icon: Sparkles },
       ]
-    },
-    ...(isAdmin ? [{
-      items: [
-        { id: 'admin', label: 'Admin Panel', icon: ShieldCheck },
-      ]
-    }] : [])
+    }
   ];
 
   const handleSignOut = async () => {
@@ -219,6 +270,15 @@ export default function ArtistHub() {
             
             <div className="h-px bg-white/5 mx-3 mb-3 mt-1" />
             
+            {isAdmin && (
+              <Link 
+                to="/admin"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-smash-red hover:text-white hover:bg-smash-red/10 transition-all mb-2 border border-smash-red/20 border-dashed"
+              >
+                <ShieldCheck size={18} /> Admin Dashboard
+              </Link>
+            )}
+
             <Link 
               to={`/artist/${userProfile?.id}`}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-smash-gray hover:text-smash-purple hover:bg-smash-purple/5 transition-all"
@@ -292,14 +352,20 @@ export default function ArtistHub() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === 'analytics' && <AnalyticsTab stats={stats} songs={songs} userProfile={userProfile} setActiveTab={setActiveTab} />}
-                  {activeTab === 'songs' && <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} />}
-                  {activeTab === 'albums' && <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />}
-                  {activeTab === 'upload' && <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={setActiveTab} role={role} />}
-                  {activeTab === 'wallet' && <WalletTab balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'music' && (
+                    <div className="space-y-12">
+                      <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} />
+                      <div className="h-px w-full bg-white/5 my-8" />
+                      <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />
+                      <div className="h-px w-full bg-white/5 my-8" />
+                      <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={setActiveTab} role={role} />
+                    </div>
+                  )}
+                  {activeTab === 'promotion' && <PromotionTab userProfile={userProfile} />}
                   {activeTab === 'profile' && <ProfileTab userProfile={userProfile} />}
                   {activeTab === 'subscription' && <SubscriptionTab userProfile={userProfile} role={role} />}
-                  {activeTab === 'admin' && <AdminTab />}
+                  {activeTab === 'notifications' && <NotificationsTab userProfile={userProfile} />}
                 </motion.div>
             </AnimatePresence>
           </div>
@@ -309,55 +375,200 @@ export default function ArtistHub() {
   );
 }
 
-const AnalyticsTab = ({ stats, songs, userProfile, setActiveTab }: any) => {
-  const limits = getTierLimits(userProfile);
+const MotoAnalytics = ({ limits }: { limits: any }) => {
+  const [stats, setStats] = useState({ plays: 0, completions: 0, likes: 0, skips: 0, revenue: 0 });
+
+  useEffect(() => {
+    const fetchA = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: songsData } = await supabase.from('songs').select('id').eq('artist_id', user.id);
+      const songIds = songsData?.map(s => s.id) || [];
+      
+      const { data: snippets } = await supabase.from('moto_feed').select('id').eq('artist_id', user.id);
+      const snippetIds = snippets?.map(s => s.id) || [];
+      const allIds = [...songIds, ...snippetIds];
+
+      if (allIds.length > 0) {
+        const { data: events } = await supabase.from('moto_events').select('*').in('song_id', allIds);
+        const { data: revData } = await supabase.from('transactions')
+           .select('net_amount')
+           .eq('artist_id', user.id)
+           .eq('source', 'moto_feed')
+           .eq('status', 'success');
+
+        if (events) {
+           setStats({
+              plays: events.filter(e => e.event_type === 'play').length,
+              completions: events.filter(e => e.event_type === 'complete').length,
+              likes: events.filter(e => e.event_type === 'like').length,
+              skips: events.filter(e => e.event_type === 'skip').length,
+              revenue: revData ? revData.reduce((acc, curr) => acc + (Number(curr.net_amount) || 0), 0) : 0
+           });
+        }
+      }
+    };
+    fetchA();
+  }, []);
+
+  const completionRate = stats.plays > 0 ? (stats.completions / stats.plays * 100).toFixed(1) : '0.0';
+  const likeRate = stats.plays > 0 ? (stats.likes / stats.plays * 100).toFixed(1) : '0.0';
+  const skipRate = stats.plays > 0 ? (stats.skips / stats.plays * 100).toFixed(1) : '0.0';
 
   return (
-  <div className="space-y-8">
-     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><TrendingUp className="text-smash-purple" /> Analytics</h2>
-        <select className="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:border-smash-purple">
-          <option>Last 30 days</option>
-          <option>Last 7 days</option>
-          <option>All time</option>
-        </select>
-     </div>
+    <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden p-8 text-left col-span-1 md:col-span-2 relative mt-4">
+       {!limits.hasFullAnalytics && (
+         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-smash-black/80 backdrop-blur-sm px-6 text-center">
+           <AppLockIcon size={32} className="text-smash-purple mb-3" />
+           <p className="font-black text-white uppercase tracking-widest text-sm mb-2">Advanced Moto Stats</p>
+           <p className="text-smash-gray text-xs font-bold mb-4">Engagement metrics locked to Standard tier.</p>
+         </div>
+       )}
+       <h3 className="font-studio font-black uppercase italic tracking-tight flex items-center gap-2 mb-6 text-xl">
+           <Flame className="text-smash-orange" /> MotoFeed Performance
+       </h3>
+       
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <MetricCard label="Total Plays" value={stats.plays} icon={<Music2 size={14} />} />
+          <MetricCard label="Completion" value={`${completionRate}%`} icon={<CheckCircle2 size={14} />} />
+          <MetricCard label="Like Rate" value={`${likeRate}%`} icon={<Heart size={14} />} />
+          <MetricCard label="Revenue" value={`MK ${stats.revenue.toLocaleString()}`} icon={<Wallet size={14} />} />
+       </div>
 
-     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Total Plays" value={stats.streams} icon={<Play size={18} />} />
-        <MetricCard label="Followers" value={stats.followers} icon={<Users size={18} />} />
-        <MetricCard label="Song Sales" value={songs.filter((s:any)=>s.is_for_sale).length} icon={<Music2 size={18} />} />
-        <MetricCard label="Revenue" value={`MK ${stats.revenue.toLocaleString()}`} icon={<DollarSign size={18} />} />
-     </div>
-
-     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
-        {!limits.hasFullAnalytics && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-smash-black/80 backdrop-blur-sm rounded-3xl">
-            <AppLockIcon size={32} className="text-smash-purple mb-3" />
-            <p className="font-black text-white uppercase tracking-widest text-sm mb-2">Full Analytics</p>
-            <p className="text-smash-gray text-xs font-bold text-center max-w-xs">
-              Detailed charts, revenue breakdown, and listener demographics unlock with Standard plan.
-            </p>
-            <button onClick={() => setActiveTab('subscription')} className="mt-4 px-5 py-2 bg-smash-purple text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-smash-purple transition-all">
-              Upgrade →
-            </button>
+       {Number(skipRate) > 50 && (
+          <div className="bg-smash-red/10 border border-smash-red/20 rounded-xl p-4 flex items-start gap-4">
+             <AlertCircle className="text-smash-red shrink-0 mt-1" size={24} />
+             <div>
+                <p className="text-smash-red font-black uppercase tracking-widest text-xs mb-1">Low Hook Score Warning</p>
+                <p className="text-white/70 text-xs font-bold leading-relaxed">Your tracks have a skip rate of {skipRate}%. Try uploading snippets with stronger intros or engaging captions to capture listeners in the first 5 seconds.</p>
+             </div>
           </div>
-        )}
-        <div className={`p-6 bg-white/5 border border-white/5 rounded-3xl min-h-[300px] flex items-center justify-center ${!limits.hasFullAnalytics ? 'blur-sm pointer-events-none' : ''}`}>
-           <div className="text-center">
-             <BarChart3 size={40} className="mx-auto mb-4 text-smash-gray/30" />
-             <p className="text-sm font-medium text-smash-gray">Growth charts loading...</p>
+       )}
+    </div>
+  );
+};
+
+const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
+  const [history, setHistory] = useState<any[]>([]);
+  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
+  const [requesting, setRequesting] = useState(false);
+  const limits = getTierLimits(userProfile);
+
+  useEffect(() => {
+    const fetchHist = async () => {
+      const { data } = await supabase.from('transactions').select('*').eq('artist_id', userProfile?.id).order('created_at', { ascending: false }).limit(5);
+      if (data) setHistory(data);
+    };
+    fetchHist();
+  }, [userProfile]);
+
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (balance <= 0) return toast.error('No funds to withdraw.');
+    if (withdrawalAmount < 2000) return toast.error('Minimum withdrawal is MK 2,000.');
+    if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
+
+    const networkInput = prompt('Enter network (AIRTEL or TNM)?', 'AIRTEL');
+    if (!networkInput) return;
+    const network = networkInput.toUpperCase() as 'AIRTEL' | 'TNM';
+    if (network !== 'AIRTEL' && network !== 'TNM') return toast.error('Invalid network. Use AIRTEL or TNM.');
+
+    const phone = prompt('Enter mobile number for payment?', userProfile?.phone || '');
+    if (!phone) return;
+
+    const confirmed = window.confirm(
+      `Withdrawal Summary:\n\nAmount: MWK ${withdrawalAmount.toLocaleString()}\nNetwork: ${network}\nNumber: ${phone}\n\nConfirm withdrawal?`
+    );
+    if (!confirmed) return;
+
+    setRequesting(true);
+    try {
+      await requestPayout({
+        amount: withdrawalAmount,
+        phone,
+        network
+      });
+      setWithdrawalAmount(0);
+      // Wait a bit for the balance to update or just refresh
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err: any) {
+      // Error handled by helper
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 max-w-6xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><TrendingUp className="text-smash-purple" /> Dashboard</h2>
+      </div>
+
+      <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[40px] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-10">
+        <div className="flex-1 w-full text-center md:text-left">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple mb-3">Available Balance</p>
+          <h3 className="text-5xl md:text-6xl font-black font-studio text-white uppercase italic leading-none mb-4">
+            MK {balance.toLocaleString()}
+          </h3>
+          <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest italic">
+             +12% vs last month
+          </p>
+        </div>
+
+        <div className="w-full md:w-[360px] bg-white/5 border border-white/10 rounded-[40px] p-8 space-y-6 text-left">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-smash-gray flex items-center gap-2">
+             <DollarSign size={14} className="text-smash-green" /> Withdraw Funds
+          </h4>
+          <div className="relative">
+             <input type="number" value={withdrawalAmount || ''} onChange={(e) => setWithdrawalAmount(Number(e.target.value))} placeholder="Amount..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-studio font-black text-2xl italic outline-none focus:border-smash-purple transition-all"/>
+             <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-smash-gray">MWK</span>
+          </div>
+          <button onClick={limits.canWithdraw ? handleWithdraw : () => { toast.error('Withdrawals require Standard plan.'); setActiveTab('subscription'); }} disabled={!limits.canWithdraw || requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance} className={`w-full py-4 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95 disabled:opacity-50 ${!limits.canWithdraw ? 'cursor-not-allowed opacity-50' : ''}`}>
+            {!limits.canWithdraw ? 'Requires Upgrade' : requesting ? 'Processing...' : 'Request Payout'}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden p-8 text-left">
+           <h3 className="font-studio font-black uppercase italic tracking-tight flex items-center gap-2 mb-6 text-xl">
+               Recent Transactions
+           </h3>
+           <div className="space-y-4">
+             {history.length > 0 ? history.map((t: any) => (
+                <div key={t.id} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
+                   <div>
+                     <p className="font-bold text-sm uppercase tracking-widest">{t.type}</p>
+                     <p className="text-[10px] text-smash-gray">{new Date(t.created_at).toLocaleDateString()}</p>
+                   </div>
+                   <p className={`font-studio font-black italic ${t.type === 'withdrawal' ? 'text-smash-orange' : 'text-smash-green'}`}>
+                     {t.type === 'withdrawal' ? '-' : '+'}MK {Number(t.net_amount || t.amount || 0).toLocaleString()}
+                   </p>
+                </div>
+             )) : (
+                <p className="text-smash-gray text-xs font-bold uppercase tracking-widest opacity-50">No recent transactions.</p>
+             )}
            </div>
         </div>
-        <div className={`p-6 bg-white/5 border border-white/5 rounded-3xl min-h-[300px] flex items-center justify-center ${!limits.hasFullAnalytics ? 'blur-sm pointer-events-none' : ''}`}>
-           <div className="text-center">
-             <DollarSign size={40} className="mx-auto mb-4 text-smash-gray/30" />
-             <p className="text-sm font-medium text-smash-gray">Revenue charts loading...</p>
-           </div>
+
+        <div className="relative bg-white/5 border border-white/5 rounded-[40px] overflow-hidden p-8 text-left flex flex-col items-center justify-center min-h-[300px]">
+           {!limits.hasFullAnalytics && (
+             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-smash-black/80 backdrop-blur-sm px-6 text-center">
+               <AppLockIcon size={32} className="text-smash-purple mb-3" />
+               <p className="font-black text-white uppercase tracking-widest text-sm mb-2">Advanced Analytics</p>
+               <p className="text-smash-gray text-xs font-bold mb-4">Earnings details & demographic data locked to Standard tier.</p>
+               <button onClick={() => setActiveTab('subscription')} className="px-5 py-2 bg-smash-purple text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-smash-purple transition-all">Upgrade →</button>
+             </div>
+           )}
+           <BarChart3 size={40} className="text-smash-gray/20 mb-4" />
+           <p className="font-black text-white/50 uppercase tracking-widest text-sm mb-2">Analytics Data</p>
         </div>
-     </div>
-  </div>
-);
+        
+        <MotoAnalytics limits={limits} />
+      </div>
+    </div>
+  );
 };
 
 const MetricCard = ({ label, value, icon }: any) => (
@@ -368,6 +579,308 @@ const MetricCard = ({ label, value, icon }: any) => (
      <div className="text-2xl md:text-3xl font-display font-black tracking-tight">{value}</div>
   </div>
 );
+
+const PromotionTab = ({ userProfile }: { userProfile: any }) => {
+  const [ads, setAds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  // Form State
+  const [title, setTitle] = useState('');
+  const [advertiserName, setAdvertiserName] = useState(userProfile?.stage_name || '');
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [targetCity, setTargetCity] = useState('');
+  const [targetGenre, setTargetGenre] = useState('');
+  const [playsPurchased, setPlaysPurchased] = useState(1000);
+
+  const pricePerPlay = 5; // 1000 plays = 5000 MK
+  const totalCost = playsPurchased * pricePerPlay;
+
+  useEffect(() => {
+    fetchAds();
+  }, [userProfile]);
+
+  const fetchAds = async () => {
+    if (!userProfile?.id) return;
+    const { data } = await supabase
+      .from('audio_ads')
+      .select('*')
+      .eq('artist_id', userProfile.id)
+      .order('created_at', { ascending: false });
+    setAds(data || []);
+    setLoading(false);
+  };
+
+  const handleCreateAds = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!audioFile) return toast.error('Please upload an audio ad file.');
+    
+    setUploading(true);
+    const toastId = toast.loading('Preparing your campaign...');
+
+    try {
+      // 1. Upload Audio to audio-ads bucket
+      const fileExt = audioFile.name.split('.').pop();
+      const fileName = `${userProfile.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('audio-ads')
+        .upload(fileName, audioFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio-ads')
+        .getPublicUrl(fileName);
+
+      // 2. Clear toast before redirecting
+      toast.dismiss(toastId);
+
+      // 3. Initiate PayChangu Payment
+      await payForAdCampaign({
+        artist: userProfile,
+        plays: playsPurchased,
+        amount: totalCost
+      });
+
+    } catch (err: any) {
+      toast.error(err.message, { id: toastId });
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic">
+            <Flame className="text-smash-orange" /> Promote Your Music
+          </h2>
+          <p className="text-smash-gray text-sm font-bold mt-1 tracking-tight">Audio ads play between songs. Radio-style promotion for Malawian artists.</p>
+        </div>
+        {!showForm && (
+          <button 
+            onClick={() => setShowForm(true)}
+            className="px-8 py-3 bg-smash-purple text-white font-black text-xs uppercase tracking-widest rounded-full flex items-center gap-2 hover:bg-white hover:text-smash-purple transition-all shadow-xl active:scale-95"
+          >
+            <Plus size={18} /> New Campaign
+          </button>
+        )}
+      </div>
+
+      {showForm ? (
+        <form onSubmit={handleCreateAds} className="bg-white/5 border border-white/10 rounded-[40px] p-8 md:p-12 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="flex items-center justify-between mb-2">
+             <h3 className="text-2xl font-black font-studio uppercase italic tracking-tight">Create Ad Campaign</h3>
+             <button type="button" onClick={() => setShowForm(false)} className="text-smash-gray hover:text-white transition-colors">
+               <X size={24} />
+             </button>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+             <div className="space-y-8">
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple flex items-center gap-2">
+                      <Music2 size={12} /> Campaign Name
+                   </label>
+                   <input 
+                      required
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="e.g. New Single Promo - Summer 2024"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-smash-purple transition-all"
+                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-orange">Target City (Optional)</label>
+                      <select 
+                        value={targetCity}
+                        onChange={e => setTargetCity(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 font-bold outline-none focus:border-smash-orange"
+                      >
+                        <option value="">All Malaŵi</option>
+                        <option value="Lilongwe">Lilongwe</option>
+                        <option value="Blantyre">Blantyre</option>
+                        <option value="Mzuzu">Mzuzu</option>
+                        <option value="Zomba">Zomba</option>
+                      </select>
+                   </div>
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-orange">Target Genre</label>
+                      <select 
+                        value={targetGenre}
+                        onChange={e => setTargetGenre(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 font-bold outline-none focus:border-smash-orange"
+                      >
+                        <option value="">All Genres</option>
+                        <option value="Afrobeat">Afrobeat</option>
+                        <option value="Hip Hop">Hip Hop</option>
+                        <option value="Gospel">Gospel</option>
+                        <option value="Reggae">Reggae</option>
+                      </select>
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple">Ad Audio (Max 30s)</label>
+                   <div 
+                     onClick={() => document.getElementById('ad-audio-input')?.click()}
+                     className="w-full h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-smash-purple/50 transition-all bg-white/5 group"
+                   >
+                      <input 
+                        id="ad-audio-input"
+                        type="file" 
+                        accept="audio/*" 
+                        className="hidden" 
+                        onChange={e => setAudioFile(e.target.files?.[0] || null)}
+                      />
+                      {audioFile ? (
+                        <>
+                          <CheckCircle2 className="text-smash-green mb-2" size={24} />
+                          <p className="text-sm font-bold text-white truncate max-w-[200px]">{audioFile.name}</p>
+                        </>
+                      ) : (
+                        <>
+                          <FileAudio className="text-smash-gray group-hover:text-smash-purple transition-colors mb-2" size={32} />
+                          <p className="text-xs font-bold text-smash-gray">Click to upload ad audio</p>
+                        </>
+                      )}
+                   </div>
+                </div>
+             </div>
+
+             <div className="space-y-8">
+                <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[32px] p-8">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-smash-purple mb-6">Campaign Budget</h4>
+                   
+                   <div className="space-y-6">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-3xl font-black font-studio italic">
+                            {playsPurchased.toLocaleString()}
+                          </p>
+                          <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Guaranteed Plays</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-black font-studio italic text-smash-green">
+                            MK {totalCost.toLocaleString()}
+                          </p>
+                          <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Total Cost</p>
+                        </div>
+                      </div>
+
+                      <input 
+                        type="range"
+                        min="500"
+                        max="50000"
+                        step="500"
+                        value={playsPurchased}
+                        onChange={e => setPlaysPurchased(Number(e.target.value))}
+                        className="w-full accent-smash-purple bg-white/10 h-2 rounded-full appearance-none"
+                      />
+                      
+                      <div className="flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest">
+                        <span>500 plays</span>
+                        <span>50,000 plays</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
+                   <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-smash-orange/10 rounded-xl flex items-center justify-center text-smash-orange flex-shrink-0">
+                         <Info size={20} />
+                      </div>
+                      <p className="text-xs text-smash-gray font-bold leading-relaxed">
+                         Audio ads should be professional, short (max 30s), and engaging. Use voiceovers and background music to capture attention. Campaigns run until purchased plays are exhausted.
+                      </p>
+                   </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.3em] text-xs rounded-full hover:scale-105 transition-transform shadow-2xl shadow-smash-purple/30 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <>Processing...</>
+                  ) : (
+                    <>Launch Campaign • MK {totalCost.toLocaleString()}</>
+                  )}
+                </button>
+             </div>
+           </div>
+        </form>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+             [...Array(3)].map((_, i) => (
+                <div key={i} className="h-64 bg-white/5 animate-pulse rounded-[40px]" />
+             ))
+          ) : ads.length > 0 ? (
+            ads.map(ad => (
+              <div key={ad.id} className="group relative bg-[#111111] border border-white/5 rounded-[40px] overflow-hidden p-8 hover:border-smash-purple/30 transition-all flex flex-col">
+                 <div className="absolute top-6 right-6">
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${ad.active ? 'bg-smash-green/10 text-smash-green border border-smash-green/20' : 'bg-smash-red/10 text-smash-red border border-smash-red/20'}`}>
+                       {ad.active ? 'Active' : 'Expired'}
+                    </span>
+                 </div>
+
+                 <div className="w-12 h-12 bg-smash-purple/10 rounded-2xl flex items-center justify-center text-smash-purple mb-6 group-hover:scale-110 transition-transform">
+                    <FileAudio size={24} />
+                 </div>
+
+                 <h3 className="text-xl font-studio font-black uppercase italic tracking-tight mb-2 truncate group-hover:text-smash-purple transition-colors">
+                    {ad.title}
+                 </h3>
+                 <p className="text-[10px] text-smash-gray font-black uppercase tracking-[0.2em] mb-6">
+                    {ad.target_city || 'Nationwide'} • {ad.target_genre || 'All Genres'}
+                 </p>
+
+                 <div className="flex-1 space-y-4 mb-8">
+                    <div className="space-y-2">
+                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-smash-gray">Reach</span>
+                          <span className="text-white">{ad.plays_used.toLocaleString()} / {ad.plays_purchased.toLocaleString()}</span>
+                       </div>
+                       <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(ad.plays_used / ad.plays_purchased) * 100}%` }}
+                            className="h-full bg-gradient-to-r from-smash-purple to-smash-pink rounded-full"
+                          />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                    <div className="flex items-center gap-2">
+                       <Play size={12} className="text-smash-purple" />
+                       <span className="text-lg font-studio font-black italic">{ad.plays_used.toLocaleString()}</span>
+                    </div>
+                    <button className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-smash-gray hover:text-white">
+                       <ExternalLink size={16} />
+                    </button>
+                 </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-20 text-center bg-white/5 rounded-[40px] border border-white/5 border-dashed">
+               <Flame size={48} className="text-smash-gray/20 mx-auto mb-6" />
+               <h4 className="text-xl font-studio font-black uppercase italic tracking-tight text-white/40 mb-2">No active campaigns</h4>
+               <p className="text-smash-gray text-xs font-bold mb-8">Boost your streams by reaching targeted Malawian listeners.</p>
+               <button onClick={() => setShowForm(true)} className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-full font-black uppercase text-[10px] tracking-widest transition-all">
+                  Get Started →
+               </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
   const extractStoragePath = (url: string, bucket: string) => {
@@ -579,7 +1092,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       if (mode === 'snippet') {
         const { error } = await supabase.from('moto_feed').insert({
           artist_id: userProfile?.id,
-          title, caption: lyrics, media_url: audioUrl, is_video: songFile.type.startsWith('video/')
+          title, caption: lyrics, media_url: audioUrl, is_video: songFile.type.startsWith('video/'),
+          cover_url: coverUrl
         });
         if(error) throw error;
       } else {
@@ -841,7 +1355,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
               </div>
               
               <div className="md:col-span-2 space-y-6">
-                 {mode === 'single' && (
+                 {mode !== 'album' && (
                  <>
                  <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-1">Track Artwork</label>
                  <div className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-inner" onClick={()=>document.getElementById('cover-file')?.click()}>
@@ -870,323 +1384,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   );
 };
 
-const WalletTab = ({ balance, userProfile, setActiveTab }: any) => {
-  const [history, setHistory] = useState<any[]>([]);
-  const [stats, setStats] = useState({ sales: 0, donations: 0, total: 0, withdrawn: 0 });
-  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
-  const [requesting, setRequesting] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const limits = getTierLimits(userProfile);
 
-  useEffect(() => {
-    const fetchHist = async () => {
-      const { data } = await supabase.from('transactions').select('*').eq('artist_id', userProfile?.id).order('created_at', { ascending: false });
-      if (data) {
-        setHistory(data);
-        const salesTotal = data.filter(t => t.type === 'sale').reduce((acc, curr) => acc + Number(curr.net_amount || curr.amount || 0), 0);
-        const donationsTotal = data.filter(t => t.type === 'donation').reduce((acc, curr) => acc + Number(curr.net_amount || curr.amount || 0), 0);
-        const withdrawnTotal = data.filter(t => t.type === 'withdrawal' && t.status === 'completed').reduce((acc, curr) => acc + Number(curr.gross_amount || curr.amount || 0), 0);
-        setStats({ 
-          sales: salesTotal, 
-          donations: donationsTotal, 
-          total: salesTotal + donationsTotal,
-          withdrawn: withdrawnTotal
-        });
-      }
-    };
-    fetchHist();
-  }, [userProfile]);
-
-  const handleWithdraw = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (balance <= 0) return toast.error('No funds to withdraw.');
-    if (withdrawalAmount < 5000) return toast.error('Minimum withdrawal is MK 5,000.');
-    if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
-
-    const network = prompt('Enter network (Airtel/TNM)?', 'Airtel');
-    if (!network) return;
-    const phone = prompt('Enter mobile number for payment?', userProfile?.phone || '');
-    if (!phone) return;
-
-    // Calculate the 3% withdrawal fee
-    const withdrawalFee = Math.round(withdrawalAmount * 0.03);
-    const amountAfterFee = withdrawalAmount - withdrawalFee;
-
-    // Show the breakdown clearly before they confirm
-    const confirmed = window.confirm(
-      `Withdrawal Summary:\n\n` +
-      `Requested:        MWK ${withdrawalAmount.toLocaleString()}\n` +
-      `Processing fee (3%): -MWK ${withdrawalFee.toLocaleString()}\n` +
-      `─────────────────────\n` +
-      `You will receive:  MWK ${amountAfterFee.toLocaleString()}\n\n` +
-      `Payment to: ${network} — ${phone}\n\n` +
-      `Confirm withdrawal?`
-    );
-    if (!confirmed) return;
-
-    setRequesting(true);
-    const toastId = toast.loading('Submitting withdrawal request...');
-
-    try {
-      // 1. Log the payout request — manual team will process this
-      const { error: payoutError } = await supabase.from('payout_requests').insert({
-        artist_id: userProfile?.id,
-        requested_amount: withdrawalAmount,   // what artist asked for
-        withdrawal_fee: withdrawalFee,         // 3% fee
-        payout_amount: amountAfterFee,         // what they actually get
-        mobile_number: phone,
-        network: network,
-        status: 'pending'                     // manual team changes to 'completed'
-      });
-
-      if (payoutError) throw payoutError;
-
-      // 2. Record as a pending transaction (fee breakdown included)
-      await supabase.from('transactions').insert({
-        artist_id: userProfile?.id,
-        type: 'withdrawal',
-        gross_amount: withdrawalAmount,
-        platform_fee: withdrawalFee,
-        net_amount: amountAfterFee,
-        status: 'pending',
-        description: `Withdrawal to ${network} (${phone}) — MWK ${amountAfterFee.toLocaleString()} after 3% fee`
-      });
-
-      // 3. Deduct the FULL requested amount from wallet immediately
-      // (artist requested it — it's reserved, even if processing takes time)
-      const { error: updateError } = await supabase.from('profiles')
-        .update({ wallet_balance: balance - withdrawalAmount })
-        .eq('id', userProfile?.id);
-
-      if (updateError) throw updateError;
-
-      toast.success(
-        `Request submitted! You'll receive MWK ${amountAfterFee.toLocaleString()} to your ${network} number.`,
-        { id: toastId, duration: 6000 }
-      );
-
-      setTimeout(() => window.location.reload(), 2000);
-    } catch (err: any) {
-      toast.error('Failed to request payout: ' + err.message, { id: toastId });
-    } finally {
-      setRequesting(false);
-    }
-  };
-
-  const filteredHistory = filter === 'all' ? history : history.filter(t => t.type === filter);
-
-  return (
-    <div className="space-y-8 max-w-6xl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><Wallet className="text-smash-purple" /> Earnings & Wallet</h2>
-      </div>
-
-      {/* Balance Hero Section */}
-      <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[40px] p-8 md:p-12 shadow-2xl flex flex-col lg:flex-row items-center gap-10">
-        <div className="flex-1 w-full">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple mb-3">Available Balance</p>
-          <h3 className="text-6xl md:text-7xl font-black font-studio text-white uppercase italic leading-none">
-            MK {balance.toLocaleString()}
-          </h3>
-          <div className="flex gap-4 mt-8 flex-wrap">
-             <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest mb-1">Total Earned</p>
-                <p className="text-xl font-studio font-black text-white italic">MK {stats.total.toLocaleString()}</p>
-             </div>
-             <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest mb-1">Total Withdrawn</p>
-                <p className="text-xl font-studio font-black text-smash-orange italic">MK {stats.withdrawn.toLocaleString()}</p>
-             </div>
-          </div>
-          <p className="text-[10px] text-smash-gray mt-6 font-bold uppercase tracking-widest italic flex items-center gap-2">
-             <Info size={12} className="text-smash-purple" /> Minimum withdrawal is MK 5,000
-          </p>
-        </div>
-
-        <div className="w-full lg:w-[420px] bg-white/5 border border-white/10 rounded-[40px] p-8 space-y-6">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-smash-gray flex items-center gap-2">
-             <DollarSign size={14} className="text-smash-green" /> Withdraw Funds
-          </h4>
-          
-          <div className="p-5 bg-white/5 border border-white/5 rounded-2xl text-left space-y-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray">
-              Platform Fee Schedule
-            </p>
-            <div className="space-y-2 text-xs font-bold">
-              <div className="flex justify-between gap-4">
-                <span className="text-smash-gray line-clamp-1">Song sales & donations</span>
-                <span className="text-white shrink-0">10% platform fee — you keep 90%</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-smash-gray line-clamp-1">Payout withdrawals</span>
-                <span className="text-white shrink-0">3% processing fee on withdrawal</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-smash-gray line-clamp-1">Payouts processed</span>
-                <span className="text-smash-orange shrink-0">Manually within 48 hours</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-             <div className="flex flex-wrap gap-2">
-                {[5000, 10000, 25000, 50000].map(amt => (
-                   <button 
-                     key={amt}
-                     onClick={() => setWithdrawalAmount(amt)}
-                     className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                       withdrawalAmount === amt ? 'bg-smash-purple text-white' : 'bg-white/5 border border-white/10 text-smash-gray hover:border-smash-purple/30'
-                     }`}
-                   >
-                      {amt.toLocaleString()}
-                   </button>
-                ))}
-             </div>
-             
-             <div className="relative">
-                <input 
-                  type="number"
-                  value={withdrawalAmount || ''}
-                  onChange={(e) => setWithdrawalAmount(Number(e.target.value))}
-                  placeholder="Custom Amount"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-studio font-black text-2xl italic outline-none focus:border-smash-purple transition-all"
-                />
-                <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-smash-gray">MWK</span>
-             </div>
-
-             {withdrawalAmount >= 5000 && (
-               <div className="p-4 bg-black/30 rounded-2xl border border-white/5 space-y-2 text-sm font-bold">
-                  <div className="flex justify-between text-smash-gray">
-                     <span>Requested</span>
-                     <span>MWK {withdrawalAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-smash-red">
-                     <span>Processing fee (3%)</span>
-                     <span>− MWK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
-                  </div>
-                  <div className="h-px bg-white/10" />
-                  <div className="flex justify-between text-white text-base">
-                     <span>You receive</span>
-                     <span className="text-smash-green">
-                        MWK {(withdrawalAmount - Math.round(withdrawalAmount * 0.03)).toLocaleString()}
-                     </span>
-                  </div>
-               </div>
-             )}
-
-             <button 
-               onClick={limits.canWithdraw ? handleWithdraw : () => { toast.error('Withdrawals require Rising Star plan.'); setActiveTab('subscription'); }}
-               disabled={limits.canWithdraw && (requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance)}
-               className="w-full py-5 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-             >
-               {!limits.canWithdraw && <AppLockIcon size={14} />} {requesting ? 'Processing...' : 'Request Payout'}
-             </button>
-             <p className="text-[9px] text-center text-smash-gray font-bold uppercase tracking-widest leading-relaxed">Funds arrive via Airtel/Mpamba within 5-30 minutes.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-         <div className="lg:col-span-3 bg-white/5 border border-white/5 rounded-[40px] overflow-hidden">
-            <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-               <div>
-                  <h3 className="font-studio font-black uppercase italic tracking-tight flex items-center gap-2">
-                     <Clock size={16} className="text-smash-purple" /> History
-                  </h3>
-                  <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest">Recent Transactions</p>
-               </div>
-               <div className="flex gap-2">
-                  {['all', 'sale', 'donation', 'withdrawal'].map(t => (
-                     <button 
-                       key={t}
-                       onClick={() => setFilter(t)}
-                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                         filter === t ? 'bg-smash-purple text-white' : 'bg-transparent text-smash-gray border border-white/10 hover:border-white/30'
-                       }`}
-                     >
-                        {t}
-                     </button>
-                  ))}
-               </div>
-            </div>
-
-            <div className="overflow-x-auto">
-               {filteredHistory.length > 0 ? (
-                  <table className="w-full text-left">
-                     <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-smash-gray border-b border-white/5">
-                        <tr>
-                           <th className="p-6">Type</th>
-                           <th className="p-6">Description</th>
-                           <th className="p-6">Amount</th>
-                           <th className="p-6 text-right">Date</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-white/5">
-                        {filteredHistory.map(tx => (
-                           <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                              <td className="p-6">
-                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                    tx.type === 'withdrawal' ? 'bg-smash-orange/10 text-smash-orange' : 
-                                    tx.type === 'donation' ? 'bg-smash-purple/10 text-smash-purple' : 'bg-smash-green/10 text-smash-green'
-                                 }`}>
-                                    {tx.type === 'withdrawal' ? <Wallet size={14} /> : tx.type === 'donation' ? <Heart size={14} /> : <ShoppingBag size={14} />}
-                                 </div>
-                              </td>
-                              <td className="p-6">
-                                 <p className="text-xs font-black uppercase tracking-widest">{tx.description || tx.type}</p>
-                                 <span className={`text-[9px] font-black uppercase tracking-widest ${tx.status === 'completed' ? 'text-smash-green' : 'text-smash-orange'}`}>{tx.status}</span>
-                              </td>
-                              <td className="p-6">
-                                 <span className={`text-sm font-studio font-black italic ${tx.type === 'withdrawal' ? 'text-smash-orange' : 'text-white'}`}>
-                                    {tx.type === 'withdrawal' ? '-' : '+'} MK {(tx.gross_amount || tx.amount || 0).toLocaleString()}
-                                 </span>
-                              </td>
-                              <td className="p-6 text-right text-[10px] font-black tracking-widest text-smash-gray">
-                                 {new Date(tx.created_at).toLocaleDateString()}
-                              </td>
-                           </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               ) : (
-                  <div className="p-20 text-center text-smash-gray uppercase font-black tracking-widest text-xs italic">
-                     No transactions found.
-                  </div>
-               )}
-            </div>
-         </div>
-
-         <div className="bg-white/5 border border-white/5 rounded-[40px] p-8 space-y-6">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Revenue Stats</h4>
-            <div className="space-y-6">
-               <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 group hover:border-smash-orange/30 transition-all">
-                  <div className="flex items-center gap-3">
-                     <ShoppingBag size={20} className="text-smash-orange" />
-                     <span className="text-[10px] font-black uppercase tracking-widest">Artist Sales</span>
-                  </div>
-                  <span className="font-studio font-black italic">MK {stats.sales.toLocaleString()}</span>
-               </div>
-               
-               <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 group hover:border-smash-purple/30 transition-all">
-                  <div className="flex items-center gap-3">
-                     <Heart size={20} className="text-smash-purple" />
-                     <span className="text-[10px] font-black uppercase tracking-widest">Fan Support</span>
-                  </div>
-                  <span className="font-studio font-black italic">MK {stats.donations.toLocaleString()}</span>
-               </div>
-
-               <div className="p-6 bg-gradient-to-br from-smash-purple/10 to-transparent rounded-2xl border border-smash-purple/10">
-                  <p className="text-[9px] text-smash-gray font-black italic uppercase leading-relaxed text-center">
-                     Every MK helps fuel the next Malawian hit. Smashify reinvests our 10% share into platform maintenance and regional marketing.
-                  </p>
-               </div>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
-};
 
 const ProfileTab = ({ userProfile }: any) => {
   const { refreshProfile } = useAuth();
@@ -1345,22 +1543,19 @@ const ProfileTab = ({ userProfile }: any) => {
   );
 };
 
-import { subscribeArtist } from '../lib/paychangu';
+
 
 const SubscriptionTab = ({ userProfile, role }: any) => {
   const currentTier = userProfile?.subscription_tier || 'free';
   const isPending = role === 'pending';
   const { refreshProfile } = useAuth();
   
-  const handleSubscribe = (plan: 'rising_star' | 'standard' | 'elite') => {
-    subscribeArtist({
-      plan,
-      user: userProfile,
-      onSuccess: () => {
-        toast.success(`Subscription activated! Unlimited uploads unlocked.`);
-        refreshProfile();
-      }
-    });
+  const handleSubscribe = async (tier: 'RisingStar' | 'Standard' | 'Elite') => {
+    try {
+      await upgradeArtistTier({ artist: userProfile, tier });
+    } catch (err) {
+      // Error handled by helper
+    }
   };
 
   return (
@@ -1401,7 +1596,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
                <li className="flex items-start gap-2 text-sm text-smash-gray"><CheckCircle2 size={16} className="text-smash-orange mt-0.5" /> Airtel/TNM withdrawals</li>
             </ul>
             <button 
-              onClick={() => handleSubscribe('rising_star')} 
+              onClick={() => handleSubscribe('RisingStar')} 
               disabled={currentTier === 'rising_star'}
               className="w-full py-3 bg-white text-black font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-smash-orange hover:text-white transition-colors disabled:opacity-50 disabled:bg-white/10 disabled:text-white/50"
             >
@@ -1424,7 +1619,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
                <li className="flex items-start gap-2 text-sm text-smash-gray"><CheckCircle2 size={16} className="text-smash-orange mt-0.5" /> Album creation</li>
             </ul>
             <button 
-              onClick={() => handleSubscribe('standard')}
+              onClick={() => handleSubscribe('Standard')}
               disabled={currentTier === 'standard'}
               className="w-full py-3 bg-smash-orange text-white font-bold uppercase tracking-widest text-xs rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-smash-orange/20 disabled:opacity-50 disabled:bg-smash-orange/50"
             >
@@ -1445,7 +1640,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
                <li className="flex items-start gap-2 text-sm text-smash-gray"><CheckCircle2 size={16} className="text-smash-orange mt-0.5" /> Dedicated account manager</li>
             </ul>
             <button 
-              onClick={() => handleSubscribe('elite')}
+              onClick={() => handleSubscribe('Elite')}
               disabled={currentTier === 'elite'}
               className="w-full py-3 bg-white text-black font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-smash-orange hover:text-white transition-colors disabled:opacity-50 disabled:bg-white/10 disabled:text-white/50"
             >
@@ -1457,289 +1652,3 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
   );
 };
 
-const AdminTab = () => {
-  const [artists, setArtists] = useState<any[]>([]); // Approved artists
-  const [applications, setApplications] = useState<any[]>([]); // Pending artists
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchArtists();
-    fetchApplications();
-  }, []);
-
-  const fetchArtists = async () => {
-    setLoading(true);
-    const { data: artistsData, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_type', 'artist')
-      .eq('approved', true)
-      .order('created_at', { ascending: false });
-    
-    if (artistsData) {
-      // Also fetch unapproved songs count for each artist
-      const artistsWithPending = await Promise.all(artistsData.map(async (art) => {
-        const { count } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('artist_id', art.id).eq('approved', false);
-        return { ...art, pending_songs: count || 0 };
-      }));
-      setArtists(artistsWithPending);
-    }
-    setLoading(false);
-  };
-
-  const fetchApplications = async () => {
-    const { data } = await supabase
-      .from('artist_applications')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true });
-    setApplications(data || []);
-  };
-
-  const approveArtist = async (application: any) => {
-    try {
-      // 1. Create the artist's row in 'profiles' (the artist table)
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: application.profile_id,      // links to auth.users
-        full_name: application.full_name,
-        stage_name: application.stage_name,
-        email: application.email,
-        genre: application.genre,
-        city: application.city,
-        phone: application.phone,
-        approved: true,
-        verified: false,
-        wallet_balance: 0,
-        user_type: 'artist',
-      });
-      if (profileError) throw profileError;
-
-      // 2. Update the application status
-      const { error: appError } = await supabase
-        .from('artist_applications')
-        .update({ status: 'approved' })
-        .eq('id', application.id);
-      if (appError) throw appError;
-
-      toast.success(`${application.stage_name} approved! They can now access the Artist Hub.`);
-      fetchApplications();
-      fetchArtists();
-
-    } catch (err: any) {
-      toast.error('Approval failed: ' + err.message);
-    }
-  };
-
-  const rejectArtist = async (application: any, reason: string = "Not eligible") => {
-    try {
-      // 1. Update application status
-      await supabase.from('artist_applications')
-        .update({ status: 'rejected', admin_notes: reason })
-        .eq('id', application.id);
-
-      // 2. Create a listener profile for them instead
-      await supabase.from('user_profiles').upsert({
-        id: application.profile_id,
-        full_name: application.full_name,
-        email: application.email,
-        subscription_tier: 'Free',
-        user_type: 'listener',
-      });
-
-      toast.success('Application rejected. User downgraded to listener account.');
-      fetchApplications();
-
-    } catch (err: any) {
-      toast.error('Rejection failed: ' + err.message);
-    }
-  };
-
-  const approveAllSongs = async (artistId: string) => {
-    const { error } = await supabase.from('songs').update({ approved: true }).eq('artist_id', artistId).eq('approved', false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success('All songs approved!');
-      fetchArtists();
-    }
-  };
-
-  const deleteArtist = async (id: string, name: string) => {
-    if (!confirm(`Are you absolutely sure you want to PERMANENTLY DELETE artist "${name}" and all their data? This cannot be undone.`)) return;
-    
-    try {
-      // First delete songs
-      await supabase.from('songs').delete().eq('artist_id', id);
-      // Then delete profile
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
-      
-      if (error) throw error;
-      toast.success('Artist removed successfully.');
-      fetchArtists();
-    } catch (err: any) {
-      toast.error('Error deleting artist: ' + err.message);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center text-left">
-        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><ShieldCheck className="text-smash-red" /> Admin Artist Management</h2>
-        <div className="bg-smash-red/10 text-smash-red px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-smash-red/20">Authorized Access Only</div>
-      </div>
-
-      <div className="space-y-8">
-        
-        {/* Pending Applications Section */}
-        <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-             <div>
-                <p className="text-sm font-bold">Pending Applications</p>
-                <p className="text-[10px] text-smash-gray uppercase tracking-widest font-bold">Review aspiring artists</p>
-             </div>
-             <p className="text-xs font-black text-smash-gray uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                Total Pending: {applications.length}
-             </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            {loading ? (
-               <div className="p-10 flex justify-center">
-                  <div className="w-8 h-8 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
-               </div>
-            ) : applications.length > 0 ? (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
-                  <tr>
-                    <th className="p-6 font-bold">Artist / Details</th>
-                    <th className="p-6 font-bold">ID Doc</th>
-                    <th className="p-6 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {applications.map((app) => (
-                    <tr key={app.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="p-6">
-                        <div className="flex flex-col">
-                           <p className="font-bold">{app.stage_name || app.full_name}</p>
-                           <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{app.email} • {app.phone}</p>
-                           <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{app.city} • {app.genre}</p>
-                        </div>
-                      </td>
-                      <td className="p-6">
-                        {app.id_document_url ? (
-                          <a href={app.id_document_url} target="_blank" rel="noopener noreferrer" className="text-smash-cyan hover:underline text-[10px] font-black uppercase tracking-widest">
-                            View Document
-                          </a>
-                        ) : (
-                          <span className="text-smash-red text-[10px] font-black uppercase tracking-widest">Missing</span>
-                        )}
-                      </td>
-                      <td className="p-6 text-right flex items-center justify-end gap-2">
-                         <button 
-                             onClick={() => approveArtist(app)}
-                             className="p-3 bg-smash-green/10 text-smash-green rounded-xl hover:bg-smash-green hover:text-white transition-all transform active:scale-90"
-                             title="Approve Artist"
-                           >
-                             <CheckCircle2 size={18} />
-                         </button>
-                         <button 
-                             onClick={() => rejectArtist(app, 'Declined by Admin.')}
-                             className="p-3 bg-smash-red/10 text-smash-red rounded-xl hover:bg-smash-red hover:text-white transition-all transform active:scale-90"
-                             title="Reject Artist"
-                           >
-                             <Trash2 size={18} />
-                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-10 text-center text-smash-gray font-bold uppercase tracking-widest text-xs italic">
-                 No pending applications.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Existing Artists Section */}
-        <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-             <div>
-                <p className="text-sm font-bold">Platform Artists</p>
-                <p className="text-[10px] text-smash-gray uppercase tracking-widest font-bold">Manage and clean up fake or inactive profiles</p>
-             </div>
-             <p className="text-xs font-black text-smash-gray uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                Total Artists: {artists.length}
-             </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            {loading ? (
-               <div className="p-20 flex justify-center">
-                  <div className="w-8 h-8 border-4 border-smash-red border-t-transparent rounded-full animate-spin" />
-               </div>
-            ) : artists.length > 0 ? (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
-                  <tr>
-                    <th className="p-6 font-bold">Artist</th>
-                    <th className="p-6 font-bold">Location</th>
-                    <th className="p-6 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {artists.map((artist) => {
-                    const isFake = !artist.stage_name || !artist.avatar_url;
-                    return (
-                      <tr key={artist.id} className="hover:bg-white/5 transition-colors group">
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                             <div className="relative">
-                                <img src={artist.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-12 h-12 rounded-full object-cover border border-white/10" />
-                                {artist.verified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-smash-cyan rounded-full border-2 border-[#111] flex items-center justify-center text-black font-black text-[8px] italic">V</div>}
-                             </div>
-                             <div>
-                                <p className="font-bold flex items-center gap-2">
-                                  {artist.stage_name || artist.full_name || 'Anonymous Artist'}
-                                  {isFake && <span className="text-[10px] bg-smash-orange/20 text-smash-orange px-2 py-0.5 rounded-full uppercase italic">Potential Fake</span>}
-                                </p>
-                                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{artist.email}</p>
-                             </div>
-                          </div>
-                        </td>
-                        <td className="p-6 text-smash-gray font-medium">{artist.city || artist.location || 'Unknown'}</td>
-                        <td className="p-6 text-right flex items-center justify-end gap-2">
-                          {artist.pending_songs > 0 && (
-                            <button 
-                              onClick={() => approveAllSongs(artist.id)}
-                              className="p-3 bg-smash-purple/10 text-smash-purple rounded-xl hover:bg-smash-purple hover:text-white transition-all transform active:scale-90"
-                              title="Approve All Songs"
-                            >
-                              <Music2 size={18} />
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => deleteArtist(artist.id, artist.stage_name || artist.full_name || artist.email)}
-                            className="p-3 bg-smash-red/10 text-smash-red rounded-xl hover:bg-smash-red hover:text-white transition-all transform active:scale-90"
-                            title="Delete Artist"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest text-xs italic">
-                 No artists found on the platform.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};

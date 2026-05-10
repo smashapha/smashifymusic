@@ -4,7 +4,7 @@ import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Musi
 import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
-import { buyTrack } from '../../lib/paychangu';
+import { purchaseTrack } from '../../lib/paychangu';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
@@ -160,13 +160,9 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
       toast.error('Please sign in to buy tracks');
       return;
     }
-    buyTrack({
+    purchaseTrack({
       song,
-      user: userProfile,
-      onSuccess: () => {
-        toast.success(`Purchase successful! You now own ${song.title}`);
-        setTimeout(() => window.location.reload(), 1500);
-      }
+      user: userProfile
     });
   };
 
@@ -261,6 +257,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
         </div>
         <AnimatePresence>
           {showPlaylistModal && <AddToPlaylistModal song={song} onClose={() => setShowPlaylistModal(false)} />}
+          {showSupportModal && artistData && <SupportArtistModal artist={artistData} onClose={() => setShowSupportModal(false)} />}
         </AnimatePresence>
       </div>
   );

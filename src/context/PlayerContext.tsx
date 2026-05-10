@@ -84,43 +84,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [songsPlayed, setSongsPlayed] = useState(0);
   const [adPlaying, setAdPlaying] = useState(false);
   const [adSkipAvailable, setAdSkipAvailable] = useState(false);
+  const [currentAd, setCurrentAd] = useState<any>(null);
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
   const [shuffledQueue, setShuffledQueue] = useState<Song[]>([]);
   const { userProfile } = useAuth();
   const lastIncrementedSongId = useRef<string | null>(null);
 
-  const ADS: (Song & { cta_url?: string })[] = [
-    {
-      id: 'ad-smashify-premium',
-      title: 'Upgrade to Smashify Premium',
-      artist_id: 'system-ad',
-      artist_name: 'Smashify Ad',
-      audio_url: 'https://cdn.pixabay.com/download/audio/2022/10/30/audio_f535f21226.mp3?filename=advertisement-124434.mp3',
-      cover_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-      price: 0,
-      duration: 30,
-      is_for_sale: false,
-      cta_url: '/pricing'
-    },
-    {
-      id: 'ad-malawi-talent',
-      title: 'Support Local Malawian Talent',
-      artist_id: 'system-ad',
-      artist_name: 'Smashify Community',
-      audio_url: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb6304856a.mp3?filename=short-ad-11862.mp3', // Generic short ad
-      cover_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop',
-      price: 0,
-      duration: 30,
-      is_for_sale: false,
-      cta_url: '/artist-landing'
-    }
-  ];
-
-  const skipAd = () => {
-    if (adPlaying && adSkipAvailable) {
+  const skipAd = async () => {
+    if (adPlaying) {
+      // In the new system, we don't actually skip, but we might need this for cleanup
+      // Or if we implement a "Skip with Premium" later.
+      // For now, let's keep it but it won't be used by the UI as per requirements.
       setAdPlaying(false);
-      setAdSkipAvailable(false);
+      setCurrentAd(null);
       nextTrack();
     }
   };
@@ -352,14 +329,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setCurrentTime(audio.currentTime);
       
       if (adPlaying) {
-        if (audio.currentTime >= 5 && !adSkipAvailable) {
-          setAdSkipAvailable(true);
-        }
+        // Ads are unskippable in the new system
         if (audio.currentTime >= 30) {
           audio.pause();
           audio.currentTime = 30;
           setAdPlaying(false);
-          setAdSkipAvailable(false);
+          setCurrentAd(null);
           nextTrack();
           return;
         }
@@ -391,11 +366,27 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         musicService.incrementPlays(currentSong.id);
       }
     };
-    const handleEnded = () => {
+    const handleEnded = async () => {
       const limits = getListenerLimits(userProfile);
       
       if (adPlaying) {
+        if (currentAd) {
+          try {
+            // Track play completion
+            await supabase.from('audio_ad_plays').insert({
+              ad_id: currentAd.id,
+              listener_id: userProfile?.id,
+              listener_city: userProfile?.city,
+              source: 'player',
+              completed: true
+            });
+
+            // Increment plays_used
+            await supabase.rpc('increment_ad_plays', { ad_id: currentAd.id });
+          } catch (e) {}
+        }
         setAdPlaying(false);
+        setCurrentAd(null);
         nextTrack();
         return;
       }
@@ -427,15 +418,67 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     };
 
-    const playAd = () => {
-      const adSong = ADS[Math.floor(Math.random() * ADS.length)];
-      setAdPlaying(true);
-      setAdSkipAvailable(false);
-      setCurrentSong(adSong);
-      setIsPlaying(true);
-      if (audioRef.current) {
-          audioRef.current.src = adSong.audio_url;
-          audioRef.current.load();
+    const playAd = async () => {
+      try {
+        const limits = getListenerLimits(userProfile);
+        if (!limits.hasAds) {
+          nextTrack();
+          return;
+        }
+
+        // Fetch ad
+        let query = supabase
+          .from('audio_ads')
+          .select('*')
+          .eq('active', true)
+          .order('type', { ascending: false }); // promo (artist) first
+
+        if (userProfile?.city) {
+          query = query.or(`target_city.eq.${userProfile.city},target_city.is.null`);
+        }
+
+        const { data: ads, error } = await query.limit(10);
+        
+        if (error || !ads || ads.length === 0) {
+          nextTrack();
+          return;
+        }
+
+        // Filter valid ads (plays_used < plays_purchased)
+        const validAds = ads.filter(a => a.plays_used < a.plays_purchased);
+        if (validAds.length === 0) {
+          nextTrack();
+          return;
+        }
+
+        const ad = validAds[Math.floor(Math.random() * validAds.length)];
+        
+        setAdPlaying(true);
+        setAdSkipAvailable(false);
+        setCurrentAd(ad);
+        
+        // Use a dummy Song object for the player state to show ad info
+        const adSong: Song = {
+          id: ad.id,
+          title: ad.title,
+          artist_id: ad.artist_id || 'platform',
+          artist_name: ad.advertiser_name,
+          audio_url: ad.audio_url,
+          cover_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+          price: 0,
+          duration: ad.duration_seconds || 30,
+          is_for_sale: false,
+          genre: 'AD'
+        } as any;
+
+        setCurrentSong(adSong);
+        setIsPlaying(true);
+        if (audioRef.current) {
+            audioRef.current.src = ad.audio_url;
+            audioRef.current.load();
+        }
+      } catch (err) {
+        nextTrack();
       }
     };
 

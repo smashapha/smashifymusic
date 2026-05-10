@@ -55,17 +55,19 @@ const ArtistProfile: React.FC = () => {
          if (!id) return;
          const { data } = await supabase
             .from('transactions')
-            .select('fan_id, net_amount, user_profiles(full_name, avatar_url)')
+            .select('fan_id, net_amount, user_profiles:fan_id(full_name, avatar_url)')
             .eq('artist_id', id)
-            .eq('type', 'donation')
+            .in('type', ['donation', 'sale', 'subscription'])
             .eq('status', 'completed');
          
          if (data) {
             const supportersMap = data.reduce((acc: any, curr: any) => {
                if (!acc[curr.fan_id]) {
+                  // Fallback handling since user_profiles might be array or single object
+                  const profile = Array.isArray(curr.user_profiles) ? curr.user_profiles[0] : curr.user_profiles;
                   acc[curr.fan_id] = { 
-                     name: curr.user_profiles?.full_name || 'Fan', 
-                     avatar_url: curr.user_profiles?.avatar_url,
+                     name: profile?.full_name || 'Fan', 
+                     avatar_url: profile?.avatar_url,
                      total: 0 
                   };
                }
