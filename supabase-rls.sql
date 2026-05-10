@@ -179,18 +179,21 @@ CREATE TRIGGER tr_wallet_payout
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "user_profiles_select_owner" ON user_profiles;
 CREATE POLICY "user_profiles_select_owner" 
 ON user_profiles FOR SELECT 
 USING (auth.uid() = id OR is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "user_profiles_update_owner" ON user_profiles;
 CREATE POLICY "user_profiles_update_owner" 
 ON user_profiles FOR UPDATE 
 USING (auth.uid() = id OR is_admin(auth.uid()))
 WITH CHECK (
-  (auth.uid() = id AND (OLD.is_admin = NEW.is_admin)) -- Owner cannot self-promote to admin
-  OR is_admin(auth.uid())
+  is_admin(auth.uid()) 
+  OR (auth.uid() = id AND is_admin = false)
 );
 
+DROP POLICY IF EXISTS "user_profiles_insert_auth" ON user_profiles;
 CREATE POLICY "user_profiles_insert_auth" 
 ON user_profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
@@ -203,19 +206,23 @@ COMMENT ON POLICY "user_profiles_update_owner" ON user_profiles IS 'Owners updat
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "profiles_select_public" ON profiles;
 CREATE POLICY "profiles_select_public" 
 ON profiles FOR SELECT 
 USING (approved = true OR auth.uid() = id OR is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "profiles_insert_auth" ON profiles;
 CREATE POLICY "profiles_insert_auth" 
 ON profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "profiles_update_owner" ON profiles;
 CREATE POLICY "profiles_update_owner" 
 ON profiles FOR UPDATE 
 USING (auth.uid() = id OR is_admin(auth.uid()))
 WITH CHECK (
-  (auth.uid() = id AND (OLD.is_admin = NEW.is_admin OR is_admin(auth.uid()))) -- Identity integrity
+  is_admin(auth.uid()) 
+  OR (auth.uid() = id AND is_admin = false)
 );
 
 COMMENT ON POLICY "profiles_select_public" ON profiles IS 'Approved artists visible to all; unapproved visible to owner/admin.';
@@ -223,16 +230,34 @@ COMMENT ON POLICY "profiles_select_public" ON profiles IS 'Approved artists visi
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TABLE: artist_applications
 -- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS artist_applications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  stage_name TEXT,
+  email TEXT,
+  genre TEXT,
+  city TEXT,
+  phone TEXT,
+  id_document_url TEXT,
+  status TEXT DEFAULT 'pending',
+  admin_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 ALTER TABLE artist_applications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "artist_app_select" ON artist_applications;
 CREATE POLICY "artist_app_select" 
 ON artist_applications FOR SELECT 
 USING (auth.uid() = profile_id OR is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "artist_app_insert" ON artist_applications;
 CREATE POLICY "artist_app_insert" 
 ON artist_applications FOR INSERT 
 WITH CHECK (auth.uid() = profile_id);
 
+DROP POLICY IF EXISTS "artist_app_update_admin" ON artist_applications;
 CREATE POLICY "artist_app_update_admin" 
 ON artist_applications FOR UPDATE 
 USING (is_admin(auth.uid()));
@@ -244,18 +269,22 @@ COMMENT ON POLICY "artist_app_select" ON artist_applications IS 'Applicants read
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE songs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "songs_select_public" ON songs;
 CREATE POLICY "songs_select_public" 
 ON songs FOR SELECT 
 USING (approved = true OR auth.uid() = artist_id OR is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "songs_insert_artist" ON songs;
 CREATE POLICY "songs_insert_artist" 
 ON songs FOR INSERT 
 WITH CHECK (auth.uid() = artist_id);
 
+DROP POLICY IF EXISTS "songs_update_artist" ON songs;
 CREATE POLICY "songs_update_artist" 
 ON songs FOR UPDATE 
 USING (auth.uid() = artist_id OR is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "songs_delete_artist" ON songs;
 CREATE POLICY "songs_delete_artist" 
 ON songs FOR DELETE 
 USING (auth.uid() = artist_id OR is_admin(auth.uid()));
@@ -286,8 +315,8 @@ USING (auth.uid() = fan_id OR auth.uid() = artist_id OR is_admin(auth.uid()));
 
 CREATE POLICY "fan_sub_update_status" 
 ON fan_subscriptions FOR UPDATE 
-USING (auth.uid() = fan_id)
-WITH CHECK (NEW.status = 'cancelled' AND OLD.status = 'active');
+USING (auth.uid() = fan_id AND status = 'active')
+WITH CHECK (status = 'cancelled');
 
 COMMENT ON POLICY "fan_sub_select" ON fan_subscriptions IS 'Parties to sub read info. Fans can cancel via status update.';
 
@@ -331,7 +360,7 @@ ON audio_ads FOR UPDATE
 USING (auth.uid() = artist_id OR is_admin(auth.uid()))
 WITH CHECK (
   is_admin(auth.uid()) 
-  OR (auth.uid() = artist_id AND OLD.active = false) -- Artists can only update inactive promos
+  OR (auth.uid() = artist_id AND active = false) 
 );
 
 CREATE POLICY "audio_ads_delete" 
@@ -362,9 +391,16 @@ COMMENT ON POLICY "audio_ad_plays_select_admin" ON audio_ad_plays IS 'Only admin
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE moto_feed ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "moto_feed_select" ON moto_feed;
 CREATE POLICY "moto_feed_select" ON moto_feed FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "moto_feed_insert" ON moto_feed;
 CREATE POLICY "moto_feed_insert" ON moto_feed FOR INSERT WITH CHECK (auth.uid() = artist_id);
+
+DROP POLICY IF EXISTS "moto_feed_update" ON moto_feed;
 CREATE POLICY "moto_feed_update" ON moto_feed FOR UPDATE USING (auth.uid() = artist_id);
+
+DROP POLICY IF EXISTS "moto_feed_delete" ON moto_feed;
 CREATE POLICY "moto_feed_delete" ON moto_feed FOR DELETE USING (auth.uid() = artist_id OR is_admin(auth.uid()));
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -372,7 +408,10 @@ CREATE POLICY "moto_feed_delete" ON moto_feed FOR DELETE USING (auth.uid() = art
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE moto_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "moto_events_select_admin" ON moto_events;
 CREATE POLICY "moto_events_select_admin" ON moto_events FOR SELECT USING (is_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "moto_events_insert_all" ON moto_events;
 CREATE POLICY "moto_events_insert_all" ON moto_events FOR INSERT WITH CHECK (true);
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -380,8 +419,13 @@ CREATE POLICY "moto_events_insert_all" ON moto_events FOR INSERT WITH CHECK (tru
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "likes_select_all" ON likes;
 CREATE POLICY "likes_select_all" ON likes FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "likes_insert_auth" ON likes;
 CREATE POLICY "likes_insert_auth" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "likes_delete_owner" ON likes;
 CREATE POLICY "likes_delete_owner" ON likes FOR DELETE USING (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────

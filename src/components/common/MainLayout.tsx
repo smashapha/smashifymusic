@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, Menu, X } from 'lucide-react';
+import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, Menu, X, ShieldCheck } from 'lucide-react';
 import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePlayer } from '../../context/PlayerContext';
@@ -150,6 +150,22 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
            <Mic2 size={20} className={`group-hover:text-${accentColor} transition-colors`} />
            <span>Artist Portal</span>
         </NavLink>
+
+        {userProfile?.is_admin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => 
+              `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
+                isActive 
+                  ? 'bg-white/10 text-white shadow-lg' 
+                  : 'text-smash-gray hover:bg-white/5 hover:text-white'
+              }`
+            }
+          >
+            <ShieldCheck size={20} className="group-hover:text-smash-red transition-colors" />
+            <span>Admin Panel</span>
+          </NavLink>
+        )}
       </div>
 
       {/* Sidebar Promo Card for Artists */}
