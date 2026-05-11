@@ -6,11 +6,20 @@
   --font-display: "Outfit", sans-serif;
   --font-studio: "Syne", sans-serif;
 
-  --color-smash-black: var(--color-smash-black);
-  --color-smash-dark: var(--color-smash-dark);
+  --color-bg-page: var(--bg-page);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-modal: var(--bg-modal);
+  
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
   --color-smash-orange: #ff5f00;
   --color-smash-red: #e60000;
-  --color-smash-gray: var(--color-smash-gray);
   --color-smash-purple: #7c3aed;
   --color-smash-green: #00d68f;
   --color-smash-cyan: #00d4ff;
@@ -18,34 +27,44 @@
 
 @layer base {
   :root {
-    --color-smash-black: #e5e7eb;
-    --color-smash-dark: #d1d5db;
-    --color-smash-gray: #4b5563;
-    --text-primary: #111827;
+    --bg-page: #f5f4f0;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f0eff0;
+    --bg-modal: #e2e2e4;
+    --border-subtle: rgba(0,0,0,0.07);
+    --border-default: rgba(0,0,0,0.10);
+    --text-primary: #111118;
+    --text-secondary: #555566;
+    --text-muted: #999aaa;
   }
 
   [data-theme='dark'] {
-    --color-smash-black: #0f0f12;
-    --color-smash-dark: #1a1a1f;
-    --color-smash-gray: #8e8e93;
-    --text-primary: #ffffff;
+    --bg-page: #0a0a0d;
+    --bg-surface: #141418;
+    --bg-elevated: #1c1c22;
+    --bg-modal: #242430;
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-default: rgba(255,255,255,0.10);
+    --text-primary: #f5f5f7;
+    --text-secondary: #aaaabc;
+    --text-muted: #666677;
   }
 
   body {
-    @apply bg-smash-black text-[var(--text-primary)] font-sans antialiased selection:bg-smash-orange/30;
+    @apply bg-bg-page text-text-primary font-sans antialiased selection:bg-smash-orange/30;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-[var(--text-primary)];
+    @apply font-studio tracking-tight text-text-primary;
   }
 }
 
 .glass-morphism {
-  @apply bg-[var(--color-smash-dark)]/80 backdrop-blur-md border border-[var(--color-smash-black)]/5;
+  @apply bg-bg-surface/80 backdrop-blur-md border border-border-subtle;
 }
 
 .bento-card {
-  @apply bg-[var(--color-smash-dark)] rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-smash-dark)]/80 border border-[var(--color-smash-black)]/5;
+  @apply bg-bg-surface rounded-2xl p-6 transition-all duration-300 border border-border-subtle;
 }
 
 @keyframes fade-in {
@@ -54,7 +73,7 @@
 }
 
 @keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 

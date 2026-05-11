@@ -1149,7 +1149,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer.files) as File[];
     if (files.length > 0) {
       if (mode === 'album') {
         setAlbumFiles(prev => [...prev, ...files.filter(f => f.type.startsWith('audio/'))]);

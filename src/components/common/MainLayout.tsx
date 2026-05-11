@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, Menu, X, ShieldCheck } from 'lucide-react';
+import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, ShieldCheck } from 'lucide-react';
 import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePlayer } from '../../context/PlayerContext';
@@ -9,22 +9,15 @@ import { supabase } from '../../lib/supabase';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 
-const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
+const TopBar = () => {
   const { dataSaver, toggleDataSaver } = usePlayer();
-  const { user, signOut, userProfile, role } = useAuth();
+  const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
 
-  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
 
   return (
-    <div className="h-20 flex items-center justify-between px-4 md:px-8 bg-smash-black/80 backdrop-blur-xl sticky top-0 z-30 border-b border-white/5">
-      <button 
-        onClick={onOpenMobileMenu}
-        className="md:hidden p-2 text-smash-gray hover:text-white transition-colors"
-      >
-        <Menu size={24} />
-      </button>
-
+    <div className="h-16 flex items-center justify-between px-4 lg:px-8 bg-bg-page/90 backdrop-blur-xl sticky top-0 z-30 border-b border-border-subtle">
       <div className="flex-1 max-w-xl hidden md:block">
         <form className="relative group" onSubmit={(e) => {
           e.preventDefault();
@@ -34,12 +27,12 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
              navigate(`/discover?q=${encodeURIComponent(q.toString())}`);
           }
         }}>
-           <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 text-smash-gray group-focus-within:text-${accentColor} transition-colors`} />
+           <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:${accentColor} transition-colors`} />
            <input 
             type="text" 
             name="q"
             placeholder="Search artists, songs, podcasts..." 
-            className={`w-full bg-smash-dark/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-${accentColor}/20 transition-all backdrop-blur-md`}
+            className="w-full bg-border-subtle border border-border-default rounded-[10px] h-[44px] pl-12 pr-4 text-sm font-display focus:outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all"
            />
         </form>
       </div>
@@ -48,15 +41,15 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
         <ThemeToggle />
         <button 
            onClick={toggleDataSaver}
-           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg ${dataSaver ? `bg-${accentColor} text-white shadow-${accentColor}/20` : 'bg-smash-dark text-smash-gray hover:text-white border border-white/5'}`}
+           className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
+           title={dataSaver ? 'Turn Data Saver Off' : 'Turn Data Saver On'}
         >
-          {dataSaver ? <WifiOff size={14} /> : <Wifi size={14} />}
-          {dataSaver ? 'DATA SAVER ON' : 'DATA SAVER OFF'}
+          {dataSaver ? <WifiOff size={16} className="text-smash-orange" /> : <Wifi size={16} />}
         </button>
         {user && (
           <button 
             onClick={() => signOut()}
-            className="p-3 bg-smash-dark border border-white/5 rounded-xl text-smash-gray hover:text-smash-red transition-colors"
+            className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-smash-red transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
             title="Sign Out"
           >
             <LogOut size={16} />
@@ -67,66 +60,48 @@ const TopBar = ({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) => {
   );
 };
 
-const Sidebar = ({ onClose }: { onClose?: () => void }) => {
+const Sidebar = () => {
   const { user, userProfile, role } = useAuth();
   const navigate = useNavigate();
-  const { dataSaver, playSong } = usePlayer();
-  const [spotlightSong, setSpotlightSong] = useState<any>(null);
-
-  React.useEffect(() => {
-    supabase
-      .from('songs')
-      .select('*, profiles!artist_id(stage_name)')
-      .eq('approved', true)
-      .order('plays', { ascending: false })
-      .limit(1)
-      .single()
-      .then(({ data }) => { if (data) setSpotlightSong(data); });
-  }, []);
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/' },
-    { icon: Flame, label: 'Moto Feed', path: '/moto-feed' },
+    { icon: Flame, label: 'Feed', path: '/moto-feed' },
     { icon: Compass, label: 'Discover', path: '/discover' },
     { icon: TrendingUp, label: 'Trending', path: '/trending' },
     { icon: Library, label: 'Library', path: '/library' },
   ];
 
-  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'text-smash-purple bg-smash-purple/10' : 'text-smash-orange bg-smash-orange/10';
 
   return (
-    <aside className="flex flex-col h-full bg-smash-black p-6 overflow-y-auto scrollbar-hide">
-      <div className="flex items-center justify-between mb-12 px-2">
+    <aside className="flex flex-col h-full bg-bg-surface border-r border-border-subtle py-6">
+      <div className="flex items-center justify-center lg:justify-start mb-8 lg:px-6">
         <Logo size="md" />
-        {onClose && (
-          <button onClick={onClose} className="md:hidden p-2 text-smash-gray hover:text-white">
-            <X size={24} />
-          </button>
-        )}
       </div>
 
-      <nav className="space-y-1">
-        <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest px-4 mb-4">Discovery</p>
+      <nav className="space-y-2 px-2 lg:px-4">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => 
-              `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group relative ${
+              `flex items-center justify-center lg:justify-start gap-4 p-3 lg:px-4 lg:py-3 rounded-[10px] text-sm font-display font-medium transition-all group relative ${
                 isActive 
-                  ? 'bg-white/10 text-white shadow-lg shadow-black/20' 
-                  : 'text-smash-gray hover:bg-white/5 hover:text-white'
+                  ? `${accentColor}` 
+                  : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
               }`
             }
+            title={item.label}
           >
             {({ isActive }) => (
               <>
-                <item.icon size={20} className={isActive ? `text-${accentColor}` : `group-hover:text-${accentColor} transition-colors`} />
-                <span>{item.label}</span>
+                <item.icon size={20} className={isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'} />
+                <span className="hidden lg:block">{item.label}</span>
                 {isActive && (
                   <motion.div 
-                    layoutId="active-pill"
-                    className={`absolute left-0 w-1 h-6 bg-${accentColor} rounded-full`}
+                    layoutId="nav-pill"
+                    className="absolute left-0 w-1 h-6 bg-current rounded-full"
                   />
                 )}
               </>
@@ -135,105 +110,57 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
         ))}
       </nav>
 
-      <div className="mt-10 space-y-1">
-        <p className="px-4 text-[10px] font-black text-smash-gray uppercase tracking-widest mb-4">Your Studio</p>
+      <div className="mt-8 space-y-2 px-2 lg:px-4">
+        <div className="hidden lg:block px-4 pt-4 pb-2 text-xs font-display font-medium text-text-muted">Studio</div>
         <NavLink
             to={role === 'artist' || role === 'pending' ? "/artist-hub" : "/artists"}
             className={({ isActive }) => 
-              `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
+              `flex items-center justify-center lg:justify-start gap-4 p-3 lg:px-4 lg:py-3 rounded-[10px] text-sm font-display font-medium transition-all group ${
                 isActive 
-                  ? 'bg-white/10 text-white shadow-lg' 
-                  : 'text-smash-gray hover:bg-white/5 hover:text-white'
+                  ? 'bg-bg-elevated text-text-primary' 
+                  : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
               }`
             }
+            title="Artist Portal"
           >
-           <Mic2 size={20} className={`group-hover:text-${accentColor} transition-colors`} />
-           <span>Artist Portal</span>
+           <Mic2 size={20} className="opacity-70 group-hover:opacity-100" />
+           <span className="hidden lg:block">Artist Portal</span>
         </NavLink>
 
         {userProfile?.is_admin && (
           <NavLink
             to="/admin"
             className={({ isActive }) => 
-              `flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group ${
+              `flex items-center justify-center lg:justify-start gap-4 p-3 lg:px-4 lg:py-3 rounded-[10px] text-sm font-display font-medium transition-all group ${
                 isActive 
-                  ? 'bg-white/10 text-white shadow-lg' 
-                  : 'text-smash-gray hover:bg-white/5 hover:text-white'
+                  ? 'bg-bg-elevated text-text-primary' 
+                  : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
               }`
             }
+            title="Admin Panel"
           >
-            <ShieldCheck size={20} className="group-hover:text-smash-red transition-colors" />
-            <span>Admin Panel</span>
+            <ShieldCheck size={20} className="text-smash-red opacity-70 group-hover:opacity-100" />
+            <span className="hidden lg:block text-smash-red">Admin Panel</span>
           </NavLink>
         )}
       </div>
 
-      {/* Sidebar Promo Card for Artists */}
-      {role !== 'artist' && role !== 'pending' && (
-        <div className="mt-10 p-6 rounded-[32px] bg-gradient-to-br from-smash-purple to-smash-purple/60 relative overflow-hidden group cursor-pointer shadow-xl shadow-smash-purple/10 transform hover:-translate-y-1 transition-transform">
-           <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-150 transition-transform">
-              <Mic2 size={80} />
-           </div>
-           <p className="text-[10px] font-black tracking-widest text-white/50 mb-1 uppercase">Earn Money</p>
-           <h4 className="font-display font-black italic text-lg leading-tight mb-4 tracking-tighter">WANT TO<br/>UPLOAD?</h4>
-           <button 
-            onClick={() => navigate('/artists')}
-            className={`w-full py-2 bg-white text-smash-black rounded-full text-[10px] font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors`}
-           >
-             JOIN AS ARTIST
-           </button>
-        </div>
-      )}
-
-      {/* Mini Slider in Sidebar */}
-      {spotlightSong && (
-      <div className="mt-10 p-4 rounded-3xl bg-white/5 border border-white/5 cursor-pointer" onClick={() => playSong(spotlightSong)}>
-        <div className="flex items-center justify-between mb-4 px-1">
-          <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest leading-none">Spotlight</p>
-          <div className="flex gap-1">
-             <div className={`w-1.5 h-1.5 rounded-full bg-${accentColor}`} />
-             <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-          </div>
-        </div>
-        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden group">
-           {!dataSaver ? (
-             <img 
-               src={spotlightSong.cover_url || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=200&fit=crop"} 
-               className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-               alt="Spotlight"
-               referrerPolicy="no-referrer"
-             />
-           ) : (
-             <div className="w-full h-full bg-smash-dark flex items-center justify-center">
-               <Music size={32} className="text-smash-gray opacity-20" />
-             </div>
-           )}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-3">
-              <p className="text-white font-bold text-xs truncate">{spotlightSong.title}</p>
-              <p className="text-smash-gray text-[10px] uppercase font-black tracking-tighter">{spotlightSong.profiles?.stage_name || 'Artist'}</p>
-           </div>
-        </div>
-      </div>
-      )}
-
-      <div className="mt-auto pt-6 border-t border-white/5">
+      <div className="mt-auto pt-6 border-t border-border-subtle px-2 lg:px-4">
         <NavLink
           to={user ? "/profile" : "/auth/listener"}
-          className="flex items-center gap-3 px-2 py-2 text-smash-gray hover:text-white transition-colors"
+          className="flex items-center justify-center lg:justify-start gap-3 p-2 rounded-[10px] text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
+          title="Profile"
         >
-          <div className="w-10 h-10 rounded-full bg-smash-dark flex items-center justify-center border border-white/10 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center border border-border-subtle overflow-hidden shrink-0">
             {userProfile?.avatar_url ? (
               <img src={userProfile.avatar_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
             ) : (
               <User size={20} />
             )}
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium text-white truncate">
-              {userProfile?.full_name || (user ? 'My Account' : 'Join Smashify')}
-            </span>
-            <span className="text-xs truncate">
-              {role === 'artist' ? 'Verified Artist' : (user ? 'Standard Profile' : 'Sign in or Register')}
+          <div className="hidden lg:flex flex-col min-w-0">
+            <span className="text-sm font-display font-medium text-text-primary truncate">
+              {userProfile?.full_name || (user ? 'My Account' : 'Sign in')}
             </span>
           </div>
         </NavLink>
@@ -244,23 +171,23 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
 
 const BottomNav = () => {
   const { role } = useAuth();
-  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-morphism border-t border-white/10 z-50 flex items-center justify-around px-2">
-      <NavLink to="/" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-bg-surface/90 backdrop-blur-md border-t border-border-subtle z-40 flex items-center justify-around px-2">
+      <NavLink to="/" className={({ isActive }) => `flex flex-col items-center gap-1 p-2 ${isActive ? accentColor : 'text-text-muted hover:text-text-primary'}`}>
         <Home size={24} />
       </NavLink>
-      <NavLink to="/moto-feed" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
-        <Flame size={24} />
-      </NavLink>
-      <NavLink to="/discover" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
+      <NavLink to="/discover" className={({ isActive }) => `flex flex-col items-center gap-1 p-2 ${isActive ? accentColor : 'text-text-muted hover:text-text-primary'}`}>
         <Search size={24} />
       </NavLink>
-      <NavLink to="/library" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
+      <NavLink to="/library" className={({ isActive }) => `flex flex-col items-center gap-1 p-2 ${isActive ? accentColor : 'text-text-muted hover:text-text-primary'}`}>
         <Library size={24} />
       </NavLink>
-      <NavLink to="/profile" className={({ isActive }) => `p-2 ${isActive ? `text-${accentColor}` : 'text-smash-gray'}`}>
+      <NavLink to="/moto-feed" className={({ isActive }) => `flex flex-col items-center gap-1 p-2 ${isActive ? accentColor : 'text-text-muted hover:text-text-primary'}`}>
+        <Flame size={24} />
+      </NavLink>
+      <NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center gap-1 p-2 ${isActive ? accentColor : 'text-text-muted hover:text-text-primary'}`}>
         <User size={24} />
       </NavLink>
     </nav>
@@ -268,55 +195,38 @@ const BottomNav = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-smash-black text-white">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block fixed left-0 top-0 bottom-0 w-64 border-r border-white/5 z-40">
+    <div className="min-h-screen bg-bg-page text-text-primary flex">
+      {/* Sidebar navigation */}
+      <div className="hidden md:block fixed left-0 top-0 bottom-0 w-[72px] lg:w-[240px] z-40 transition-all duration-300">
         <Sidebar />
       </div>
 
-      {/* Mobile Slider Sidebar (Drawer) */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] md:hidden"
-            />
-            <motion.div 
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-[280px] bg-smash-black z-[101] md:hidden shadow-2xl"
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0 md:ml-[72px] lg:ml-[240px] transition-all duration-300">
+        <TopBar />
+        
+        {/* Content container with padding for sticky player and mobile tab bar */}
+        <main className="flex-1 w-full pb-[144px] md:pb-[80px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className="w-full h-full"
             >
-              <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
+              <Outlet />
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          </AnimatePresence>
+        </main>
+      </div>
 
-      <main className="md:ml-64 pb-48 md:pb-32 overflow-x-hidden min-h-screen relative">
-        <TopBar onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Outlet />
-          </motion.div>
-        </div>
-      </main>
-      <BottomNav />
       <GlobalPlayer />
+      <BottomNav />
     </div>
   );
 };
 
 export default MainLayout;
+

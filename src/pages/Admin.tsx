@@ -267,6 +267,7 @@ const Admin = () => {
         verified: false,
         wallet_balance: 0,
         user_type: 'artist',
+        artist_tier: 'Free',
       });
       if (profileError) throw profileError;
 

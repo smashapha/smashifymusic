@@ -23,7 +23,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     eqPreset, setEQPreset,
     playbackRate, setPlaybackRate,
     sleepTimerRemaining, setSleepTimer,
-    pauseSong,
+    pauseSong, playSong,
     radioMode, toggleRadioMode, adPlaying, adSkipAvailable, skipAd,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat
   } = usePlayer();
@@ -33,6 +33,11 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
   const [showQueue, setShowQueue] = useState(false);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+
+  // Local helper
+  const toggleMute = () => {
+    setVolume(volume === 0 ? 0.8 : 0);
+  };
   
   // Lyrics State
   const [showLyricsModal, setShowLyricsModal] = useState(false);
@@ -188,65 +193,68 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={0.2}
       onDragEnd={handleDragEnd}
-      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="fixed inset-0 z-[100] bg-smash-black flex flex-col md:flex-row touch-none"
+      transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+      className="fixed inset-0 z-[100] bg-bg-page flex flex-col md:flex-row touch-none"
     >
       {/* Drag Handle for Mobile */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full z-[110] md:hidden" />
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-border-default rounded-full z-[110] md:hidden" />
 
       {/* Background Blur */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden hidden md:block">
         <img 
           src={currentSong?.cover_url} 
-          className="w-full h-full object-cover blur-[80px] opacity-30" 
+          className="w-full h-full object-cover blur-[100px] opacity-20" 
           alt="" 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-smash-black via-smash-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg-page via-bg-page/60 to-transparent" />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar">
+      <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar pt-12 md:pt-12">
          <div className="flex items-center justify-between mb-8 md:mb-12">
-            <button onClick={onClose} className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+            <button onClick={onClose} className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-page focus:ring-border-default">
                <ChevronDown size={28} />
             </button>
             <div className="text-center flex-1">
-              <p className="text-[10px] font-black text-smash-gray uppercase tracking-[0.4em] mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
-              <h4 className="font-display font-black italic text-lg uppercase tracking-tight">{adPlaying ? 'AUDIO ADVERTISEMENT' : currentSong?.genre}</h4>
+              <p className="text-[10px] font-display font-medium text-text-muted uppercase tracking-widest mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
+              <h4 className="font-studio font-bold text-sm text-text-primary tracking-tight">{adPlaying ? 'AUDIO ADVERTISEMENT' : currentSong?.genre || 'Album'}</h4>
            </div>
-           {adPlaying && (
+           {adPlaying ? (
              <button 
                onClick={() => setVolume(volume === 0 ? 0.8 : 0)}
-               className={`p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2`}
+               className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors flex items-center gap-2 text-text-secondary hover:text-text-primary focus:outline-none"
              >
                {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
              </button>
+           ) : (
+             <button className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none shadow-[0px_2px_8px_rgba(0,0,0,0.05)]">
+               <Info size={24} />
+             </button>
            )}
-           <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-              <Info size={24} />
-           </button>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center py-4">
            <motion.div 
-             animate={{ rotate: isPlaying ? 360 : 0 }}
-             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-             className="relative aspect-square w-full max-w-[280px] sm:max-w-[320px] md:max-w-[480px] rounded-full overflow-hidden shadow-[0_0_100px_rgba(255,95,0,0.2)] border-8 border-white/5 cursor-pointer"
+             animate={{ scale: isPlaying ? [1, 1.02, 1] : 1 }}
+             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+             className={`relative aspect-square w-full max-w-[280px] sm:max-w-[300px] md:max-w-[380px] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-border-subtle cursor-pointer ${isPlaying ? `shadow-[0_0_80px_rgba(var(--color-${accentColor.replace('text-', '')}),0.2)]` : ''}`}
              onClick={togglePlay}
            >
               <img src={currentSong?.cover_url} className="w-full h-full object-cover" alt={currentSong?.title} />
-              <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                 <div className="w-12 h-12 md:w-20 md:h-20 bg-smash-black border-4 border-white/10 rounded-full flex items-center justify-center">
-                    {isPlaying ? <Music2 size={32} className="text-smash-orange opacity-50" /> : <Play size={32} className="text-white ml-1" />}
-                 </div>
-              </div>
+              {!isPlaying && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-sm">
+                   <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
+                      <Play size={32} className="text-white ml-2" />
+                   </div>
+                </div>
+              )}
            </motion.div>
 
-           <div className="mt-8 md:mt-12 text-center max-w-2xl px-4">
+           <div className="mt-8 md:mt-12 text-center max-w-2xl px-4 flex flex-col items-center">
               <motion.h1 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="text-3xl sm:text-4xl md:text-6xl font-black font-display tracking-tighter italic uppercase mb-2 md:mb-4 leading-none"
+                className="text-2xl sm:text-3xl md:text-5xl font-studio font-bold tracking-tight text-text-primary mb-1 md:mb-2 line-clamp-2"
               >
                 {adPlaying ? currentSong?.artist_name : currentSong?.title}
               </motion.h1>
@@ -254,16 +262,16 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="text-lg md:text-2xl text-smash-gray font-bold"
+                className="text-lg md:text-xl text-text-secondary font-sans font-medium"
               >
                 {adPlaying ? currentSong?.title : (currentSong?.profiles?.stage_name || currentSong?.artist_name)}
               </motion.p>
               {adPlaying && (
                  <div className="mt-8">
-                   <p className="text-xs font-black uppercase tracking-widest text-smash-gray mb-4">Malaŵi's No.1 Music Platform</p>
+                   <p className="text-xs font-display font-semibold uppercase tracking-widest text-text-muted mb-4">Malaŵi's No.1 Music Platform</p>
                    <a 
                      href="/pricing"
-                     className="inline-block px-8 py-4 bg-gradient-to-r from-smash-orange to-smash-red text-white rounded-full font-black uppercase text-sm tracking-widest shadow-2xl hover:scale-105 transition-transform"
+                     className={`inline-block px-8 py-4 bg-gradient-to-r ${accentColor.replace('text-', 'from-')} to-smash-red text-white rounded-full font-display font-bold uppercase text-sm tracking-widest shadow-xl hover:scale-105 transition-transform`}
                    >
                      Remove ads — Premium MK 750/month
                    </a>
@@ -281,7 +289,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 onSeek={seek} 
                 disabled={adPlaying} 
               />
-              <div className="flex justify-between text-xs font-black text-smash-gray tracking-widest uppercase">
+              <div className="flex justify-between text-xs font-display font-medium text-text-muted uppercase">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(displayDuration)}</span>
               </div>
@@ -293,31 +301,31 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 <button 
                   onClick={toggleShuffle}
                   disabled={adPlaying} 
-                  className={`transition-all p-2 rounded-full ${adPlaying ? 'opacity-20 cursor-not-allowed' : isShuffle ? `text-${accentColor} bg-${accentColor}/10 shadow-lg` : `text-smash-gray hover:text-${accentColor}`}`}
+                  className={`transition-all p-3 rounded-full ${adPlaying ? 'opacity-20 cursor-not-allowed' : isShuffle ? `${accentColor} bg-${accentColor.replace('text-', 'bg-')}/10` : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'}`}
                 >
-                  <Shuffle size={24} />
+                  <Shuffle size={20} />
                 </button>
                 
                 <div className="flex items-center gap-6 md:gap-10">
-                   <button onClick={previousTrack} disabled={adPlaying} className={`transition-colors active:scale-90 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-white hover:text-${accentColor}`}`}>
-                     <SkipBack className="w-8 h-8 md:w-10 md:h-10" fill="white" />
+                   <button onClick={previousTrack} disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
+                     <SkipBack className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" />
                    </button>
-                   <button onClick={togglePlay} className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white text-smash-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-white/20">
-                      {isPlaying ? <Pause className="w-10 h-10 md:w-12 md:h-12" fill="currentColor" /> : <Play className="w-10 h-10 md:w-12 md:h-12 ml-2" fill="currentColor" />}
+                   <button onClick={togglePlay} className={`w-16 h-16 md:w-20 md:h-20 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0px_4px_16px_rgba(0,0,0,0.2)] ${accentColor.replace('text-', 'bg-')}`}>
+                      {isPlaying ? <Pause className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" /> : <Play className="w-8 h-8 md:w-10 md:h-10 ml-1.5" fill="currentColor" />}
                    </button>
-                   <button onClick={nextTrack} disabled={adPlaying} className={`transition-colors active:scale-90 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-white hover:text-${accentColor}`}`}>
-                     <SkipForward className="w-8 h-8 md:w-10 md:h-10" fill="white" />
+                   <button onClick={nextTrack} disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
+                     <SkipForward className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" />
                    </button>
                 </div>
 
                 <button 
                   onClick={toggleRepeat}
                   disabled={adPlaying} 
-                  className={`transition-all p-2 rounded-full relative ${adPlaying ? 'opacity-20 cursor-not-allowed' : repeatMode !== 'off' ? `text-${accentColor} bg-${accentColor}/10 shadow-lg` : 'text-smash-gray hover:text-white'}`}
+                  className={`transition-all p-3 rounded-full relative ${adPlaying ? 'opacity-20 cursor-not-allowed' : repeatMode !== 'off' ? `${accentColor} bg-${accentColor.replace('text-', 'bg-')}/10` : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'}`}
                 >
-                  <Repeat size={24} />
+                  <Repeat size={20} />
                   {repeatMode === 'one' && (
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-black pointer-events-none mt-0.5">1</span>
+                    <span className="absolute top-2.5 right-2 text-[8px] font-bold">1</span>
                   )}
                 </button>
               </div>
@@ -327,21 +335,20 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                    <button 
                      key={p}
                      onClick={() => setEQPreset(p)}
-                     className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex-shrink-0 ${eqPreset === p ? `bg-${accentColor} text-white` : 'bg-white/5 text-smash-gray hover:text-white'}`}
+                     className={`px-4 py-1.5 rounded-full text-[11px] font-display font-medium uppercase tracking-wider transition-all flex-shrink-0 border ${eqPreset === p ? `border-transparent ${accentColor.replace('text-', 'bg-')} text-white` : 'border-border-default bg-transparent text-text-secondary hover:text-text-primary'}`}
                    >
                      {p}
                    </button>
                  ))}
               </div>
            </div>
-           
-           {/* Bottom Toolbar */}
-           <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-white/5 relative">
+                     {/* Bottom Toolbar */}
+           <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-border-default relative">
               <div className="flex items-center gap-3 md:gap-4 flex-1">
                  {!currentSong?.is_purchased && currentSong?.is_for_sale && (
                    <button 
                      onClick={(e: any) => handleBuy(e)}
-                     className="flex items-center gap-2 px-6 py-3 bg-smash-orange text-white rounded-full font-black uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20 mr-4"
+                     className={`flex items-center gap-2 px-6 py-3 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md mr-4 ${accentColor.replace('text-', 'bg-')}`}
                    >
                      <ShoppingBag size={20} />
                      Buy MK {currentSong.price}
@@ -349,34 +356,36 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                  )}
                  <button 
                    onClick={handleLike}
-                   className={`transition-colors ${isLiked ? 'text-smash-red' : 'text-smash-gray hover:text-white'}`}
+                   className={`transition-colors p-2 rounded-full hover:bg-bg-elevated ${isLiked ? 'text-smash-red' : 'text-text-muted hover:text-text-primary'}`}
                  >
-                   <Heart size={24} md:size={28} fill={isLiked ? "currentColor" : "none"} />
+                   <Heart size={24} fill={isLiked ? "currentColor" : "none"} />
                  </button>
                  <div className="flex items-center gap-3 flex-1 max-w-[120px] md:max-w-[200px]">
-                   <Volume2 size={20} className="text-smash-gray" />
+                   <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors">
+                      {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                   </button>
                    <input 
                      type="range" 
                      min="0" max="1" step="0.01" value={volume}
                      onChange={(e) => setVolume(parseFloat(e.target.value))}
-                     className={`w-full accent-${accentColor} bg-white/10 h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor}`}
+                     className={`w-full accent-${accentColor.replace('text-', '')} bg-border-default h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor.replace('text-', '')}`}
                    />
                  </div>
               </div>
 
-              <div className="flex text-xs items-center gap-4 md:gap-6">
+              <div className="flex text-xs font-display font-medium items-center gap-4 md:gap-6">
                  {/* Speed Selector */}
                  <div className="relative">
                    <button 
                      onClick={() => setShowSpeedMenu(!showSpeedMenu)} 
-                     className={`flex items-center gap-2 font-black uppercase transition-colors ${playbackRate !== 1 || showSpeedMenu ? `text-${accentColor}` : 'text-smash-gray hover:text-white'}`}
+                     className={`flex items-center gap-2 uppercase transition-colors px-2 py-1.5 rounded-md hover:bg-bg-elevated ${playbackRate !== 1 || showSpeedMenu ? accentColor : 'text-text-secondary hover:text-text-primary'}`}
                    >
                      <Gauge size={18} /> {playbackRate}x
                    </button>
                    {showSpeedMenu && (
-                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-full mb-4 right-0 bg-smash-dark border border-white/10 rounded-xl p-2 w-32 shadow-2xl z-[150]">
+                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-full mb-2 right-0 bg-bg-modal border border-border-default rounded-xl p-2 w-32 shadow-xl z-[150]">
                        {speeds.map(s => (
-                         <button key={s} onClick={() => { setPlaybackRate(s); setShowSpeedMenu(false); }} className={`w-full p-3 text-left font-bold rounded-lg transition-colors ${playbackRate === s ? `bg-${accentColor} text-white` : 'text-smash-gray hover:bg-white/10 hover:text-white'}`}>
+                         <button key={s} onClick={() => { setPlaybackRate(s); setShowSpeedMenu(false); }} className={`w-full p-2 text-left font-medium rounded-lg transition-colors ${playbackRate === s ? `${accentColor.replace('text-', 'bg-')} text-white` : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'}`}>
                            {s}x
                          </button>
                        ))}
@@ -388,19 +397,19 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                  <div className="relative">
                    <button 
                      onClick={() => setShowSleepMenu(!showSleepMenu)} 
-                     className={`flex items-center gap-2 font-black uppercase transition-colors ${sleepTimerRemaining || showSleepMenu ? `text-${accentColor}` : 'text-smash-gray hover:text-white'}`}
+                     className={`flex items-center gap-2 uppercase transition-colors px-2 py-1.5 rounded-md hover:bg-bg-elevated ${sleepTimerRemaining || showSleepMenu ? accentColor : 'text-text-secondary hover:text-text-primary'}`}
                    >
                      <Clock size={18} /> {sleepTimerRemaining ? `${sleepTimerRemaining}m` : 'Timer'}
                    </button>
                    {showSleepMenu && (
-                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-full mb-4 right-0 bg-smash-dark border border-white/10 rounded-xl p-2 w-40 shadow-2xl z-[150]">
+                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-full mb-2 right-0 bg-bg-modal border border-border-default rounded-xl p-2 w-40 shadow-xl z-[150]">
                        {sleepIntervals.map(t => (
-                         <button key={t} onClick={() => { setSleepTimer(t); setShowSleepMenu(false); }} className="w-full p-3 text-left font-bold text-smash-gray hover:bg-white/10 hover:text-white rounded-lg transition-colors">
+                         <button key={t} onClick={() => { setSleepTimer(t); setShowSleepMenu(false); }} className="w-full p-2 text-left font-medium text-text-secondary hover:bg-bg-hover hover:text-text-primary rounded-lg transition-colors">
                            {t} mins
                          </button>
                        ))}
                        {sleepTimerRemaining && (
-                         <button onClick={() => { setSleepTimer(null); setShowSleepMenu(false); }} className="w-full mt-2 p-3 text-center font-bold text-smash-red bg-smash-red/10 hover:bg-smash-red hover:text-white rounded-lg transition-colors">
+                         <button onClick={() => { setSleepTimer(null); setShowSleepMenu(false); }} className="w-full mt-1.5 p-2 text-center font-medium text-smash-red hover:bg-smash-red/10 rounded-lg transition-colors">
                            Cancel Timer
                          </button>
                        )}
@@ -410,7 +419,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
 
                  <button 
                    onClick={fetchLyrics} 
-                   className="flex items-center gap-2 font-black uppercase text-smash-gray hover:text-white transition-colors"
+                   className="flex items-center gap-2 uppercase text-text-secondary hover:text-text-primary hover:bg-bg-elevated px-2 py-1.5 rounded-md transition-colors"
                  >
                    <Zap size={18} /> Lyrics
                  </button>
@@ -424,33 +433,33 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                      }
                      handleDownload();
                    }} 
-                   className={`flex items-center gap-2 font-black uppercase transition-colors ${!getListenerLimits(userProfile).canDownload ? 'text-smash-red/80' : 'text-smash-gray hover:text-white'}`}
+                   className={`flex items-center gap-2 uppercase transition-colors px-2 py-1.5 rounded-md hover:bg-bg-elevated ${!getListenerLimits(userProfile).canDownload ? 'text-smash-red/80' : 'text-text-secondary hover:text-text-primary'}`}
                  >
                    {!getListenerLimits(userProfile).canDownload ? <AppLockIcon size={15} className="mr-1" /> : <Download size={18} />} Download
                  </button>
               </div>
-           </div>
+          </div>
         </div>
       </div>
 
       {/* Side Panel (Desktop Only) */}
-      <div className="hidden md:block w-96 bg-smash-black/40 backdrop-blur-xl border-l border-white/5 relative z-20">
+      <div className="hidden md:flex w-[320px] lg:w-[400px] bg-bg-surface border-l border-border-default relative z-20 flex-col">
          <div className="p-8 h-full flex flex-col">
-            <h3 className="text-2xl font-black font-display italic uppercase mb-8">Up Next</h3>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-               {usePlayer().queue.slice(0, 10).map((song, i) => (
-                 <div key={`${song.id}-${i}`} className={`p-4 rounded-2xl ${currentSong?.id === song.id ? `bg-${accentColor}/10 border border-${accentColor}/20` : 'bg-white/5 border border-white/10'} flex items-center gap-4`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+            <h3 className="text-xl font-studio font-bold tracking-tight mb-6">Up Next</h3>
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+               {usePlayer().queue.slice(0, 50).map((song, i) => (
+                 <div key={`${song.id}-${i}`} onClick={() => playSong(song)} className={`p-3 rounded-[12px] cursor-pointer transition-colors ${currentSong?.id === song.id ? `${accentColor.replace('text-', 'bg-')}/10 border border-${accentColor.replace('text-', '')}/20` : 'hover:bg-bg-hover'} flex items-center gap-3`}>
+                    <div className={`w-10 h-10 rounded-[8px] flex items-center justify-center flex-shrink-0 overflow-hidden`}>
                        <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
                     </div>
-                    <div className="min-w-0">
-                       <p className="font-bold text-sm truncate uppercase tracking-tight italic">{song.title}</p>
-                       <p className="text-xs text-smash-gray font-bold truncate">{song.artist_name}</p>
+                    <div className="min-w-0 flex-1">
+                       <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
+                       <p className="text-xs text-text-secondary font-medium truncate">{song.artist_name}</p>
                     </div>
                  </div>
                ))}
                {usePlayer().queue.length === 0 && (
-                 <p className="text-smash-gray text-center text-sm font-bold uppercase py-8">Queue is empty</p>
+                 <p className="text-text-muted text-center text-sm font-medium py-8">Queue is empty</p>
                )}
             </div>
          </div>
@@ -459,21 +468,22 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       {/* Lyrics Modal */}
       <AnimatePresence>
         {showLyricsModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
              <motion.div 
                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-               className="absolute inset-0 bg-black/80 backdrop-blur-md"
+               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                onClick={() => setShowLyricsModal(false)}
              />
              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative z-10 w-full max-w-lg bg-smash-dark border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col max-h-[80vh]"
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="relative z-10 w-full max-w-lg bg-bg-modal border border-border-default rounded-[24px] p-6 sm:p-8 shadow-2xl flex flex-col max-h-[85vh]"
              >
                 <div className="flex items-center justify-between mb-6">
-                   <h3 className="text-2xl font-black font-display uppercase italic tracking-tighter">Lyrics</h3>
-                   <button onClick={() => setShowLyricsModal(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-smash-gray hover:text-white">
+                   <h3 className="text-xl sm:text-2xl font-studio font-bold tracking-tight text-text-primary">Lyrics</h3>
+                   <button onClick={() => setShowLyricsModal(false)} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
                      <X size={20} />
                    </button>
                 </div>
@@ -482,11 +492,11 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                   {loadingLyrics ? (
                     <div className="flex items-center justify-center h-40">
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                         <Zap size={32} className={`text-${accentColor} opacity-50`} />
+                         <Zap size={32} className={`${accentColor} opacity-50`} />
                       </motion.div>
                     </div>
                   ) : (
-                    <p className="text-lg text-white/90 font-medium whitespace-pre-line leading-relaxed pb-8">
+                    <p className="text-base sm:text-lg text-text-primary font-medium whitespace-pre-line leading-relaxed pb-8">
                       {lyrics}
                     </p>
                   )}
@@ -516,6 +526,12 @@ const GlobalPlayer: React.FC = () => {
   const [showQueueModal, setShowQueueModal] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const currentSongRef = React.useRef<HTMLDivElement>(null);
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Sync liked state with localStorage and DB
   useEffect(() => {
@@ -647,182 +663,153 @@ const GlobalPlayer: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-[60] px-2 pb-2 md:px-8 md:pb-6 pointer-events-none">
+      <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 pb-2 md:px-0 md:pb-0 md:pl-[72px] lg:pl-[240px] pointer-events-none transition-all duration-300">
         <motion.div 
           initial={{ y: 100 }}
           animate={{ y: 0 }}
-          className="max-w-7xl mx-auto glass-morphism rounded-[24px] md:rounded-[40px] border border-white/10 shadow-2xl overflow-hidden pointer-events-auto group/player"
+          className="bg-bg-surface/90 backdrop-blur-[12px] rounded-[14px] md:rounded-none border border-border-subtle md:border-x-0 md:border-b-0 md:border-t-border-default h-[64px] md:h-[80px] w-full flex items-center px-3 md:px-6 pointer-events-auto shadow-[0px_4px_24px_rgba(0,0,0,0.1)] md:shadow-none"
         >
-          {/* Top Progress Line - Interactive */}
-          <div 
-            className={`absolute top-0 left-0 right-0 h-[3px] md:h-1 bg-white/10 z-10 touch-none transition-all ${adPlaying ? 'pointer-events-none' : 'cursor-pointer group-hover/player:h-1.5'}`}
-            onMouseDown={(e) => {
-              if (adPlaying) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const percent = (e.clientX - rect.left) / rect.width;
-              seek(percent * displayDuration);
-            }}
+          {/* Top Progress Line for Mobile (Desktop uses different layout) */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-border-default md:hidden touch-none"
+             onMouseDown={(e) => {
+               if (adPlaying) return;
+               const rect = e.currentTarget.getBoundingClientRect();
+               const percent = (e.clientX - rect.left) / rect.width;
+               seek(percent * displayDuration);
+             }}
           >
             <motion.div 
-              className={`h-full bg-${accentColor} shadow-[0_0_10px_var(--color-${accentColor})] opacity-80`}
+              className={`h-full ${accentColor.replace('text-', 'bg-')} opacity-80`}
               style={{ width: `${(currentTime / displayDuration) * 100}%` }}
             />
           </div>
 
-          <div className="px-3 py-2 md:px-8 md:py-4 flex items-center justify-between gap-3 md:gap-4 mt-[3px] md:mt-0">
-            {/* Song Info */}
-            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0" onClick={() => setIsExpanded(true)}>
-              <div className="relative group cursor-pointer flex-shrink-0">
-                <motion.div 
-                  animate={{ scale: isPlaying ? [1, 1.05, 1] : 1 }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-10 h-10 md:w-16 md:h-16 rounded-xl md:rounded-2xl overflow-hidden shadow-lg border border-white/10"
-                >
-                  <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+          <div className="flex items-center justify-between w-full gap-4 relative">
+            {/* [art 48px | title+artist flex] */}
+            <div className="flex items-center gap-3 flex-shrink-0 cursor-pointer w-auto lg:w-1/4" onClick={() => setIsExpanded(true)}>
+              <div className="relative w-[48px] h-[48px] rounded-[10px] overflow-hidden flex-shrink-0 group">
+                <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                  <Maximize2 size={16} />
+                </div>
+              </div>
+              <div className="flex flex-col min-w-0 justify-center">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-studio font-bold text-sm text-text-primary truncate">{currentSong.title}</h3>
+                  {currentSong.is_for_sale && !currentSong.is_purchased && (
+                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>MK {currentSong.price}</span>
+                  )}
+                </div>
+                <p className="font-sans text-xs text-text-secondary truncate">{currentSong.profiles?.stage_name || currentSong.artist_name}</p>
+              </div>
+            </div>
+
+            {/* Mobile Actions: Like & Play */}
+            <div className="flex items-center gap-4 md:hidden">
+              <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className="text-text-muted hover:text-text-primary focus:outline-none">
+                <motion.div whileTap={{ scale: 0.8 }}>
+                  <Heart size={20} fill={isLiked ? "currentColor" : "none"} className={isLiked ? 'text-smash-red' : ''} />
                 </motion.div>
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl md:rounded-2xl transition-opacity">
-                  <Maximize2 className="text-white w-4 h-4 md:w-5 md:h-5" />
-                </div>
-              </div>
-              <div className="min-w-0 cursor-pointer flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className={`font-display font-black text-sm md:text-xl italic uppercase tracking-tighter truncate leading-none group-hover:text-${accentColor} transition-colors`}>
-                    {currentSong.title}
-                  </h3>
-                  {adPlaying && (
-                    <span className={`bg-${accentColor} text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest`}>AD</span>
-                  )}
-                  {!currentSong.is_purchased && currentSong.is_for_sale && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleBuy(e); }}
-                      className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1 bg-smash-orange text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    >
-                       <ShoppingBag className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                       <span className="hidden xs:inline">MK {currentSong.price}</span>
-                    </button>
-                  )}
-                </div>
-                <p className="text-[10px] md:text-sm text-smash-gray font-bold truncate tracking-tight">
-                  {currentSong.profiles?.stage_name || currentSong.artist_name}
-                </p>
-              </div>
+              </button>
               <button 
-                onClick={(e) => { e.stopPropagation(); handleLike(); }}
-                className={`ml-2 p-2 transition-colors ${isLiked ? 'text-smash-red' : 'text-smash-gray hover:text-white'}`}
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white ${accentColor.replace('text-', 'bg-')} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')}`}
               >
-                <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+                {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
               </button>
             </div>
 
-            {/* Mobile/Tablet Controls */}
-            <div className="flex items-center gap-2 md:hidden">
-               <button 
-                  onClick={(e) => { e.stopPropagation(); previousTrack(); }}
+            {/* [prev · PLAY · next · progress] (Desktop) */}
+            <div className="hidden md:flex flex-col flex-1 items-center max-w-[500px]">
+              <div className="flex items-center gap-5">
+                <button 
+                  onClick={toggleShuffle} 
                   disabled={adPlaying}
-                  className={`p-2 transition-colors ${adPlaying ? 'opacity-20 cursor-not-allowed' : 'text-white hover:text-smash-orange'}`}
+                  className={`text-text-muted hover:text-text-primary focus:outline-none rounded-sm focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-border-default ${isShuffle ? accentColor : ''}`}
                 >
+                  <Shuffle size={18} />
+                </button>
+                <button onClick={previousTrack} disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
                   <SkipBack size={20} fill="currentColor" />
                 </button>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                  className="w-10 h-10 rounded-full bg-white text-smash-black flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                  onClick={togglePlay}
+                  className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')} ${accentColor.replace('text-', 'bg-')}`}
                 >
-                  {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+                  {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
                 </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); nextTrack(); }}
-                  disabled={adPlaying}
-                  className={`p-2 transition-colors ${adPlaying ? 'opacity-20 cursor-not-allowed' : 'text-white hover:text-smash-orange'}`}
-                >
+                <button onClick={nextTrack} disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
                   <SkipForward size={20} fill="currentColor" />
                 </button>
-            </div>
-
-            {/* Desktop Controls */}
-            <div className="hidden md:flex items-center gap-4 md:gap-8">
-              <div className="flex items-center gap-3">
-                 <button 
-                   onClick={toggleShuffle}
-                   disabled={adPlaying}
-                   className={`p-2 transition-all ${adPlaying ? 'opacity-20' : isShuffle ? `text-${accentColor}` : 'text-smash-gray hover:text-white'}`}
-                   title="Shuffle"
-                 >
-                    <Shuffle size={18} />
-                 </button>
-                 <button 
-                   onClick={toggleRepeat}
-                   disabled={adPlaying}
-                   className={`p-2 transition-all relative ${adPlaying ? 'opacity-20' : repeatMode !== 'off' ? `text-${accentColor}` : 'text-smash-gray hover:text-white'}`}
-                   title="Repeat"
-                 >
-                    <Repeat size={18} />
-                    {repeatMode === 'one' && <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-black mt-0.5">1</span>}
-                 </button>
+                <button 
+                  onClick={toggleRepeat} 
+                  disabled={adPlaying}
+                  className={`text-text-muted hover:text-text-primary relative focus:outline-none rounded-sm ${repeatMode !== 'off' ? accentColor : ''}`}
+                >
+                  <Repeat size={18} />
+                  {repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[8px] font-display font-bold">1</span>}
+                </button>
               </div>
 
-              <button 
-                onClick={togglePlay}
-                className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white text-smash-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl"
+              {/* Progress Bar (Desktop) */}
+              <div className="flex items-center gap-2 w-full mt-1.5 group cursor-pointer"
+                 onMouseDown={(e) => {
+                   if (adPlaying) return;
+                   const rect = e.currentTarget.getBoundingClientRect();
+                   const percent = (e.clientX - rect.left) / rect.width;
+                   seek(percent * displayDuration);
+                 }}
               >
-                {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
-              </button>
-
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3 w-24 lg:w-32 group">
-                  <button onClick={toggleMute}>
-                    {volume === 0 ? <VolumeX size={18} className="text-smash-red" /> : <Volume2 size={18} className="text-smash-gray group-hover:text-white transition-colors" />}
-                  </button>
-                  <input 
-                    type="range" 
-                    min="0" max="1" step="0.01" value={localVolume}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      setLocalVolume(val);
-                      setVolume(val);
-                    }}
-                    className={`flex-1 accent-${accentColor} h-1 opacity-50 group-hover:opacity-100 transition-opacity cursor-pointer`}
-                  />
+                <span className="text-[10px] font-display text-text-muted w-8 text-right">{formatTime(currentTime)}</span>
+                <div className="flex-1 h-1 bg-border-default rounded-full relative overflow-visible flex items-center">
+                   <motion.div 
+                     className={`h-full ${accentColor.replace('text-', 'bg-')} rounded-full`}
+                     style={{ width: `${(currentTime / displayDuration) * 100}%` }}
+                   />
+                   <div className="absolute w-3 h-3 bg-white rounded-full shadow border border-border-default opacity-0 group-hover:opacity-100 transition-opacity -ml-1.5" style={{ left: `${(currentTime / displayDuration) * 100}%` }} />
                 </div>
+                <span className="text-[10px] font-display text-text-muted w-8">{formatTime(displayDuration)}</span>
+              </div>
+            </div>
 
-                <button 
+            {/* [vol · like · expand] (Desktop) */}
+            <div className="hidden md:flex flex-row items-center justify-end gap-4 lg:w-1/4">
+               <button onClick={handleLike} className={`${isLiked ? 'text-smash-red' : 'text-text-muted hover:text-text-primary'} transition-colors focus:outline-none`}>
+                 <motion.div whileTap={{ scale: 0.8 }}>
+                   <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+                 </motion.div>
+               </button>
+               <div className="flex items-center gap-2 w-[100px] group cursor-pointer"
+                   onWheel={(e) => {
+                      const newVol = Math.max(0, Math.min(1, volume - Math.sign(e.deltaY) * 0.05));
+                      setVolume(newVol);
+                   }}
+               >
+                 <button onClick={toggleMute} className="text-text-muted hover:text-text-primary focus:outline-none">
+                    {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                 </button>
+                 <div className="flex-1 h-1 bg-border-default rounded-full relative overflow-visible flex items-center">
+                   <div 
+                     className={`absolute left-0 top-0 bottom-0 ${accentColor.replace('text-', 'bg-')} rounded-full transition-all group-hover:opacity-100 opacity-80`}
+                     style={{ width: `${volume * 100}%` }}
+                   />
+                   <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity -ml-1" style={{ left: `${volume * 100}%` }} />
+                 </div>
+               </div>
+               <button onClick={() => setIsExpanded(true)} className="text-text-muted hover:text-text-primary p-2 focus:outline-none rounded-lg hover:bg-bg-elevated transition-colors">
+                 <Maximize2 size={16} />
+               </button>
+               <button 
                   onClick={() => setShowQueueModal(true)}
-                  className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-smash-gray hover:text-white transition-all relative"
-                  title="Queue"
+                  className="text-text-muted hover:text-text-primary p-2 focus:outline-none rounded-lg hover:bg-bg-elevated transition-colors relative"
                 >
-                  <ListMusic size={20} />
+                  <ListMusic size={16} />
                   {queue.length > 0 && (
-                    <span className={`absolute -top-1 -right-1 w-5 h-5 bg-${accentColor} text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border border-smash-black`}>
+                    <span className={`absolute top-0 right-0 w-3.5 h-3.5 ${accentColor.replace('text-', 'bg-')} text-white text-[8px] font-bold rounded-full flex items-center justify-center`}>
                       {queue.length}
                     </span>
                   )}
                 </button>
-                
-                <button 
-                  onClick={() => {
-                     const limits = getListenerLimits(userProfile);
-                     if (dataSaver && !limits.hdAudio) {
-                        toast.error("HD audio quality is available on Premium plans.");
-                        return;
-                     }
-                     toggleDataSaver();
-                  }}
-                  className={`p-2 rounded-xl border transition-all ${dataSaver ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'border-white/10 text-smash-gray hover:text-white'}`}
-                  title={dataSaver ? "Data Saver ON" : "High Quality Audio ON"}
-                >
-                  <motion.div animate={{ opacity: dataSaver ? [1, 0.5, 1] : 1 }} transition={{ duration: 2, repeat: Infinity }}>
-                    {dataSaver ? <Wifi size={18} /> : <WifiOff size={18} />}
-                  </motion.div>
-                </button>
-
-                <button 
-                  onClick={toggleRadioMode}
-                  className={`p-3 rounded-2xl border transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${radioMode ? `bg-${accentColor}/10 border-${accentColor} text-${accentColor} shadow-lg shadow-${accentColor}/10` : 'bg-white/5 border-white/10 text-smash-gray hover:text-white'}`}
-                  title="Endless Radio"
-                >
-                   <Zap size={18} fill={radioMode ? "currentColor" : "none"} />
-                   {radioMode ? 'Radio ON' : 'Radio OFF'}
-                </button>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -838,37 +825,38 @@ const GlobalPlayer: React.FC = () => {
       {/* Queue Modal */}
       <AnimatePresence>
         {showQueueModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setShowQueueModal(false)}
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative z-10 w-full max-w-lg bg-smash-dark border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col max-h-[80vh]"
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 w-full max-w-lg bg-bg-modal border border-border-default rounded-[24px] p-6 sm:p-8 shadow-2xl flex flex-col max-h-[85vh]"
             >
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-3xl font-black font-display uppercase italic tracking-tighter">Queue</h3>
-                <button onClick={() => setShowQueueModal(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-smash-gray hover:text-white">
+                <h3 className="text-xl sm:text-2xl font-studio font-bold tracking-tight">Queue</h3>
+                <button onClick={() => setShowQueueModal(false)} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
                 {queue.length > 0 ? queue.map((song, i) => (
                   <div 
                     key={`${song.id}-${i}`}
                     ref={currentSong?.id === song.id ? currentSongRef : null}
-                    className={`p-4 rounded-2xl flex items-center gap-4 group transition-colors cursor-pointer ${currentSong?.id === song.id ? `bg-${accentColor}/10 border border-${accentColor}/20` : 'bg-white/5 border border-white/5 hover:bg-white/10'}`}
+                    className={`p-3 rounded-[12px] flex items-center gap-3 group transition-colors cursor-pointer ${currentSong?.id === song.id ? `${accentColor.replace('text-', 'bg-')}/10 border border-${accentColor.replace('text-', '')}/20` : 'hover:bg-bg-hover'}`}
                     onClick={() => playSong(song)}
                   >
-                    <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 relative">
+                    <div className="w-10 h-10 rounded-[8px] overflow-hidden flex-shrink-0 relative">
                        <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
                        {currentSong?.id === song.id && (
-                         <div className={`absolute inset-0 bg-${accentColor}/40 flex items-center justify-center`}>
+                         <div className={`absolute inset-0 ${accentColor.replace('text-', 'bg-')}/40 flex items-center justify-center`}>
                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}>
                              <Play size={16} fill="white" />
                            </motion.div>
@@ -876,20 +864,20 @@ const GlobalPlayer: React.FC = () => {
                        )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm truncate uppercase tracking-tight italic ${currentSong?.id === song.id ? `text-${accentColor}` : 'text-white'}`}>{song.title}</p>
-                      <p className="text-xs text-smash-gray font-bold">{song.artist_name}</p>
+                      <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
+                      <p className="text-xs text-text-secondary font-medium truncate">{song.artist_name}</p>
                     </div>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeFromQueue(song.id); }}
-                        className="p-2 hover:bg-white/10 rounded-full text-smash-red"
+                        className="p-2 hover:bg-bg-elevated rounded-full text-smash-red"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 )) : (
-                  <div className="py-20 text-center opacity-30 italic text-sm uppercase font-black tracking-widest">Queue is empty</div>
+                  <div className="py-20 text-center opacity-50 font-medium text-sm text-text-muted">Queue is empty</div>
                 )}
               </div>
             </motion.div>
@@ -963,13 +951,13 @@ const PreviewModal = () => {
                <Headphones size={40} className="text-smash-orange" />
             </div>
             <h2 className="text-4xl font-black font-display italic uppercase tracking-tighter mb-4 leading-none">Enjoying the <span className="text-smash-orange">vibe?</span></h2>
-            <p className="text-smash-gray text-lg mb-10 font-medium tracking-tight">Buy the full track to support the artist and hear the rest of this anthem.</p>
+            <p className="text-text-secondary text-lg mb-10 font-medium tracking-tight">Buy the full track to support the artist and hear the rest of this anthem.</p>
             
             <div className="space-y-4">
                <button onClick={handleBuy} className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
                   BUY NOW MK {song.price || 2500}
                </button>
-               <button onClick={handleDismiss} className="w-full py-4 text-smash-gray font-black uppercase text-xs tracking-widest hover:text-white transition-colors">
+               <button onClick={handleDismiss} className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
                   Maybe Later
                </button>
             </div>
