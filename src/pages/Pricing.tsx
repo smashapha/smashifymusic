@@ -59,7 +59,7 @@ const Pricing = () => {
   
   const handleAction = (planId?: string) => {
     if (!user) {
-      navigate(activeTab === 'artists' ? '/auth?mode=artist' : '/auth?mode=listener');
+      navigate(activeTab === 'artists' ? '/auth/artist' : '/auth/listener');
       return;
     }
     if (!planId) {

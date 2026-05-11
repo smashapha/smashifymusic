@@ -228,8 +228,13 @@ const AuthListener: React.FC = () => {
                         <AuthInput icon={<Mail size={20} />} type="email" placeholder="Email Address" value={email} onChange={setEmail} disabled={loadingState} />
                         <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Password" value={password} onChange={setPassword} disabled={loadingState} />
                      </div>
-                     <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-orange hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {loadingState ? 'Entering...' : 'Sign In'}
+                     <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-orange hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4">
+                        {loadingState ? (
+                           <>
+                              <div className="w-6 h-6 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
+                              Establishing...
+                           </>
+                        ) : 'Sign In'}
                      </button>
                      <div className="flex justify-between px-2">
                         <button type="button" onClick={handleForgotPassword} disabled={loadingState} className="text-[10px] font-black text-smash-gray uppercase tracking-widest hover:text-white transition-colors disabled:opacity-50">Forgot Password?</button>
@@ -250,8 +255,13 @@ const AuthListener: React.FC = () => {
                            <AuthInput icon={<Phone size={20} />} type="tel" placeholder="Phone (Airtel / TNM)" value={phone} onChange={setPhone} disabled={loadingState} />
                            <AuthInput icon={<AppLockIcon size={20} />} type="password" placeholder="Create Password" value={password} onChange={setPassword} disabled={loadingState} />
                         </div>
-                        <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                           {loadingState ? 'Preparing...' : 'Create Account'}
+                        <button type="submit" disabled={loadingState} className="w-full py-6 bg-white text-smash-black rounded-[32px] font-black text-2xl uppercase tracking-widest shadow-2xl hover:bg-smash-cyan hover:text-white transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4">
+                           {loadingState ? (
+                              <>
+                                 <div className="w-6 h-6 border-4 border-smash-cyan border-t-transparent rounded-full animate-spin" />
+                                 Creating...
+                              </>
+                           ) : 'Create Account'}
                         </button>
                         <div className="pt-4 border-t border-white/5">
                            <button type="button" onClick={() => handleOAuth('google')} disabled={loadingState} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 font-bold hover:bg-white/10 transition-all disabled:opacity-50">

@@ -754,15 +754,6 @@ const MotoFeed: React.FC = () => {
          if (rs) regionSongs = rs;
       }
 
-      // 5. Snippets
-      let snippets: any[] = [];
-      if (limits.canAccessSnippets) {
-         const { data: sn } = await supabase.from('moto_feed')
-            .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
-            .limit(5);
-         if (sn) snippets = sn;
-      }
-
       const mixed: any[] = [];
       const newSeen = new Set(seenSongs);
       const addUnique = (list: any[], count: number) => {
@@ -777,8 +768,19 @@ const MotoFeed: React.FC = () => {
          }
       };
 
+      // 5. Snippets
+      let snippets: any[] = [];
+      if (limits.canAccessSnippets) {
+         const { data: sn } = await supabase.from('moto_feed')
+            .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+            .eq('approved', true)
+            .limit(10);
+         if (sn) snippets = sn.map(s => ({ ...s, is_snippet: true, id: `snippet-${s.id}` }));
+      }
+
       addUnique(featured || [], 2);
       addUnique(followedSongs, 3);
+      addUnique(snippets, 2);
       addUnique(regionSongs, 2);
       addUnique(featured || [], 2); // fill
       

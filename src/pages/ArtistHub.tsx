@@ -457,7 +457,12 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
   useEffect(() => {
     const fetchHist = async () => {
-      const { data } = await supabase.from('transactions').select('*').eq('artist_id', userProfile?.id).order('created_at', { ascending: false }).limit(5);
+      const { data } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('artist_id', userProfile?.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
       if (data) setHistory(data);
     };
     fetchHist();
@@ -466,117 +471,173 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (balance <= 0) return toast.error('No funds to withdraw.');
-    if (withdrawalAmount < 2000) return toast.error('Minimum withdrawal is MK 2,000.');
+    if (withdrawalAmount < 5000) return toast.error('Minimum withdrawal is MK 5,000.');
     if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
 
     const networkInput = prompt('Enter network (AIRTEL or TNM)?', 'AIRTEL');
     if (!networkInput) return;
     const network = networkInput.toUpperCase() as 'AIRTEL' | 'TNM';
-    if (network !== 'AIRTEL' && network !== 'TNM') return toast.error('Invalid network. Use AIRTEL or TNM.');
-
+    
     const phone = prompt('Enter mobile number for payment?', userProfile?.phone || '');
     if (!phone) return;
 
-    const confirmed = window.confirm(
-      `Withdrawal Summary:\n\nAmount: MWK ${withdrawalAmount.toLocaleString()}\nNetwork: ${network}\nNumber: ${phone}\n\nConfirm withdrawal?`
-    );
-    if (!confirmed) return;
+    if (!confirm(`Confirm withdrawal of MWK ${withdrawalAmount.toLocaleString()} to ${network} (${phone})?`)) return;
 
     setRequesting(true);
     try {
-      await requestPayout({
-        amount: withdrawalAmount,
-        phone,
-        network
-      });
+      await requestPayout({ amount: withdrawalAmount, phone, network });
       setWithdrawalAmount(0);
-      // Wait a bit for the balance to update or just refresh
-      setTimeout(() => window.location.reload(), 2000);
+      toast.success('Withdrawal request submitted!');
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      // Error handled by helper
+      toast.error(err.message);
     } finally {
       setRequesting(false);
     }
   };
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><TrendingUp className="text-smash-purple" /> Dashboard</h2>
-      </div>
-
-      <div className="bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[40px] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-10">
-        <div className="flex-1 w-full text-center md:text-left">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-smash-purple mb-3">Available Balance</p>
-          <h3 className="text-5xl md:text-6xl font-black font-studio text-white uppercase italic leading-none mb-4">
-            MK {balance.toLocaleString()}
-          </h3>
-          <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest italic">
-             +12% vs last month
-          </p>
+    <div className="space-y-10 max-w-6xl">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div>
+           <h2 className="text-4xl font-studio font-black flex items-center gap-3 uppercase italic"><TrendingUp className="text-smash-purple" /> Artist <span className="text-smash-gray">Growth</span></h2>
+           <p className="text-smash-gray text-xs font-black uppercase tracking-widest mt-1">Real-time performance metrics</p>
         </div>
-
-        <div className="w-full md:w-[360px] bg-white/5 border border-white/10 rounded-[40px] p-8 space-y-6 text-left">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-smash-gray flex items-center gap-2">
-             <DollarSign size={14} className="text-smash-green" /> Withdraw Funds
-          </h4>
-          <div className="relative">
-             <input type="number" value={withdrawalAmount || ''} onChange={(e) => setWithdrawalAmount(Number(e.target.value))} placeholder="Amount..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-studio font-black text-2xl italic outline-none focus:border-smash-purple transition-all"/>
-             <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-smash-gray">MWK</span>
-          </div>
-          <button onClick={limits.canWithdraw ? handleWithdraw : () => { toast.error('Withdrawals require Standard plan.'); setActiveTab('subscription'); }} disabled={!limits.canWithdraw || requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance} className={`w-full py-4 bg-smash-purple text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-full hover:bg-white hover:text-smash-purple transition-all shadow-xl shadow-smash-purple/30 active:scale-95 disabled:opacity-50 ${!limits.canWithdraw ? 'cursor-not-allowed opacity-50' : ''}`}>
-            {!limits.canWithdraw ? 'Requires Upgrade' : requesting ? 'Processing...' : 'Request Payout'}
-          </button>
+        <div className="flex gap-3">
+           <button onClick={() => setActiveTab('music')} className="px-6 py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all">New Upload</button>
+           <button onClick={() => setActiveTab('promotion')} className="px-6 py-3 bg-smash-purple text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-smash-purple transition-all">Promote Track</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden p-8 text-left">
-           <h3 className="font-studio font-black uppercase italic tracking-tight flex items-center gap-2 mb-6 text-xl">
-               Recent Transactions
-           </h3>
-           <div className="space-y-4">
-             {history.length > 0 ? history.map((t: any) => (
-                <div key={t.id} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                   <div>
-                     <p className="font-bold text-sm uppercase tracking-widest">{t.type}</p>
-                     <p className="text-[10px] text-smash-gray">{new Date(t.created_at).toLocaleDateString()}</p>
-                   </div>
-                   <p className={`font-studio font-black italic ${t.type === 'withdrawal' ? 'text-smash-orange' : 'text-smash-green'}`}>
-                     {t.type === 'withdrawal' ? '-' : '+'}MK {Number(t.net_amount || t.amount || 0).toLocaleString()}
-                   </p>
-                </div>
-             )) : (
-                <p className="text-smash-gray text-xs font-bold uppercase tracking-widest opacity-50">No recent transactions.</p>
-             )}
-           </div>
-        </div>
+      {/* KPI Section */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+         <MetricCard 
+            label="Total Streams" 
+            value={stats.streams.toLocaleString()} 
+            icon={<Play size={18} />} 
+            trend={12} 
+            trendLabel="vs last month" 
+         />
+         <MetricCard 
+            label="Earnings" 
+            value={`MK ${stats.revenue.toLocaleString()}`} 
+            icon={<DollarSign size={18} />} 
+            trend={8} 
+            trendLabel="vs last month" 
+         />
+         <MetricCard 
+            label="Followers" 
+            value={stats.followers.toLocaleString()} 
+            icon={<Users size={18} />} 
+            trend={5} 
+         />
+         <MetricCard 
+            label="Live Tracks" 
+            value={stats.songs} 
+            icon={<Music2 size={18} />} 
+         />
+      </div>
 
-        <div className="relative bg-white/5 border border-white/5 rounded-[40px] overflow-hidden p-8 text-left flex flex-col items-center justify-center min-h-[300px]">
-           {!limits.hasFullAnalytics && (
-             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-smash-black/80 backdrop-blur-sm px-6 text-center">
-               <AppLockIcon size={32} className="text-smash-purple mb-3" />
-               <p className="font-black text-white uppercase tracking-widest text-sm mb-2">Advanced Analytics</p>
-               <p className="text-smash-gray text-xs font-bold mb-4">Earnings details & demographic data locked to Standard tier.</p>
-               <button onClick={() => setActiveTab('subscription')} className="px-5 py-2 bg-smash-purple text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-smash-purple transition-all">Upgrade →</button>
-             </div>
-           )}
-           <BarChart3 size={40} className="text-smash-gray/20 mb-4" />
-           <p className="font-black text-white/50 uppercase tracking-widest text-sm mb-2">Analytics Data</p>
-        </div>
-        
-        <MotoAnalytics limits={limits} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+         {/* Wallet Control */}
+         <div className="lg:col-span-2 space-y-8">
+            <div className="bg-[#111] border border-white/5 rounded-[48px] p-10 md:p-14 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-smash-purple/20 blur-[120px] rounded-full -mr-32 -mt-32" />
+               <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                  <div className="flex-1 text-center md:text-left">
+                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-smash-purple mb-4">Withdrawable Profit</p>
+                     <h3 className="text-6xl md:text-8xl font-black font-studio italic uppercase text-white leading-none">
+                        MK {balance.toLocaleString()}
+                     </h3>
+                     <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
+                        <div className="px-4 py-2 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-[9px] font-black uppercase tracking-widest">Payout Valid</div>
+                        <div className="px-4 py-2 bg-white/5 text-smash-gray border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest">3% Network Fee</div>
+                     </div>
+                  </div>
+                  <div className="w-full md:w-[320px] space-y-6">
+                     <div className="relative">
+                        <input 
+                           type="number" 
+                           value={withdrawalAmount || ''} 
+                           onChange={e => setWithdrawalAmount(Number(e.target.value))}
+                           placeholder="0.00"
+                           className="w-full bg-white/5 border border-white/10 rounded-3xl px-8 py-5 font-studio font-black text-3xl italic outline-none focus:border-smash-purple focus:bg-white/10 transition-all text-white placeholder:text-white/10"
+                        />
+                        <div className="absolute right-8 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-smash-gray">MK</div>
+                     </div>
+                     <button 
+                        onClick={handleWithdraw} 
+                        disabled={!limits.canWithdraw || requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance}
+                        className="w-full py-5 bg-smash-purple text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-smash-purple/30 hover:bg-white hover:text-black transition-all active:scale-95 disabled:opacity-30"
+                     >
+                        {requesting ? 'PROCESSING...' : 'REQUEST WITHDRAWAL'}
+                     </button>
+                  </div>
+               </div>
+            </div>
+
+            <div className="bg-[#111] border border-white/5 rounded-[48px] p-10">
+               <div className="flex justify-between items-center mb-10">
+                  <h3 className="text-2xl font-black font-studio italic uppercase tracking-tighter">Recent <span className="text-smash-purple">Activity</span></h3>
+                  <button className="text-[10px] font-black uppercase tracking-widest text-smash-gray hover:text-white transition-colors">See Ledger &rarr;</button>
+               </div>
+               <div className="space-y-4">
+                  {history.length > 0 ? history.map((t, i) => (
+                     <div key={t.id} className="flex items-center gap-6 p-5 bg-white/5 rounded-3xl group hover:bg-white/10 transition-all cursor-default">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${t.type === 'withdrawal' ? 'bg-smash-orange/10 text-smash-orange' : 'bg-smash-green/10 text-smash-green'}`}>
+                           {t.type === 'withdrawal' ? <Wallet size={20} /> : <DollarSign size={20} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <p className="font-bold text-sm uppercase tracking-tight truncate">{t.type} {t.status === 'pending' && <span className="text-[9px] text-yellow-400 opacity-60">(Pending)</span>}</p>
+                           <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{new Date(t.created_at).toLocaleString('en-MW', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className={`text-xl font-studio font-black italic ${t.type === 'withdrawal' ? 'text-smash-orange' : 'text-smash-green'}`}>
+                              {t.type === 'withdrawal' ? '-' : '+'}MK {Number(t.net_amount || t.amount || 0).toLocaleString()}
+                           </p>
+                        </div>
+                     </div>
+                  )) : (
+                     <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest italic opacity-20 border-2 border-dashed border-white/5 rounded-[32px]">No activity recorded</div>
+                  )}
+               </div>
+            </div>
+         </div>
+
+         {/* Analytics Sidebar */}
+         <div className="space-y-8">
+            <MotoAnalytics limits={limits} />
+            
+            <div className="bg-gradient-to-br from-smash-orange/20 to-transparent border border-smash-orange/20 rounded-[48px] p-10 space-y-6">
+               <Sparkles className="text-smash-orange" size={32} />
+               <h3 className="text-2xl font-black font-studio italic uppercase tracking-tighter">Premium Access</h3>
+               <p className="text-sm font-bold text-smash-gray leading-relaxed italic">"Verified artists receive 15% higher discoverability in MotoFeed algorythms. Complete your profile to qualify."</p>
+               <button onClick={() => setActiveTab('subscription')} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-smash-orange hover:text-white transition-all shadow-xl">Upgrade to Elite &rarr;</button>
+            </div>
+         </div>
       </div>
     </div>
   );
 };
 
-const MetricCard = ({ label, value, icon }: any) => (
-  <div className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-     <div className="flex items-center gap-2 text-smash-gray text-xs font-bold uppercase tracking-widest mb-3">
-        {icon} {label}
+const MetricCard = ({ label, value, icon, trend, trendLabel }: any) => (
+  <div className="bg-white/5 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-colors group">
+     <div className="flex items-center justify-between mb-4">
+        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-smash-gray group-hover:text-smash-purple transition-colors">
+           {icon}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${trend >= 0 ? 'text-smash-green' : 'text-smash-red'}`}>
+            {trend >= 0 ? '+' : ''}{trend}%
+          </div>
+        )}
      </div>
-     <div className="text-2xl md:text-3xl font-display font-black tracking-tight">{value}</div>
+     <div className="space-y-1">
+        <div className="text-3xl font-studio font-black italic tracking-tighter">{value}</div>
+        <div className="text-[10px] text-smash-gray font-black uppercase tracking-widest">
+           {label} {trendLabel && <span className="opacity-40 italic lowercase ml-1">({trendLabel})</span>}
+        </div>
+     </div>
   </div>
 );
 
@@ -883,6 +944,8 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 };
 
 const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
+  const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale'>('all');
+  
   const extractStoragePath = (url: string, bucket: string) => {
     if(!url) return null;
     try {
@@ -896,13 +959,11 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
     try {
       const audioPath = extractStoragePath(song.audio_url, 'songs');
       if (audioPath) await supabase.storage.from('songs').remove([audioPath]);
-      
       const coverPath = extractStoragePath(song.cover_url, 'covers');
       if (coverPath) await supabase.storage.from('covers').remove([coverPath]);
 
       const { error } = await supabase.from('songs').delete().eq('id', song.id);
       if(error) throw error;
-      
       toast.success('Track deleted.');
       onRefresh();
     } catch (err: any) {
@@ -910,74 +971,106 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
     }
   };
 
+  const filteredSongs = songs.filter((s: any) => {
+    if (filter === 'live') return s.approved;
+    if (filter === 'pending') return !s.approved;
+    if (filter === 'for_sale') return s.is_for_sale;
+    return true;
+  });
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><Music2 className="text-smash-purple" /> My Songs</h2>
-        <button onClick={() => setActiveTab('upload')} className="px-6 py-2.5 bg-smash-purple text-white font-black text-xs uppercase tracking-widest rounded-full flex items-center gap-2 hover:bg-white hover:text-smash-purple transition-all shadow-lg active:scale-95">
-          <Plus size={16} /> Upload Song
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+           <h2 className="text-4xl font-studio font-black flex items-center gap-3 uppercase italic"><Music2 className="text-smash-purple" /> Track <span className="text-smash-gray">Inventory</span></h2>
+           <p className="text-smash-gray text-[10px] font-black uppercase tracking-widest mt-1">Manage your distributed catalog</p>
+        </div>
+        <button onClick={() => setActiveTab('upload')} className="px-8 py-4 bg-smash-purple text-white font-black text-[10px] uppercase tracking-widest rounded-2xl flex items-center gap-3 hover:bg-white hover:text-black transition-all shadow-xl shadow-smash-purple/20">
+          <Plus size={18} /> New Release
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-         <MetricCard label="Total Songs" value={songs.length} icon={<Music2 size={16}/>} />
-         <MetricCard label="Approved" value={songs.filter((s:any)=>s.approved).length} icon={<CheckCircle2 size={16}/>} />
-         <MetricCard label="Total Plays" value={songs.reduce((a:number,s:any)=>a+(s.plays||0),0)} icon={<Play size={16}/>} />
-         <MetricCard label="Revenue" value={`MK 0`} icon={<DollarSign size={16}/>} />
-      </div>
-
-      <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex gap-2">
-          <button className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-smash-purple/10 text-smash-purple border border-smash-purple">All</button>
-          <button className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-transparent text-smash-gray border border-white/10 hover:border-white/30 transition-colors">Approved</button>
-          <button className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-transparent text-smash-gray border border-white/10 hover:border-white/30 transition-colors">Pending</button>
-          <button className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-transparent text-smash-gray border border-white/10 hover:border-white/30 transition-colors">For Sale</button>
+      <div className="bg-[#111111] border border-white/5 rounded-[48px] overflow-hidden">
+        <div className="p-8 border-b border-white/5 flex gap-4 overflow-x-auto no-scrollbar">
+           {[
+             { id: 'all', label: 'All Catalog' },
+             { id: 'live', label: 'Live Tracks' },
+             { id: 'pending', label: 'Reviewing' },
+             { id: 'for_sale', label: 'Premium' }
+           ].map(t => (
+             <button 
+               key={t.id}
+               onClick={() => setFilter(t.id as any)}
+               className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                 filter === t.id ? 'bg-smash-purple text-white' : 'bg-white/5 text-smash-gray hover:text-white'
+               }`}
+             >
+               {t.label}
+             </button>
+           ))}
         </div>
-        <div className="w-full overflow-x-auto">
-          {songs.length > 0 ? (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-white/5 text-smash-gray text-xs uppercase tracking-widest font-bold">
-                <tr>
-                  <th className="p-4 rounded-tl-xl font-medium">#</th>
-                  <th className="p-4 font-medium">Song</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Price</th>
-                  <th className="p-4 font-medium">Plays</th>
-                  <th className="p-4 rounded-tr-xl font-medium text-right">Actions</th>
+        <div className="overflow-x-auto">
+          {filteredSongs.length > 0 ? (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-white/5 text-smash-gray text-[10px] font-black uppercase tracking-[0.2em]">
+                  <th className="p-8">Track Asset</th>
+                  <th className="p-8">Status</th>
+                  <th className="p-8">Engagement</th>
+                  <th className="p-8">Monetization</th>
+                  <th className="p-8 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {songs.map((song:any, i:number) => (
-                  <tr key={song.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="p-4 text-smash-gray">{i+1}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img src={song.cover_url || "https://placehold.co/44x44/18162C/9B5DE5"} className="w-10 h-10 rounded-lg object-cover" />
+              <tbody className="divide-y divide-white/5">
+                {filteredSongs.map((song: any) => (
+                  <tr key={song.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-8">
+                      <div className="flex items-center gap-5">
+                        <img src={song.cover_url || "https://placehold.co/80"} className="w-16 h-16 rounded-2xl object-cover shadow-xl group-hover:scale-105 transition-transform" />
                         <div>
-                          <p className="font-bold">{song.title}</p>
-                          <p className="text-xs text-smash-gray">{song.genre || '—'}</p>
+                          <p className="text-lg font-black group-hover:text-smash-purple transition-colors">{song.title}</p>
+                          <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest">{song.genre || 'Afro'} • {new Date(song.created_at).getFullYear()}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${song.approved ? 'bg-smash-green/20 text-smash-green' : 'bg-smash-purple/20 text-smash-purple'}`}>
-                        {song.approved ? 'Live' : 'Pending'}
-                      </span>
+                    <td className="p-8">
+                       <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${song.approved ? 'bg-smash-green' : 'bg-yellow-400'} animate-pulse`} />
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${song.approved ? 'text-smash-green' : 'text-yellow-400'}`}>
+                             {song.approved ? 'Distributed' : 'Reviewing'}
+                          </span>
+                       </div>
                     </td>
-                    <td className="p-4 text-smash-gray font-medium">{song.is_for_sale && song.price ? `MK ${song.price.toLocaleString()}` : 'Free'}</td>
-                    <td className="p-4 font-bold">{song.plays || 0}</td>
-                    <td className="p-4 text-right flex items-center justify-end gap-2">
-                       <button className="p-2 bg-white/5 rounded-lg text-smash-gray hover:text-white transition-colors" title="Edit"><Edit3 size={16} /></button>
-                       <button onClick={()=>handleDelete(song)} className="p-2 bg-white/5 rounded-lg text-smash-red/60 hover:text-smash-red hover:bg-smash-red/10 transition-colors" title="Delete"><Trash2 size={16} /></button>
+                    <td className="p-8">
+                        <div className="flex items-center gap-4">
+                           <div>
+                              <p className="text-xl font-studio font-black italic">{(song.plays || 0).toLocaleString()}</p>
+                              <p className="text-[8px] font-black uppercase text-smash-gray tracking-widest">Streams</p>
+                           </div>
+                           <div>
+                              <p className="text-xl font-studio font-black italic">{(song.likes || 0).toLocaleString()}</p>
+                              <p className="text-[8px] font-black uppercase text-smash-gray tracking-widest">Likes</p>
+                           </div>
+                        </div>
+                    </td>
+                    <td className="p-8">
+                       <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${song.is_for_sale ? 'bg-smash-green/10 text-smash-green border border-smash-green/20' : 'bg-white/5 text-smash-gray'}`}>
+                         {song.is_for_sale ? `MK ${song.price?.toLocaleString()}` : 'Free Feed'}
+                       </span>
+                    </td>
+                    <td className="p-8 text-right space-x-2">
+                       <button className="p-3 bg-white/5 text-smash-gray hover:text-white rounded-2xl transition-all" onClick={() => toast('Edit feature coming soon')}><Edit3 size={18} /></button>
+                       <button onClick={() => handleDelete(song)} className="p-3 bg-smash-red/10 text-smash-red hover:bg-smash-red hover:text-white rounded-2xl transition-all"><Trash2 size={18} /></button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <div className="p-12 text-center">
-              <Music2 className="mx-auto mb-3 text-smash-gray/50" size={32} />
-              <p className="text-sm font-medium text-smash-gray">No songs uploaded yet.</p>
+            <div className="p-32 text-center space-y-6">
+              <Music2 className="mx-auto text-smash-gray/10" size={80} />
+              <p className="text-xl font-bold text-smash-gray italic">No assets found in this segment.</p>
+              <button onClick={() => setFilter('all')} className="text-smash-purple font-black uppercase tracking-widest text-[10px]">Show all tracks &rarr;</button>
             </div>
           )}
         </div>
@@ -1039,9 +1132,38 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [songFile, setSongFile] = useState<File|null>(null);
   const [albumFiles, setAlbumFiles] = useState<File[]>([]);
   const [coverFile, setCoverFile] = useState<File|null>(null);
-  const { userProfile } = useAuth();
+  const [isDragging, setIsDragging] = useState(false);
   
+  const [title, setTitle] = useState('');
+  const [lyrics, setLyrics] = useState('');
+  
+  const { userProfile } = useAuth();
   const limits = getTierLimits(userProfile);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      if (mode === 'album') {
+        setAlbumFiles(prev => [...prev, ...files.filter(f => f.type.startsWith('audio/'))]);
+      } else {
+        const file = files[0];
+        if (file.type.startsWith('audio/') || (mode === 'snippet' && file.type.startsWith('video/'))) {
+          setSongFile(file);
+        } else {
+          toast.error('Invalid file type.');
+        }
+      }
+    }
+  };
   const isPending = role === 'pending';
   const isFree = getArtistTier(userProfile) === 'free';
   
@@ -1109,6 +1231,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       setMode('single');
       setSongFile(null);
       setCoverFile(null);
+      setTitle('');
+      setLyrics('');
       onComplete();
     } catch(err:any) {
       toast.error("Error: " + err.message);
@@ -1294,8 +1418,18 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
            <form onSubmit={handleUploadSingle} className="space-y-6 grid md:grid-cols-5 gap-10 text-left">
               <div className="md:col-span-3 space-y-6">
                  <div>
-                    <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">{mode === 'snippet' ? 'Snippet Title *' : 'Track Title *'}</label>
-                    <input name="title" required placeholder="Enter track name" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-smash-purple transition-all placeholder:text-white/20" />
+                    <div className="flex justify-between items-center mb-3">
+                       <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block">{mode === 'snippet' ? 'Snippet Title *' : 'Track Title *'}</label>
+                       <span className={`text-[9px] font-black uppercase tracking-widest ${title.length > 50 ? 'text-smash-red' : 'text-smash-gray'}`}>{title.length}/50</span>
+                    </div>
+                    <input 
+                       name="title" 
+                       required 
+                       value={title}
+                       onChange={e => setTitle(e.target.value.slice(0, 50))}
+                       placeholder="Enter track name" 
+                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-smash-purple transition-all placeholder:text-white/20" 
+                    />
                  </div>
                  {mode === 'single' && (
                  <div className="grid grid-cols-2 gap-6">
@@ -1343,13 +1477,46 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                  </div>
                  )}
                  <div>
-                    <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">{mode === 'snippet' ? 'Post Caption' : 'Lyrics'}</label>
-                    <textarea name="lyrics" rows={3} placeholder={mode==='snippet'?"Say something about this snippet...":"Paste your lyrics here..."} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-smash-purple transition-all resize-none placeholder:text-white/20" />
+                    <div className="flex justify-between items-center mb-3">
+                       <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block">{mode === 'snippet' ? 'Post Caption' : 'Lyrics'}</label>
+                       <span className={`text-[9px] font-black uppercase tracking-widest ${lyrics.length > 2000 ? 'text-smash-red' : 'text-smash-gray'}`}>{lyrics.length}/2000</span>
+                    </div>
+                    <textarea 
+                       name="lyrics" 
+                       rows={3} 
+                       value={lyrics}
+                       onChange={e => setLyrics(e.target.value)}
+                       placeholder={mode==='snippet'?"Say something about this snippet...":"Paste your lyrics here..."} 
+                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-smash-purple transition-all resize-none placeholder:text-white/20" 
+                    />
                  </div>
                  <div>
                     <label className="text-[10px] text-smash-purple font-black uppercase tracking-[0.2em] block mb-3">{mode === 'snippet' ? 'Select Media *' : 'Audio (MP3 Only) *'}</label>
-                    <div className="relative">
-                      <input type="file" required accept={mode === 'snippet' ? "audio/*,video/*" : "audio/*"} onChange={e=>setSongFile(e.target.files?.[0]||null)} className="w-full text-xs font-black text-smash-gray file:mr-6 file:py-3 file:px-8 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-smash-purple file:text-white hover:file:bg-white hover:file:text-smash-purple transition-all cursor-pointer bg-white/5 border border-white/10 rounded-2xl p-2" />
+                    <div 
+                       onDragOver={handleDragOver}
+                       onDragLeave={handleDragLeave}
+                       onDrop={handleDrop}
+                       onClick={() => document.getElementById('asset-upload')?.click()}
+                       className={`relative group w-full h-40 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer bg-white/5 ${
+                         isDragging ? 'border-smash-purple bg-smash-purple/5' : 'border-white/10 hover:border-smash-purple/50'
+                       }`}
+                    >
+                      <input id="asset-upload" type="file" required accept={mode === 'snippet' ? "audio/*,video/*" : "audio/*"} onChange={e=>setSongFile(e.target.files?.[0]||null)} className="hidden" />
+                      {songFile ? (
+                        <div className="text-center animate-in zoom-in duration-300">
+                           <CheckCircle2 size={32} className="text-smash-green mx-auto mb-2" />
+                           <p className="text-xs font-bold text-white px-6 truncate max-w-[300px]">{songFile.name}</p>
+                           <p className="text-[10px] text-smash-gray uppercase font-black tracking-widest mt-1">{(songFile.size / (1024*1024)).toFixed(2)} MB</p>
+                        </div>
+                      ) : (
+                        <>
+                           <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-smash-gray group-hover:text-smash-purple transition-colors mb-3">
+                              <Upload size={24} />
+                           </div>
+                           <p className="text-xs font-bold text-white">Drag & Drop or Click</p>
+                           <p className="text-[10px] text-smash-gray font-black uppercase tracking-[0.2em] mt-1">HQ Distribution Files Only</p>
+                        </>
+                      )}
                     </div>
                  </div>
               </div>
