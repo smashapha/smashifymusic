@@ -80,68 +80,121 @@ const AuthArtist: React.FC = () => {
   };
 
   const submitApplication = async () => {
-    if (password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    if (!idPhoto) { toast.error('Verification ID is required'); return; }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (!idPhoto) {
+      toast.error('Please upload your ID photo');
+      return;
+    }
 
     setLoadingState(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: { data: { full_name: fullName, stage_name: stageName, role: 'pending', phone } }
-      });
-      if (error) throw error;
-      
-      if (data.user) {
-          let idUrl = null;
-          if (idPhoto) {
-            const fileExt = idPhoto.name.split('.').pop();
-            const fileName = `${data.user.id}/id-document.${fileExt}`;
-            const { error: uploadError } = await supabase.storage
-              .from('artist-verifications')
-              .upload(fileName, idPhoto, { upsert: true });
-            
-            if (!uploadError) {
-              const { data: urlData } = supabase.storage
-                .from('artist-verifications')
-                .getPublicUrl(fileName);
-              idUrl = urlData.publicUrl;
-            }
+      // STEP 1 — Create auth account
+      const { data, error: signUpErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            stage_name: stageName,
+            role: 'pending',
+            phone,
           }
+        }
+      });
+      if (signUpErr) throw signUpErr;
+      if (!data.user) throw new Error('Account creation failed. Please try again.');
 
-          const { error: appError } = await supabase.from('artist_applications').insert({
-            profile_id: data.user.id,
-            full_name: fullName,
-            stage_name: stageName,
-            email: email,
-            genre: genre,
-            city: city,
-            phone: phone,
-            id_document_url: idUrl,
-            status: 'pending'
+      const userId = data.user.id;
+
+      // STEP 2 — Upload ID photo
+      // We use the userId we just got — bucket path: {userId}/id-document.{ext}
+      let idUrl: string | null = null;
+      try {
+        const fileExt = idPhoto.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `${userId}/id-document.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('artist-verifications')
+          .upload(fileName, idPhoto, {
+            upsert: true,
+            contentType: idPhoto.type,
           });
-          if (appError) throw appError;
 
-          // Insert a profile row immediately with approved: false
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            full_name: fullName,
-            stage_name: stageName,
-            email: email,
-            genre: genre,
-            city: city,
-            phone: phone,
-            approved: false,
-            user_type: 'artist',
-            artist_tier: 'Free'
-          });
-          if (profileError) throw profileError;
+        if (uploadError) throw uploadError;
 
-          toast.success('Application submitted!');
-          setArtistStep(4);
+        // Use getPublicUrl only if bucket is public
+        // Since bucket is PRIVATE use signed URL instead
+        const { data: signedData, error: signedErr } = await supabase.storage
+          .from('artist-verifications')
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
+
+        if (!signedErr && signedData) {
+          idUrl = signedData.signedUrl;
+        }
+
+      } catch (uploadErr: any) {
+        // Upload failed — save application without photo
+        // Admin can request re-upload via admin notes
+        console.error('ID upload error:', uploadErr.message);
+        toast('ID photo could not be uploaded. Your application will be saved without it. Please contact support to re-upload.', 
+          { icon: '⚠️', duration: 6000 });
       }
+
+      // STEP 3 — Insert into artist_applications
+      // ALL fields from the form go here
+      const { error: appError } = await supabase
+        .from('artist_applications')
+        .insert({
+          profile_id: userId,       // ← from auth signup
+          full_name: fullName,      // ← step 1 form
+          stage_name: stageName,    // ← step 1 form
+          email: email,             // ← step 1 form
+          genre: genre,             // ← step 2 form
+          city: city,               // ← step 2 form
+          phone: phone,             // ← step 2 form
+          id_document_url: idUrl,   // ← from upload (nullable)
+          status: 'pending',
+        });
+
+      if (appError) {
+        console.error('artist_applications insert failed:', appError);
+        // Specific message for null violation
+        if (appError.code === '23502') {
+          throw new Error('A required field is missing. Please go back and fill all fields.');
+        }
+        throw new Error(`Application could not be saved: ${appError.message}`);
+      }
+
+      // STEP 4 — Insert into profiles
+      // Only runs if artist_applications insert succeeded
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: fullName,
+          stage_name: stageName,
+          email: email,
+          genre: genre,
+          city: city,
+          phone: phone,
+          approved: false,
+          user_type: 'artist',
+          artist_tier: 'Free',
+        });
+
+      if (profileError) {
+        // Non-fatal — fetchProfile() will recreate on next login
+        console.error('profiles insert failed:', profileError.message);
+      }
+
+      toast.success('Application submitted! We will review within 48 hours.');
+      setArtistStep(4);
+
     } catch (err: any) {
       setError(err.message);
       toast.error(err.message);
