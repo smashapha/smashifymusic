@@ -86,3 +86,31 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
+
+@keyframes custom-breathe {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.14; }
+}
+
+.slider-custom-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-smash-purple);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+@keyframes live-waveform {
+  0% { transform: scaleY(0.2); }
+  50% { transform: scaleY(1); }
+  100% { transform: scaleY(0.2); }
+}
+
+.waveform-bar {
+  animation: live-waveform 1.2s ease-in-out infinite;
+}
+.waveform-bar:nth-child(2) { animation-delay: 0.2s; }
+.waveform-bar:nth-child(3) { animation-delay: 0.4s; }
+

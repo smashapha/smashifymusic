@@ -165,11 +165,11 @@ const ArtistProfile: React.FC = () => {
       </div>
    );
 
-   if (!artist) return (
+    if (!artist) return (
       <div className="min-h-[60vh] flex flex-col justify-center items-center p-12 text-center">
-         <Users size={80} className="text-white/10 mb-6" />
-         <h1 className="text-5xl font-black font-studio uppercase italic mb-4">Artist Vault Empty</h1>
-         <button onClick={() => navigate(-1)} className="px-8 py-3 bg-smash-purple text-white rounded-full font-black uppercase tracking-widest text-[10px]">Back to Discover</button>
+         <Users size={64} className="text-text-muted/30 mb-6" />
+         <h1 className="text-[32px] font-bold font-display uppercase tracking-tight text-text-primary mb-4">Artist Vault Empty</h1>
+         <button onClick={() => navigate(-1)} className="h-[44px] px-6 bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-smash-purple/90 transition-colors">Back to Discover</button>
       </div>
    );
 
@@ -180,8 +180,8 @@ const ArtistProfile: React.FC = () => {
    return (
       <div className="space-y-12 pb-32">
          {/* Premium Cinematic Hero */}
-         <div className="relative h-[650px] rounded-[64px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] mt-4 group">
-            <div className="absolute inset-0 bg-gradient-to-t from-smash-black via-smash-black/40 to-transparent z-10" />
+         <div className="relative h-[650px] overflow-hidden shadow-lg mt-4 group md:rounded-[20px]">
+            <div className="absolute inset-0 bg-gradient-to-t from-bg-page via-bg-page/40 to-transparent z-10" />
             <motion.div 
                initial={{ scale: 1.15, opacity: 0 }}
                animate={{ scale: 1, opacity: 0.8 }}
@@ -193,26 +193,26 @@ const ArtistProfile: React.FC = () => {
                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" 
                  alt=""
                />
-               <div className="absolute inset-0 bg-[#0A0A0A]/40 backdrop-blur-[2px]" />
+               <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
             </motion.div>
             
             {/* Overlay Content */}
-            <div className="relative z-20 h-full flex flex-col justify-end p-8 md:p-20">
-               <div className="flex flex-col md:flex-row items-center md:items-end gap-12">
+            <div className="relative z-20 h-full flex flex-col justify-end p-6 md:p-12 lg:p-20">
+               <div className="flex flex-col md:flex-row items-center md:items-end gap-8 md:gap-12">
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
                     animate={{ opacity: 1, scale: 1, rotate: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="w-48 h-48 md:w-64 md:h-64 rounded-[40px] border-[12px] border-smash-black/40 backdrop-blur-3xl overflow-hidden shadow-2xl shrink-0 group/av"
+                    className="w-32 h-32 md:w-56 md:h-56 rounded-full border-4 md:border-[8px] border-bg-page/40 backdrop-blur-md overflow-hidden shadow-xl shrink-0 group/av"
                   >
-                     <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full scale-110 group-hover/av:scale-125 transition-all duration-700" />
+                     <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full scale-110 group-hover/av:scale-110 transition-all duration-700 object-cover" />
                   </motion.div>
                   
-                  <div className="flex-1 text-center md:text-left space-y-6">
-                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                  <div className="flex-1 text-center md:text-left space-y-4 md:space-y-5">
+                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3">
                         {artist.verified && (
-                           <span className="px-5 py-2 bg-smash-cyan text-black rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-smash-cyan/20">
-                             <CheckCircle2 size={16} /> Verified
+                           <span className="px-3 py-1 bg-smash-cyan/10 text-smash-cyan border border-smash-cyan/20 rounded-full text-[10px] font-display font-semibold uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+                             <CheckCircle2 size={12} /> Verified
                            </span>
                         )}
                         <StatPill icon={<Users size={12}/>} value={artist.followers_count || 0} label="Followers" />
@@ -221,31 +221,31 @@ const ArtistProfile: React.FC = () => {
                      </div>
                      
                      <motion.h1 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="text-6xl md:text-[140px] font-black font-studio italic uppercase tracking-tighter leading-[0.75] text-white drop-shadow-2xl"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-[48px] sm:text-[72px] md:text-[100px] lg:text-[130px] font-display font-extrabold uppercase tracking-tighter leading-[0.8] text-white drop-shadow-lg"
                      >
                         {artist.stage_name}
                      </motion.h1>
                      
-                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
                         <button 
                            onClick={handleFollow} 
                            disabled={followLoading}
-                           className={`h-16 px-10 rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center gap-3 active:scale-95 shadow-2xl ${
+                           className={`h-[44px] px-6 rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm ${
                               isFollowing 
-                                 ? 'bg-white/10 backdrop-blur-md border border-white/20 text-white' 
-                                 : 'bg-smash-purple text-white hover:bg-white hover:text-smash-purple'
+                                 ? 'bg-bg-elevated border border-border-default text-text-primary hover:bg-border-default' 
+                                 : 'bg-smash-purple text-white hover:bg-smash-purple/90'
                            }`}
                         >
-                           {isFollowing ? <Check size={18} /> : <UserPlus size={18} />}
+                           {isFollowing ? <Check size={16} /> : <UserPlus size={16} />}
                            {isFollowing ? 'Following' : 'Follow Artist'}
                         </button>
-                        <button onClick={() => setShowSupportModal(true)} className="h-16 px-8 bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-white hover:text-black transition-all flex items-center gap-2">
-                           <Heart size={18} /> Support
+                        <button onClick={() => setShowSupportModal(true)} className="h-[44px] px-6 bg-bg-elevated/80 backdrop-blur-md border border-border-default text-text-primary rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-bg-elevated hover:text-smash-orange transition-all flex items-center gap-2">
+                           <Heart size={16} className="text-smash-orange" /> Support
                         </button>
-                        <button onClick={handleShare} className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-3xl flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                           <Share size={20} />
+                        <button onClick={handleShare} className="w-[44px] h-[44px] bg-bg-elevated/80 backdrop-blur-md border border-border-default text-text-primary rounded-[10px] flex items-center justify-center hover:bg-bg-elevated transition-colors">
+                           <Share size={18} />
                         </button>
                      </div>
                   </div>
@@ -254,45 +254,45 @@ const ArtistProfile: React.FC = () => {
          </div>
 
          {/* Navigation Tabs */}
-         <div className="flex justify-center md:justify-start gap-4 border-b border-white/5 px-8">
-            <TabButton active={activeTab === 'tracks'} onClick={() => setActiveTab('tracks')} label="Music" icon={<Music2 size={18} />} />
-            <TabButton active={activeTab === 'albums'} onClick={() => setActiveTab('albums')} label="Discography" icon={<Disc size={18} />} />
-            <TabButton active={activeTab === 'community'} onClick={() => setActiveTab('community')} label="Community" icon={<Users size={18} />} />
-            <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} label="Creative Bio" icon={<Info size={18} />} />
+         <div className="flex justify-center md:justify-start gap-2 border-b border-border-default pb-4 overflow-x-auto no-scrollbar md:px-0">
+            <TabButton active={activeTab === 'tracks'} onClick={() => setActiveTab('tracks')} label="Music" icon={<Music2 size={16} />} />
+            <TabButton active={activeTab === 'albums'} onClick={() => setActiveTab('albums')} label="Discography" icon={<Disc size={16} />} />
+            <TabButton active={activeTab === 'community'} onClick={() => setActiveTab('community')} label="Community" icon={<Users size={16} />} />
+            <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} label="Creative Bio" icon={<Info size={16} />} />
          </div>
 
-         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 px-4 md:px-8">
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
                <AnimatePresence mode="wait">
                   {activeTab === 'tracks' && (
-                     <motion.div key="tracks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-16">
+                     <motion.div key="tracks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
                         {/* Featured popular tracks with Rank numbers */}
                         {popularTracks.length > 0 && (
                            <section>
-                              <div className="flex items-center gap-4 mb-10">
-                                 <div className="w-1.5 h-10 bg-smash-purple rounded-full" />
+                              <div className="flex items-center gap-3 mb-6">
+                                 <div className="w-[4px] h-[24px] bg-smash-purple rounded-full" />
                                  <div>
-                                    <h2 className="text-4xl font-black font-studio italic uppercase tracking-tighter">Popular <span className="text-smash-gray">Demand</span></h2>
-                                    <p className="text-smash-gray text-[10px] font-black uppercase tracking-widest">Most played across platform</p>
+                                    <h2 className="text-[22px] font-display font-bold uppercase tracking-tight text-text-primary">Popular Demand</h2>
+                                    <p className="text-text-muted text-[11px] font-display font-medium uppercase tracking-widest">Most played across platform</p>
                                  </div>
                               </div>
-                              <div className="bg-white/5 border border-white/5 rounded-[48px] overflow-hidden p-6 md:p-10 space-y-2">
+                              <div className="bg-bg-surface border border-border-default rounded-[14px] overflow-hidden p-6 space-y-2 shadow-sm">
                                  {popularTracks.map((song, i) => (
-                                    <div key={song.id} className="group relative flex items-center gap-6 p-4 rounded-3xl hover:bg-white/5 transition-all text-left">
-                                       <span className="w-8 text-2xl font-studio font-black italic text-white/20 group-hover:text-smash-purple transition-colors">#{i+1}</span>
-                                       <div className="relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 shadow-xl">
+                                    <div key={song.id} className="group relative flex items-center gap-4 p-3 rounded-[10px] hover:bg-bg-elevated transition-all text-left">
+                                       <span className="w-6 text-[16px] font-display font-bold text-text-muted/40 group-hover:text-smash-purple transition-colors">{i+1}</span>
+                                       <div className="relative w-12 h-12 rounded-[10px] overflow-hidden shrink-0 shadow-sm">
                                           <img src={song.cover_url} className="w-full h-full object-cover" />
                                           <button onClick={() => playQueue(popularTracks, i)} className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                             <Play size={24} fill="currentColor" className="text-white" />
+                                             <Play size={20} className="text-white" fill="currentColor" />
                                           </button>
                                        </div>
-                                       <div className="flex-1 min-w-0">
-                                          <h4 className="text-xl font-bold truncate group-hover:text-smash-purple transition-colors">{song.title}</h4>
-                                          <p className="text-xs text-smash-gray font-black uppercase tracking-widest">{song.genre}</p>
+                                       <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                          <h4 className="text-[14px] font-display font-semibold text-text-primary truncate group-hover:text-smash-purple transition-colors">{song.title}</h4>
+                                          <p className="text-[12px] text-text-muted font-sans truncate">{song.genre}</p>
                                        </div>
-                                       <div className="hidden md:flex flex-col items-end gap-1">
-                                          <span className="text-xl font-studio font-black italic">{(song.plays || 0).toLocaleString()}</span>
-                                          <span className="text-[8px] font-black uppercase tracking-widest text-smash-gray">Plays</span>
+                                       <div className="hidden md:flex flex-col items-end justify-center">
+                                          <span className="text-[14px] font-sans font-semibold text-text-primary">{(song.plays || 0).toLocaleString()}</span>
+                                          <span className="text-[11px] font-sans text-text-muted">Plays</span>
                                        </div>
                                     </div>
                                  ))}
@@ -300,12 +300,12 @@ const ArtistProfile: React.FC = () => {
                            </section>
                         )}
 
-                        <section className="space-y-10">
+                        <section className="space-y-6">
                            <div className="flex items-center justify-between">
-                              <h2 className="text-4xl font-black font-studio italic uppercase tracking-tighter">Collection</h2>
-                              <button onClick={() => playQueue(songs, 0)} className="px-6 py-2 bg-white/5 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">Play All</button>
+                              <h2 className="text-[22px] font-display font-bold uppercase tracking-tight text-text-primary">Collection</h2>
+                              <button onClick={() => playQueue(songs, 0)} className="h-[36px] px-5 bg-bg-elevated border border-border-default text-text-primary rounded-[10px] text-[11px] font-display font-semibold uppercase tracking-widest hover:bg-border-default transition-all shadow-sm">Play All</button>
                            </div>
-                           <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-10">
+                           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                               {songs.map((song, i) => (
                                  <SongCard key={song.id} song={song} queue={songs} layout="grid" />
                               ))}
@@ -316,68 +316,68 @@ const ArtistProfile: React.FC = () => {
 
                   {activeTab === 'community' && (
                      <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
                            {/* Supporters Dashboard */}
-                           <section className="lg:col-span-2 p-10 bg-[#111] border border-white/5 rounded-[48px] space-y-10 relative overflow-hidden group">
-                              <div className="absolute top-0 right-0 w-64 h-64 bg-smash-orange/10 blur-[100px] rounded-full -mr-32 -mt-32" />
+                           <section className="xl:col-span-2 p-6 md:p-10 bg-bg-surface border border-border-default rounded-[14px] space-y-8 relative overflow-hidden group shadow-sm min-h-[300px]">
+                              <div className="absolute top-0 right-0 w-64 h-64 bg-smash-orange/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
                               
                               <div className="flex items-center justify-between relative z-10">
                                  <div className="flex items-center gap-3">
-                                    <Crown className="text-smash-orange" size={28} />
-                                    <h3 className="text-3xl font-black font-studio uppercase italic tracking-tighter text-white">Board of <span className="text-smash-orange">Patrons</span></h3>
+                                    <Crown className="text-smash-orange" size={24} />
+                                    <h3 className="text-[22px] font-display font-bold uppercase tracking-tight text-text-primary">Board of <span className="text-smash-orange">Patrons</span></h3>
                                  </div>
-                                 <Trophy className="text-white/20" size={32} />
+                                 <Trophy className="text-text-muted/30" size={24} />
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                                  {topSupporters.length > 0 ? topSupporters.map((s, i) => (
-                                    <div key={i} className="flex items-center gap-5 p-5 bg-white/5 rounded-3xl group/item hover:bg-white/10 transition-all border border-white/5">
+                                    <div key={i} className="flex items-center gap-4 p-4 bg-bg-elevated rounded-[10px] group/item hover:border-border-subtle transition-all border border-border-default">
                                        <div className="relative">
-                                          <div className="w-16 h-16 rounded-2xl border-2 border-white/10 overflow-hidden shadow-xl">
-                                             <Avatar src={s.avatar_url} name={s.name} className="w-full h-full scale-110" />
+                                          <div className="w-14 h-14 rounded-full border-2 border-border-default overflow-hidden shadow-sm">
+                                             <Avatar src={s.avatar_url} name={s.name} className="w-full h-full scale-110 object-cover" />
                                           </div>
                                           {i < 3 && (
-                                            <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-[#111] shadow-xl ${
-                                              i === 0 ? 'bg-smash-orange text-black' : i === 1 ? 'bg-white/60 text-black' : 'bg-orange-800 text-white'
+                                            <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-display font-bold border-2 border-bg-elevated shadow-sm ${
+                                              i === 0 ? 'bg-smash-orange text-white' : i === 1 ? 'bg-white/90 text-black' : 'bg-orange-800 text-white'
                                             }`}>
                                               {i + 1}
                                             </div>
                                           )}
                                        </div>
                                        <div className="flex-1 min-w-0">
-                                          <p className="font-bold text-lg truncate group-hover/item:text-smash-orange transition-colors">{s.name}</p>
-                                          <div className="flex items-center gap-2">
-                                             <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Contribution</p>
-                                             <p className="text-xs font-studio font-black italic text-white/80">MK {s.total.toLocaleString()}</p>
+                                          <p className="font-display font-semibold text-[14px] text-text-primary truncate group-hover/item:text-smash-orange transition-colors">{s.name}</p>
+                                          <div className="flex flex-col mt-0.5">
+                                             <p className="text-[10px] font-sans font-medium text-text-muted uppercase tracking-wider">Contribution</p>
+                                             <p className="text-[12px] font-sans font-semibold text-text-secondary">MK {s.total.toLocaleString()}</p>
                                           </div>
                                        </div>
-                                       <ArrowUpRight size={18} className="text-white/20 group-hover/item:text-white transition-colors" />
+                                       <ArrowUpRight size={16} className="text-text-muted group-hover/item:text-text-primary transition-colors" />
                                     </div>
                                  )) : (
-                                    <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[32px] space-y-4">
-                                       <Users className="mx-auto text-white/10" size={48} />
-                                       <p className="text-sm font-bold text-smash-gray uppercase tracking-widest">No top patrons recorded yet</p>
-                                       <button onClick={() => setShowSupportModal(true)} className="text-[10px] font-black uppercase tracking-widest text-smash-purple animate-pulse">Claim the first spot &rarr;</button>
+                                    <div className="col-span-full py-16 text-center border border-dashed border-border-default rounded-[10px] space-y-3">
+                                       <Users className="mx-auto text-text-muted/30" size={32} />
+                                       <p className="text-[13px] font-sans text-text-secondary">No top patrons recorded yet</p>
+                                       <button onClick={() => setShowSupportModal(true)} className="text-[11px] font-display font-semibold uppercase tracking-widest text-smash-purple hover:underline">Claim the first spot &rarr;</button>
                                     </div>
                                  )}
                               </div>
                            </section>
 
                            {/* Fan Interaction Card */}
-                           <section className="lg:col-span-1 space-y-8">
-                              <div className="p-10 bg-gradient-to-br from-smash-purple/20 to-transparent border border-smash-purple/20 rounded-[48px] space-y-8 text-center md:text-left">
-                                 <Zap className="text-smash-purple mx-auto md:mx-0" size={32} />
+                           <section className="xl:col-span-1 space-y-6">
+                              <div className="p-6 md:p-8 bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[14px] space-y-6 text-center md:text-left shadow-sm">
+                                 <Zap className="text-smash-purple mx-auto md:mx-0" size={28} />
                                  <div>
-                                    <h3 className="text-2xl font-black uppercase italic tracking-tight">Fan Power Index</h3>
-                                    <p className="text-sm font-bold text-smash-gray mt-1 italic">"The community is 78% active this week"</p>
+                                    <h3 className="text-[20px] font-display font-bold uppercase tracking-tight text-text-primary">Fan Power Index</h3>
+                                    <p className="text-[13px] font-sans text-text-secondary mt-1">"The community is 78% active this week"</p>
                                  </div>
                                  
-                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                       <span className="text-smash-gray">Hype Score</span>
-                                       <span className="text-white">9.2 / 10</span>
+                                 <div className="space-y-3">
+                                    <div className="flex justify-between items-center text-[10px] font-display font-semibold uppercase tracking-wider">
+                                       <span className="text-text-muted">Hype Score</span>
+                                       <span className="text-text-primary">9.2 / 10</span>
                                     </div>
-                                    <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                                    <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden border border-border-default">
                                        <motion.div 
                                           initial={{ width: 0 }}
                                           animate={{ width: '92%' }}
@@ -386,46 +386,46 @@ const ArtistProfile: React.FC = () => {
                                     </div>
                                  </div>
 
-                                 <button onClick={() => setShowSupportModal(true)} className="w-full py-5 bg-smash-purple text-white font-black uppercase rounded-2xl shadow-2xl shadow-smash-purple/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                    <Sparkles size={20} /> Empower Artist
+                                 <button onClick={() => setShowSupportModal(true)} className="w-full h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] shadow-sm hover:bg-smash-purple/90 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                    <Sparkles size={16} /> Empower Artist
                                  </button>
                               </div>
 
-                              <div className="p-10 bg-[#111] border border-white/5 rounded-[48px] space-y-8">
-                                 <h3 className="text-xl font-black uppercase italic tracking-tight flex items-center gap-3">
-                                    <MessageSquare size={18} className="text-smash-gray" /> Collab Space
+                              <div className="p-6 md:p-8 bg-bg-surface border border-border-default rounded-[14px] space-y-6 shadow-sm">
+                                 <h3 className="text-[18px] font-display font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
+                                    <MessageSquare size={16} className="text-text-muted" /> Collab Space
                                  </h3>
-                                 <p className="text-sm text-smash-gray font-bold leading-relaxed italic">
+                                 <p className="text-[13px] text-text-secondary font-sans leading-relaxed">
                                     "Open for collaboration with local producers and lyricists. Premium tier artists only."
                                  </p>
-                                 <button className="text-[10px] font-black uppercase tracking-widest text-smash-purple hover:text-white transition-colors">Send Request &rarr;</button>
+                                 <button className="text-[11px] font-display font-semibold uppercase tracking-widest text-smash-purple hover:text-text-primary transition-colors">Send Request &rarr;</button>
                               </div>
                            </section>
                         </div>
 
                         {/* Recent Fan Activity Feed */}
-                        <section className="space-y-10">
-                           <div className="flex items-center gap-4">
-                              <div className="w-1.5 h-8 bg-smash-orange rounded-full" />
-                              <h2 className="text-3xl font-black font-studio italic uppercase tracking-tighter">Live <span className="text-smash-gray">Activity</span></h2>
+                        <section className="space-y-6">
+                           <div className="flex items-center gap-3">
+                              <div className="w-[4px] h-[20px] bg-smash-orange rounded-full" />
+                              <h2 className="text-[20px] font-display font-bold uppercase tracking-tight text-text-primary">Live <span className="text-smash-gray">Activity</span></h2>
                            </div>
                            
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                               {[
                                  { user: 'Chifundo M.', action: 'loved "The Horizon"', time: '2m ago', type: 'like' },
                                  { user: 'Blessings T.', action: 'supported with MK 5,000', time: '15m ago', type: 'support' },
                                  { user: 'Tiwonge K.', action: 'bought "Summer Vibes"', time: '1h ago', type: 'sale' },
                                  { user: 'Andrew P.', action: 'joined the fan club', time: '4h ago', type: 'follow' },
                               ].map((item, i) => (
-                                 <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-3xl flex items-start gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                       item.type === 'support' ? 'bg-smash-green/10 text-smash-green' : 'bg-white/5 text-smash-gray'
+                                 <div key={i} className="p-4 bg-bg-surface border border-border-default rounded-[10px] flex items-center gap-3 shadow-sm">
+                                    <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 border ${
+                                       item.type === 'support' ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 'bg-bg-elevated text-text-secondary border-border-default'
                                     }`}>
-                                       {item.type === 'support' ? <Trophy size={18} /> : <TrendingUp size={18} />}
+                                       {item.type === 'support' ? <Trophy size={14} /> : <TrendingUp size={14} />}
                                     </div>
-                                    <div>
-                                       <p className="text-xs font-bold text-white"><span className="text-smash-purple">{item.user}</span> {item.action}</p>
-                                       <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray mt-1 opacity-50">{item.time}</p>
+                                    <div className="flex-1 min-w-0">
+                                       <p className="text-[12px] font-sans text-text-primary truncate"><span className="font-semibold text-smash-purple">{item.user}</span> {item.action}</p>
+                                       <p className="text-[10px] font-sans text-text-muted mt-0.5">{item.time}</p>
                                     </div>
                                  </div>
                               ))}
@@ -435,20 +435,20 @@ const ArtistProfile: React.FC = () => {
                   )}
 
                   {activeTab === 'albums' && (
-                     <motion.div key="albums" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                     <motion.div key="albums" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {albums.map((al) => (
-                           <div key={al.id} className="group cursor-pointer" onClick={() => navigate(`/discover?album=${al.id}`)}>
-                              <div className="aspect-square rounded-[40px] overflow-hidden mb-6 relative shadow-2xl shadow-black/50 overflow-hidden">
-                                 <img src={al.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-                                 <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-60 transition-opacity" />
+                           <div key={al.id} className="group cursor-pointer flex flex-col" onClick={() => navigate(`/discover?album=${al.id}`)}>
+                              <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
+                                 <img src={al.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-110 group-hover:scale-100">
-                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-black shadow-2xl">
-                                       <Play size={24} fill="currentColor" />
+                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black shadow-lg">
+                                       <Play size={20} fill="currentColor" />
                                     </div>
                                  </div>
                               </div>
-                              <h3 className="text-xl font-black uppercase tracking-tight mb-1 truncate">{al.title}</h3>
-                              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-smash-gray">
+                              <h3 className="text-[14px] font-display font-semibold text-text-primary truncate mb-1">{al.title}</h3>
+                              <div className="flex items-center gap-2 text-[11px] font-display font-medium uppercase tracking-wider text-text-muted">
                                  <Calendar size={12} /> {al.release_year} • {al.genre || 'Album'}
                               </div>
                            </div>
@@ -457,18 +457,18 @@ const ArtistProfile: React.FC = () => {
                   )}
 
                   {activeTab === 'about' && (
-                     <motion.div key="about" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-                        <section className="bg-white/5 border border-white/5 p-12 md:p-20 rounded-[64px] space-y-10">
-                           <div className="flex items-center gap-4">
-                              <MessageSquare className="text-smash-purple" />
-                              <h2 className="text-5xl font-black font-studio italic uppercase tracking-tighter">About {artist.stage_name}</h2>
+                     <motion.div key="about" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                        <section className="bg-bg-surface border border-border-default p-8 md:p-12 rounded-[14px] space-y-8 shadow-sm">
+                           <div className="flex items-center gap-3">
+                              <MessageSquare className="text-smash-purple" size={24} />
+                              <h2 className="text-[28px] font-display font-bold uppercase tracking-tight text-text-primary">About {artist.stage_name}</h2>
                            </div>
-                           <p className="text-2xl text-smash-gray font-medium leading-relaxed max-w-4xl italic">
+                           <p className="text-[16px] text-text-secondary font-sans leading-relaxed max-w-3xl">
                               "{artist.bio || "Crafting something legendary. Stay tuned for the official narrative."}"
                            </p>
-                           <div className="flex gap-4 pt-10 border-t border-white/5">
-                              {artist.instagram && <SocialLink href={artist.instagram} icon={<Instagram size={20} />} label="Instagram" />}
-                              {artist.twitter && <SocialLink href={artist.twitter} icon={<Twitter size={20} />} label="X Studio" />}
+                           <div className="flex gap-3 pt-8 border-t border-border-default flex-wrap">
+                              {artist.instagram && <SocialLink href={artist.instagram} icon={<Instagram size={16} />} label="Instagram" />}
+                              {artist.twitter && <SocialLink href={artist.twitter} icon={<Twitter size={16} />} label="X Studio" />}
                            </div>
                         </section>
                      </motion.div>
@@ -476,62 +476,62 @@ const ArtistProfile: React.FC = () => {
                </AnimatePresence>
             </div>
 
-            <aside className="lg:col-span-4 space-y-10">
+            <aside className="lg:col-span-4 space-y-8">
                {/* Sidebar Stats */}
-               <div className="p-10 bg-white/5 border border-white/5 rounded-[48px] space-y-8">
+               <div className="p-6 md:p-8 bg-bg-surface border border-border-default rounded-[14px] space-y-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                     <p className="text-xs font-black uppercase tracking-widest text-smash-gray">Artist Vitals</p>
-                     <Flame size={18} className="text-smash-orange" />
+                     <p className="text-[11px] font-display font-medium uppercase tracking-wider text-text-muted">Artist Vitals</p>
+                     <Flame size={16} className="text-smash-orange" />
                   </div>
-                  <div className="space-y-6">
-                     <div className="flex justify-between items-end border-b border-white/5 pb-6">
-                        <div>
-                           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Monthly Reach</p>
-                           <p className="text-3xl font-studio font-black italic">{(artist.followers_count || 0) * 12 + 500}+</p>
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-end border-b border-border-default pb-4">
+                        <div className="flex flex-col">
+                           <p className="text-[10px] font-sans font-medium text-text-muted uppercase tracking-widest mb-0.5">Monthly Reach</p>
+                           <p className="text-[20px] font-display font-bold text-text-primary">{(artist.followers_count || 0) * 12 + 500}+</p>
                         </div>
-                        <TrendingUp size={24} className="text-smash-green mb-2" />
+                        <TrendingUp size={18} className="text-smash-green mb-1" />
                      </div>
-                     <div className="flex justify-between items-end border-b border-white/5 pb-6">
-                        <div>
-                           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Total Impact</p>
-                           <p className="text-3xl font-studio font-black italic">{(artist.total_plays || 0).toLocaleString()}</p>
+                     <div className="flex justify-between items-end border-b border-border-default pb-4">
+                        <div className="flex flex-col">
+                           <p className="text-[10px] font-sans font-medium text-text-muted uppercase tracking-widest mb-0.5">Total Impact</p>
+                           <p className="text-[20px] font-display font-bold text-text-primary">{(artist.total_plays || 0).toLocaleString()}</p>
                         </div>
-                        <Music2 size={24} className="text-smash-purple mb-2" />
+                        <Music2 size={18} className="text-smash-purple mb-1" />
                      </div>
                      <div className="flex justify-between items-end">
-                        <div>
-                           <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Catalog Size</p>
-                           <p className="text-3xl font-studio font-black italic">{songs.length} Tracks</p>
+                        <div className="flex flex-col">
+                           <p className="text-[10px] font-sans font-medium text-text-muted uppercase tracking-widest mb-0.5">Catalog Size</p>
+                           <p className="text-[20px] font-display font-bold text-text-primary">{songs.length} Tracks</p>
                         </div>
-                        <Disc size={24} className="text-smash-orange mb-2" />
+                        <Disc size={18} className="text-smash-orange mb-1" />
                      </div>
                   </div>
                </div>
 
                {latestRelease && (
-                  <div className="bg-[#111] border border-white/5 rounded-[48px] p-10 space-y-8">
-                     <p className="text-xs font-black uppercase tracking-widest text-smash-orange">Fresh Selection</p>
-                     <div className="relative aspect-square rounded-[40px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => playQueue([latestRelease], 0)}>
-                        <img src={latestRelease.cover_url} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
-                           <Play size={64} className="text-white drop-shadow-2xl" fill="white" />
+                  <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 space-y-6 shadow-sm">
+                     <p className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-orange mb-2">Fresh Selection</p>
+                     <div className="relative aspect-square rounded-[10px] overflow-hidden shadow-sm group cursor-pointer border border-border-default" onClick={() => playQueue([latestRelease], 0)}>
+                        <img src={latestRelease.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                           <Play size={40} className="text-white drop-shadow-md" fill="white" />
                         </div>
                      </div>
                      <div className="space-y-1">
-                        <h4 className="text-2xl font-black uppercase tracking-tight group-hover:text-smash-purple transition-colors">{latestRelease.title}</h4>
-                        <p className="text-xs font-bold text-smash-gray uppercase tracking-widest">{latestRelease.genre} Release</p>
+                        <h4 className="text-[18px] font-display font-bold uppercase tracking-tight text-text-primary group-hover:text-smash-purple transition-colors truncate">{latestRelease.title}</h4>
+                        <p className="text-[12px] font-sans font-medium text-text-muted">{latestRelease.genre} Release</p>
                      </div>
-                     <button onClick={() => playQueue([latestRelease], 0)} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-smash-purple hover:text-white transition-all">LISTEN NOW</button>
+                     <button onClick={() => playQueue([latestRelease], 0)} className="w-full h-[40px] bg-bg-elevated border border-border-default text-text-primary rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-border-default transition-all shadow-sm">LISTEN NOW</button>
                   </div>
                )}
 
                {isOwner && (
-                  <div className="p-10 bg-smash-purple/10 border border-smash-purple/20 rounded-[48px] space-y-6">
-                     <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                        <ShieldCheck size={18} /> Owner's Access
+                  <div className="p-6 md:p-8 bg-smash-purple/10 border border-smash-purple/20 rounded-[14px] space-y-4 shadow-sm">
+                     <h4 className="text-[13px] font-display font-semibold uppercase tracking-widest flex items-center gap-2 text-smash-purple">
+                        <ShieldCheck size={16} /> Owner's Access
                      </h4>
-                     <p className="text-sm font-medium text-white/60 leading-relaxed italic">"Your profile is trending in the Afropop category. Update your bio to engage more fans."</p>
-                     <button onClick={() => navigate('/artist-hub')} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">Manage Hub &rarr;</button>
+                     <p className="text-[13px] font-sans text-text-secondary leading-relaxed">"Your profile is trending in the Afropop category. Update your bio to engage more fans."</p>
+                     <button onClick={() => navigate('/artist-hub')} className="w-full h-[40px] bg-bg-elevated border border-border-default text-text-primary rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-border-default hover:text-text-primary transition-all shadow-sm">Manage Hub &rarr;</button>
                   </div>
                )}
             </aside>
@@ -547,26 +547,26 @@ const ArtistProfile: React.FC = () => {
 };
 
 const StatPill = ({ icon, value, label }: { icon: any, value: string|number, label: string }) => (
-   <div className="px-5 py-2 bg-white/5 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-2">
-      {icon} <span className="text-white font-studio italic text-xs">{typeof value === 'number' && value > 1000 ? (value/1000).toFixed(1) + 'K' : value}</span> <span className="text-smash-gray/60">{label}</span>
+   <div className="px-3 py-1 bg-bg-elevated backdrop-blur-md rounded-full text-[11px] font-display font-semibold uppercase tracking-wider border border-border-default flex items-center gap-1.5 text-text-primary">
+      {icon} <span className="font-sans font-semibold text-[13px]">{typeof value === 'number' && value >= 1000 ? (value/1000).toFixed(1) + 'K' : value}</span> <span className="text-text-muted">{label}</span>
    </div>
 );
 
 const TabButton = ({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon: any }) => (
    <button 
       onClick={onClick}
-      className={`relative px-8 py-6 flex items-center gap-3 font-black uppercase tracking-widest text-xs transition-all ${
-         active ? 'text-white scale-105' : 'text-smash-gray hover:text-white'
+      className={`relative px-4 py-3 flex items-center gap-2 font-display font-semibold uppercase tracking-wider text-[11px] whitespace-nowrap transition-all ${
+         active ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
       }`}
    >
       <span className={active ? 'text-smash-purple' : ''}>{icon}</span> {label}
-      {active && <motion.div layoutId="profileTabLine" className="absolute bottom-0 left-0 right-0 h-1 bg-smash-purple" />}
+      {active && <motion.div layoutId="profileTabLine" className="absolute bottom-0 left-0 right-0 h-[2px] bg-smash-purple" />}
    </button>
 );
 
 const SocialLink = ({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) => (
    <a href={href} target="_blank" rel="noreferrer" 
-     className="px-8 py-4 bg-white/5 border border-white/10 rounded-[20px] flex items-center gap-3 font-black uppercase tracking-widest text-[10px] text-smash-gray hover:text-white hover:bg-smash-purple/20 hover:border-smash-purple/30 transition-all">
+     className="px-6 py-3 bg-bg-surface border border-border-default rounded-[10px] flex items-center gap-2 font-display font-semibold uppercase tracking-widest text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-elevated hover:border-smash-purple/30 transition-all shadow-sm">
       {icon} {label}
    </a>
 );

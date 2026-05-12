@@ -168,30 +168,30 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
 
   if (layout === 'grid') {
     return (
-       <div className={`group relative flex flex-col gap-3 p-4 bg-white/5 border border-white/5 hover:border-white/20 rounded-2xl transition-all cursor-pointer ${className}`} onClick={handlePlay}>
-         <div className="aspect-square rounded-xl overflow-hidden shadow-2xl">
+       <div className={`group relative flex flex-col gap-3 p-4 bg-bg-surface border border-border-default hover:border-smash-purple/30 rounded-[14px] transition-all cursor-pointer shadow-sm ${className}`} onClick={handlePlay}>
+         <div className="aspect-square rounded-[10px] overflow-hidden shadow-default">
            <img src={song.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={song.title} />
          </div>
          <div className="space-y-0.5">
-           <h3 className="text-white font-black uppercase truncate">{song.title}</h3>
-           <p className="text-xs text-smash-gray font-bold uppercase tracking-widest truncate">{song.artist_name}</p>
+           <h3 className="text-text-primary font-sans font-semibold text-[14px] truncate">{song.title}</h3>
+           <p className="text-[12px] text-text-muted font-sans font-medium truncate">{song.artist_name}</p>
          </div>
        </div>
     );
   }
 
   return (
-    <div className={`group flex items-center gap-4 bg-white/5 border rounded-2xl p-3 md:p-4 hover:bg-white/10 transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-2 ring-smash-orange shadow-lg shadow-smash-orange/20 border-smash-orange/50' : 'border-white/10'} ${className}`} onClick={handlePlay}>
-        <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-lg border border-white/5">
+    <div className={`group flex items-center gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-smash-orange shadow-sm border-smash-orange/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
+        <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
             <img src={song.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
           ) : (
-            <div className="w-full h-full bg-smash-dark flex items-center justify-center">
-               <Music2 size={24} className="text-white/20" />
+            <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
+               <Music2 size={24} className="text-text-muted/30" />
             </div>
           )}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            {isCurrent && isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
+            {isCurrent && isPlaying ? <Pause size={20} fill="white" className="text-white" /> : <Play size={20} fill="white" className="ml-0.5 text-white" />}
           </div>
           {isCurrent && isPlaying && (
             <div className="absolute inset-x-0 bottom-0 top-0 bg-black/40 flex items-center justify-center gap-0.5">
@@ -207,14 +207,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`font-display font-black italic uppercase text-sm md:text-base truncate leading-none mb-1 ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
+          <h4 className={`font-sans font-semibold text-[14px] md:text-[15px] truncate mb-0.5 ${isCurrent ? 'text-smash-orange' : 'text-text-primary'}`}>
             {song.title}
           </h4>
           <div className="flex items-center gap-2">
-            <p className="text-[10px] md:text-xs text-smash-gray font-black uppercase tracking-widest truncate">{song.artist_name}</p>
+            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.artist_name}</p>
             {song.plays !== undefined && (
-              <span className="text-[10px] text-white/30 font-bold flex items-center gap-1">
-                <Play size={8} fill="currentColor" /> {song.plays.toLocaleString()}
+              <span className="text-[11px] text-text-secondary font-sans font-medium flex items-center gap-1">
+                <Play size={10} fill="currentColor" /> {song.plays.toLocaleString()}
               </span>
             )}
           </div>
@@ -223,7 +223,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            {!song.is_purchased && song.is_for_sale && (
              <button 
                onClick={handleBuy}
-               className="flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-xs font-black uppercase tracking-widest rounded-full transition-all hover:text-white"
+               className="flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white"
                title={`Buy track for MK ${song.price}`}
              >
                <ShoppingBag size={14} />
@@ -239,14 +239,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            </button>
            <button 
              onClick={handleLike}
-             className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isLiked ? 'text-smash-red opacity-100' : 'text-smash-gray opacity-40 group-hover:opacity-100'}`}
+             className={`p-2 rounded-full hover:bg-bg-elevated transition-colors ${isLiked ? 'text-smash-red opacity-100' : 'text-text-muted opacity-40 group-hover:opacity-100'}`}
            >
               <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
            </button>
            <div className="relative">
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                className="p-2 rounded-full text-smash-gray hover:text-white hover:bg-white/10 transition-all opacity-60 group-hover:opacity-100"
+                className="p-2 rounded-full text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-all opacity-60 group-hover:opacity-100"
               >
                  <MoreVertical size={16} />
               </button>
@@ -294,42 +294,45 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist }: any) => {
         initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 10 }}
-        className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 mb-2 w-48 glass-morphism border border-white/10 rounded-2xl shadow-2xl z-[100]"
+        className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 mb-2 w-48 bg-bg-surface border border-border-default rounded-[14px] shadow-lg overflow-hidden py-1 z-[100]"
       >
         <button 
           onClick={(e) => { e.stopPropagation(); addToQueue(song); onClose(); }}
-          className="w-full px-4 py-3 text-left text-sm font-bold flex items-center gap-3 hover:bg-white/5 transition-colors text-white"
+          className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <Plus size={16} /> Add to Queue
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); onAddToPlaylist(); onClose(); }}
-          className="w-full px-4 py-3 text-left text-sm font-bold flex items-center gap-3 hover:bg-white/5 transition-colors text-white"
+          className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <ListMusic size={16} /> Add to Playlist
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); handleShare(); }}
-          className="w-full px-4 py-3 text-left text-sm font-bold flex items-center gap-3 hover:bg-white/5 transition-colors text-white"
+          className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <Share2 size={16} /> Share Song
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); onClose(); }}
-          className="w-full px-4 py-3 text-left text-sm font-bold flex items-center gap-3 hover:bg-white/5 transition-colors text-white"
+          className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <User size={16} /> Go to Artist
         </button>
-        <button className="w-full px-4 py-3 text-left text-sm font-bold flex items-center gap-3 hover:bg-white/5 transition-colors text-white">
+        <button className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary">
           <Info size={16} /> Song Details
         </button>
         {!song.is_purchased && song.is_for_sale && (
-          <button 
-            onClick={onBuy}
-            className="w-full px-4 py-3 text-left text-sm font-black flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors"
-          >
-            <ShoppingBag size={16} /> Buy MK {song.price}
-          </button>
+          <>
+            <div className="h-px w-full bg-border-default my-1" />
+            <button 
+              onClick={onBuy}
+              className="w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors uppercase tracking-widest"
+            >
+              <ShoppingBag size={14} /> Buy MK {song.price}
+            </button>
+          </>
         )}
       </motion.div>
     </>
