@@ -1,273 +1,366 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, useInView, animate } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
-  Upload, Wallet, BarChart3, Tag, Disc, 
-  Heart, Rocket, Star, CheckCircle2, ChevronRight,
-  ShieldCheck, Globe, Zap, Headphones
+  Mic2, Rocket, Star, ShieldCheck, 
+  CheckCircle2, TrendingUp, Music, LayoutDashboard,
+  Smartphone, Wallet, ChevronRight, Play, Heart, Star as StarIcon
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
-import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
-function CountUpStat({ to, suffix, label, textValue }: { to?: number, suffix?: string, label: string, textValue?: string }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-  const [val, setVal] = useState(0);
-  
+const Nav = () => {
+  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
   useEffect(() => {
-    if (isInView && to !== undefined) {
-      const controls = animate(0, to, {
-        duration: 2,
-        ease: "easeOut",
-        onUpdate(value) {
-          setVal(Math.round(value));
-        }
-      });
-      return () => controls.stop();
-    }
-  }, [isInView, to]);
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div ref={ref}>
-      <p className="text-[32px] md:text-[48px] font-studio font-bold text-smash-purple mb-1">
-        {textValue ? textValue : <>{val}{suffix}</>}
-      </p>
-      <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">{label}</p>
-    </div>
+    <nav className={`fixed top-0 left-0 right-0 z-50 h-[72px] flex items-center justify-between px-6 md:px-12 transition-all duration-200 border-b ${isScrolled ? 'bg-[#0A0A0D]/92 backdrop-blur-xl border-white/5' : 'bg-transparent border-transparent'}`}>
+      <div className="flex items-center gap-8">
+        <Logo size="md" />
+        <div className="hidden lg:flex items-center gap-8">
+          <Link to="/" className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors uppercase tracking-widest">Listener App</Link>
+          <div className="w-1 h-1 rounded-full bg-white/20" />
+          <span className="font-display font-bold text-[13px] text-smash-purple uppercase tracking-widest">Artist Studio</span>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <button onClick={() => navigate('/auth/artist')} className="px-6 h-[40px] font-display font-bold text-[12px] text-white/60 hover:text-white uppercase tracking-widest transition-all">Sign In</button>
+        <button 
+          onClick={() => navigate('/auth/artist?mode=signup')} 
+          className="h-[40px] px-6 bg-white text-black font-display font-bold text-[12px] uppercase tracking-widest rounded-full hover:bg-smash-purple hover:text-white transition-all transform hover:-translate-y-0.5 active:scale-95"
+        >
+          Join Studio
+        </button>
+      </div>
+    </nav>
   );
-}
+};
 
 const ArtistLanding: React.FC = () => {
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const [topEarners, setTopEarners] = useState<any[]>([]);
 
-  const features = [
-    { icon: Upload, title: 'Easy Upload', desc: 'Upload single songs or full albums. Cover art, lyrics, price — all in one place.', color: 'text-smash-orange', bg: 'bg-smash-orange/10' },
-    { icon: BarChart3, title: 'Real-Time Analytics', desc: 'Track plays, followers, revenue by song and by month. Know what\'s working.', color: 'text-smash-purple', bg: 'bg-smash-purple/10' },
-    { icon: Wallet, title: 'Instant Withdrawals', desc: 'Withdraw your earnings to Airtel Money or TNM Mpamba any time you want.', color: 'text-smash-green', bg: 'bg-smash-green/10' },
-    { icon: Tag, title: 'Set Your Price', desc: 'Sell your songs at any price. Fans buy directly — no middleman.', color: 'text-smash-orange', bg: 'bg-smash-orange/10' },
-    { icon: Disc, title: 'Album Management', desc: 'Create albums, organise tracks, manage your catalogue professionally.', color: 'text-smash-purple', bg: 'bg-smash-purple/10' },
-    { icon: Heart, title: 'Fan Donations', desc: 'Receive donations from fans who love your music. 90% goes straight to you.', color: 'text-smash-orange', bg: 'bg-smash-orange/10' },
-  ];
-
-  const steps = [
-    { step: 1, title: 'Apply', desc: 'Create your artist account with your details and phone number.' },
-    { step: 2, title: 'Subscribe', desc: 'Choose a plan that fits your needs — from Rising Star to Elite.' },
-    { step: 3, title: 'Upload', desc: 'Upload your music with cover art, set your sale price and go live.' },
-    { step: 4, title: 'Earn', desc: 'Fans stream, buy and donate. Withdraw to your mobile money wallet.' },
-  ];
-
-  const plans = [
-    {
-      name: 'Free Studio',
-      price: '0',
-      period: 'yr',
-      features: ['5 Total Uploads', '15% fee on tips/sales', 'Basic Analytics', 'MK 50K max withdrawal/mo'],
-      color: 'gray'
-    },
-    {
-      name: '🌟 Rising Star',
-      price: '15,000',
-      period: 'yr',
-      features: ['30 Uploads/month', '10% fee on tips/sales', 'Messaging & Subscriptions', 'MK 200K max withdrawal/mo'],
-      color: 'blue'
-    },
-    {
-      name: '🚀 Standard',
-      price: '25,000',
-      period: 'yr',
-      featured: true,
-      features: ['Unlimited uploads', '7% fee on tips/sales', 'Advanced Analytics', 'Verified Badge & Custom URL'],
-      color: 'orange'
-    },
-    {
-      name: '👑 Elite / Label',
-      price: '45,000',
-      period: 'yr',
-      features: ['Manage up to 10 Profiles', '5% fee on tips/sales', 'Full Label Analytics', 'Unlimited Withdrawals'],
-      color: 'purple'
-    }
-  ];
+  useEffect(() => {
+    const fetchEarners = async () => {
+       const { data } = await supabase.from('profiles').select('id, stage_name, full_name, avatar_url, genre').eq('role', 'artist').limit(5);
+       setTopEarners(data || []);
+    };
+    fetchEarners();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-smash-black text-white font-sans selection:bg-smash-orange selection:text-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-6 bg-smash-black/10 backdrop-blur-xl border-b border-white/5">
-        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
-          <Logo size="md" />
-          <div className="hidden sm:block">
-            <p className="text-[10px] font-black text-smash-purple uppercase tracking-[0.3em] leading-none mb-1">Artist Studio</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/auth/artist')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
-          <button 
-            onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')} 
-            className="px-8 py-3 bg-smash-purple text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-smash-purple transition-all shadow-lg active:scale-95"
-          >
-            {role === 'artist' ? 'Open Studio' : role === 'pending' ? 'Application Pending' : 'Apply Now'}
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-purple/30 overflow-x-hidden pt-[72px]">
+      <Nav />
 
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-32 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full bg-[radial-gradient(circle_at_50%_40%,rgba(124,58,237,0.1),transparent_70%)] pointer-events-none animate-[custom-breathe_6s_infinite]" />
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto text-center relative z-10"
-        >
-          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-[10px] bg-smash-purple/10 border border-smash-purple/20 text-xs font-display font-semibold text-smash-purple mb-8 tracking-widest uppercase">
-            <Star size={14} fill="currentColor" /> #1 Artist Platform in Malawi
-          </div>
-          
-          <h1 className="text-[clamp(2.5rem,8vw,7rem)] font-bold font-studio leading-[0.9] -tracking-[0.03em] mb-8 uppercase">
-            YOUR MUSIC.<br/><span className="text-smash-purple">YOUR MONEY.</span>
-          </h1>
-          
-          <p className="text-[16px] md:text-[20px] text-text-secondary max-w-2xl mx-auto mb-12 font-sans font-medium line-height-[1.6]">
-            Upload, distribute and monetise your music directly to thousands of listeners. Keep 100% of your rights and 90% of every sale.
-          </p>
+      {/* Hero Section - Split Photo Layout */}
+      <section className="relative min-h-[85vh] flex items-center px-6 md:px-12 py-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24 w-full">
+          <div className="flex-1 relative z-10 text-center lg:text-left">
+             <motion.div
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+               className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-smash-purple/10 border border-smash-purple/20 text-smash-purple font-display font-bold text-[10px] uppercase tracking-[0.2em] mb-8"
+             >
+               🚀 Artist Distribution Now Open
+             </motion.div>
 
-          <div className="flex flex-wrap justify-center gap-4 mb-20">
-            <button 
-              onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')}
-              className="h-[44px] px-6 bg-smash-orange text-white rounded-[10px] font-display font-semibold text-xs uppercase tracking-widest hover:bg-smash-orange/90 transition-colors shadow-none"
-            >
-              {role === 'artist' ? 'Go to Studio' : role === 'pending' ? 'Review Application' : 'Start as an Artist'}
-            </button>
-            <button 
-              onClick={() => navigate(role === 'artist' ? '/artist-hub' : '/auth/artist')}
-              className="h-[44px] px-6 bg-transparent border border-border-default text-text-primary rounded-[10px] font-display font-semibold text-xs uppercase tracking-widest hover:border-smash-purple hover:text-smash-purple transition-colors shadow-none"
-            >
-              {role === 'artist' ? 'Manage Music' : 'Artist Login'}
-            </button>
+             <motion.h1
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.6, delay: 0.2 }}
+               className="text-[clamp(2.5rem,5vw,5rem)] font-display font-semibold leading-[1.05] tracking-tight text-white mb-8"
+             >
+               Monetize your <span className="italic">Malawian</span> fans <br/>
+               <span className="text-smash-purple">Keep 90% of your earnings.</span>
+             </motion.h1>
+
+             <motion.p
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.6, delay: 0.3 }}
+               className="text-[18px] md:text-[20px] font-sans text-white/50 max-w-xl leading-relaxed mb-12 mx-auto lg:mx-0 font-medium"
+             >
+               Smashify Studio is the only platform in Malawi that lets you distribute music, sell individual songs, and receive fan donations directly via Mobile Money.
+             </motion.p>
+
+             <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.6, delay: 0.4 }}
+               className="flex flex-wrap items-center justify-center lg:justify-start gap-5 mb-16"
+             >
+                <button 
+                  onClick={() => navigate('/auth/artist?mode=signup')}
+                  className="h-[56px] px-10 bg-smash-purple text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:brightness-110 transform hover:-translate-y-1 transition-all shadow-2xl shadow-smash-purple/20"
+                >
+                   Get Started for Free
+                </button>
+                <button className="h-[56px] px-10 bg-transparent border-2 border-white/10 text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:border-smash-purple/50 transition-all">
+                   View Pricing
+                </button>
+             </motion.div>
+
+             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 border-t border-white/5 pt-12">
+                {[
+                  { label: 'Artist Share', val: '90%' },
+                  { label: 'Min. Withdrawal', val: 'MK 500' },
+                  { label: 'Settlement', val: 'Instant' }
+                ].map((stat, i) => (
+                  <div key={i} className="flex flex-col items-center lg:items-start">
+                     <span className="text-[24px] font-studio font-bold text-white mb-1">{stat.val}</span>
+                     <span className="text-[10px] font-display text-white/40 uppercase tracking-widest">{stat.label}</span>
+                  </div>
+                ))}
+             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <CountUpStat to={90} suffix="%" label="Artist Payout" />
-            <CountUpStat to={500} suffix="+" label="Songs Live" />
-            <CountUpStat to={10} suffix="K+" label="Listeners" />
-            <CountUpStat label="Withdrawals" textValue="Instant" />
-          </div>
-        </motion.div>
-      </section>
+          <div className="flex-1 w-full max-w-2xl relative">
+             <div className="aspect-[4/5] rounded-[24px] overflow-hidden group shadow-2xl border border-white/5">
+                <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+             </div>
 
-      {/* Features */}
-      <section className="py-32 px-6 md:px-12 bg-bg-surface border-y border-border-subtle">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-[11px] font-display font-medium text-smash-purple uppercase tracking-widest mb-4">Platform Features</h2>
-            <h3 className="text-3xl md:text-5xl font-studio font-bold -tracking-[0.02em]">Everything an Artist Needs</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((f, i) => (
-              <div key={i} className="bg-bg-surface border border-border-subtle rounded-[14px] p-8 hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-12 h-12 rounded-[10px] ${f.bg} flex items-center justify-center ${f.color} mb-6`}>
-                  <f.icon size={24} />
+             {/* Featured Artist Overlay */}
+             <motion.div 
+               initial={{ opacity: 0, x: 50 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ duration: 0.8, delay: 0.5 }}
+               className="absolute -right-6 top-1/2 -translate-y-1/2 w-[280px] bg-[#141418]/90 backdrop-blur-xl border border-white/10 rounded-[20px] p-5 shadow-2xl hidden md:block"
+             >
+                <div className="flex items-center gap-4 mb-4">
+                   <div className="w-12 h-12 rounded-full border-2 border-smash-purple p-0.5">
+                      <img src="https://placehold.co/100" className="w-full h-full rounded-full object-cover" />
+                   </div>
+                   <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black text-smash-purple uppercase tracking-widest mb-0.5">Featured Artist</p>
+                      <p className="text-[16px] font-display font-bold text-white truncate">Top Malawian Star</p>
+                   </div>
                 </div>
-                <h3 className="text-[18px] font-studio font-bold mb-3 text-text-primary">{f.title}</h3>
-                <p className="text-[14px] font-sans text-text-secondary leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Steps */}
-      <section className="py-32 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-[11px] font-display font-medium text-smash-purple uppercase tracking-widest mb-4">How it works</h2>
-            <h3 className="text-3xl md:text-5xl font-studio font-bold -tracking-[0.02em]">Start earning in 4 Steps</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-            <div className="hidden lg:block absolute top-[28px] left-[15%] right-[15%] h-px bg-border-subtle z-0" />
-            
-            {steps.map((s, i) => (
-              <div key={i} className="text-center relative z-10 bg-bg-page pt-2">
-                <div className="w-14 h-14 bg-bg-surface border border-border-default rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm text-lg font-studio font-bold text-smash-purple">
-                  {s.step}
+                <div className="p-4 bg-white/5 rounded-[12px] border border-white/5 space-y-3">
+                   <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-white/40 uppercase font-black uppercase tracking-widest">Earnings</span>
+                      <span className="text-[13px] font-studio font-bold text-smash-green">+MK 125,000</span>
+                   </div>
+                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="w-[75%] h-full bg-smash-green" />
+                   </div>
+                   <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Streaming Revenue - Sep 2024</p>
                 </div>
-                <h4 className="text-[16px] font-studio font-bold uppercase mb-2 text-text-primary">{s.title}</h4>
-                <p className="text-[14px] text-text-secondary font-sans leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
+             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Pricing / Plans */}
-      <section className="py-32 px-6 md:px-12 bg-bg-surface border-y border-border-subtle">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-[11px] font-display font-medium text-smash-purple uppercase tracking-widest mb-4">Artist Plans</h2>
-            <h3 className="text-3xl md:text-5xl font-studio font-bold -tracking-[0.02em]">Choose Your Level</h3>
-          </div>
+      {/* Top Earners Row */}
+      <section className="py-20 px-6 md:px-12 bg-white/[0.02]">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+            <div>
+               <p className="text-[10px] font-display font-black text-white/40 uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
+               <h2 className="text-3xl font-studio font-black italic uppercase tracking-tighter">Earnings <span className="text-smash-purple underline underline-offset-8">Report</span></h2>
+            </div>
+            <div className="flex -space-x-4">
+               {topEarners.map((earner, i) => (
+                 <div key={earner.id} className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated overflow-hidden hover:z-10 hover:-translate-y-2 transition-all cursor-pointer">
+                    <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} />
+                 </div>
+               ))}
+               <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated flex items-center justify-center text-[12px] font-black italic uppercase tracking-widest text-text-muted">
+                  +100
+               </div>
+            </div>
+            <div className="md:text-right">
+               <p className="text-[24px] font-studio font-bold text-white">MK 25M+</p>
+               <p className="text-[10px] font-display text-white/40 uppercase tracking-widest">Total Payouts to Malawian Artists</p>
+            </div>
+         </div>
+      </section>
 
-          <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 pb-8 md:pb-0 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-            {plans.map((p, i) => (
-              <div key={i} className={`min-w-[280px] snap-start bg-bg-surface p-6 rounded-[14px] flex flex-col border ${p.featured ? 'border-smash-orange border-2' : 'border-border-subtle'}`}>
-                <div className="flex justify-between items-start mb-6">
-                   <h4 className="text-[18px] font-studio font-bold text-text-primary">{p.name}</h4>
-                   {p.featured && (
-                     <div className="bg-smash-orange/10 text-smash-orange text-[10px] font-display font-semibold px-2 py-1 rounded-[6px] uppercase tracking-wider">
-                       Most Popular
+      {/* Features Section */}
+      <section className="py-32 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-20 items-center mb-32">
+             <div>
+                <h2 className="text-4xl md:text-6xl font-studio font-black italic uppercase leading-tight mb-8">Built for the <span className="text-smash-purple">Malawian</span> landscape.</h2>
+                <div className="space-y-6">
+                   {[
+                     { title: 'Airtel Money & Mpamba', desc: 'No bank account? No problem. Withdraw your earnings directly to your mobile wallet instantly.' },
+                     { title: '90/10 Share Model', desc: 'You keep 90% of every sale, every donation, and every stream. We only take 10% to keep things running.' },
+                     { title: 'Direct MP3 Sales', desc: 'Allow your fans to buy your songs as high-quality downloads. Set your own price per track.' }
+                   ].map((f, i) => (
+                     <div key={i} className="flex gap-5">
+                        <div className="w-6 h-6 rounded-full bg-smash-purple/20 flex items-center justify-center shrink-0 mt-1">
+                           <CheckCircle2 size={14} className="text-smash-purple" />
+                        </div>
+                        <div>
+                           <h4 className="text-[16px] font-display font-bold uppercase italic text-white mb-1">{f.title}</h4>
+                           <p className="text-[14px] text-white/50 leading-relaxed font-sans">{f.desc}</p>
+                        </div>
                      </div>
-                   )}
+                   ))}
                 </div>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  { icon: LayoutDashboard, title: 'Deep Analytics', val: 'Listeners, Plays, Heatmaps', color: 'text-smash-purple' },
+                  { icon: TrendingUp, title: 'Trending Charts', val: 'Rise to the top 10', color: 'text-smash-orange' },
+                  { icon: StarIcon, title: 'Fan Benefits', val: 'Supporter badges & Perks', color: 'text-smash-cyan' },
+                  { icon: Smartphone, title: 'Smart Distribution', val: 'Viral feed integration', color: 'text-smash-green' }
+                ].map((c, i) => (
+                  <div key={i} className="bg-bg-surface border border-border-subtle rounded-[24px] p-8 hover:border-smash-purple/30 transition-all group">
+                     <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-8 ${c.color}`}>
+                        <c.icon size={24} />
+                     </div>
+                     <h3 className="text-xl font-studio font-bold uppercase italic text-white mb-2">{c.title}</h3>
+                     <p className="text-[13px] text-white/50 font-display font-medium uppercase tracking-widest">{c.val}</p>
+                  </div>
+                ))}
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Steps Section */}
+      <section className="py-32 px-6 md:px-12 bg-white/[0.02]">
+        <div className="max-w-4xl mx-auto">
+           <div className="text-center mb-24">
+              <h2 className="text-[10px] font-display font-bold text-smash-purple uppercase tracking-[0.4em] mb-4">Journey to Success</h2>
+              <h3 className="text-5xl md:text-7xl font-studio font-black italic uppercase leading-tight">Three steps to <span className="text-smash-purple">monetising</span> your art.</h3>
+           </div>
+           
+           <div className="space-y-20 relative before:absolute before:left-10 md:before:left-1/2 before:top-0 before:bottom-0 before:w-px before:bg-white/10">
+              {[
+                { step: '01', title: 'Join Studio', desc: 'Create your artist account and complete your profile. We review every artist to ensure quality for our listeners.' },
+                { step: '02', title: 'Upload & Distribute', desc: 'Upload your high-quality tracks or albums. Set your price, add lyrics, and choose your release date.' },
+                { step: '03', title: 'Get Paid', desc: 'Fans stream, buy, and donate. Withdraw your accumulated earnings daily to your mobile money account.' }
+              ].map((s, i) => (
+                <div key={i} className={`flex flex-col md:flex-row items-center gap-12 relative z-10 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+                   <div className="flex-1 md:text-right">
+                      <div className={`flex flex-col ${i % 2 === 1 ? 'md:items-start' : 'md:items-end'}`}>
+                         <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold uppercase italic text-white mb-4">{s.title}</h4>
+                         <p className="text-[15px] text-white/50 leading-relaxed font-sans max-w-sm">{s.desc}</p>
+                      </div>
+                   </div>
+                   <div className="w-20 h-20 rounded-full bg-smash-purple text-white font-studio font-black text-2xl flex items-center justify-center shrink-0 border-[8px] border-[#0A0A0D]">
+                      {s.step}
+                   </div>
+                   <div className="flex-1" />
+                </div>
+              ))}
+           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-32 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-24">
+             <h3 className="text-5xl md:text-8xl font-studio font-black italic uppercase tracking-tighter leading-none mb-4">STUDIO <span className="text-smash-purple">ACCESS</span></h3>
+             <p className="text-white/50 text-xl font-medium tracking-tight">Simple yearly plans with zero hidden fees.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
+             <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
+                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Rising Star</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                  <span className="text-[32px] font-studio font-bold text-text-primary">{p.price}</span>
-                  <span className="text-[11px] uppercase font-display font-medium text-text-muted">MK / yr</span>
+                   <span className="text-4xl font-studio font-bold text-white">15,000</span>
+                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / YR</span>
                 </div>
-                <ul className="space-y-4 mb-12 flex-1">
-                  {p.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-3 text-[13px] font-sans text-text-secondary">
-                      <CheckCircle2 size={16} className={`${p.featured ? 'text-smash-orange' : 'text-smash-purple'} shrink-0`} /> {f}
-                    </li>
-                  ))}
+                <ul className="space-y-4 mb-10 flex-1">
+                   {["Upload 12 songs/yr", "Mobile analytics", "Standard payouts", "Supporter badges"].map((f, i) => (
+                     <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
+                        <CheckCircle2 size={16} className="text-smash-purple shrink-0" />
+                        {f}
+                     </li>
+                   ))}
                 </ul>
                 <button 
-                  onClick={() => navigate(role === 'artist' ? '/artist-hub' : role === 'pending' ? '/application-pending' : '/auth/artist?mode=signup')}
-                  className={`w-full h-[44px] rounded-[10px] font-display font-semibold text-[12px] uppercase tracking-widest transition-colors flex items-center justify-center ${
-                    p.featured ? 'bg-smash-orange text-white hover:bg-smash-orange/90' : 'bg-transparent border border-border-default text-text-primary hover:border-smash-purple hover:text-smash-purple'
-                  }`}
+                   onClick={() => navigate('/auth/artist?mode=signup')}
+                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl"
                 >
-                  {role === 'artist' ? 'Switch Plan' : role === 'pending' ? 'Review App' : 'Get Started'}
+                   GET STARTED
                 </button>
-              </div>
-            ))}
+             </div>
+
+             <div className="bg-bg-surface border-2 border-smash-purple rounded-[24px] p-10 flex flex-col relative overflow-hidden transform scale-105 z-10 shadow-3xl shadow-smash-purple/20">
+                <div className="absolute top-6 right-0 bg-smash-purple text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest">MOST POPULAR</div>
+                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-smash-purple">Standard</h3>
+                <div className="flex items-baseline gap-2 mb-8">
+                   <span className="text-4xl font-studio font-bold text-white">25,000</span>
+                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / YR</span>
+                </div>
+                <ul className="space-y-4 mb-10 flex-1">
+                   {["UNLIMITED uploads", "Full dashboard", "Priority payouts", "Verified profile", "Advanced promotion"].map((f, i) => (
+                     <li key={i} className="flex items-center gap-3 text-[14px] text-white font-medium font-sans">
+                        <CheckCircle2 size={16} className="text-smash-purple shrink-0" />
+                        {f}
+                     </li>
+                   ))}
+                </ul>
+                <button 
+                   onClick={() => navigate('/auth/artist?mode=signup')}
+                   className="w-full h-[54px] bg-smash-purple text-white rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl"
+                >
+                   JOIN STANDARD
+                </button>
+             </div>
+
+             <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
+                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Elite / Label</h3>
+                <div className="flex items-baseline gap-2 mb-8">
+                   <span className="text-4xl font-studio font-bold text-white">45,000</span>
+                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / YR</span>
+                </div>
+                <ul className="space-y-4 mb-10 flex-1">
+                   {["Manage 5 artists", "Shared dashboards", "Dedicated manager", "Revenue splitting", "Custom contracts"].map((f, i) => (
+                     <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
+                        <CheckCircle2 size={16} className="text-smash-purple shrink-0" />
+                        {f}
+                     </li>
+                   ))}
+                </ul>
+                <button 
+                   onClick={() => navigate('/auth/artist?mode=signup')}
+                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl"
+                >
+                   CONTACT SALES
+                </button>
+             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-40 px-6 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-smash-purple/10 to-transparent pointer-events-none" />
-        <div className="max-w-3xl mx-auto relative z-10">
-          <Rocket className="mx-auto text-smash-purple mb-8" size={64} />
-          <h2 className="text-[clamp(2rem,6vw,4.5rem)] font-studio font-bold uppercase tracking-tight mb-6 leading-[1.1]">Ready to Start Earning?</h2>
-          <p className="text-[16px] md:text-[20px] text-text-secondary mb-10 font-sans leading-relaxed">Join hundreds of Malawian artists already monetising their music. Keep control, keep your rights, keep 90%.</p>
-          <button 
-            onClick={() => navigate('/auth/artist?mode=signup')}
-            className="h-[44px] px-8 bg-smash-purple text-white rounded-[10px] font-display font-semibold text-[13px] uppercase tracking-widest hover:bg-smash-purple/90 transition-colors shadow-none"
-          >
-            Apply as Artist Today
-          </button>
-        </div>
+      {/* Final CTA */}
+      <section className="py-32 px-6 md:px-12 bg-smash-purple overflow-hidden relative">
+         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/music.png')]" />
+         <div className="max-w-4xl mx-auto text-center relative z-10">
+            <h2 className="text-5xl md:text-8xl font-studio font-black italic uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
+            <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">Join the movement and start distributing your music today. The industry is changing, don't get left behind.</p>
+            <button 
+               onClick={() => navigate('/auth/artist?mode=signup')}
+               className="h-[64px] px-12 bg-white text-smash-purple font-display font-bold text-lg uppercase tracking-widest rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
+            >
+               Create Artist Account
+            </button>
+         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-white/5 text-center text-smash-gray">
-        <p className="font-bold mb-4">© {new Date().getFullYear()} Smashify Artists. Built in Blantyre, Malawi.</p>
-        <div className="flex justify-center gap-8 text-[10px] font-black uppercase tracking-widest">
-           <button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy</button>
-           <button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Terms</button>
-           <button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Support</button>
+      <footer className="py-16 px-6 md:px-12 border-t border-white/5 bg-black">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+           <Logo size="md" />
+           <p className="text-[14px] text-white/30 font-medium order-last md:order-none">© {new Date().getFullYear()} Smashify Studio. All rights reserved.</p>
+           <div className="flex gap-10">
+              {['About', 'Help', 'Terms', 'Privacy'].map(l => (
+                <Link key={l} to={`/${l.toLowerCase()}`} className="text-[12px] font-bold text-white/40 uppercase tracking-widest hover:text-white transition-colors">{l}</Link>
+              ))}
+           </div>
         </div>
       </footer>
     </div>

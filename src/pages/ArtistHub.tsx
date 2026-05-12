@@ -5,8 +5,9 @@ import {
   TrendingUp, Users, Play, DollarSign, Plus, Trash2, 
   Edit3, CheckCircle2, AlertCircle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
-  Disc, LogOut, ArrowLeft, Menu, Clock, ExternalLink, ShieldCheck,
-  ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star
+  Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
+  ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
+  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -311,6 +312,14 @@ export default function ArtistHub() {
           </div>
           
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-smash-red/10 text-smash-red border border-smash-red/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-red hover:text-white transition-all shadow-lg shadow-smash-red/10"
+              >
+                <ShieldCheck size={14} /> Admin Access
+              </Link>
+            )}
             {isApproved ? (
               <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-xs font-bold uppercase tracking-widest">
                 <CheckCircle2 size={12} /> Approved
@@ -509,6 +518,26 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
       {/* KPI Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {userProfile?.is_admin && (
+           <Link 
+             to="/admin" 
+             className="col-span-full p-6 bg-gradient-to-r from-smash-red/20 via-smash-purple/20 to-transparent border border-smash-red/30 rounded-[30px] flex items-center justify-between group hover:border-smash-red transition-all shadow-2xl shadow-smash-red/10"
+           >
+              <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 rounded-2xl bg-smash-red flex items-center justify-center text-white shadow-lg shadow-smash-red/20 group-hover:scale-110 transition-transform">
+                    <ShieldCheck size={32} />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-studio font-black uppercase italic text-white leading-tight">Terminal Control</h3>
+                    <p className="text-[10px] text-smash-red font-black uppercase tracking-[0.3em] mt-1">Platform Moderation & Payout Engine</p>
+                 </div>
+              </div>
+              <div className="flex items-center gap-3 pr-4">
+                 <span className="text-[10px] font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Enter System</span>
+                 <ArrowRight className="text-smash-red group-hover:translate-x-2 transition-transform" />
+              </div>
+           </Link>
+        )}
          <MetricCard
             label="TOTAL PLAYS"
             value={stats.streams.toLocaleString()}
@@ -1196,445 +1225,346 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
 };
 
 const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
-  const [mode, setMode] = useState<'single'|'album'|'snippet'>('single');
+  const [mode, setMode] = useState<'single' | 'album' | 'snippet'>('single');
+  const [uploadStep, setUploadStep] = useState<1 | 2 | 3>(1);
   const [uploading, setUploading] = useState(false);
-  const [songFile, setSongFile] = useState<File|null>(null);
-  const [albumFiles, setAlbumFiles] = useState<File[]>([]);
-  const [coverFile, setCoverFile] = useState<File|null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSuccess, setIsSuccess] = useState(false);
   
+  const [songFile, setSongFile] = useState<File | null>(null);
+  const [albumFiles, setAlbumFiles] = useState<File[]>([]);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  
+  const [releaseDate, setReleaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [genre, setGenre] = useState('');
+  const [albumId, setAlbumId] = useState('');
+  const [isExplicit, setIsExplicit] = useState(false);
+  const [featuredArtist, setFeaturedArtist] = useState('');
+  const [language, setLanguage] = useState('Chichewa');
   const [title, setTitle] = useState('');
   const [lyrics, setLyrics] = useState('');
-  
+  const [price, setPrice] = useState(2500);
+  const [isForSale, setIsForSale] = useState(false);
+
   const { userProfile } = useAuth();
   const limits = getTierLimits(userProfile);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => setIsDragging(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files) as File[];
-    if (files.length > 0) {
-      if (mode === 'album') {
-        setAlbumFiles(prev => [...prev, ...files.filter(f => f.type.startsWith('audio/'))]);
-      } else {
-        const file = files[0];
-        if (file.type.startsWith('audio/') || (mode === 'snippet' && file.type.startsWith('video/'))) {
-          setSongFile(file);
-        } else {
-          toast.error('Invalid file type.');
-        }
-      }
-    }
-  };
-  const isPending = role === 'pending';
   const isFree = getArtistTier(userProfile) === 'free';
-  
-  // Calculate songs uploaded this month locally since we have all songs
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
-  
   const songsUploadedThisMonth = songs.filter((s: any) => {
     const createdDate = new Date(s.created_at);
     return createdDate >= startOfMonth;
   }).length;
-
   const totalSongsUploaded = songs.length;
-  
   const hasReachedLimit = (limits.songLimit !== null && totalSongsUploaded >= limits.songLimit) || 
                           (limits.monthlyLimit !== null && songsUploadedThisMonth >= limits.monthlyLimit);
-  
-  const handleUploadSingle = async (e: React.FormEvent<HTMLFormElement>) => {
+
+  const handleUploadSingle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!songFile) return toast.error('Audio/Video file required');
-    setUploading(true);
-    const fd = new FormData(e.currentTarget);
-    const title = fd.get('title') as string;
-    const genre = fd.get('genre') as string;
-    const is_for_sale = fd.get('forsale') === 'true';
-    const price = is_for_sale ? parseFloat(fd.get('price') as string) : null;
-    const album_id = fd.get('album_id') as string || null;
-    const lyrics = fd.get('lyrics') as string;
-    
-    try {
-      const audioExt = songFile.name.split('.').pop();
-      const audioPath = `songs/${userProfile?.id}/${Date.now()}.${audioExt}`;
-      const { error:ae } = await supabase.storage.from('songs').upload(audioPath, songFile);
-      if(ae) throw ae;
-      const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
-
-      let coverUrl = null;
-      if (coverFile) {
-        const coverExt = coverFile.name.split('.').pop();
-        const coverPath = `covers/${userProfile?.id}/${Date.now()}.${coverExt}`;
-        const { error:ce } = await supabase.storage.from('covers').upload(coverPath, coverFile);
-        if(!ce) {
-          coverUrl = supabase.storage.from('covers').getPublicUrl(coverPath).data.publicUrl;
-        }
-      }
-
-      if (mode === 'snippet') {
-        const { error } = await supabase.from('moto_feed').insert({
-          artist_id: userProfile?.id,
-          title, caption: lyrics, media_url: audioUrl, is_video: songFile.type.startsWith('video/'),
-          cover_url: coverUrl
-        });
-        if(error) throw error;
-      } else {
-        const { error } = await supabase.from('songs').insert({
-          artist_id: userProfile?.id,
-          title, genre, lyrics, audio_url: audioUrl, cover_url: coverUrl,
-          is_for_sale, price, album_id, approved: false, plays: 0
-        });
-        if(error) throw error;
-      }
-      
-      toast.success(mode === 'snippet' ? 'Moto Feed snippet uploaded!' : 'Upload complete! Under review.');
-      setMode('single');
-      setSongFile(null);
-      setCoverFile(null);
-      setTitle('');
-      setLyrics('');
-      onComplete();
-    } catch(err:any) {
-      toast.error("Error: " + err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleUploadAlbum = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if(albumFiles.length === 0) return toast.error('At least one track required for an album.');
-    if(!coverFile) return toast.error('Album cover art required.');
+    if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
     
     setUploading(true);
-    const fd = new FormData(e.currentTarget);
-    const title = fd.get('title') as string;
-    const genre = fd.get('genre') as string;
+    setUploadProgress(10);
     
     try {
-      // 1. Upload Album Cover
+      setUploadProgress(20);
       const coverExt = coverFile.name.split('.').pop();
-      const coverPath = `covers/${userProfile?.id}/album-${Date.now()}.${coverExt}`;
-      const { error:ce } = await supabase.storage.from('covers').upload(coverPath, coverFile);
-      if(ce) throw ce;
+      const coverPath = `covers/${userProfile?.id}/cover-${Date.now()}.${coverExt}`;
+      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, coverFile);
+      if (coverErr) throw coverErr;
       const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
-      // 2. Create Album Record
-      const { data: albumData, error: albumError } = await supabase.from('albums').insert({
-        artist_id: userProfile?.id,
-        title, cover_url: coverUrl, release_year: new Date().getFullYear(),
-        genre
-      }).select().single();
-      
-      if(albumError) throw albumError;
+      setUploadProgress(40);
+      const audioExt = songFile.name.split('.').pop();
+      const audioPath = `songs/${userProfile?.id}/song-${Date.now()}.${audioExt}`;
+      const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, songFile);
+      if (audioErr) throw audioErr;
+      const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
 
-      // 3. Upload Songs in parallel
-      toast.loading(`Uploading ${albumFiles.length} tracks...`);
-      const songUploads = albumFiles.map(async (file, index) => {
-        const audioExt = file.name.split('.').pop();
-        const audioPath = `songs/${userProfile?.id}/alb-${albumData.id}-${index}-${Date.now()}.${audioExt}`;
-        const { error:ae } = await supabase.storage.from('songs').upload(audioPath, file);
-        if(ae) throw ae;
-        
-        const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
-        
-        return {
-          artist_id: userProfile?.id,
-          album_id: albumData.id,
-          title: file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' '), // fallback title from filename
-          audio_url: audioUrl,
-          cover_url: coverUrl,
-          genre: genre,
-          approved: false,
-          plays: 0
-        };
+      setUploadProgress(70);
+      const { error: dbErr } = await supabase.from('songs').insert({
+        title,
+        artist_id: userProfile?.id,
+        audio_url: audioUrl,
+        cover_url: coverUrl,
+        is_explicit: isExplicit,
+        release_date: releaseDate,
+        featured_artist: featuredArtist,
+        language: language,
+        lyrics: lyrics,
+        genre: genre,
+        album_id: albumId || null,
+        price: isForSale ? price : 0,
+        is_for_sale: isForSale,
+        approved: false,
+        type: mode === 'snippet' ? 'snippet' : 'single',
+        plays: 0
       });
 
-      const songsToInsert = await Promise.all(songUploads);
-      const { error: insertError } = await supabase.from('songs').insert(songsToInsert);
-      if(insertError) throw insertError;
+      if (dbErr) throw dbErr;
       
-      toast.dismiss();
-      toast.success('Album and all tracks uploaded successfully!');
-      setMode('single');
-      setAlbumFiles([]);
-      setCoverFile(null);
-      onComplete();
-    } catch(err:any) {
-      toast.dismiss();
-      toast.error("Album Upload Failed: " + err.message);
+      setUploadProgress(100);
+      setIsSuccess(true);
+      if (onComplete) onComplete();
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
       setUploading(false);
     }
   };
 
+  const handleUploadAlbum = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (albumFiles.length === 0 || !coverFile) return toast.error('Check files');
+    handleUploadSingle(e); 
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 px-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-bg-surface border border-white/5 rounded-[40px] p-12 text-center shadow-2xl">
+          <div className="w-24 h-24 bg-smash-purple/20 rounded-full flex items-center justify-center mx-auto mb-8">
+            <CheckCircle2 size={48} className="text-smash-purple" />
+          </div>
+          <h2 className="text-4xl font-studio font-black italic uppercase text-white mb-4">Submission Sent!</h2>
+          <p className="text-text-secondary font-medium mb-12">Your music is headed to the Smashify review team. This usually takes 2-4 hours.</p>
+          <div className="space-y-4">
+            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">Submit Another</button>
+            <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-display font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (hasReachedLimit && mode === 'single') {
+    return (
+      <div className="max-w-4xl mx-auto py-20 px-6">
+        <div className="bg-bg-surface border border-smash-orange/20 rounded-[40px] p-16 text-center shadow-2xl">
+          <AlertCircle size={64} className="text-smash-orange mx-auto mb-8" />
+          <h2 className="text-3xl font-studio font-black uppercase italic text-white mb-4">Uploader Locked</h2>
+          <p className="text-text-secondary font-medium mb-12 max-w-md mx-auto">
+            {isFree 
+              ? "You've reached the 3-song limit. Upgrade to unlock unlimited uploads."
+              : `You've reached your monthly allowance of ${limits.monthlyLimit} songs.`}
+          </p>
+          <button onClick={() => setActiveTab('subscription')} className="h-16 px-12 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110">View Plans</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="mb-4 text-center md:text-left">
-        <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center justify-center md:justify-start gap-3 mb-2 uppercase text-text-primary"><Upload className="text-smash-purple shrink-0" /> Upload Music</h2>
-        <p className="text-text-secondary text-[12px] md:text-[14px] font-sans">Distribute your sounds to the world. High quality files only.</p>
+    <div className="max-w-4xl mx-auto pb-20 mt-6 px-4">
+      <div className="mb-10 text-center md:text-left">
+        <h2 className="text-[28px] md:text-[36px] font-studio font-black flex items-center justify-center md:justify-start gap-4 uppercase italic text-white mb-2 tracking-tighter">
+           <Upload className="text-smash-purple animate-bounce" size={32} /> Studio Uploader
+        </h2>
+        <p className="text-text-secondary font-medium font-sans">Sync your sounds with thousands of Malawian fans.</p>
       </div>
 
-      <div className="flex bg-bg-surface p-1 rounded-full w-fit mx-auto md:mx-0 mb-6 gap-1 border border-border-subtle shadow-sm">
-        <button onClick={()=>setMode('single')} className={`px-5 py-[10px] rounded-full text-[11px] font-display font-semibold uppercase tracking-widest transition-all ${mode==='single'?'bg-smash-purple text-white shadow-sm':'text-text-secondary hover:text-text-primary'}`}>Single Track</button>
-        <button onClick={()=>{
-          if (!limits.canCreateAlbums) {
-            toast.error('Album uploads are available on Rising Star plan and above.');
-            return;
-          }
-          setMode('album');
-        }} className={`px-5 py-[10px] rounded-full text-[11px] font-display font-semibold uppercase tracking-widest transition-all flex items-center justify-between gap-3 ${mode==='album'?'bg-smash-purple text-white shadow-sm':'text-text-secondary hover:text-text-primary'} ${!limits.canCreateAlbums ? 'opacity-50 cursor-not-allowed' : ''}`}>
-           <span>Full Album</span>
-           {!limits.canCreateAlbums && <span className="bg-bg-elevated p-1 rounded-full"><AppLockIcon size={12}/></span>}
-        </button>
-        <button onClick={()=>{
-          if (!limits.canPostSnippets) {
-            toast.error('Moto Feed snippets are available on Rising Star plan and above.');
-            return;
-          }
-          setMode('snippet');
-        }} className={`px-5 py-[10px] rounded-full text-[11px] font-display font-semibold uppercase tracking-widest transition-all flex items-center justify-between gap-3 ${mode==='snippet'?'bg-smash-purple text-white shadow-sm':'text-text-secondary hover:text-text-primary'} ${!limits.canPostSnippets ? 'opacity-50 cursor-not-allowed' : ''}`}>
-           <span>Feed Snippet</span>
-           {!limits.canPostSnippets ? <span className="bg-bg-elevated p-1 rounded-full"><AppLockIcon size={12}/></span> : <Flame size={14} className={mode==='snippet'?'text-white':'text-smash-orange'}/>}
-        </button>
-      </div>
+      <div className="bg-bg-surface border border-white/5 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-md">
+        <div className="grid grid-cols-3 border-b border-white/5 bg-white/[0.02]">
+           {[
+             { step: 1, label: 'Metadata', icon: Music2 },
+             { step: 2, label: 'Media Info', icon: FileAudio },
+             { step: 3, label: 'Submission', icon: Rocket }
+           ].map((s) => (
+             <div 
+               key={s.step}
+               className={`flex flex-col items-center py-6 transition-all relative ${uploadStep === s.step ? 'text-smash-purple bg-smash-purple/5' : 'text-text-muted opacity-30'}`}
+             >
+                <s.icon size={20} className={`mb-2 ${uploadStep === s.step ? 'animate-pulse' : ''}`} />
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">{s.label}</span>
+                {uploadStep === s.step && <motion.div layoutId="step-indicator" className="absolute bottom-0 left-6 right-6 h-1 bg-smash-purple rounded-full shadow-[0_0_15px_rgba(168,85,247,0.5)]" />}
+             </div>
+           ))}
+        </div>
 
-      <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-8 shadow-sm">
-         {hasReachedLimit && mode === 'single' ? (
-           <div className="text-center p-8 bg-smash-orange/10 border border-smash-orange/20 rounded-[14px]">
-             <AlertCircle className="mx-auto mb-4 text-smash-orange" size={40} />
-             <h3 className="text-[18px] font-studio font-bold text-text-primary mb-2">Upload Limit Reached</h3>
-             <p className="text-[14px] text-text-secondary mb-6 max-w-md mx-auto">
-              {isFree 
-                ? "You've used all 3 free upload slots. Subscribe to Rising Star or higher to unlock more uploads and premium features."
-                : `You've reached your monthly limit of ${limits.monthlyLimit} songs for the Rising Star plan.`}
-             </p>
-             <button onClick={() => setActiveTab('subscription')} className="h-[44px] px-6 bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors inline-flex items-center justify-center">
-               View Subscription Plans
-             </button>
-           </div>
-         ) : mode === 'album' ? (
-           <form onSubmit={handleUploadAlbum} className="space-y-6 grid md:grid-cols-5 gap-8 text-left">
-              <div className="md:col-span-3 space-y-6">
-                 <div>
-                    <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Album Title *</label>
-                    <input name="title" required placeholder="THE RECOVERY" className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all outline-none text-text-primary placeholder:text-text-muted" />
-                 </div>
-                 <div>
-                    <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Album Genre *</label>
-                    <select name="genre" required className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary">
-                      <option value="">Select album genre</option>
-                      <option value="Afropop">Afropop</option>
-                      <option value="Gospel">Gospel</option>
-                      <option value="Hip Hop">Hip Hop</option>
-                      <option value="R&B">R&B</option>
-                      <option value="Compilation">Compilation</option>
-                    </select>
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Select All Tracks (Multiple MP3s) *</label>
-                    <div className="relative">
-                       <input 
-                         type="file" 
-                         required 
-                         multiple
-                         accept="audio/*" 
-                         onChange={e=>setAlbumFiles(Array.from(e.target.files || []))} 
-                         className="w-full text-[13px] font-sans text-text-muted file:mr-4 file:h-[44px] file:px-5 file:rounded-[10px] file:border-0 file:text-[11px] file:font-display file:font-semibold file:uppercase file:tracking-widest file:bg-smash-purple file:text-white hover:file:bg-smash-purple/90 transition-all cursor-pointer bg-bg-elevated border border-border-default rounded-[14px] p-2" 
-                       />
-                    </div>
-                    {albumFiles.length > 0 && (
-                      <div className="p-4 bg-bg-elevated border border-border-default rounded-[10px] space-y-2 mt-4">
-                        <p className="text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">{albumFiles.length} Tracks Selected:</p>
-                        {albumFiles.map((f, idx) => (
-                          <div key={idx} className="flex items-center gap-3 text-[13px] font-sans text-text-secondary">
-                             <Music2 size={14} className="text-smash-purple" /> {f.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                 </div>
-              </div>
-              <div className="md:col-span-2 space-y-6">
-                 <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-1">Album Art *</label>
-                 <div className="aspect-square bg-bg-elevated border border-dashed border-border-default rounded-[14px] flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-smash-purple/50 transition-all relative overflow-hidden group" onClick={()=>document.getElementById('cover-file')?.click()}>
-                   {coverFile ? (
-                      <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover" />
-                   ):(
-                      <>
-                        <ImageIcon size={40} className="text-text-muted mb-4 group-hover:text-smash-purple transition-colors" />
-                        <p className="text-[12px] font-display font-semibold uppercase tracking-widest text-text-primary">Select Cover</p>
-                        <p className="text-[11px] text-text-muted mt-2 font-medium uppercase tracking-wider">1:1 High Res</p>
-                      </>
-                   )}
-                   <input required id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
-                   {coverFile && <div className="absolute bottom-4 bg-black/60 px-3 py-1 rounded-full text-[10px] font-display font-bold uppercase tracking-widest text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">Change</div>}
-                 </div>
+        <div className="p-8 md:p-12">
+           <AnimatePresence mode="wait">
+           {uploadStep === 1 && (
+             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+                <div className="flex bg-bg-elevated p-1.5 rounded-full w-fit mx-auto md:mx-0 mb-10 gap-1 border border-white/5 shadow-inner">
+                  {['single', 'album', 'snippet'].map((m) => (
+                    <button key={m} onClick={() => {
+                      if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
+                      if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star Plan required');
+                      setMode(m as any);
+                    }} className={`px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-105' : 'text-text-secondary hover:text-text-primary'}`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
 
-                 <button disabled={uploading || albumFiles.length === 0} type="submit" className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-all text-[12px] disabled:opacity-50">
-                    {uploading ? 'UPLOADING ALBUM...' : 'UPLOAD FULL ALBUM'}
-                 </button>
-                 <p className="text-[11px] text-center text-text-muted font-sans mt-2">Tracks will be named after file names. You can edit them later in the Songs tab.</p>
-              </div>
-           </form>
-         ) : (
-           <form onSubmit={handleUploadSingle} className="space-y-6 grid md:grid-cols-5 gap-8 text-left">
-              <div className="md:col-span-3 space-y-6">
-                 <div>
-                    <div className="flex justify-between items-center mb-2">
-                       <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block">{mode === 'snippet' ? 'Snippet Title *' : 'Track Title *'}</label>
-                       <span className={`text-[11px] font-display font-medium uppercase tracking-wider ${title.length > 50 ? 'text-smash-orange' : 'text-text-muted'}`}>{title.length}/50</span>
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div className="space-y-8">
+                    <div className="group">
+                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Release Title *</label>
+                      <input 
+                        value={title} 
+                        onChange={e=>setTitle(e.target.value)}
+                        placeholder={mode === 'album' ? "e.g. The Recovery" : "e.g. Mapulani"} 
+                        className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" 
+                      />
                     </div>
-                    <input 
-                       name="title" 
-                       required 
-                       value={title}
-                       onChange={e => setTitle(e.target.value.slice(0, 50))}
-                       placeholder="Enter track name" 
-                       className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary placeholder:text-text-muted" 
-                    />
-                 </div>
-                 {mode === 'single' && (
-                 <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Genre *</label>
-                      <select name="genre" required className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary">
+                    <div className="group">
+                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Primary Genre *</label>
+                      <select 
+                        value={genre} 
+                        onChange={e=>setGenre(e.target.value)}
+                        className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none"
+                      >
                         <option value="">Select genre</option>
                         <option value="Afropop">Afropop</option>
                         <option value="Gospel">Gospel</option>
                         <option value="Hip Hop">Hip Hop</option>
                         <option value="R&B">R&B</option>
+                        <option value="Amapiano">Amapiano</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Add to Album</label>
-                      <select name="album_id" className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary">
-                        <option value="">No album (Single)</option>
-                        {albums.map((al:any)=><option key={al.id} value={al.id}>{al.title}</option>)}
-                      </select>
+                  </div>
+                  <div className="space-y-8">
+                    <div className="group">
+                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Featured Artist</label>
+                      <input value={featuredArtist} onChange={e=>setFeaturedArtist(e.target.value)} placeholder="e.g. Namadingo" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
                     </div>
-                 </div>
-                 )}
-                 {mode === 'single' && (
-                 <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Release Type</label>
-                      <select name="forsale" 
-                              className={`w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none transition-all text-text-primary ${!limits.canSellSongs ? 'opacity-50 cursor-not-allowed border-dashed' : 'focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15'}`}
-                              disabled={!limits.canSellSongs}
-                              onChange={(e) => {
-                                if (e.target.value === 'true' && !limits.canSellSongs) {
-                                  toast.error('Selling songs is available on Rising Star plan and above.');
-                                } else if (e.target.value === 'true') {
-                                  // trigger re-render to show price
-                                }
-                              }}
-                      >
-                        <option value="false">Free Stream Only</option>
-                        {limits.canSellSongs && <option value="true">Paid Download (Buy)</option>}
-                      </select>
-                      {!limits.canSellSongs && <p className="text-[11px] text-smash-orange mt-2 font-display font-medium uppercase tracking-wider"><AppLockIcon size={12} className="inline mr-1 -mt-0.5"/> Unlock downloads</p>}
+                    <div className="group">
+                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Release Date</label>
+                      <input type="date" value={releaseDate} onChange={e=>setReleaseDate(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white" />
                     </div>
-                    
-                    <div className="relative">
-                      <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Set Price (MWK)</label>
-                      <div className="relative">
-                         <input name="price" type="number" placeholder="2500" min="100" disabled={!limits.canSellSongs} className={`w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-[14px] font-display focus:outline-none transition-all placeholder:text-text-muted text-text-primary ${!limits.canSellSongs ? 'opacity-50 cursor-not-allowed border-dashed' : 'focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15'}`} />
-                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-display font-semibold text-text-muted uppercase tracking-widest">MWK</span>
+                  </div>
+                </div>
+
+                {mode !== 'snippet' && (
+                  <div className="grid md:grid-cols-2 gap-10 pt-10 border-t border-white/5">
+                    <div className="group">
+                      <div className="flex justify-between items-center mb-3">
+                         <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block transition-colors group-focus-within:text-smash-purple">Distribution Mode</label>
+                         {!limits.canSellSongs && <span className="text-[9px] font-display font-bold bg-smash-orange/10 text-smash-orange px-2 py-0.5 rounded-full uppercase">Premium Feature</span>}
+                      </div>
+                      <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
+                         <button 
+                           onClick={() => setIsForSale(false)} 
+                           className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}
+                         >
+                            Free Stream
+                         </button>
+                         <button 
+                           disabled={!limits.canSellSongs}
+                           onClick={() => setIsForSale(true)} 
+                           className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} disabled:opacity-30 disabled:cursor-not-allowed`}
+                         >
+                            Paid Download
+                         </button>
                       </div>
                     </div>
-                 </div>
-                 )}
-                 <div>
-                    <div className="flex justify-between items-center mb-2">
-                       <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block">{mode === 'snippet' ? 'Post Caption' : 'Lyrics'}</label>
-                       <span className={`text-[11px] font-display font-medium uppercase tracking-wider ${lyrics.length > 2000 ? 'text-smash-orange' : 'text-text-muted'}`}>{lyrics.length}/2000</span>
-                    </div>
-                    <textarea 
-                       name="lyrics" 
-                       rows={3} 
-                       value={lyrics}
-                       onChange={e => setLyrics(e.target.value)}
-                       placeholder={mode==='snippet'?"Say something about this snippet...":"Paste your lyrics here..."} 
-                       className="w-full bg-bg-elevated border border-border-default rounded-[10px] px-4 py-3 text-[14px] font-sans focus:outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all resize-none text-text-primary placeholder:text-text-muted" 
-                    />
-                 </div>
-                 <div>
-                    <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">{mode === 'snippet' ? 'Select Media *' : 'Audio (MP3 Only) *'}</label>
-                    <div 
-                       onDragOver={handleDragOver}
-                       onDragLeave={handleDragLeave}
-                       onDrop={handleDrop}
-                       onClick={() => document.getElementById('asset-upload')?.click()}
-                       className={`relative group w-full min-h-[160px] max-h-[220px] aspect-video border border-dashed rounded-[14px] flex flex-col items-center justify-center transition-all cursor-pointer bg-bg-elevated ${
-                         isDragging ? 'border-smash-purple' : 'border-border-default hover:border-smash-purple/50'
-                       }`}
-                    >
-                      <input id="asset-upload" type="file" required accept={mode === 'snippet' ? "audio/*,video/*" : "audio/*"} onChange={e=>setSongFile(e.target.files?.[0]||null)} className="hidden" />
-                      {songFile ? (
-                        <div className="text-center animate-in zoom-in duration-300 w-full px-6">
-                           <div className="flex items-center justify-center gap-[2px] h-8 mb-4">
-                             {[1,2,3,4,5,6,7,8,9,10,11,12].map((i) => (
-                                <div key={i} className="w-[3px] bg-smash-purple rounded-full live-waveform opacity-80" style={{ animationDelay: `${i * 0.1}s`, height: `${Math.random() * 100}%` }} />
-                             ))}
-                           </div>
-                           <p className="text-[14px] font-display font-medium text-text-primary truncate">{songFile.name}</p>
-                           <p className="text-[11px] text-text-muted font-display font-semibold uppercase tracking-widest mt-1">{(songFile.size / (1024*1024)).toFixed(2)} MB</p>
+
+                    <AnimatePresence>
+                      {isForSale && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }} 
+                          animate={{ opacity: 1, y: 0 }} 
+                          exit={{ opacity: 0, y: 10 }}
+                          className="group"
+                        >
+                          <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Download Price (MWK)</label>
+                          <div className="relative">
+                             <input 
+                               type="number" 
+                               value={price} 
+                               onChange={e => setPrice(Number(e.target.value))}
+                               min="100"
+                               step="500"
+                               className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" 
+                             />
+                             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                <div className="pt-10 border-t border-white/5 flex justify-end">
+                   <button onClick={() => title && genre ? setUploadStep(2) : toast.error('Fill required fields')} className="h-16 px-12 bg-white text-black font-display font-black uppercase tracking-[0.2em] text-[13px] rounded-2xl hover:scale-105 transition-all flex items-center gap-4">Next Step <ArrowRight size={20} /></button>
+                </div>
+             </motion.div>
+           )}
+            {uploadStep === 2 && (
+             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+                <div className="grid md:grid-cols-2 gap-12">
+                   <div className="aspect-square bg-bg-elevated border-2 border-dashed border-white/10 rounded-[40px] flex flex-col items-center justify-center p-12 text-center cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('cover-file')?.click()}>
+                      {coverFile ? <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover shadow-2xl" /> : (
+                        <>
+                          <ImageIcon size={48} className="text-smash-purple mb-4" />
+                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">Master Artwork</p>
+                        </>
+                      )}
+                      <input id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
+                   </div>
+                   <div className="aspect-square bg-bg-elevated border-2 border-dashed border-white/10 rounded-[40px] flex flex-col items-center justify-center p-12 text-center cursor-pointer hover:border-smash-orange transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('audio-file')?.click()}>
+                      {(mode === 'album' ? albumFiles.length > 0 : songFile) ? (
+                        <div className="text-center animate-pulse">
+                          <Music2 size={64} className="text-smash-green mx-auto mb-4" />
+                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">{mode === 'album' ? `${albumFiles.length} Tracks` : 'Audio Verified'}</p>
                         </div>
                       ) : (
                         <>
-                           <div className="w-12 h-12 rounded-[10px] bg-bg-surface flex items-center justify-center text-text-muted group-hover:text-smash-purple transition-colors mb-3 border border-border-default">
-                              <Upload size={20} />
-                           </div>
-                           <p className="text-[13px] font-display font-medium text-text-primary">Drag & Drop or Click</p>
-                           <p className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider mt-1">HQ Distribution Files Only</p>
+                          <UploadCloud size={48} className="text-smash-orange mb-4" />
+                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">Select Audio</p>
                         </>
                       )}
-                    </div>
-                 </div>
-              </div>
-              
-              <div className="md:col-span-2 space-y-6">
-                 {mode !== 'album' && (
-                 <>
-                 <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-1">Track Artwork</label>
-                 <div className="aspect-square bg-bg-elevated border border-dashed border-border-default rounded-[14px] flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-smash-purple/50 transition-all relative overflow-hidden group shadow-sm" onClick={()=>document.getElementById('cover-file')?.click()}>
-                   {coverFile ? (
-                      <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover" />
-                   ):(
-                      <>
-                        <ImageIcon size={40} className="text-text-muted mb-4 group-hover:text-smash-purple transition-colors" />
-                        <p className="text-[12px] font-display font-semibold uppercase tracking-widest text-text-primary">Select Artwork</p>
-                        <p className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider mt-2">Square Image</p>
-                      </>
-                   )}
-                   <input id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
-                   {coverFile && <div className="absolute bottom-4 bg-black/60 px-3 py-1 rounded-full text-[10px] font-display font-bold uppercase tracking-widest text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">Change</div>}
-                 </div>
-                 </>
-                 )}
+                      <input id="audio-file" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e=> mode === 'album' ? setAlbumFiles(Array.from(e.target.files || [])) : setSongFile(e.target.files?.[0]||null)} className="hidden" />
+                   </div>
+                </div>
+                <div className="pt-10 border-t border-white/5 flex justify-between items-center">
+                   <button onClick={()=>setUploadStep(1)} className="h-14 px-10 border border-white/10 text-text-secondary font-display font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-white/5 transition-all">Back</button>
+                   <button disabled={!coverFile || (mode==='album'?albumFiles.length===0:!songFile)} onClick={()=>setUploadStep(3)} className="h-16 px-12 bg-white text-black font-display font-black uppercase tracking-widest text-[13px] rounded-2xl hover:scale-105 disabled:opacity-20 flex items-center gap-4 transition-all">Review & Launch <ArrowRight size={20}/></button>
+                </div>
+             </motion.div>
+           )}
 
-                 <button disabled={uploading} type="submit" className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-all text-[12px] disabled:opacity-50">
-                    {uploading ? 'PROCESSING...' : (mode === 'snippet' ? 'POST TO FEED' : 'UPLOAD TO STUDIO')}
-                 </button>
-              </div>
-           </form>
-         )}
+           {uploadStep === 3 && (
+             <motion.div key="step3" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-12 py-10 text-center">
+                <div className="relative w-56 h-56 mx-auto">
+                   <div className={`w-full h-full rounded-full border-4 border-smash-purple border-t-transparent ${uploading?'animate-spin':''}`} />
+                   <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-6xl font-studio font-black text-white">{uploadProgress}%</span>
+                      <span className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-smash-purple mt-3 animate-pulse">Syncing</span>
+                   </div>
+                </div>
+                <div className="max-w-md mx-auto space-y-8">
+                   <h3 className="text-3xl font-studio font-black uppercase italic text-white tracking-widest">Engine Processing</h3>
+                   <p className="text-text-secondary font-sans leading-relaxed text-[15px]">Optimization complete. "{title}" is ready for distribution to Smashify nodes across Malawi.</p>
+                   {!uploading && (
+                     <div className="space-y-6">
+                        <button 
+                          onClick={mode === 'album' ? handleUploadAlbum : handleUploadSingle} 
+                          className="h-20 w-full bg-smash-purple text-white font-display font-black uppercase tracking-[0.4em] text-[15px] rounded-3xl hover:brightness-110 shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all flex items-center justify-center gap-6 group"
+                        >
+                           {mode === 'snippet' ? 'POST TO FEED' : 'PUBLISH TO SMASHIFY'} <Rocket size={28} className="group-hover:-translate-y-2 group-hover:translate-x-2 transition-transform duration-500" />
+                        </button>
+
+                        <div className="bg-white/5 border border-white/5 rounded-[20px] p-6 flex gap-4 text-left">
+                           <Info size={18} className="text-smash-purple shrink-0 mt-1" />
+                           <p className="text-[12px] font-sans font-medium text-text-secondary leading-relaxed">
+                              Your track will be reviewed by the <span className="text-white font-bold">Smashify Team</span> within 24–48 hours. You'll receive a notification once approved. <span className="text-smash-purple">High-quality files distribute faster.</span>
+                           </p>
+                        </div>
+                     </div>
+                   )}
+                </div>
+             </motion.div>
+           )}
+           </AnimatePresence>
+        </div>
       </div>
     </div>
   );
 };
-
-
 
 const ProfileTab = ({ userProfile }: any) => {
   const { refreshProfile } = useAuth();

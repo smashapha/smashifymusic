@@ -27,18 +27,6 @@
 
 @layer base {
   :root {
-    --bg-page: #f5f4f0;
-    --bg-surface: #ffffff;
-    --bg-elevated: #f0eff0;
-    --bg-modal: #e2e2e4;
-    --border-subtle: rgba(0,0,0,0.07);
-    --border-default: rgba(0,0,0,0.10);
-    --text-primary: #111118;
-    --text-secondary: #555566;
-    --text-muted: #999aaa;
-  }
-
-  [data-theme='dark'] {
     --bg-page: #0a0a0d;
     --bg-surface: #141418;
     --bg-elevated: #1c1c22;
@@ -65,6 +53,15 @@
 
 .bento-card {
   @apply bg-bg-surface rounded-2xl p-6 transition-all duration-300 border border-border-subtle;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
 }
 
 @keyframes fade-in {

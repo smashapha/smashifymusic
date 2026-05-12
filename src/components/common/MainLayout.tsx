@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
 import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, ShieldCheck, ChevronRight, ChevronLeft, Bell } from 'lucide-react';
 import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,7 +11,7 @@ import ThemeToggle from './ThemeToggle';
 
 const TopBar = () => {
   const { dataSaver, toggleDataSaver } = usePlayer();
-  const { user, signOut, role } = useAuth();
+  const { user, userProfile, signOut, role } = useAuth();
   const navigate = useNavigate();
 
   const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
@@ -38,6 +38,14 @@ const TopBar = () => {
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
+        {userProfile?.is_admin && (
+           <Link 
+             to="/admin" 
+             className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-smash-red/10 text-smash-red border border-smash-red/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-red hover:text-white transition-all shadow-lg shadow-smash-red/10"
+           >
+              <ShieldCheck size={14} /> Admin access
+           </Link>
+        )}
         <ThemeToggle />
         <button 
            onClick={toggleDataSaver}

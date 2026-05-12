@@ -449,7 +449,6 @@ async function startServer() {
       app.use(vite.middlewares);
     } catch (err) {
       console.error('Vite failed to initialize:', err);
-      res.status(500).send('Vite failed to initialize');
     }
   }
 

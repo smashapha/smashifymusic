@@ -1,283 +1,410 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mic2, Headphones, TrendingUp, 
   Check, ChevronDown, ChevronUp, Compass, Heart,
   ShieldCheck, Infinity, Download, LayoutDashboard,
-  Smartphone, User
+  Smartphone, User, Info, Star, Play
 } from 'lucide-react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+
+const Nav = () => {
+  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <nav className={`fixed top-0 left-0 right-0 z-50 h-[72px] flex items-center justify-between px-6 md:px-12 transition-all duration-200 border-b ${isScrolled ? 'bg-[#0A0A0D]/92 backdrop-blur-xl border-white/5' : 'bg-transparent border-transparent'}`}>
+      <div className="flex items-center gap-8">
+        <Logo size="md" className="cursor-pointer" onClick={() => navigate('/')} />
+        <div className="hidden lg:flex items-center gap-8">
+          {['Discover', 'Artists', 'Pricing', 'About'].map((link) => (
+            <Link key={link} to={`/${link.toLowerCase()}`} className="font-display font-medium text-[13px] text-white/60 hover:text-white transition-colors uppercase tracking-wider">{link}</Link>
+          ))}
+          <div className="bg-smash-purple/15 border border-smash-purple/25 text-smash-purple text-[10px] rounded-full px-3 py-1 font-black uppercase tracking-widest">
+            FOR ARTISTS
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-4">
+          <button onClick={() => navigate('/auth/listener')} className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors uppercase tracking-widest">Log In</button>
+          <div className="h-4 w-px bg-white/20" />
+          <button 
+            onClick={() => navigate('/auth/listener?mode=signup')} 
+            className="text-smash-orange font-semibold text-[13px] hover:underline uppercase tracking-widest"
+          >
+            Sign Up Free
+          </button>
+        </div>
+        <button className="lg:hidden text-white">
+          <div className="space-y-1.5 flex flex-col items-end">
+            <div className="w-6 h-0.5 bg-white rounded-full" />
+            <div className="w-4 h-0.5 bg-white rounded-full" />
+            <div className="w-5 h-0.5 bg-white rounded-full" />
+          </div>
+        </button>
+      </div>
+    </nav>
+  );
+};
 
 const PricingCard = ({ title, price, features, badge, onAction, period = 'mo' }: any) => (
-  <div className={`bento-card bg-smash-dark/50 border-white/5 p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange' : ''}`}>
+  <div className="bg-bg-surface border border-border-subtle rounded-[14px] p-7 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all">
     {badge && (
-      <div className="absolute top-6 right-0 bg-smash-orange text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
-        {badge}
+      <div className="mb-4">
+        <span className="bg-smash-orange/10 text-smash-orange text-[10px] font-black px-3 py-1 rounded-[6px] uppercase tracking-widest">
+          {badge}
+        </span>
       </div>
     )}
-    <h3 className="text-2xl font-black font-display italic uppercase mb-2">{title}</h3>
+    <h3 className="text-xl font-studio font-bold uppercase mb-2">{title}</h3>
     <div className="flex items-baseline gap-2 mb-8">
-      <span className="text-sm font-black text-smash-gray uppercase tracking-widest">MK</span>
-      <span className="text-5xl font-black font-display italic">{price}</span>
-      <span className="text-sm font-black text-smash-gray uppercase tracking-widest">/{period}</span>
+      <span className="text-4xl font-studio font-bold text-text-primary">{price}</span>
+      <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MK / {period}</span>
     </div>
     <ul className="space-y-4 mb-10 flex-1">
       {features.map((f: string, i: number) => (
-        <li key={i} className="flex items-start gap-3 text-smash-gray font-bold group-hover:text-white transition-colors">
-          <Check size={18} className="text-smash-orange flex-shrink-0 mt-0.5" />
-          <span>{f}</span>
+        <li key={i} className="flex items-start gap-3 text-text-secondary font-medium">
+          <Check size={16} className="text-smash-orange flex-shrink-0 mt-0.5" />
+          <span className="text-[13px]">{f}</span>
         </li>
       ))}
     </ul>
     <button 
       onClick={onAction}
-      className={`w-full py-5 rounded-[24px] font-black text-sm uppercase tracking-widest transition-all ${badge ? 'bg-smash-orange text-white' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white'}`}
+      className="w-full h-[48px] bg-white text-smash-black rounded-[10px] font-display font-semibold text-[12px] uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all active:scale-95"
     >
       GET STARTED
     </button>
   </div>
 );
 
-const FAQItem = ({ question, answer }: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="border-b border-white/5">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-8 flex items-center justify-between text-left group"
-      >
-        <span className="text-xl md:text-2xl font-black font-display italic uppercase tracking-tight group-hover:text-smash-orange transition-colors">{question}</span>
-        {isOpen ? <ChevronUp className="text-smash-orange" /> : <ChevronDown className="text-smash-gray" />}
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <p className="pb-8 text-smash-gray text-lg font-medium leading-relaxed">{answer}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
 const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [artists, setArtists] = useState<any[]>([]);
+  const [topSongs, setTopSongs] = useState<any[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
 
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('role', 'artist').limit(12);
+      setArtists(artistsData || []);
+
+      const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
+      setTopSongs(topSongsData || []);
+
+      const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
+      setTrendingSongs(trendingData || []);
+    };
+    fetchData();
+  }, []);
+
+  if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-smash-black text-white selection:bg-smash-orange/30">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-6 bg-smash-black/10 backdrop-blur-xl border-b border-white/5">
-        <Logo size="md" className="cursor-pointer group" onClick={() => navigate('/')} />
-        <div className="flex items-center gap-4 md:gap-8">
-          <button onClick={() => navigate('/auth/listener')} className="hidden md:block text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest transition-colors">Log In</button>
-          <button 
-            onClick={() => navigate('/auth/listener?mode=signup')} 
-            className="px-8 py-3 bg-white text-smash-black rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all transform hover:-translate-y-1 shadow-xl shadow-white/5"
-          >
-            Sign Up Free
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-orange/30 overflow-x-hidden">
+      <Nav />
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-6 md:px-12 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-smash-orange/20 rounded-full blur-[140px] -mr-64 -mt-32 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-smash-red/10 rounded-full blur-[140px] -ml-64 -mb-32" />
+      <section className="relative min-h-screen flex items-center pt-[72px] px-6 md:px-12 overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/music.png')] bg-[length:100px_100px] bg-repeat">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-smash-orange/10 rounded-full blur-[140px] -mr-32 -mt-32 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-smash-purple/5 rounded-full blur-[140px] -ml-32 -mb-32 pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative z-10"
-          >
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black text-smash-orange mb-10 shadow-inner">
-              <span className="tracking-widest uppercase italic"><i className="fas fa-fire mr-2"></i> #1 Malawi Music Platform</span>
-            </div>
-            <h1 className="text-7xl md:text-[120px] font-black font-display leading-[0.85] tracking-tighter mb-8 flex flex-col uppercase italic">
-              Stream Music.<br/>
-              <span className="text-smash-orange">Support Artists.</span>
-            </h1>
-            <p className="text-2xl text-smash-gray max-w-xl mb-12 leading-relaxed font-semibold">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-12 items-center w-full">
+          <div className="relative z-10 text-center lg:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/5 border border-white/8 text-white/70 font-display font-medium text-[12px] mb-8"
+            >
+              🇲🇼 #1 Malawi Music Platform
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="text-[clamp(3.5rem,7vw,7rem)] font-studio font-extrabold leading-[0.88] tracking-[-0.03em] uppercase mb-8"
+            >
+              <span className="italic block">Stream Music.</span>
+              <span className="text-smash-orange block">Support Artists.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="text-[18px] font-sans text-white/60 max-w-lg leading-[1.7] mb-10 mx-auto lg:mx-0"
+            >
               The first streaming platform built for Malawian artists & fans. Stream free, buy songs directly — artists keep 90% of every sale.
-            </p>
-            <div className="flex flex-wrap gap-5">
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-16"
+            >
               <button 
-                 onClick={() => navigate('/auth/listener?mode=signup')}
-                 className="px-10 py-5 bg-white text-smash-black rounded-full font-black text-sm md:text-lg uppercase tracking-widest flex items-center gap-3 hover:bg-smash-orange hover:text-white transition-all transform hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
+                onClick={() => navigate('/auth/listener?mode=signup')}
+                className="h-[52px] px-8 bg-smash-orange text-white rounded-[10px] font-display font-semibold text-[13px] uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all"
               >
-                Start Listening Free <Headphones size={24} />
+                Start Listening Free
               </button>
               <button 
-                 onClick={() => navigate('/artists')}
-                 className="px-10 py-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-full font-black text-sm md:text-lg uppercase tracking-widest flex items-center gap-3 hover:bg-white/10 transition-all border-b-4 border-b-white/5 active:border-b-0 active:translate-y-1"
+                onClick={() => navigate('/artists')}
+                className="h-[52px] px-8 bg-transparent border border-white/20 text-white/80 rounded-[10px] font-display font-semibold text-[13px] uppercase tracking-widest hover:border-smash-orange/50 transition-all active:scale-[0.98]"
               >
-                For Artists <Mic2 size={24} />
+                For Artists
               </button>
-            </div>
+            </motion.div>
 
-            <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div>
-                   <p className="text-3xl font-black font-display italic text-white mb-1">10K+</p>
-                   <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Listeners</p>
+            <div className="flex items-center justify-center lg:justify-start gap-8 md:gap-12 pt-12 border-t border-white/10">
+              {[
+                { label: 'Listeners', val: '10K+' },
+                { label: 'Songs', val: '500+', color: 'text-smash-orange' },
+                { label: 'Artist Payout', val: '90%' },
+                { label: 'Status', val: 'Free', color: 'text-smash-green' }
+              ].map((stat, i) => (
+                <div key={i} className="flex flex-col">
+                  <span className={`text-[clamp(1.6rem,3vw,2.2rem)] font-studio font-bold leading-none mb-1 ${stat.color || 'text-white'}`}>{stat.val}</span>
+                  <span className="text-[11px] font-display text-white/50 uppercase tracking-widest whitespace-nowrap">{stat.label}</span>
                 </div>
-                <div>
-                   <p className="text-3xl font-black font-display italic text-smash-orange mb-1">500+</p>
-                   <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Songs</p>
-                </div>
-                <div>
-                   <p className="text-3xl font-black font-display italic text-white mb-1">90%</p>
-                   <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">Artist Payout</p>
-                </div>
-                <div>
-                   <p className="text-3xl font-black font-display italic text-smash-green mb-1">Free</p>
-                   <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest">To Stream</p>
-                </div>
+              ))}
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="relative z-10 bento-card aspect-square max-w-[550px] mx-auto p-0 overflow-hidden group shadow-[0_0_120px_rgba(255,95,0,0.15)] rounded-[60px] border-white/5">
-              <img 
-                src="https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=1000&h=1000&fit=crop" 
-                className="w-full h-full object-cover transform scale-110 group-hover:scale-125 transition-transform duration-[20s]" 
-                alt="" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-smash-black via-smash-black/40 to-transparent opacity-80" />
-              <div className="absolute bottom-12 left-12 right-12 glass-morphism p-8 rounded-[40px] border border-white/10 shadow-2xl">
-                 <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                       <div className="w-14 h-14 bg-smash-orange rounded-2xl flex items-center justify-center shadow-lg shadow-smash-orange/30">
-                          <Headphones className="text-white" size={28} />
-                       </div>
-                       <div>
-                          <p className="text-xs uppercase font-black text-smash-gray tracking-[0.2em] mb-1">NOW PLAYING</p>
-                          <p className="font-display font-black text-2xl italic tracking-tight uppercase leading-none">Malawian Hits</p>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
-                      animate={{ x: ['-100%', '100%'] }} 
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} 
-                      className="w-1/2 h-full bg-smash-orange" 
-                    />
-                 </div>
+          <div className="relative hidden lg:block h-[600px]">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative w-[400px] h-[400px]">
+                {/* Center Circle */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] h-[300px] bg-bg-elevated border border-white/10 rounded-[24px] overflow-hidden shadow-2xl flex items-center justify-center">
+                   <div className="p-8 text-center">
+                      <div className="w-16 h-16 bg-smash-orange/20 rounded-full flex items-center justify-center mx-auto mb-4 text-smash-orange">
+                         <Star size={32} />
+                      </div>
+                      <p className="font-studio font-black text-xl uppercase italic leading-none mb-2">Exclusive</p>
+                      <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Only on Smashify</p>
+                   </div>
+                </div>
+
+                {/* Artists orbit */}
+                {artists.slice(0, 8).map((artist, i) => {
+                  const angle = (i / 8) * Math.PI * 2;
+                  const radius = 180;
+                  const x = Math.cos(angle) * radius;
+                  const y = Math.sin(angle) * radius;
+                  const size = 50 + (i % 3) * 15;
+
+                  return (
+                    <motion.div
+                      key={artist.id}
+                      className="absolute left-1/2 top-1/2"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1, 
+                        x: x - size / 2, 
+                        y: y - size / 2,
+                      }}
+                      style={{ width: size, height: size }}
+                    >
+                      <motion.div
+                        className="w-full h-full rounded-full border-2 border-white/10 overflow-hidden shadow-xl"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ 
+                          duration: 3 + (i % 4), 
+                          repeat: Infinity, 
+                          ease: "easeInOut" 
+                        }}
+                      >
+                        <img src={artist.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt={artist.stage_name} />
+                      </motion.div>
+                    </motion.div>
+                  );
+                })}
+
+                {/* Now Playing Mini Card */}
+                <div className="absolute bottom-10 right-0 w-[200px] h-[100px] bg-[#141418]/85 backdrop-blur-xl border border-white/8 rounded-[16px] p-4 flex items-center gap-3 shadow-2xl animate-fade-in">
+                   <img src="https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100" className="w-[60px] h-[60px] rounded-[10px] object-cover" />
+                   <div className="flex-1 min-w-0">
+                      <p className="text-[8px] font-black text-smash-orange uppercase tracking-widest mb-1">Live Now</p>
+                      <p className="text-[13px] font-display font-bold text-white truncate">Top Hits 2024</p>
+                      <p className="text-[10px] text-white/40 uppercase font-medium">Smashify Radio</p>
+                   </div>
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Vision & Mission */}
-      <section className="py-20 px-6 md:px-12 bg-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="bento-card bg-smash-dark/50 border-white/5 p-12 hover:border-smash-orange/30 transition-all">
-            <div className="w-16 h-16 bg-smash-purple/20 text-smash-purple rounded-2xl flex items-center justify-center mb-8">
-              <Compass size={32} />
+      {/* Ticker Strip */}
+      <div className="h-[44px] bg-smash-orange flex items-center relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 px-4 bg-smash-orange z-10 flex items-center shadow-[10px_0_15px_rgba(255,95,0,0.5)]">
+          <span className="font-display font-bold text-[10px] text-white/70 uppercase tracking-widest whitespace-nowrap">TRENDING NOW →</span>
+        </div>
+        <div className="flex items-center gap-12 whitespace-nowrap animate-marquee">
+          {[...trendingSongs, ...trendingSongs].map((song, i) => (
+            <div key={`${song.id}-${i}`} className="flex items-center gap-3">
+              <span className="text-white font-studio font-bold uppercase text-[12px]">{song.title}</span>
+              <span className="text-white/40 font-display text-[11px] uppercase tracking-widest">{song.artists?.stage_name || 'Various'}</span>
+              <span className="w-1 h-1 rounded-full bg-white/20 mx-2" />
             </div>
-            <h2 className="text-4xl font-black font-display italic uppercase mb-6">Our Vision</h2>
-            <p className="text-smash-gray text-xl leading-relaxed font-semibold">
-              To create a music ecosystem where Malawian artists thrive and fans directly power the industry they love.
-            </p>
+          ))}
+        </div>
+      </div>
+
+      {/* Featured Artists */}
+      <section className="pt-24 pb-12 px-6 md:px-12 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="font-display font-medium text-[10px] uppercase tracking-[0.3em] text-white/40">Featured Artists</h2>
+            <Link to="/artists" className="font-display font-semibold text-[10px] uppercase tracking-widest text-smash-orange hover:underline">See All</Link>
           </div>
-          <div className="bento-card bg-smash-dark/50 border-white/5 p-12 hover:border-smash-cyan/30 transition-all">
-            <div className="w-16 h-16 bg-smash-cyan/20 text-smash-cyan rounded-2xl flex items-center justify-center mb-8">
-              <TrendingUp size={32} />
+          <div className="flex gap-10 overflow-x-auto pb-8 hide-scrollbar scroll-smooth" style={{ maskImage: 'linear-gradient(to right, black 90%, transparent 100%)' }}>
+            {artists.map((artist) => (
+              <div key={artist.id} className="flex-shrink-0 w-[110px] flex flex-col items-center group cursor-pointer" onClick={() => navigate(`/artist/${artist.id}`)}>
+                <div className="w-20 h-20 rounded-full border-2 border-white/8 overflow-hidden transition-all duration-300 group-hover:border-smash-orange/40 group-hover:scale-[1.05]">
+                  <img src={artist.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt={artist.stage_name} />
+                </div>
+                <p className="font-display font-semibold text-[13px] text-center mt-3 truncate w-full group-hover:text-smash-orange transition-colors">{artist.stage_name || artist.full_name}</p>
+                <p className="font-display text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{artist.genre || 'Afro'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Weekly Top 10 */}
+      <section className="py-24 px-6 md:px-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+            <div>
+              <p className="font-studio font-bold text-[14px] text-white/40 uppercase tracking-widest mb-2">This Week's</p>
+              <h2 className="text-[clamp(3rem,6vw,5rem)] font-studio font-extrabold text-white leading-none uppercase">Top Songs</h2>
             </div>
-            <h2 className="text-4xl font-black font-display italic uppercase mb-6">Our Mission</h2>
-            <p className="text-smash-gray text-xl leading-relaxed font-semibold">
-              A fair, transparent platform where artists keep 90% of earnings and fans enjoy unlimited access to local music.
-            </p>
+            <div className="flex items-center gap-2 text-white/40 mb-2">
+              <div className="w-2 h-2 rounded-full bg-smash-green shadow-[0_0_8px_rgba(0,214,143,0.5)]" />
+              <span className="font-display font-medium text-[11px] uppercase tracking-widest">Updated Weekly</span>
+            </div>
+          </div>
+
+          <div className="space-y-0">
+            {topSongs.map((song, i) => (
+              <motion.div
+                key={song.id}
+                initial={{ opacity: 0, x: -16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: i * 0.04 }}
+                className="group h-[72px] flex items-center border-b border-white/6 hover:bg-white/[0.02] px-2 transition-colors cursor-pointer"
+              >
+                <span className={`font-studio font-extrabold text-[42px] w-[72px] text-right italic ${
+                  i === 0 ? 'text-smash-orange' : 
+                  i === 1 ? 'text-white/70' : 
+                  i === 2 ? 'text-white/50' : 'text-white/20'
+                }`}>
+                  {i + 1}
+                </span>
+                <div className="w-[52px] h-[52px] rounded-[10px] bg-white/5 overflow-hidden ml-6 shrink-0 shadow-lg">
+                   <img src={song.cover_url || "https://placehold.co/100"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <div className="flex-1 ml-6 min-w-0">
+                  <p className="font-display font-bold text-[15px] truncate group-hover:text-smash-orange transition-colors uppercase italic tracking-tight">{song.title}</p>
+                  <p className="font-display text-[12px] text-white/50 uppercase tracking-wider">{song.artists?.stage_name || song.artists?.full_name}</p>
+                </div>
+                <div className="flex items-center gap-10">
+                   <span className="font-display font-medium text-[12px] text-white/30 hidden md:block">{(song.plays || 0).toLocaleString()} PLAYS</span>
+                   <button className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center hover:bg-smash-orange hover:text-white transition-all transform hover:scale-110">
+                      <Play size={16} fill="currentColor" />
+                   </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="flex justify-center mt-16">
+            <button className="h-[52px] px-10 rounded-full border-2 border-white/20 text-white font-display font-semibold text-[14px] uppercase tracking-widest hover:bg-white hover:text-[#0A0A0D] transition-all hover:border-white">
+              See Full Chart
+            </button>
           </div>
         </div>
       </section>
 
       {/* Why Smashify */}
-      <section className="py-32 px-6 md:px-12">
+      <section className="py-32 px-6 md:px-12 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
-           <div className="text-center mb-24">
-              <h2 className="text-5xl md:text-8xl font-black font-display italic uppercase tracking-tighter mb-4 leading-none">WHY <span className="text-smash-orange">SMASHIFY?</span></h2>
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <Infinity className="text-smash-orange mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Free Streaming</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">Listen to all Malawian hits — no subscription required to stream.</p>
-              </div>
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <Heart className="text-smash-red mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Direct Support</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">Buy songs & send donations directly via Airtel Money or TNM Mpamba.</p>
-              </div>
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <Download className="text-smash-cyan mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Offline Mode</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">Download songs with Premium. Listen anywhere, anytime.</p>
-              </div>
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <Smartphone className="text-smash-purple mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Install as App</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">Install Smashify on your phone like a native app — no app store needed.</p>
-              </div>
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <LayoutDashboard className="text-smash-green mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Smart Queue</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">Shuffle, repeat, feed view, crossfade & full player controls built in.</p>
-              </div>
-              <div className="bento-card bg-white/5 p-10 group hover:-translate-y-2 transition-all">
-                 <ShieldCheck className="text-white mb-6" size={40} />
-                 <h3 className="text-2xl font-black font-display italic uppercase mb-4">Artist First</h3>
-                 <p className="text-smash-gray font-semibold leading-relaxed">90% payouts, transparent earnings, same-day withdrawals via mobile money.</p>
-              </div>
-           </div>
+          <div className="text-center mb-24">
+             <h2 className="text-[10px] font-display font-medium text-smash-orange uppercase tracking-[0.4em] mb-4">Core Platform</h2>
+             <h3 className="text-5xl md:text-8xl font-studio font-black italic uppercase tracking-tighter leading-none">Why <span className="text-smash-orange">Smashify?</span></h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {[
+               { icon: Infinity, title: 'Free Streaming', color: 'text-smash-orange', desc: 'Listen to all Malawian hits — no subscription required to stream.' },
+               { icon: Heart, title: 'Direct Support', color: 'text-smash-red', desc: 'Buy songs & send donations directly via Airtel Money or TNM Mpamba.' },
+               { icon: Download, title: 'Offline Mode', color: 'text-smash-cyan', desc: 'Download songs with Premium. Listen anywhere, anytime.' },
+               { icon: Smartphone, title: 'Install as App', color: 'text-smash-purple', desc: 'Install Smashify on your phone like a native app — no app store needed.' },
+               { icon: LayoutDashboard, title: 'Smart Queue', color: 'text-smash-green', desc: 'Shuffle, repeat, feed view, crossfade & full player controls built in.' },
+               { icon: ShieldCheck, title: 'Artist First', color: 'text-white/70', desc: '90% payouts, transparent earnings, same-day withdrawals via mobile money.' }
+             ].map((feat, i) => (
+                <div key={i} className="bg-bg-surface border border-border-subtle rounded-[14px] p-6 hover:border-smash-orange/30 transition-all group">
+                   <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                      <feat.icon className={feat.color} size={24} />
+                   </div>
+                   <h3 className="text-[18px] font-studio font-bold uppercase italic text-white mb-3 tracking-tight">{feat.title}</h3>
+                   <p className="text-white/50 text-[14px] leading-relaxed font-sans">{feat.desc}</p>
+                </div>
+             ))}
+          </div>
         </div>
       </section>
 
-      {/* Artist CTA */}
-      <section className="py-24 px-6 md:px-12 bg-smash-orange/10 border-y border-smash-orange/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-smash-orange/20 blur-[100px] rounded-full mix-blend-screen" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <Mic2 className="mx-auto text-smash-orange mb-8" size={64} />
-          <h2 className="text-5xl md:text-7xl font-black font-display italic uppercase mb-8">Are You an Artist?</h2>
-          <p className="text-xl md:text-2xl text-white max-w-2xl mx-auto mb-12 font-semibold">
-            Upload your music, set your price, and earn directly from your fans. Keep 90% of every sale and donation. Apply today and join Malawi's music revolution.
-          </p>
-          <button 
-            onClick={() => navigate('/pricing?tab=artists')}
-            className="px-12 py-6 bg-smash-orange text-white rounded-full font-black text-xl uppercase tracking-widest shadow-[0_0_40px_rgba(255,107,0,0.4)] hover:bg-orange-600 transition-all hover:scale-105 active:scale-95"
-          >
-            Apply as Artist
-          </button>
+      {/* Vision & Mission */}
+      <section className="py-32 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto border border-white/8 rounded-[40px] overflow-hidden bg-bg-surface flex flex-col md:flex-row">
+           <div className="flex-1 p-12 lg:p-20 flex flex-col justify-center">
+              <h2 className="text-3xl lg:text-5xl font-studio font-bold uppercase italic text-white mb-6">Our Vision</h2>
+              <p className="text-white/60 text-lg lg:text-xl font-sans leading-relaxed">
+                To create a music ecosystem where Malawian artists thrive and fans directly power the industry they love. No more middleman.
+              </p>
+           </div>
+           <div className="w-px bg-white/8 hidden md:block" />
+           <div className="flex-1 p-12 lg:p-20 flex flex-col justify-center">
+              <h2 className="text-3xl lg:text-5xl font-studio font-bold uppercase italic text-white mb-6">Our Mission</h2>
+              <p className="text-white/60 text-lg lg:text-xl font-sans leading-relaxed">
+                A fair, transparent platform where artists keep 90% of earnings and fans enjoy unlimited access to local music.
+              </p>
+           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-32 px-6 md:px-12 bg-gradient-to-b from-smash-black to-smash-dark/30">
+      <section className="pt-24 px-6 md:px-12 bg-gradient-to-b from-transparent to-[#141418]/50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
-             <h2 className="text-5xl md:text-8xl font-black font-display italic uppercase tracking-tighter mb-4 leading-none">FAIR <span className="text-smash-orange">PRICING</span></h2>
-             <p className="text-smash-gray text-xl md:text-2xl font-medium tracking-tight">Everything starts free. Upgrade when you're ready.</p>
+          <div className="bg-smash-orange/8 border-t border-b border-smash-orange/15 py-24 px-6 rounded-[40px] mb-20 text-center">
+             <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-studio font-black uppercase text-white leading-tight mb-4">Stream free forever.</h2>
+             <p className="text-[18px] font-sans text-white/60 mb-10 max-w-xl mx-auto">Or go Premium for MK 750/month to unlock the full potential of Smahify.</p>
+             <div className="flex flex-wrap items-center justify-center gap-4">
+                <button className="h-[52px] px-10 bg-smash-orange text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest shadow-xl shadow-smash-orange/20">Upgrade Now</button>
+                <button className="h-[52px] px-10 bg-transparent border-2 border-white text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest hover:bg-white hover:text-black transition-colors">Compare Plans</button>
+             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-32">
              <PricingCard 
                 title="Free" 
                 price="0" 
@@ -321,48 +448,72 @@ const Landing: React.FC = () => {
         </div>
       </section>
 
+      {/* Artist CTA Section */}
+      <section className="py-32 px-6 md:px-12 relative overflow-hidden bg-bg-surface">
+         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
+            <div className="hidden lg:block w-[40%] h-[500px] relative rounded-[32px] overflow-hidden group">
+               <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" />
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#141418] pointer-events-none" />
+            </div>
+            <div className="flex-1 text-center lg:text-left">
+               <p className="font-display font-medium text-[10px] text-smash-orange uppercase tracking-[0.4em] mb-4">For Content Creators</p>
+               <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-studio font-extrabold uppercase italic text-white mb-6 leading-tight">ARE YOU AN ARTIST?</h2>
+               <p className="text-white/50 text-[18px] font-sans leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0">
+                  Join hundreds of Malawian artists already monetising their music. Keep control, keep your rights, keep 90% of every sale.
+               </p>
+               <button 
+                  onClick={() => navigate('/artists')}
+                  className="h-[52px] px-10 bg-smash-orange text-white rounded-[10px] font-display font-semibold text-[13px] uppercase tracking-widest shadow-xl shadow-smash-orange/20"
+               >
+                  Apply as Artist
+               </button>
+            </div>
+         </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-24 px-6 md:px-12 bg-black border-t border-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-16">
-          <div className="space-y-6">
+      <footer className="pt-32 pb-16 px-6 md:px-12 border-t border-white/5 bg-black">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
+          <div className="space-y-8">
             <Logo size="lg" />
-            <p className="text-smash-gray text-base max-w-sm font-medium leading-relaxed">The #1 music streaming platform built for Malawi. Stream free, support artists.</p>
+            <p className="text-white/40 text-[15px] max-w-sm font-sans leading-relaxed">
+              Smashify is a digital music, podcast, and video service that gives you access to millions of Malawian songs and other content.
+            </p>
             <div className="flex gap-4">
-               {['ig', 'fb', 'tw', 'tk'].map(s => (
-                 <div key={s} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-smash-gray hover:text-smash-orange hover:bg-white/10 transition-all cursor-pointer uppercase font-black text-[10px]">
-                   {s}
+               {['ti-brand-instagram', 'ti-brand-facebook', 'ti-brand-twitter', 'ti-brand-tiktok'].map((icon, i) => (
+                 <div key={i} className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-smash-orange transition-all cursor-pointer">
+                   <i className={`ti ${icon} text-lg`} />
                  </div>
                ))}
             </div>
           </div>
           
-          <div className="space-y-6 flex flex-col">
-             <h4 className="text-lg font-black font-display uppercase italic tracking-[0.1em] text-white">Platform</h4>
-             <button onClick={() => navigate('/discover')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Discover</button>
-             <button onClick={() => navigate('/pricing')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Premium Plans</button>
-             <button onClick={() => navigate('/library')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Library</button>
+          {/* Footer content continues... */}
+          <div className="flex flex-col gap-6">
+             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Platform</h4>
+             {['Discover', 'Pricing', 'About', 'Trending'].map(link => (
+               <Link key={link} to={`/${link.toLowerCase()}`} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
+             ))}
           </div>
 
-          <div className="space-y-6 flex flex-col">
-             <h4 className="text-lg font-black font-display uppercase italic tracking-[0.1em] text-white">Artists</h4>
-             <button onClick={() => navigate('/artists')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Artist Portal</button>
-             <button onClick={() => navigate('/artists')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Apply as Artist</button>
+          <div className="flex flex-col gap-6">
+             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Artists</h4>
+             {['Artist Studio', 'Apply Now', 'Distribution', 'Help'].map(link => (
+               <Link key={link} to="/artists" className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
+             ))}
           </div>
 
-          <div className="space-y-6 flex flex-col">
-             <h4 className="text-lg font-black font-display uppercase italic tracking-[0.1em] text-white">Company</h4>
-             <button onClick={() => navigate('/about')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">About Us</button>
-             <button onClick={() => navigate('/contact')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Contact</button>
-             <button onClick={() => navigate('/privacy')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Privacy Policy</button>
-             <button onClick={() => navigate('/terms')} className="text-left text-smash-gray hover:text-smash-orange font-bold transition-colors">Terms of Service</button>
+          <div className="flex flex-col gap-6">
+             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Company</h4>
+             {['About Us', 'Contact', 'Privacy Policy', 'Terms'].map(link => (
+               <Link key={link} to={`/${link.toLowerCase().replace(' ', '')}`} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
+             ))}
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-col items-center justify-center gap-4 text-center">
-           <p className="text-sm font-bold text-smash-gray">
-              <Heart className="inline text-smash-red" size={14} /> © {new Date().getFullYear()} Smashify. Built in Blantyre, Malawi.
-           </p>
-           <p className="text-xs font-bold text-smash-orange uppercase tracking-widest">Artists keep 90% of every sale.</p>
+        <div className="max-w-7xl mx-auto pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+           <p className="text-[13px] text-white/30 font-medium">© {new Date().getFullYear()} Smashify. Built in Blantyre, Malaŵi.</p>
+           <p className="font-display font-bold text-[10px] text-smash-orange uppercase tracking-[0.3em]">Artists keep 90% of every sale.</p>
         </div>
       </footer>
     </div>
@@ -370,3 +521,4 @@ const Landing: React.FC = () => {
 };
 
 export default Landing;
+

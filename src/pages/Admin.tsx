@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, CheckCircle2, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
-  Mic2, Users, ShoppingCart, Heart, CreditCard, Search
+  Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -401,11 +401,19 @@ const Admin = () => {
     <div className="min-h-screen bg-smash-black text-white p-6 md:p-12 overflow-y-auto">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="text-left">
-            <h2 className="text-4xl font-studio font-black flex items-center gap-3 uppercase italic tracking-tighter">
-              <ShieldCheck className="text-smash-purple" size={40} /> Admin Control
-            </h2>
-            <p className="text-smash-gray text-xs font-bold uppercase tracking-widest mt-1">Platform Governance & Asset Moderation</p>
+          <div className="text-left flex items-center gap-6">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-3 bg-white/5 border border-white/10 rounded-2xl text-smash-gray hover:text-white hover:bg-white/10 transition-all transition-transform hover:-translate-x-1"
+            >
+               <ArrowLeft size={24} />
+            </button>
+            <div>
+              <h2 className="text-4xl font-studio font-black flex items-center gap-3 uppercase italic tracking-tighter">
+                <ShieldCheck className="text-smash-purple" size={40} /> Admin Control
+              </h2>
+              <p className="text-smash-gray text-xs font-bold uppercase tracking-widest mt-1">Platform Governance & Asset Moderation</p>
+            </div>
           </div>
           <div className="bg-smash-purple/10 text-smash-purple px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest border border-smash-purple/20 flex items-center gap-2">
             <div className="w-2 h-2 bg-smash-purple rounded-full animate-ping" />
