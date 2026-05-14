@@ -17,7 +17,13 @@ const TopBar = () => {
   const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
 
   return (
-    <div className="h-16 flex items-center justify-between px-4 lg:px-8 bg-bg-page/90 backdrop-blur-xl sticky top-0 z-30 border-b border-border-subtle">
+    <div className="h-16 flex items-center px-4 lg:px-8 bg-bg-page/90 backdrop-blur-xl sticky top-0 z-30 border-b border-border-subtle">
+      
+      {/* Mobile Logo */}
+      <div className="md:hidden flex-1 flex items-center">
+        <Logo size="sm" showText={true} onClick={() => navigate('/')} className="cursor-pointer scale-75 origin-left" />
+      </div>
+
       <div className="flex-1 max-w-xl hidden md:block">
         <form className="relative group" onSubmit={(e) => {
           e.preventDefault();
@@ -94,10 +100,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean, setIsC
     >
       <div className="flex items-center justify-center h-8 mb-8 px-4">
         {isCollapsed ? (
-          <span className="font-display font-extrabold text-[20px] text-smash-orange">S</span>
+          <Logo size="sm" showText={false} />
         ) : (
           <div className="flex w-full items-center justify-between">
-            <span className="font-studio font-bold text-[14px] text-smash-orange tracking-wide">SMASHIFY</span>
+            <Logo size="sm" />
             <span className="text-[9px] uppercase font-display tracking-widest text-text-muted">{role === 'artist' ? 'ARTIST' : 'LISTENER'}</span>
           </div>
         )}

@@ -12,12 +12,13 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import { Mail, Phone, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import Landing from './pages/Landing';
+import AuthListener from './pages/AuthListener';
+import AuthArtist from './pages/AuthArtist';
+
 const Home = React.lazy(() => import('./pages/Home'));
 const ArtistHub = React.lazy(() => import('./pages/ArtistHub'));
 const MotoFeed = React.lazy(() => import('./pages/MotoFeed'));
-const AuthArtist = React.lazy(() => import('./pages/AuthArtist'));
-const AuthListener = React.lazy(() => import('./pages/AuthListener'));
-const Landing = React.lazy(() => import('./pages/Landing'));
 const About = React.lazy(() => import('./pages/About'));
 const Terms = React.lazy(() => import('./pages/Terms'));
 const Privacy = React.lazy(() => import('./pages/Privacy'));

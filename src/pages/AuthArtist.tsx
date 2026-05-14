@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
+import Logo from '../components/common/Logo';
 
 type AuthMode = 'login' | 'signup';
 type ArtistStep = 1 | 2 | 3 | 4;
@@ -285,9 +286,9 @@ const AuthArtist: React.FC = () => {
       )}
 
       <div className="w-full max-w-[420px] bg-[#141418]/85 backdrop-blur-[24px] saturate-180 border border-white/10 rounded-[24px] p-8 md:p-10 relative z-10 mx-auto shadow-2xl pb-16 h-[85vh] overflow-y-auto no-scrollbar">
-        <div className="text-center mb-8">
-           <h1 className="font-display font-extrabold text-[28px] text-smash-orange tracking-tight uppercase">SMASHIFY</h1>
-           <p className="font-sans text-[13px] text-text-muted mt-1">Artist Studio</p>
+        <div className="flex flex-col items-center text-center mb-8">
+           <Logo size="xl" />
+           <p className="font-sans text-[13px] text-text-muted mt-2">Artist Studio</p>
         </div>
 
         <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-[12px]">

@@ -16,6 +16,9 @@ serve(async (req) => {
     // In a real environment, you'd use HMAC with PAYCHANGU_WEBHOOK_SECRET
     // PayChangu's signature verification method should be followed strictly.
     // Assuming standard HMAC-SHA256 for this implementation logic.
+    if (!signature) {
+      return new Response('No signature', { status: 401 });
+    }
     const hmac = await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),

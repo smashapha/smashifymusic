@@ -25,7 +25,8 @@ interface InitiatePaymentParams {
   return_url: string;
 }
 
-const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+const envAppUrl = import.meta.env.VITE_APP_URL;
+const APP_URL = (envAppUrl && envAppUrl !== 'YOUR_APP_URL') ? envAppUrl : window.location.origin;
 
 /**
  * Common function to initiate payment via Express API
@@ -39,7 +40,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     // Get session for auth
     const { data: { session } } = await supabase.auth.getSession();
     
-    const response = await fetch(`${APP_URL}/api/functions/create-payment`, {
+    const response = await fetch('/api/functions/create-payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +53,15 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       })
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse frontend response:', text);
+      throw new Error('Server returned invalid response');
+    }
+
     if (!response.ok) throw new Error(data.error || 'Failed to initialize payment');
     
     if (!data?.checkout_url) throw new Error('Failed to get checkout URL');
@@ -217,7 +226,7 @@ export async function requestPayout({
     // Get session for auth
     const { data: { session } } = await supabase.auth.getSession();
 
-    const response = await fetch(`${APP_URL}/api/functions/process-payout`, {
+    const response = await fetch('/api/functions/process-payout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

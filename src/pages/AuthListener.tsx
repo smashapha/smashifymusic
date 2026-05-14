@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan } from '../lib/paychangu';
 import toast from 'react-hot-toast';
+import Logo from '../components/common/Logo';
 
 type AuthMode = 'login' | 'signup';
 type PlanChoice = 'Free' | 'Premium' | 'Family';
@@ -185,9 +186,9 @@ const AuthListener: React.FC = () => {
       )}
 
       <div className="w-full max-w-[420px] bg-[#141418]/85 backdrop-blur-[24px] saturate-180 border border-white/10 rounded-[24px] p-8 md:p-10 relative z-10 mx-auto shadow-2xl">
-        <div className="text-center mb-8">
-           <h1 className="font-display font-extrabold text-[28px] text-smash-orange">SMASHIFY</h1>
-           <p className="font-sans text-[13px] text-text-muted mt-1">Your music. Your stage.</p>
+        <div className="flex flex-col items-center text-center mb-8">
+           <Logo size="xl" />
+           <p className="font-sans text-[13px] text-text-muted mt-2">Your music. Your stage.</p>
         </div>
 
         <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-[12px]">

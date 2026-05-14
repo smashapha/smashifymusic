@@ -45,12 +45,19 @@ async function startServer() {
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const PAYCHANGU_SECRET_KEY = process.env.PAYCHANGU_SECRET_KEY;
-  const APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || `http://localhost:${PORT}`;
+  let APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || `http://localhost:${PORT}`;
+  if (APP_URL === 'YOUR_APP_URL' || APP_URL === 'APP_URL') {
+    APP_URL = `http://localhost:${PORT}`;
+  }
 
   let supabaseAdmin: any = null;
-  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  const adminKey = SUPABASE_SERVICE_ROLE_KEY && SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SUPABASE_SERVICE_ROLE_KEY' 
+    ? SUPABASE_SERVICE_ROLE_KEY 
+    : process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (SUPABASE_URL && adminKey) {
     try {
-      supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      supabaseAdmin = createClient(SUPABASE_URL, adminKey);
     } catch (err) {
       console.error('Failed to initialize Supabase Admin:', err);
     }
@@ -60,12 +67,29 @@ async function startServer() {
 
   // Helper to verify user
   const verifyUser = async (req: express.Request) => {
-    if (!supabaseAdmin) return null;
+    if (!supabaseAdmin) {
+      console.error('verifyUser: supabaseAdmin is null. SUPABASE_URL or adminKey is missing.');
+      return null;
+    }
     const authHeader = req.headers.authorization;
-    if (!authHeader) return null;
+    if (!authHeader) {
+      console.error('verifyUser: Authorization header missing');
+      return null;
+    }
     const token = authHeader.replace('Bearer ', '');
+    if (!token || token === 'undefined') {
+      console.error('verifyUser: Token is empty or "undefined"');
+      return null;
+    }
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    if (error || !user) return null;
+    if (error) {
+      console.error('verifyUser: auth.getUser failed:', error.message);
+      return null;
+    }
+    if (!user) {
+      console.error('verifyUser: user is null');
+      return null;
+    }
     return user;
   };
 
@@ -74,8 +98,12 @@ async function startServer() {
   // 1. Create Payment
   app.post('/api/functions/create-payment', async (req, res) => {
     try {
+      if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
+        throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
+      }
+
       const user = await verifyUser(req);
-      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      if (!user) return res.status(401).json({ error: 'Unauthorized route access' });
 
       const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency, callback_url } = req.body;
 
@@ -99,12 +127,13 @@ async function startServer() {
         type: type.includes('subscription') ? 'subscription' : (type === 'tip' ? 'donation' : (type === 'track_purchase' ? 'sale' : 'other')),
         gross_amount: amount,
         status: 'pending',
-        paychangu_ref: tx_ref,
-        description: descriptions[type] || 'Smashify Payment',
-        metadata: meta
+        paychangu_ref: tx_ref
       });
 
-      if (txError) throw txError;
+      if (txError) {
+        console.error('create-payment: txError:', txError.message);
+        throw txError;
+      }
 
       // Initialize PayChangu
       const response = await fetch('https://api.paychangu.com/payment', {
@@ -130,7 +159,13 @@ async function startServer() {
         })
       });
 
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload;
+      try {
+        payload = JSON.parse(responseText);
+      } catch (err) {
+        throw new Error(`PayChangu returned non-JSON: ${responseText.substring(0, 100)}...`);
+      }
 
       if (!response.ok) {
         await supabaseAdmin.from('transactions').delete().eq('paychangu_ref', tx_ref);
@@ -147,8 +182,12 @@ async function startServer() {
   // 2. Process Payout
   app.post('/api/functions/process-payout', async (req, res) => {
     try {
+      if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
+        throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
+      }
+
       const user = await verifyUser(req);
-      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      if (!user) return res.status(401).json({ error: 'Unauthorized route access' });
 
       const { amount, phone, network } = req.body;
 
@@ -210,7 +249,13 @@ async function startServer() {
         })
       });
 
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload;
+      try {
+        payload = JSON.parse(responseText);
+      } catch (err) {
+        throw new Error(`PayChangu returned non-JSON: ${responseText.substring(0, 100)}...`);
+      }
 
       if (!response.ok) {
         await supabaseAdmin.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id);
@@ -261,8 +306,7 @@ async function startServer() {
           type: 'withdrawal',
           gross_amount: amount,
           status: 'completed',
-          paychangu_ref: reference,
-          description: `Withdrawal to ${payout.network}`
+          paychangu_ref: reference
         });
 
         await supabaseAdmin.from('notifications').insert({
