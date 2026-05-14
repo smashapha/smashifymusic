@@ -6,12 +6,7 @@ let aiClient: GoogleGenAI | null = null;
 
 function getAiClient() {
   if (!aiClient) {
-    let key;
-    try {
-      key = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    } catch {
-      key = import.meta.env.VITE_GEMINI_API_KEY;
-    }
+    const key = import.meta.env.VITE_GEMINI_API_KEY;
     aiClient = new GoogleGenAI({ apiKey: key || 'missing_key' });
   }
   return aiClient;

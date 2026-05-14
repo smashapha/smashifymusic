@@ -89,13 +89,13 @@ serve(async (req) => {
         // Payout Handle: Net amount to artist wallet
         const saleFee = 0.15; // Fallback or lookup from tier
         const saleNet = amount * (1 - saleFee);
-        await supabase.rpc('increment_wallet_balance', { user_id: artistId, amount: saleNet });
+        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
         break;
 
       case 'TIP':
         const tipFee = 0.10;
         const tipNet = amount * (1 - tipFee);
-        await supabase.rpc('increment_wallet_balance', { user_id: artistId, amount: tipNet });
+        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
 
         if (!anonymous) {
             await supabase.from('notifications').insert({

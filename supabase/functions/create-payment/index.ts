@@ -20,7 +20,14 @@ serve(async (req) => {
     const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency, callback_url } = await req.json()
 
     // 1. Verify Authentication
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      })
+    }
+    
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     

@@ -15,8 +15,8 @@ import toast from 'react-hot-toast';
 import Landing from './pages/Landing';
 import AuthListener from './pages/AuthListener';
 import AuthArtist from './pages/AuthArtist';
+import Home from './pages/Home';
 
-const Home = React.lazy(() => import('./pages/Home'));
 const ArtistHub = React.lazy(() => import('./pages/ArtistHub'));
 const MotoFeed = React.lazy(() => import('./pages/MotoFeed'));
 const About = React.lazy(() => import('./pages/About'));
