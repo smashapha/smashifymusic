@@ -12,10 +12,16 @@ const PaymentSuccess = () => {
 
   const tx_ref = searchParams.get('tx_ref');
   const type = tx_ref?.split('-')[1];
+  const urlStatus = searchParams.get('status');
 
   useEffect(() => {
     if (!tx_ref) {
       navigate('/');
+      return;
+    }
+
+    if (urlStatus === 'failed' || urlStatus === 'cancelled' || urlStatus === 'error') {
+      navigate(`/payment-failed?tx_ref=${tx_ref}`);
       return;
     }
 

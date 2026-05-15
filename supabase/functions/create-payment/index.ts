@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     
     const body = await req.json()
-    const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency, callback_url } = body
+    const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency } = body
     console.log("Payment Function: Initiating:", { type, tx_ref, amount })
 
     // 1. Verify Authentication
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         first_name,
         last_name,
         tx_ref,
-        callback_url,
+        callback_url: `${return_url}${tx_ref}`,
         return_url: `${return_url}${tx_ref}`,
         customization: {
           title: 'Smashify',
