@@ -482,7 +482,7 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
   const handleInitiateWithdraw = () => {
     if (balance <= 0) return toast.error('No funds to withdraw.');
-    if (withdrawalAmount < 5000) return toast.error('Minimum withdrawal is MK 5,000.');
+    if (withdrawalAmount < 2000) return toast.error('Minimum withdrawal is MK 2,000.');
     if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
     setShowWithdrawForm(true);
   };
@@ -624,7 +624,7 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                              </div>
                              <button 
                                 onClick={handleInitiateWithdraw} 
-                                disabled={!limits.canWithdraw || requesting || balance < 5000 || withdrawalAmount < 5000 || withdrawalAmount > balance}
+                                disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
                                 className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
                              >
                                 REQUEST WITHDRAWAL
@@ -1609,6 +1609,7 @@ const ProfileTab = ({ userProfile }: any) => {
         twitter: fd.get('twitter'),
         avatar_url: avatarUrl,
         banner_url: bannerUrl,
+        subscription_price: fd.get('subscription_price') ? Number(fd.get('subscription_price')) : null,
         // Phone is not updated if it already exists to protect withdrawal routing
         ...(userProfile?.phone ? {} : { phone: fd.get('phone') })
       }).eq('id', userProfile?.id);
@@ -1707,6 +1708,11 @@ const ProfileTab = ({ userProfile }: any) => {
                   <input name="location" defaultValue={userProfile?.location} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary" />
                </div>
             </div>
+         </div>
+         <div>
+            <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Fan Club Monthly Price (MWK)</label>
+            <input type="number" name="subscription_price" defaultValue={userProfile?.subscription_price || ''} placeholder="e.g. 500" min="500" className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary placeholder:text-text-muted" />
+            <p className="text-[10px] text-text-muted mt-2 font-sans font-medium">Minimum price is MK 500. This is the amount fans will pay monthly to join your VIP fan club.</p>
          </div>
          <div>
             <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Artist Bio</label>

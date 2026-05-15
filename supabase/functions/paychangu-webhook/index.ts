@@ -9,6 +9,46 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+    const url = new URL(req.url)
+
+    // Handle browser redirects (GET requests)
+    if (req.method === 'GET') {
+      const tx_ref = url.searchParams.get('tx_ref') || url.searchParams.get('reference')
+      
+      if (tx_ref) {
+        // Fetch transaction to know where to redirect
+        const { data: transaction } = await supabase
+          .from('transactions')
+          .select('metadata')
+          .eq('paychangu_ref', tx_ref)
+          .single()
+
+        const type = tx_ref.split('-')[1]; // e.g. SMASH-TRACK_PURCHASE-123
+        let redirectPath = '/';
+
+        if (type === 'TRACK_PURCHASE') {
+          redirectPath = `/purchase-success?song_id=${transaction?.metadata?.songId || ''}&tx_ref=${tx_ref}`
+        } else if (type === 'TIP') {
+          redirectPath = `/tip-success?artist_id=${transaction?.metadata?.artistId || ''}&tx_ref=${tx_ref}`
+        } else if (type === 'FAN_SUBSCRIPTION') {
+          redirectPath = `/subscribe-success?artist_id=${transaction?.metadata?.artistId || ''}&tx_ref=${tx_ref}`
+        } else if (type === 'LISTENER_PREMIUM' || type === 'LISTENER_FAMILY') {
+          redirectPath = `/upgrade-success?plan=${transaction?.metadata?.plan || 'Premium'}&tx_ref=${tx_ref}`
+        } else if (type?.startsWith('ARTIST_') && type !== 'ARTIST_AD_CAMPAIGN') {
+          redirectPath = `/tier-success?tier=${type.split('_')[1]}&tx_ref=${tx_ref}`
+        } else if (type === 'ARTIST_AD_CAMPAIGN') {
+          redirectPath = `/ad-success?tx_ref=${tx_ref}`
+        } else {
+          redirectPath = `/?payment_success=true&tx_ref=${tx_ref}`
+        }
+
+        // Redirect back to the SMA frontend
+        return Response.redirect(`https://play-smashify.vercel.app${redirectPath}`, 302)
+      }
+      return Response.redirect('https://play-smashify.vercel.app/', 302)
+    }
+
+    // --- Webhook POST processing ---
     const signature = req.headers.get('x-paychangu-signature')
     const bodyText = await req.text()
     
@@ -36,9 +76,11 @@ serve(async (req) => {
     }
 
     const payload = JSON.parse(bodyText)
+    // PayChangu sends data in multiple possible structures
     const eventData = payload.data || payload;
-    const { tx_ref, status, amount } = eventData
-    const meta = eventData.meta || payload.meta || {}
+    const tx_ref = eventData.tx_ref || payload.tx_ref || eventData.reference || payload.reference;
+    const status = eventData.status || payload.status;
+    const amount = Number(eventData.amount || payload.amount || 0);
 
     // 2. Fetch Transaction
     const { data: transaction, error: txError } = await supabase
@@ -46,6 +88,17 @@ serve(async (req) => {
       .select('*')
       .eq('paychangu_ref', tx_ref)
       .single()
+
+    const parts = tx_ref.split('-');
+    const type = parts[1]; // TRACK_PURCHASE, TIP, FAN_SUBSCRIPTION etc
+    const meta = transaction?.metadata || eventData.meta || payload.meta || {};
+
+    console.log('Full payload:', bodyText);
+    console.log('Parsed tx_ref:', tx_ref);
+    console.log('Parsed status:', status);
+    console.log('Transaction found:', transaction?.id);
+    console.log('Type:', type);
+    console.log('Metadata:', JSON.stringify(transaction?.metadata));
 
     if (txError || !transaction) {
       console.error(`Transaction not found: ${tx_ref}`)
@@ -57,14 +110,16 @@ serve(async (req) => {
     }
 
     // 3. Handle Failed Payment
-    if (status !== 'successful' && status !== 'success') {
+    const isSuccess = ['successful', 'success', 'SUCCESSFUL', 'SUCCESS', 'paid', 'PAID'].includes(status);
+    if (!isSuccess) {
       await supabase.from('transactions').update({ status: 'failed' }).eq('id', transaction.id)
       return new Response('Ok', { status: 200 })
     }
 
     // 4. Process Successful Payment based on Type
-    const type = tx_ref.split('-')[1] // Extract type from SMASH-{TYPE}-...
     const { userId, artistId, songId, plan, tier, plays, anonymous } = transaction.metadata || {}
+    const netAmount = Number(transaction.net_amount)
+    const grossAmount = Number(transaction.gross_amount)
 
     // Update transaction to completed first (to prevent races)
     await supabase.from('transactions').update({ 
@@ -87,24 +142,19 @@ serve(async (req) => {
         await supabase.from('fan_purchases').insert({ fan_id: userId, song_id: songId, transaction_id: transaction.id })
         // Increment sales count
         await supabase.rpc('increment_song_sales', { s_id: songId })
-        
         // Payout Handle: Net amount to artist wallet
-        const saleFee = 0.15; // Fallback or lookup from tier
-        const saleNet = amount * (1 - saleFee);
-        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
+        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
         break;
 
       case 'TIP':
-        const tipFee = 0.10;
-        const tipNet = amount * (1 - tipFee);
-        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
+        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
 
         if (!anonymous) {
             await supabase.from('notifications').insert({
               user_id: artistId,
               user_type: 'artist',
               type: 'tip_received',
-              message: `You received a MWK ${amount.toLocaleString()} tip! (Net: MWK ${tipNet.toLocaleString()}) 💸`,
+              message: `You received a MWK ${grossAmount.toLocaleString()} tip! (Net: MWK ${netAmount.toLocaleString()}) 💸`,
               link: '/artist-hub#dashboard'
             })
         }
@@ -119,11 +169,12 @@ serve(async (req) => {
           status: 'active',
           next_billing_at: renewsAt.toISOString()
         })
+        await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
         await supabase.from('notifications').insert({
           user_id: artistId,
           user_type: 'artist',
           type: 'subscription_started',
-          message: `A fan just started a monthly subscription! MWK ${amount.toLocaleString()} 💖`,
+          message: `A fan just started a monthly subscription! MWK ${grossAmount.toLocaleString()} 💖 (Net: MWK ${netAmount.toLocaleString()})`,
           link: '/artist-hub#fans'
         })
         break;

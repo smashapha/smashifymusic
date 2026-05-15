@@ -82,6 +82,8 @@ serve(async (req) => {
           const { amount } = eventData
           const type = tx_ref.split('-')[1]
           const { userId, artistId, songId, plan, tier, plays, anonymous } = dbTx.metadata || {}
+          const grossAmount = Number(dbTx.gross_amount)
+          const netAmount = Number(dbTx.net_amount)
 
           await supabase.from('transactions').update({ 
             status: 'completed',
@@ -93,19 +95,17 @@ serve(async (req) => {
             case 'TRACK_PURCHASE':
               await supabase.from('fan_purchases').upsert({ fan_id: userId, song_id: songId, transaction_id: dbTx.id })
               await supabase.rpc('increment_song_sales', { s_id: songId })
-              const saleNet = amount * 0.85;
-              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
+              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
               break;
 
             case 'TIP':
-              const tipNet = amount * 0.90;
-              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
+              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
               if (!anonymous) {
                   await supabase.from('notifications').insert({
                     user_id: artistId,
                     user_type: 'artist',
                     type: 'tip_received',
-                    message: `You received a MWK ${amount.toLocaleString()} tip! (Net: MWK ${tipNet.toLocaleString()}) 💸`,
+                    message: `You received a MWK ${grossAmount.toLocaleString()} tip! (Net: MWK ${netAmount.toLocaleString()}) 💸`,
                     link: '/artist-hub#dashboard'
                   })
               }
@@ -119,11 +119,12 @@ serve(async (req) => {
                 status: 'active',
                 next_billing_at: renewsAt.toISOString()
               })
+              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
               await supabase.from('notifications').insert({
                 user_id: artistId,
                 user_type: 'artist',
                 type: 'subscription_started',
-                message: `A fan just started a monthly subscription! MWK ${amount.toLocaleString()} 💖`,
+                message: `A fan just started a monthly subscription! MWK ${grossAmount.toLocaleString()} 💖 (Net: MWK ${netAmount.toLocaleString()})`,
                 link: '/artist-hub#fans'
               })
               break;

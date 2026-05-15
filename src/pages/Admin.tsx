@@ -139,11 +139,9 @@ const Admin = () => {
     if (error) return toast.error(error.message);
 
     await supabase.from('transactions').update({ status: 'completed' })
-      .eq('artist_id', payout.artist_id)
-      .eq('type', 'withdrawal')
-      .eq('status', 'pending');
+      .eq('reference', payout.reference);
 
-    toast.success(`Payout of MWK ${payout.payout_amount?.toLocaleString()} marked as paid!`);
+    toast.success(`Payout of MWK ${payout.requested_amount?.toLocaleString()} marked as paid!`);
     fetchPayoutRequests();
   };
 
@@ -614,11 +612,11 @@ const Admin = () => {
                       </div>
                       <div className="flex-1">
                         <p className="font-black text-sm">{p.profiles?.stage_name || 'Artist'}</p>
-                        <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{p.mobile_number} · {p.network}</p>
+                        <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{p.phone} · {p.network}</p>
                         <p className="text-[9px] text-smash-gray/60 font-bold mt-1">{new Date(p.created_at).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-lg text-smash-orange">MK {p.payout_amount?.toLocaleString()}</p>
+                        <p className="font-black text-lg text-smash-orange">MK {p.requested_amount?.toLocaleString()}</p>
                         <p className="text-[9px] text-smash-gray font-bold uppercase tracking-widest">After 3% fee</p>
                       </div>
                       <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shrink-0 ${p.status === 'completed' ? 'bg-smash-green/10 text-smash-green' : 'bg-yellow-400/10 text-yellow-400'}`}>

@@ -32,7 +32,28 @@ const ArtistProfile: React.FC = () => {
    const [copied, setCopied] = useState(false);
    const [showSupportModal, setShowSupportModal] = useState(false);
    const [activeTab, setActiveTab] = useState<'tracks' | 'albums' | 'community' | 'about'>('tracks');
+   const [isSubscribed, setIsSubscribed] = useState(false);
+   const [subscribing, setSubscribing] = useState(false);
    const [topSupporters, setTopSupporters] = useState<any[]>([]);
+
+   const handleSubscribe = async () => {
+      if (!userProfile) {
+         toast.error('Please sign in to subscribe.');
+         return;
+      }
+      if (isSubscribed) {
+         toast.success('You are already subscribed!');
+         return;
+      }
+      setSubscribing(true);
+      try {
+         const { startFanSubscription } = await import('../lib/paychangu');
+         await startFanSubscription({ artist: artist!, fan: userProfile });
+      } catch (err: any) {
+         toast.error(err.message);
+         setSubscribing(false);
+      }
+   };
 
    const handleShare = () => {
       navigator.clipboard.writeText(window.location.href);
@@ -51,6 +72,19 @@ const ArtistProfile: React.FC = () => {
             .eq('artist_id', id)
             .maybeSingle();
          if (data) setIsFollowing(true);
+      };
+
+      const checkSubscription = async () => {
+         if (!userProfile || !id) return;
+         const { data } = await supabase
+            .from('fan_subscriptions')
+            .select('id, status, next_billing_at')
+            .eq('fan_id', userProfile.id)
+            .eq('artist_id', id)
+            .maybeSingle();
+         if (data && data.status === 'active' && new Date(data.next_billing_at) > new Date()) {
+            setIsSubscribed(true);
+         }
       };
       
       const fetchTopSupporters = async () => {
@@ -96,6 +130,7 @@ const ArtistProfile: React.FC = () => {
             if (artistError) throw artistError;
             setArtist(artistData);
             checkFollow();
+            checkSubscription();
             fetchTopSupporters();
 
             const { data: songsData, error: songsError } = await supabase
@@ -240,6 +275,22 @@ const ArtistProfile: React.FC = () => {
                            {isFollowing ? <Check size={14} className="md:w-4 md:h-4" /> : <UserPlus size={14} className="md:w-4 md:h-4" />}
                            {isFollowing ? 'Following' : 'Follow'}
                         </button>
+                        
+                        {(artist?.subscription_price || 0) >= 500 && (
+                           <button 
+                              onClick={handleSubscribe} 
+                              disabled={subscribing}
+                              className={`h-[40px] md:h-[44px] px-5 md:px-6 rounded-[8px] md:rounded-[10px] font-studio font-bold uppercase tracking-widest text-[10px] md:text-[12px] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm ${
+                                 isSubscribed 
+                                    ? 'bg-smash-purple/20 border border-smash-purple/30 text-smash-purple cursor-default' 
+                                    : 'bg-smash-purple text-white hover:bg-smash-purple/90'
+                              }`}
+                           >
+                              {isSubscribed ? <Check size={14} className="md:w-4 md:h-4" /> : <Sparkles size={14} className="md:w-4 md:h-4" />}
+                              {isSubscribed ? 'VIP Member' : 'Join VIP'}
+                           </button>
+                        )}
+
                         <button onClick={() => setShowSupportModal(true)} className="h-[40px] md:h-[44px] px-5 md:px-6 bg-bg-elevated/80 backdrop-blur-md border border-border-default text-text-primary rounded-[8px] md:rounded-[10px] font-display font-semibold uppercase tracking-widest text-[10px] md:text-[11px] hover:bg-bg-elevated hover:text-smash-orange transition-all flex items-center gap-2">
                            <Heart size={14} className="text-smash-orange md:w-4 md:h-4" /> Support
                         </button>

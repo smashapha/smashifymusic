@@ -105,7 +105,7 @@ async function startServer() {
   // --- API ROUTES (Functions) ---
 
   // 1. Create Payment
-  app.post('/api/functions/create-payment', async (req, res) => {
+  app.post(['/api/functions/v1/create-payment', '/api/functions/create-payment'], async (req, res) => {
     try {
       if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
         throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
@@ -192,7 +192,7 @@ async function startServer() {
   });
 
   // 2. Process Payout
-  app.post('/api/functions/process-payout', async (req, res) => {
+  app.post(['/api/functions/v1/process-payout', '/api/functions/process-payout'], async (req, res) => {
     try {
       if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
         throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
@@ -243,36 +243,41 @@ async function startServer() {
         throw payoutReqError;
       }
 
-      const response = await fetch('https://api.paychangu.com/mobile-money/transfers/initialize', {
+      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/mobile-money/transfer');
+      // Clean KEY and ensure plural/singular consistency
+      const cleanKey = PAYCHANGU_SECRET_KEY.trim();
+      const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${PAYCHANGU_SECRET_KEY}`,
+          'Authorization': `Bearer ${cleanKey}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify({
           amount,
           currency: 'MWK',
-          phone,
-          network,
+          mobile: phone,
+          service: network.toLowerCase(), // CRITICAL: Must be lowercase
           reference: payoutRef,
-          first_name: artist.full_name?.split(' ')[0] || 'Artist',
-          last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
+          // Removed first_name/last_name as they can trigger different route logic in PayChangu
         })
       });
 
       const responseText = await response.text();
+      console.log("PayChangu Payout Status:", response.status);
+      console.log("PayChangu Payout Response:", responseText);
+
       let payload;
       try {
         payload = JSON.parse(responseText);
       } catch (err) {
-        throw new Error(`PayChangu returned non-JSON: ${responseText.substring(0, 100)}...`);
+        throw new Error(`PayChangu returned non-JSON (${response.status}): ${responseText.substring(0, 100)}...`);
       }
 
       if (!response.ok) {
         await supabaseAdmin.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id);
-        await supabaseAdmin.from('payout_requests').update({ status: 'failed', error_message: payload.message }).eq('id', payoutReq.id);
-        throw new Error(payload.message || 'PayChangu payout initialization failed');
+        await supabaseAdmin.from('payout_requests').update({ status: 'failed', error_message: payload.message || responseText }).eq('id', payoutReq.id);
+        throw new Error(payload.message || `PayChangu payout initialization failed (${response.status})`);
       }
 
       await supabaseAdmin.from('payout_requests').update({ 

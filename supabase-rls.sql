@@ -127,17 +127,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Payout Eligibility Logic
 CREATE OR REPLACE FUNCTION check_payout_eligibility()
 RETURNS TRIGGER AS $$
-DECLARE
-  v_balance DECIMAL;
 BEGIN
-  SELECT wallet_balance INTO v_balance FROM profiles WHERE id = NEW.artist_id;
-  
-  IF v_balance < NEW.requested_amount THEN
-    RAISE EXCEPTION 'Insufficient balance for payout.';
-  END IF;
-
-  IF NEW.requested_amount < 5000 THEN
-    RAISE EXCEPTION 'Minimum payout is MK 5,000.';
+  -- We rely on the Edge Function for balance validation and deduction.
+  -- This trigger is now just for minimum amount safety.
+  IF NEW.requested_amount < 2000 THEN
+    RAISE EXCEPTION 'Minimum payout is MK 2,000.';
   END IF;
 
   RETURN NEW;

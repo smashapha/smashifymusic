@@ -91,34 +91,55 @@ Deno.serve(async (req) => {
         throw payoutReqError
     }
 
+    // 4.1 Record in Transactions table for history
+    console.log("Payout Function: Recording in transactions table...")
+    await supabase.from('transactions').insert({
+      artist_id: user.id,
+      type: 'withdrawal',
+      gross_amount: amount,
+      net_amount: amount,
+      status: 'pending',
+      reference: payoutRef,
+      description: `Withdrawal to ${network} (${phone})`
+    })
+
     // 5. Initialize Payout via PayChangu
     console.log("Payout Function: Calling PayChangu Payout API...")
-    const response = await fetch('https://api.paychangu.com/mobile-money/transfers/initialize', {
+    // Standard endpoint for mobile money transfer is /mobile-money/transfer (singular)
+    const cleanKey = PAYCHANGU_SECRET_KEY.trim()
+    const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PAYCHANGU_SECRET_KEY}`,
+        'Authorization': `Bearer ${cleanKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
       body: JSON.stringify({
         amount,
         currency: 'MWK',
-        phone,
-        network, // AIRTEL or TNM
+        mobile: phone,
+        service: network.toLowerCase(), // airtel or tnm
         reference: payoutRef,
-        first_name: artist.full_name?.split(' ')[0] || 'Artist',
-        last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
+        callback_url: `${SUPABASE_URL}/functions/v1/payout-webhook`
       })
     })
 
-    const payload = await response.json()
+    const responseText = await response.text();
+    console.log(`PayChangu Response (${response.status}):`, responseText);
+
+    let payload;
+    try {
+      payload = JSON.parse(responseText);
+    } catch (err) {
+      throw new Error(`PayChangu returned non-JSON (${response.status}): ${responseText.substring(0, 100)}`);
+    }
 
     if (!response.ok) {
-        console.error("Payout Function: PayChangu Error:", payload)
+        console.error("Payout Function: PayChangu Error Detail:", payload)
         // REFUND Wallet on failure
         await supabase.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id)
-        await supabase.from('payout_requests').update({ status: 'failed', error_message: payload.message }).eq('id', payoutReq.id)
-        throw new Error(payload.message || 'PayChangu payout initialization failed')
+        await supabase.from('payout_requests').update({ status: 'failed', error_message: payload.message || responseText }).eq('id', payoutReq.id)
+        throw new Error(payload.message || `PayChangu API error: ${response.status}`)
     }
 
     // 6. Update Request with PayChangu ref

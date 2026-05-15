@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://play-smashify.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -64,16 +64,56 @@ Deno.serve(async (req) => {
 
     // 3. Create Pending Transaction
     console.log("Payment Function: Creating transaction in DB...")
+
+    // Determine the general transaction category for the DB
+    let dbType = 'other';
+    if (type === 'track_purchase') dbType = 'sale';
+    else if (type === 'tip') dbType = 'donation';
+    else if (type.includes('subscription')) dbType = 'subscription';
+    else if (type.includes('listener_') || type.includes('artist_')) {
+      // These are tier upgrades
+      dbType = type.includes('subscription') ? 'subscription' : 'upgrade';
+    } else if (type === 'artist_ad_campaign' || type === 'featured_placement') {
+      dbType = 'promotion';
+    }
+
+    // Refined check for listener subscriptions
+    if (type.startsWith('listener_')) dbType = 'subscription';
+
+    // Fetch artist tier to calculate correct fee
+    let platformFeeRate = 0.15; // Default for Free tier
+    if (meta.artistId) {
+      const { data: artistProfile } = await supabase
+        .from('profiles')
+        .select('artist_tier')
+        .eq('id', meta.artistId)
+        .single();
+      
+      const tierFees: Record<string, number> = {
+        'Free': 0.15,
+        'RisingStar': 0.10,
+        'rising_star': 0.10,
+        'Standard': 0.07,
+        'standard': 0.07,
+        'Elite': 0.05,
+        'elite': 0.05,
+      };
+      platformFeeRate = tierFees[artistProfile?.artist_tier || 'Free'] || 0.15;
+    }
+    const platformFee = Math.round(amount * platformFeeRate);
+    const netAmount = amount - platformFee;
+
     const { error: txError } = await supabase.from('transactions').insert({
       artist_id: meta.artistId || null,
       fan_id: meta.userId || user.id,
-      type: type.includes('subscription') ? 'subscription' : (type === 'tip' ? 'donation' : (type === 'track_purchase' ? 'sale' : 'other')),
+      type: dbType,
       gross_amount: amount,
       status: 'pending',
       paychangu_ref: tx_ref,
       description: descriptions[type] || 'Smashify Payment',
       metadata: meta,
-      net_amount: amount * 0.9 // Default net
+      platform_fee: platformFee,
+      net_amount: netAmount,
     })
 
     if (txError) {

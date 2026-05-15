@@ -8,7 +8,13 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
     const body = await req.json()
-    const { reference, status, amount } = body
+    console.log("Payout Webhook received:", body)
+    
+    // Handle both direct and nested data patterns
+    const data = body.data || body
+    const reference = data.reference
+    const status = data.status
+    const amount = Number(data.amount)
 
     // 1. Find Payout Request
     const { data: payout, error: payoutError } = await supabase
@@ -55,15 +61,17 @@ serve(async (req) => {
       
       // REFUND WALLET
       const { data: artist } = await supabase.from('profiles').select('wallet_balance').eq('id', payout.artist_id).single()
+      const amountToRefund = payout.requested_amount || payout.amount || payout.payout_amount || 0;
+      
       await supabase.from('profiles').update({
-        wallet_balance: (artist?.wallet_balance || 0) + payout.requested_amount
+        wallet_balance: (artist?.wallet_balance || 0) + amountToRefund
       }).eq('id', payout.artist_id)
 
       await supabase.from('notifications').insert({
         user_id: payout.artist_id,
         user_type: 'artist',
         type: 'payout_failed',
-        message: `Your withdrawal failed. MK ${amount.toLocaleString()} returned to your wallet.`,
+        message: `Your withdrawal failed. MK ${amountToRefund.toLocaleString()} returned to your wallet.`,
         link: '/artist-hub#payouts'
       })
     }
