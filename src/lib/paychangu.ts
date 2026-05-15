@@ -40,32 +40,24 @@ export async function initiatePayment(params: InitiatePaymentParams) {
   try {
     const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${Date.now()}`;
     
-    const session = (await supabase.auth.getSession()).data.session;
-
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          ...params,
-          tx_ref,
-          currency: 'MWK'
-        })
+    // Call Supabase Edge Function directly via the SDK
+    const { data, error } = await supabase.functions.invoke('create-payment', {
+      body: {
+        ...params,
+        tx_ref,
+        currency: 'MWK'
       }
-    );
+    });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to initialize payment');
+    if (error) {
+       console.error("Payment Function Error:", error);
+       throw new Error(error.message || 'Failed to initialize payment');
     }
     
-    if (!data?.checkout_url) throw new Error('Failed to get checkout URL');
+    if (!data?.checkout_url) {
+      console.error("Invalid response data:", data);
+      throw new Error('Failed to get checkout URL from response');
+    }
 
     toast.success('Redirecting to PayChangu...', { id: toastId });
     
@@ -223,25 +215,13 @@ export async function requestPayout({
   const toastId = toast.loading('Processing withdrawal...');
   
   try {
-    const session = (await supabase.auth.getSession()).data.session;
-    
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ amount, phone, network })
-      }
-    );
-    
-    const data = await response.json();
+    const { data, error } = await supabase.functions.invoke('process-payout', {
+      body: { amount, phone, network }
+    });
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Withdrawal failed on server');
+    if (error) {
+      console.error("Payout Function Error:", error);
+      throw new Error(error.message || 'Withdrawal failed on server');
     }
     
     toast.success('Withdrawal successful! Funds will land in your mobile wallet shortly.', { id: toastId });
