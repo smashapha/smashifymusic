@@ -43,23 +43,29 @@ async function startServer() {
   });
 
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVIC;
-  const PAYCHANGU_SECRET_KEY = process.env.PAYCHANGU_SECRET_KEY || process.env.PAYCHANGU_SECRET;
+  // Fallbacks for 15-character truncation limit in some panels
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPA_ADMIN_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVIC || process.env.SUPABASE_SECRE;
+  const PAYCHANGU_SECRET_KEY = process.env.PAYCHANGU_SEC || process.env.PAYCHANGU_SECRET_KEY || process.env.PAYCHANGU_SECRE;
   let APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || `http://localhost:${PORT}`;
   if (APP_URL === 'YOUR_APP_URL' || APP_URL === 'APP_URL') {
     APP_URL = `http://localhost:${PORT}`;
   }
 
   let supabaseAdmin: any = null;
-  const adminKey = SUPABASE_SERVICE_ROLE_KEY && SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SUPABASE_SERVICE_ROLE_KEY' 
+  const adminKey = SUPABASE_SERVICE_ROLE_KEY && SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SUPABASE_SERVICE_ROLE_KEY' && SUPABASE_SERVICE_ROLE_KEY !== 'YOUR_SUPA_ADMIN_KEY'
     ? SUPABASE_SERVICE_ROLE_KEY 
     : process.env.VITE_SUPABASE_ANON_KEY;
+
+  console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY present:', !!SUPABASE_SERVICE_ROLE_KEY);
+  console.log('[DEBUG] PAYCHANGU_SECRET_KEY present:', !!PAYCHANGU_SECRET_KEY);
 
   if (SUPABASE_URL && adminKey) {
     try {
       supabaseAdmin = createClient(SUPABASE_URL, adminKey);
       if (adminKey === process.env.VITE_SUPABASE_ANON_KEY) {
-        console.warn('CRITICAL WARNING: SUPABASE_SERVICE_ROLE_KEY is missing. Using ANON key for server operations, which will cause RLS violations.');
+        console.warn('CRITICAL WARNING: SUPABASE_SERVICE_ROLE_KEY is missing or invalid. Using ANON key for server operations, which will cause RLS violations.');
+      } else {
+        console.log('SUPABASE_SERVICE_ROLE_KEY successfully loaded. Admin operations enabled.');
       }
     } catch (err) {
       console.error('Failed to initialize Supabase Admin:', err);
