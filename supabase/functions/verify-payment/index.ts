@@ -101,12 +101,21 @@ serve(async (req) => {
               )
               if (fpError) console.error('fan_purchases upsert failed:', fpError.message, fpError.details)
               
-              await supabase.rpc('increment_song_sales', { s_id: songId })
-              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
+              const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
+              const currentBalance = Number(profileData?.wallet_balance || 0)
+              await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+              
+              // Increment sales count safely
+              const { data: songData } = await supabase.from('songs').select('sales').eq('id', songId).single()
+              const currentSales = Number(songData?.sales || 0)
+              await supabase.from('songs').update({ sales: currentSales + 1 }).eq('id', songId)
               break;
 
-            case 'TIP':
-              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
+            case 'TIP': {
+              const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
+              const currentBalance = Number(profileData?.wallet_balance || 0)
+              await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+              
               if (!anonymous) {
                   await supabase.from('notifications').insert({
                     profile_id: artistId,
@@ -117,7 +126,8 @@ serve(async (req) => {
                   })
               }
               break;
-            case 'FAN_SUBSCRIPTION':
+            }
+            case 'FAN_SUBSCRIPTION': {
               const renewsAt = new Date()
               renewsAt.setDate(renewsAt.getDate() + 30)
               await supabase.from('fan_subscriptions').upsert({
@@ -126,7 +136,11 @@ serve(async (req) => {
                 status: 'active',
                 next_billing_at: renewsAt.toISOString()
               })
-              await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
+              
+              const { data: profileDataSub } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
+              const currentBalanceSub = Number(profileDataSub?.wallet_balance || 0)
+              await supabase.from('profiles').update({ wallet_balance: currentBalanceSub + netAmount }).eq('id', artistId)
+              
               await supabase.from('notifications').insert({
                 profile_id: artistId,
                 user_type: 'artist',
@@ -135,6 +149,7 @@ serve(async (req) => {
                 link: '/artist-hub#fans'
               })
               break;
+            }
             case 'LISTENER_PREMIUM':
             case 'LISTENER_FAMILY':
               const subEnds = new Date()

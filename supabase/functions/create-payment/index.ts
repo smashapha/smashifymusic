@@ -82,7 +82,15 @@ Deno.serve(async (req) => {
 
     // Fetch artist tier to calculate correct fee
     let platformFeeRate = 0.15; // Default for Free tier
-    if (meta.artistId) {
+    const platformPures = [
+      'LISTENER_PREMIUM', 'LISTENER_FAMILY',
+      'ARTIST_RISING_STAR', 'ARTIST_STANDARD', 'ARTIST_ELITE',
+      'ARTIST_AD_CAMPAIGN', 'FEATURED_PLACEMENT'
+    ];
+
+    if (platformPures.includes(type.toUpperCase())) {
+      platformFeeRate = 1.0;
+    } else if (meta.artistId) {
       const { data: artistProfile } = await supabase
         .from('profiles')
         .select('artist_tier')
