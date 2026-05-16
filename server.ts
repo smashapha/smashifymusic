@@ -370,10 +370,10 @@ async function startServer() {
         });
 
         await supabaseAdmin.from('notifications').insert({
-          user_id: payout.artist_id,
+          profile_id: payout.artist_id,
           user_type: 'artist',
           type: 'payout_sent',
-          message: `MK ${amount.toLocaleString()} has been sent to your ${payout.network} number 🎉`,
+          message: `MK ${amount.toLocaleString()} has been sent to your ${payout.network} number 🥳`,
           link: '/artist-hub#wallet'
         });
       } else if (status === 'failed') {
@@ -384,7 +384,7 @@ async function startServer() {
         }).eq('id', payout.artist_id);
 
         await supabaseAdmin.from('notifications').insert({
-          user_id: payout.artist_id,
+          profile_id: payout.artist_id,
           user_type: 'artist',
           type: 'payout_failed',
           message: `Your withdrawal failed. MK ${amount.toLocaleString()} returned to your wallet.`,
@@ -513,7 +513,7 @@ async function startServer() {
           }
           
           await supabaseAdmin.from('notifications').insert({
-             user_id: artistId,
+             profile_id: artistId,
              user_type: 'artist',
              type: 'track_sold',
              message: `You sold a track! MWK ${amount.toLocaleString()} earned. 💿`,
@@ -527,7 +527,7 @@ async function startServer() {
           await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
           if (!anonymous) {
             await supabaseAdmin.from('notifications').insert({
-              user_id: artistId,
+              profile_id: artistId,
               user_type: 'artist',
               type: 'tip_received',
               message: `You received a MWK ${amount.toLocaleString()} tip! (Net: MWK ${tipNet.toLocaleString()}) 💸`,
@@ -547,7 +547,7 @@ async function startServer() {
           });
 
           await supabaseAdmin.from('notifications').insert({
-            user_id: artistId,
+            profile_id: artistId,
             user_type: 'artist',
             type: 'fan_subscribed',
             message: `A fan has subscribed to you! MWK ${amount.toLocaleString()} earned. 💖`,
@@ -560,7 +560,7 @@ async function startServer() {
           const subEnds = new Date();
           subEnds.setDate(subEnds.getDate() + 30);
           await supabaseAdmin.from('user_profiles').update({
-            subscription_tier: type === 'LISTENER_PREMIUM' ? 'premium' : 'family',
+            subscription_tier: type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family',
             subscription_ends: subEnds.toISOString()
           }).eq('id', userId);
           console.log(`[WEBHOOK] Updated listener subscription for ${userId} to ${type}`);
@@ -571,8 +571,11 @@ async function startServer() {
         case 'ARTIST_ELITE':
           const artistTierEnds = new Date();
           artistTierEnds.setDate(artistTierEnds.getDate() + 365);
-          const tierParts = type.split('_');
-          const tierName = tierParts.length > 2 ? `${tierParts[1]}_${tierParts[2]}`.toLowerCase() : tierParts[1].toLowerCase();
+          
+          let tierName = 'Free';
+          if (type === 'ARTIST_RISING_STAR') tierName = 'RisingStar';
+          else if (type === 'ARTIST_STANDARD') tierName = 'Standard';
+          else if (type === 'ARTIST_ELITE') tierName = 'Elite';
           
           await supabaseAdmin.from('profiles').update({
             subscription_tier: tierName,
