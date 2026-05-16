@@ -574,6 +574,24 @@ async function startServer() {
         completed_at: new Date().toISOString()
       }).eq('id', transaction.id);
 
+      // Increment Admin Wallet if platform fee exists
+      if (pFee > 0) {
+        try {
+          const { data: adminUser } = await supabaseAdmin
+            .from('user_profiles')
+            .select('id')
+            .eq('role', 'admin')
+            .limit(1)
+            .maybeSingle();
+            
+          if (adminUser) {
+            await supabaseAdmin.rpc('increment_wallet_balance', { p_id: adminUser.id, amount: pFee });
+          }
+        } catch (adminErr) {
+          console.error('[WEBHOOK] Admin wallet update error:', adminErr);
+        }
+      }
+
       await supabaseAdmin.from('webhook_logs').insert({
         tx_ref,
         type: type,
