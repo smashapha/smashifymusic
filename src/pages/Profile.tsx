@@ -207,14 +207,23 @@ const Profile: React.FC = () => {
                         <ExternalLink className="text-smash-purple" size={14} />
                      </button>
                   )}
-                  {role === 'admin' && (
-                     <button onClick={() => navigate('/admin')} className="p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left">
-                        <div className="flex items-center gap-3">
-                           <Shield className="text-smash-purple shrink-0" size={18} />
-                           <span className="font-display font-medium text-xs md:text-[13px] text-smash-purple">Admin Panel</span>
-                        </div>
-                        <ExternalLink className="text-smash-purple" size={14} />
-                     </button>
+                  {(role === 'admin' || userProfile?.is_admin || userProfile?.role === 'admin') && (
+                     <>
+                        <button onClick={() => navigate('/admin')} className="p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left">
+                           <div className="flex items-center gap-3">
+                              <ShieldCheck className="text-smash-purple shrink-0" size={18} />
+                              <span className="font-display font-medium text-xs md:text-[13px] text-smash-purple">Admin Panel</span>
+                           </div>
+                           <ChevronRight size={16} className="text-smash-purple group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        <button onClick={() => navigate('/admin?tab=applications')} className="p-3 md:p-4 bg-smash-cyan/10 border border-smash-cyan/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-cyan/20 transition-all text-left">
+                           <div className="flex items-center gap-3">
+                              <BadgeCheck className="text-smash-cyan shrink-0" size={18} />
+                              <span className="font-display font-medium text-xs md:text-[13px] text-smash-cyan">Authorisations</span>
+                           </div>
+                           <ChevronRight size={16} className="text-smash-cyan group-hover:translate-x-1 transition-transform" />
+                        </button>
+                     </>
                   )}
                   <button className="p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left">
                      <div className="flex items-center gap-3">

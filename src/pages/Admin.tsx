@@ -12,6 +12,14 @@ import { useAuth } from '../context/AuthContext';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts'>('overview');
+  
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab') as any;
+    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
   const [artists, setArtists] = useState<any[]>([]); // Approved artists
   const [listeners, setListeners] = useState<any[]>([]); // All listeners
   const [allSongs, setAllSongs] = useState<any[]>([]); // All songs on platform

@@ -156,7 +156,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
              }
           }
           
-          setRole('listener');
+          if (listenerData.is_admin || listenerData.role === 'admin') {
+            setRole('admin');
+          } else {
+            setRole('listener');
+          }
           setListenerProfile({ ...currentListenerData, user_type: 'listener' });
           setArtistProfile(null);
           return true;
