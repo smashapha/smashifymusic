@@ -87,10 +87,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // Real-time profile updates
+    let profilesChannel: any = null;
+    let userProfilesChannel: any = null;
+
+    const setupProfileSubscription = (userId: string) => {
+      if (profilesChannel) profilesChannel.unsubscribe();
+      if (userProfilesChannel) userProfilesChannel.unsubscribe();
+
+      profilesChannel = supabase
+        .channel(`profiles-realtime-${userId}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'profiles', 
+          filter: `id=eq.${userId}` 
+        }, () => fetchProfile(userId))
+        .subscribe();
+
+      userProfilesChannel = supabase
+        .channel(`user-profiles-realtime-${userId}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'user_profiles', 
+          filter: `id=eq.${userId}` 
+        }, () => fetchProfile(userId))
+        .subscribe();
+    };
+
+    if (session?.user) {
+      setupProfileSubscription(session.user.id);
+    }
+
     return () => {
       subscription.unsubscribe();
+      if (profilesChannel) profilesChannel.unsubscribe();
+      if (userProfilesChannel) userProfilesChannel.unsubscribe();
     };
-  }, []);
+  }, [session?.user?.id]);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -107,7 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (listenerData) {
           let currentListenerData = listenerData;
-          if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && listenerData.subscription_tier !== 'free') {
+          const tier = (listenerData.subscription_tier || 'free').toLowerCase();
+          
+          if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && tier !== 'free') {
              const { data: updatedListener } = await supabase
                .from('user_profiles')
                .update({ subscription_tier: 'free' })
@@ -136,7 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (artistData) {
           let currentArtistData = artistData;
-          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && artistData.subscription_tier !== 'free') {
+          const tier = (artistData.subscription_tier || 'free').toLowerCase();
+          
+          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && tier !== 'free') {
              const { data: updatedArtist } = await supabase
                .from('profiles')
                .update({ subscription_tier: 'free' })

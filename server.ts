@@ -44,10 +44,10 @@ async function startServer() {
 
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
   // Fallbacks for 15-character truncation limit in some panels
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPA_ADMIN_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVIC || process.env.SUPABASE_SECRE;
-  const PAYCHANGU_SECRET_KEY = process.env.PAYCHANGU_SEC || process.env.PAYCHANGU_SECRET_KEY || process.env.PAYCHANGU_SECRE;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPA_ADMIN_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVIC || process.env.SUPABASE_SECRE || process.env.SERVICE_ROLE_KEY;
+  const PAYCHANGU_SECRET_KEY = process.env.PAYCHANGU_SEC || process.env.PAYCHANGU_SECRET_KEY || process.env.PAYCHANGU_SECRE || process.env.PAYCHANGU_SECRET;
   let APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || `http://localhost:${PORT}`;
-  if (APP_URL === 'YOUR_APP_URL' || APP_URL === 'APP_URL') {
+  if (APP_URL === 'YOUR_APP_URL' || APP_URL === 'APP_URL' || !APP_URL) {
     APP_URL = `http://localhost:${PORT}`;
   }
 
@@ -243,10 +243,12 @@ async function startServer() {
         throw payoutReqError;
       }
 
-      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/v1/disbursement');
+      console.log(`[PAYOUT] Initiating for user: ${user.id}, amount: ${amount}, phone: ${phone}, network: ${network}`);
+      
+      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/disbursements');
       // Clean KEY and ensure plural/singular consistency
       const cleanKey = PAYCHANGU_SECRET_KEY.trim();
-      const response = await fetch('https://api.paychangu.com/v1/disbursement', {
+      const response = await fetch('https://api.paychangu.com/disbursements', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cleanKey}`,
@@ -410,7 +412,8 @@ async function startServer() {
       }
 
       const type = tx_ref.split('-')[1];
-      const { userId, artistId, songId, plan, tier, plays, anonymous } = transaction.metadata || {};
+      const metadata = transaction.metadata || {};
+      const { userId, artistId, songId, anonymous } = metadata;
 
       await supabaseAdmin.from('transactions').update({ 
         status: 'completed',
@@ -424,8 +427,14 @@ async function startServer() {
         payload: JSON.stringify(payload)
       });
 
+      console.log(`[WEBHOOK] Processing type: ${type} for ref: ${tx_ref}`);
+
       switch (type) {
         case 'TRACK_PURCHASE':
+          if (!userId || !songId) {
+            console.error('[WEBHOOK] Missing metadata for TRACK_PURCHASE:', metadata);
+            break;
+          }
           // EXPLICIT LOCK RELIEF
           const { error: fanError } = await supabaseAdmin.from('fan_purchases').upsert({ 
             fan_id: userId, 
@@ -435,12 +444,22 @@ async function startServer() {
             status: 'completed'
           }, { onConflict: 'fan_id,song_id' });
           
-          if (fanError) console.error('fan_purchases insert error:', fanError);
+          if (fanError) console.error('[WEBHOOK] fan_purchases insert error:', fanError);
 
           await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
           const saleFee = 0.15;
           const saleNet = amount * (1 - saleFee);
-          await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
+          
+          try {
+            const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
+            if (rpcErr) {
+               // Fallback if RPC fails
+               const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
+               await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + saleNet }).eq('id', artistId);
+            }
+          } catch(e) {
+             console.error('[WEBHOOK] Wallet update error:', e);
+          }
           
           await supabaseAdmin.from('notifications').insert({
              profile_id: artistId,
@@ -490,9 +509,10 @@ async function startServer() {
           const subEnds = new Date();
           subEnds.setDate(subEnds.getDate() + 30);
           await supabaseAdmin.from('user_profiles').update({
-            subscription_tier: type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family',
+            subscription_tier: type === 'LISTENER_PREMIUM' ? 'premium' : 'family',
             subscription_ends: subEnds.toISOString()
           }).eq('id', userId);
+          console.log(`[WEBHOOK] Updated listener subscription for ${userId} to ${type}`);
           break;
 
         case 'ARTIST_RISING_STAR':

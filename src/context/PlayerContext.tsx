@@ -341,7 +341,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       
       // 30-second preview logic - ONLY for songs on sale and NOT purchased
-      if (!adPlaying && currentSong && currentSong.is_for_sale && !currentSong.is_purchased && audio.currentTime >= 30) {
+      const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
+      const isUnlockablePremium = tier === 'premium' || tier === 'family' || userProfile?.user_type === 'artist';
+      
+      if (!adPlaying && currentSong && currentSong.is_for_sale && !currentSong.is_purchased && !isUnlockablePremium && audio.currentTime >= 30) {
         // Force pause the audio
         audio.pause();
         audio.currentTime = 30;
@@ -542,7 +545,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [currentSong]);
+  }, [currentSong, userProfile?.subscription_tier, userProfile?.user_type]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -669,7 +672,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (adPlaying) return;
       
       // Respect preview limit
-      if (currentSong && !currentSong.is_purchased && time >= 30) {
+      const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
+      const isUnlockablePremium = tier === 'premium' || tier === 'family' || userProfile?.user_type === 'artist';
+      if (currentSong && !currentSong.is_purchased && !isUnlockablePremium && time >= 30) {
         audioRef.current.currentTime = 29.9;
       } else {
         audioRef.current.currentTime = time;
