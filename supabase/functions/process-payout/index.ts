@@ -103,10 +103,10 @@ Deno.serve(async (req) => {
       description: `Withdrawal to ${network} (${phone})`
     })
 
-    // 5. Initialize Payout via PayChangu Disbursement API
-    console.log("Payout Function: Calling PayChangu Disbursement API...")
+    // 5. Initialize Payout via PayChangu Mobile Money Transfer API
+    console.log("Payout Function: Calling PayChangu Mobile Money Transfer API...")
     const cleanKey = PAYCHANGU_SECRET_KEY.trim()
-    const response = await fetch('https://api.paychangu.com/disbursement', {
+    const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cleanKey}`,
@@ -114,12 +114,12 @@ Deno.serve(async (req) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        amount: String(amount),
+        amount: Number(amount),
         currency: 'MWK',
-        phone_number: phone,
-        network: network.toUpperCase(),
-        narration: `Smashify payout - ${payoutRef}`,
+        mobile: phone,
+        service: network.toUpperCase(), // TNM or AIRTEL
         reference: payoutRef,
+        callback_url: `${SUPABASE_URL}/functions/v1/payout-webhook`
       })
     })
 

@@ -257,7 +257,7 @@ async function startServer() {
           amount,
           currency: 'MWK',
           mobile: phone,
-          service: network.toLowerCase(), // CRITICAL: Must be lowercase
+          service: network.toUpperCase(), // TNM or AIRTEL (Uppercase)
           reference: payoutRef,
           // Removed first_name/last_name as they can trigger different route logic in PayChangu
         })
