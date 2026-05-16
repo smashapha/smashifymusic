@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
   User, CreditCard, ShoppingBag, Settings, LogOut, 
-  ChevronRight, BadgeCheck, Shield, ExternalLink, Sparkles, Mail, Phone, MapPin, Camera, Upload
+  ChevronRight, BadgeCheck, Shield, ShieldCheck, ExternalLink, Sparkles, Mail, Phone, MapPin, Camera, Upload
 } from 'lucide-react';
 import Avatar from '../components/common/Avatar';
 import { useAuth } from '../context/AuthContext';
