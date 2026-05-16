@@ -25,7 +25,8 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     sleepTimerRemaining, setSleepTimer,
     pauseSong, playSong,
     radioMode, toggleRadioMode, adPlaying, adSkipAvailable, skipAd,
-    isShuffle, toggleShuffle, repeatMode, toggleRepeat
+    isShuffle, toggleShuffle, repeatMode, toggleRepeat,
+    purchasedIds
   } = usePlayer();
   const { role, userProfile } = useAuth();
   const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
@@ -120,13 +121,15 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     
     // Check listener limits (Free tier cannot download)
     const limits = getListenerLimits(userProfile);
-    if (!limits.canDownload && !currentSong.is_purchased) {
+    const isPurchased = currentSong.is_purchased || purchasedIds.has(currentSong.id);
+
+    if (!limits.canDownload && !isPurchased) {
       toast.error("Downloads are for Premium and Family plans only.");
       return;
     }
     
     // Only allow download if free or purchased
-    if (currentSong.is_for_sale && !currentSong.is_purchased) {
+    if (currentSong.is_for_sale && !isPurchased) {
       toast.error("Please purchase the track to download.");
       return;
     }
@@ -345,7 +348,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                      {/* Bottom Toolbar */}
            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-border-default relative">
               <div className="flex items-center gap-3 md:gap-4 flex-1">
-                 {!currentSong?.is_purchased && currentSong?.is_for_sale && (
+                 {!currentSong?.is_purchased && !purchasedIds.has(currentSong?.id || '') && currentSong?.is_for_sale && (
                    <button 
                      onClick={(e: any) => handleBuy(e)}
                      className={`flex items-center gap-2 px-6 py-3 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md mr-4 ${accentColor.replace('text-', 'bg-')}`}
@@ -515,7 +518,7 @@ const GlobalPlayer: React.FC = () => {
     currentSong, isPlaying, togglePlay, currentTime, duration, 
     volume, setVolume, dataSaver, toggleDataSaver, isExpanded, setIsExpanded,
     queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying, adSkipAvailable, skipAd,
-    isShuffle, toggleShuffle, repeatMode, toggleRepeat, seek, removeFromQueue
+    isShuffle, toggleShuffle, repeatMode, toggleRepeat, seek, removeFromQueue, purchasedIds
   } = usePlayer();
   const { role, userProfile } = useAuth();
   const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
@@ -696,7 +699,7 @@ const GlobalPlayer: React.FC = () => {
               <div className="flex flex-col min-w-0 justify-center">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-studio font-bold text-sm text-text-primary truncate">{currentSong.title}</h3>
-                  {currentSong.is_for_sale && !currentSong.is_purchased && (
+                  {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) && (
                     <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>MK {currentSong.price}</span>
                   )}
                 </div>

@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSkip: () => void }) => {
   const navigate = useNavigate();
-  const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume } = usePlayer();
+  const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
   
   const logEvent = async (eventType: string) => {
@@ -232,8 +232,9 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     }
   };
 
-  const isPreviewLimit = !song.is_purchased && currentTime >= 30;
-  const isApproachingLimit = !song.is_purchased && currentTime >= 25 && currentTime < 30;
+  const isPurchased = song.is_purchased || purchasedIds.has(song.id);
+  const isPreviewLimit = !isPurchased && currentTime >= 30;
+  const isApproachingLimit = !isPurchased && currentTime >= 25 && currentTime < 30;
 
   return (
     <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={togglePlay}>
@@ -504,7 +505,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                </div>
             )}
 
-            {song.is_for_sale && !song.is_unreleased && (
+            {song.is_for_sale && !song.is_unreleased && !song.is_purchased && !purchasedIds.has(song.id) && (
                <div className="flex flex-col items-center gap-2">
                   <button 
                     onClick={handleBuy}
@@ -526,7 +527,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             </motion.div>
          </div>
          {/* Progress Bar */}
-         {!song.is_purchased && !song.is_unreleased && (
+         {!isPurchased && !song.is_unreleased && (
             <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-50">
                <div 
                   className={`h-full transition-all duration-300 ${isApproachingLimit ? 'bg-smash-cyan' : 'bg-smash-orange'}`}

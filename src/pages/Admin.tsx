@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, CheckCircle2, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
-  Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft
+  Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -125,24 +125,35 @@ const Admin = () => {
   const fetchPayoutRequests = async () => {
     const { data } = await supabase
       .from('payout_requests')
-      .select('*, profiles!artist_id(stage_name, avatar_url, email)')
+      .select('*, profiles!artist_id(full_name, stage_name, avatar_url, email, wallet_balance)')
       .order('created_at', { ascending: false });
     setPayoutRequests(data || []);
   };
 
-  const markPayoutComplete = async (payout: any) => {
-    const { error } = await supabase
-      .from('payout_requests')
-      .update({ status: 'completed', paid_at: new Date().toISOString() })
-      .eq('id', payout.id);
-    
-    if (error) return toast.error(error.message);
+  const handleUpdatePayoutStatus = async (payoutId: string, status: 'paid' | 'failed') => {
+    const reason = status === 'failed' ? prompt('Reason for rejection:') : null;
+    if (status === 'failed' && reason === null) return;
 
-    await supabase.from('transactions').update({ status: 'completed' })
-      .eq('reference', payout.reference);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/admin/payouts/${payoutId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ status, error_message: reason })
+      });
 
-    toast.success(`Payout of MWK ${payout.requested_amount?.toLocaleString()} marked as paid!`);
-    fetchPayoutRequests();
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Update failed');
+
+      toast.success(status === 'paid' ? 'Payout marked as paid!' : 'Payout request declined');
+      fetchPayoutRequests();
+      fetchArtists(); // Refresh balances
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    }
   };
 
   const handleAdUpload = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -435,9 +446,9 @@ const Admin = () => {
               <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color}`}>
                 {stat.icon}
               </div>
-              <div className="min-w-0">
-                <p className="text-xl font-black text-white truncate">{stat.value}</p>
-                <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray truncate">{stat.label}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg md:text-xl font-black text-white break-words">{stat.value}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray truncate mt-0.5">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -478,19 +489,34 @@ const Admin = () => {
             <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="p-8 bg-gradient-to-br from-smash-purple/20 to-transparent border border-smash-purple/20 rounded-[40px] space-y-6">
-                      <h3 className="text-2xl font-black font-studio italic uppercase tracking-tighter">System Health</h3>
-                      <p className="text-smash-gray text-sm font-bold leading-relaxed">Platform is running with 0 critical issues. All artist payouts are processed weekly. Ad inventory is at 65% capacity.</p>
+                  {/* Performance Indicators */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-8 bg-gradient-to-br from-smash-green/20 to-transparent border border-smash-green/20 rounded-[40px] flex flex-col justify-between h-[200px] overflow-hidden">
+                       <div className="min-w-0">
+                         <p className="text-smash-gray font-black uppercase tracking-widest text-[10px] mb-2">Total Platform Earnings</p>
+                         <h4 className="text-2xl md:text-4xl font-black text-white italic tracking-tighter break-words leading-none">MK {platformStats.totalRevenue.toLocaleString()}</h4>
+                       </div>
+                       <p className="text-[10px] text-smash-green font-bold uppercase tracking-widest flex items-center gap-2 mt-2">
+                         <TrendingUp size={12} /> 15% Comm. + Ads
+                       </p>
+                    </div>
+
+                    <div className="p-8 bg-gradient-to-br from-smash-purple/20 to-transparent border border-smash-purple/20 rounded-[40px] flex flex-col justify-between h-[200px]">
+                      <div>
+                        <p className="text-smash-gray font-black uppercase tracking-widest text-[10px] mb-2">System Health</p>
+                        <p className="text-sm font-bold leading-relaxed text-white/80">Platform is running with 0 critical issues. All artist payouts are processed weekly.</p>
+                      </div>
                       <div className="flex gap-4">
                         <button onClick={() => setActiveTab('applications')} className="flex-1 py-3 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all">Review Apps</button>
-                        <button onClick={() => setActiveTab('song-reviews')} className="flex-1 py-3 bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all">Review Music</button>
                       </div>
                     </div>
-                    <div className="p-8 bg-white/5 border border-white/5 rounded-[40px] flex flex-col justify-center items-center text-center space-y-4">
-                      <LayoutDashboard size={40} className="text-smash-gray/20" />
-                      <p className="text-smash-gray font-black uppercase tracking-widest text-[10px]">Administrative Tip</p>
-                      <p className="text-sm font-bold text-white/60">Verifying artists manually check for valid Malawian government IDs provided in applications.</p>
+
+                    <div className="p-8 bg-white/5 border border-white/5 rounded-[40px] flex flex-col justify-between h-[200px]">
+                       <div className="flex items-center gap-3">
+                         <ShieldCheck className="text-smash-gray/40" size={24} />
+                         <p className="text-smash-gray font-black uppercase tracking-widest text-[10px]">Security Monitor</p>
+                       </div>
+                       <p className="text-sm font-bold text-white/60">Verifying artists manually check for valid Malawian government IDs provided in applications.</p>
                     </div>
                   </div>
                 </div>
@@ -611,24 +637,37 @@ const Admin = () => {
                         <img src={p.profiles?.avatar_url || 'https://placehold.co/48'} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-sm">{p.profiles?.stage_name || 'Artist'}</p>
-                        <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{p.phone} · {p.network}</p>
-                        <p className="text-[9px] text-smash-gray/60 font-bold mt-1">{new Date(p.created_at).toLocaleDateString()}</p>
+                        <div className="flex items-center gap-2">
+                           <p className="font-black text-sm">{p.profiles?.full_name || p.profiles?.stage_name || 'Artist'}</p>
+                           <span className="text-[10px] font-bold text-smash-green bg-smash-green/10 px-2 py-0.5 rounded">
+                             Bal: MK {p.profiles?.wallet_balance?.toLocaleString() || 0}
+                           </span>
+                        </div>
+                        <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{p.profiles?.stage_name && `Stage: ${p.profiles.stage_name} · `}{p.phone} · {p.network}</p>
+                        <p className="text-[9px] text-smash-gray/60 font-bold mt-1">{new Date(p.created_at).toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-black text-lg text-smash-orange">MK {p.requested_amount?.toLocaleString()}</p>
-                        <p className="text-[9px] text-smash-gray font-bold uppercase tracking-widest">After 3% fee</p>
+                        <p className="text-[9px] text-smash-gray font-bold uppercase tracking-widest">Net: MK {Math.floor(p.requested_amount * 0.97).toLocaleString()} (After 3% fee)</p>
                       </div>
-                      <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shrink-0 ${p.status === 'completed' ? 'bg-smash-green/10 text-smash-green' : 'bg-yellow-400/10 text-yellow-400'}`}>
-                        {p.status}
+                      <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shrink-0 ${p.status === 'paid' ? 'bg-smash-green/10 text-smash-green' : (p.status === 'failed' ? 'bg-smash-red/10 text-smash-red' : 'bg-yellow-400/10 text-yellow-400')}`}>
+                         {p.status === 'paid' ? 'SUCCESSFUL' : p.status.toUpperCase()}
                       </span>
-                      {p.status === 'pending' && (
-                        <button
-                          onClick={() => markPayoutComplete(p)}
-                          className="px-4 py-2.5 bg-smash-green text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shrink-0"
-                        >
-                          Mark Paid ✓
-                        </button>
+                      {p.status === 'processing' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleUpdatePayoutStatus(p.id, 'paid')}
+                            className="px-4 py-2.5 bg-smash-green text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shrink-0 shadow-lg shadow-smash-green/20"
+                          >
+                            Mark Paid ✓
+                          </button>
+                          <button
+                            onClick={() => handleUpdatePayoutStatus(p.id, 'failed')}
+                            className="px-4 py-2.5 bg-white/5 text-smash-red border border-smash-red/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-red hover:text-white transition-all shrink-0"
+                          >
+                            Reject
+                          </button>
+                        </div>
                       )}
                     </div>
                   )) : (

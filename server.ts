@@ -260,12 +260,17 @@ async function startServer() {
       if (updateError || !updatedArtist) throw new Error('Failed to update balance. Check your funds.');
 
       const payoutRef = `WD-${user.id}-${Date.now()}`;
+      
+      // Calculate net amount after 3% network fee
+      const feePercent = 0.03;
+      const netAmount = Math.floor(Number(amount) * (1 - feePercent));
 
       const { data: payoutReq, error: payoutReqError } = await supabaseAdmin
         .from('payout_requests')
         .insert({
           artist_id: user.id,
           requested_amount: amount,
+          net_amount: netAmount, // Track the net amount after fees
           phone,
           network,
           status: 'processing',
@@ -280,60 +285,13 @@ async function startServer() {
         throw payoutReqError;
       }
 
-      console.log(`[PAYOUT] Initiating for user: ${user.id}, ref: ${payoutRef}`);
+      console.log(`[PAYOUT] Manual payout recorded for user: ${user.id}, ref: ${payoutRef}`);
       
-      const cleanKey = PAYCHANGU_SECRET_KEY.trim();
-      // Correcting to the standard disbursement endpoint
-      const payoutEndpoint = 'https://api.paychangu.com/v1/disbursements'; 
-      console.log("[PAYOUT] Calling PayChangu:", payoutEndpoint);
-      
-      const response = await fetch(payoutEndpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cleanKey}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: Number(amount),
-          currency: 'MWK',
-          mobile: phone.replace(/\s/g, ''),
-          operator: network.toUpperCase(), // 'AIRTEL' or 'TNM'
-          reference: payoutRef,
-          first_name: artist.full_name?.split(' ')[0] || 'Artist',
-          last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
-          email: artist.email || 'payout@smashify.mw',
-          callback_url: `${APP_URL}/api/functions/payout-webhook`,
-          type: 'payment'
-        })
+      res.json({ 
+        success: true, 
+        reference: payoutRef,
+        message: "Your request has been received. Please wait for a moment while we verify your payout. You will be notified once it is processed."
       });
-
-      const responseText = await response.text();
-      console.log(`[PAYOUT] PayChangu Response (${response.status}):`, responseText);
-
-      let payload;
-      try {
-        payload = JSON.parse(responseText);
-      } catch (err) {
-        console.error('[PAYOUT] PayChangu non-JSON response:', responseText);
-      }
-
-      if (!response.ok) {
-        console.error('[PAYOUT] Failed on PayChangu side');
-        await supabaseAdmin.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id);
-        await supabaseAdmin.from('payout_requests').update({ status: 'failed', error_message: responseText.substring(0, 500) }).eq('id', payoutReq.id);
-        
-        return res.status(400).json({ 
-          error: payload?.message || `PayChangu error (${response.status}): ${responseText.substring(0, 200)}` 
-        });
-      }
-
-      await supabaseAdmin.from('payout_requests').update({ 
-        status: 'pending',
-        paychangu_reference: payload.data?.reference || payload.data?.transaction_reference 
-      }).eq('id', payoutReq.id);
-
-      res.json({ success: true, reference: payoutRef });
     } catch (error: any) {
       console.error('[API] Payout error:', error);
       res.status(400).json({ error: error.message });
@@ -342,6 +300,88 @@ async function startServer() {
 
   app.post('/api/functions/v1/process-payout', handleProcessPayout);
   app.post('/api/functions/process-payout', handleProcessPayout);
+
+  // New endpoint for admin to manually update payout status
+  app.post('/api/admin/payouts/:id/status', async (req, res) => {
+    try {
+      const user = await verifyUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      // Check if user is admin
+      const { data: adminProfile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).single();
+      if (!adminProfile?.is_admin) {
+         return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { id } = req.params;
+      const { status, error_message } = req.body;
+
+      if (!['paid', 'failed'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const { data: payout, error: payoutError } = await supabaseAdmin
+        .from('payout_requests')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (payoutError || !payout) throw new Error('Payout request not found');
+      if (payout.status === 'paid' || payout.status === 'failed') {
+        return res.status(400).json({ error: 'Payout already processed' });
+      }
+
+      if (status === 'paid') {
+        await supabaseAdmin.from('payout_requests').update({
+          status: 'paid',
+          processed_at: new Date().toISOString()
+        }).eq('id', id);
+
+        // Record the transaction for accounting
+        await supabaseAdmin.from('transactions').insert({
+          artist_id: payout.artist_id,
+          type: 'withdrawal',
+          gross_amount: payout.requested_amount,
+          net_amount: payout.net_amount || (payout.requested_amount * 0.97),
+          status: 'completed',
+          paychangu_ref: payout.reference,
+          description: `Manual payout withdrawal to ${payout.phone} (${payout.network})`
+        });
+
+        await supabaseAdmin.from('notifications').insert({
+          profile_id: payout.artist_id,
+          user_type: 'artist',
+          type: 'payout_sent',
+          message: `Your manual payout of MK ${payout.requested_amount.toLocaleString()} has been verified and processed! 🥳`,
+          link: '/artist-hub#wallet'
+        });
+      } else if (status === 'failed') {
+        await supabaseAdmin.from('payout_requests').update({ 
+          status: 'failed',
+          error_message: error_message || 'Manual verification failed'
+        }).eq('id', id);
+
+        // Refund wallet
+        const { data: artist } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', payout.artist_id).single();
+        await supabaseAdmin.from('profiles').update({
+          wallet_balance: (artist?.wallet_balance || 0) + payout.requested_amount
+        }).eq('id', payout.artist_id);
+
+        await supabaseAdmin.from('notifications').insert({
+          profile_id: payout.artist_id,
+          user_type: 'artist',
+          type: 'payout_failed',
+          message: `Your withdrawal request of MK ${payout.requested_amount.toLocaleString()} was declined. Funds have been returned to your wallet.`,
+          link: '/artist-hub#wallet'
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[API] Admin payout update error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
 
   // 3. Payout Webhook
   app.post('/api/functions/payout-webhook', async (req, res) => {
@@ -475,8 +515,12 @@ async function startServer() {
       console.log(`[WEBHOOK] Payload received:`, JSON.stringify(payload));
       console.log(`[WEBHOOK] Processing type: ${type} for ref: ${tx_ref}, userId: ${userId}, artistId: ${artistId}`);
 
+      const pFee = type === 'TRACK_PURCHASE' ? amount * 0.15 : (type === 'TIP' ? amount * 0.10 : 0);
+
       await supabaseAdmin.from('transactions').update({ 
         status: 'completed',
+        amount: amount,
+        platform_fee: pFee,
         completed_at: new Date().toISOString()
       }).eq('id', transaction.id);
 
@@ -511,7 +555,7 @@ async function startServer() {
           
           if (artistId) {
             try {
-              const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, p_amount: saleNet });
+              const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
               if (rpcErr) {
                  console.warn('[WEBHOOK] RPC increment failed, trying manual fallback...', rpcErr.message);
                  const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
@@ -536,7 +580,7 @@ async function startServer() {
           const tipNet = amount * (1 - tipFee);
           if (artistId) {
             console.log(`[WEBHOOK] Incrementing wallet for artist ${artistId} by ${tipNet}`);
-            const { error: tipRpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, p_amount: tipNet });
+            const { error: tipRpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
             if (tipRpcErr) {
               console.warn('[WEBHOOK] TIP RPC failed, trying manual fallback...', tipRpcErr.message);
               const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();

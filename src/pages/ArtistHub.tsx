@@ -597,13 +597,14 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                             </button>
                           </div>
                           <div className="text-left">
-                            <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Phone Number</label>
+                            <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Verified Phone Number</label>
                             <input 
                               value={phone}
-                              onChange={e=>setPhone(e.target.value)}
+                              readOnly
                               placeholder="099..."
-                              className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-primary focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 outline-none transition-all"
+                              className="w-full h-[44px] bg-bg-elevated/50 border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-muted outline-none cursor-not-allowed"
                             />
+                            <p className="text-[9px] text-text-muted mt-1 italic italic">To change your payout number, please update your profile.</p>
                           </div>
                           <div className="flex gap-3 pt-2">
                              <button onClick={()=>setShowWithdrawForm(false)} className="flex-1 h-[44px] bg-bg-elevated border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-border-default transition-colors">Cancel</button>

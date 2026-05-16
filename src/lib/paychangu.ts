@@ -263,7 +263,7 @@ export async function requestPayout({
       throw new Error(data.error || data.message || 'Withdrawal failed on server');
     }
     
-    toast.success('Withdrawal successful! Funds will land in your mobile wallet shortly.', { id: toastId });
+    toast.success(data.message || 'Withdrawal request submitted! Please wait for a moment while we verify your payout.', { id: toastId, duration: 6000 });
     return data;
   } catch (err: any) {
     console.error('Payout error:', err);
