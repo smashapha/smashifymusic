@@ -106,7 +106,8 @@ Deno.serve(async (req) => {
     // 5. Initialize Payout via PayChangu Mobile Money Transfer API
     console.log("Payout Function: Calling PayChangu Mobile Money Transfer API...")
     const cleanKey = PAYCHANGU_SECRET_KEY.trim()
-    const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
+    // Using singular 'disbursement' with v1 prefix which is common for Malawian APIs
+    const response = await fetch('https://api.paychangu.com/v1/disbursement', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cleanKey}`,

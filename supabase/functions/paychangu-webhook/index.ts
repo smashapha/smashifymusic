@@ -138,12 +138,28 @@ serve(async (req) => {
     // HANDLERS
     switch (type) {
       case 'TRACK_PURCHASE':
-        // Record purchase
-        await supabase.from('fan_purchases').insert({ fan_id: userId, song_id: songId, transaction_id: transaction.id })
+        // Record purchase - Using upsert to be idempotent
+        const { error: fanError } = await supabase.from('fan_purchases').upsert({ 
+          fan_id: userId, 
+          song_id: songId, 
+          transaction_id: transaction.id,
+          amount: grossAmount,
+          status: 'completed'
+        }, { onConflict: 'fan_id,song_id' })
+        
+        if (fanError) console.error('fan_purchases insert error:', fanError);
         // Increment sales count
         await supabase.rpc('increment_song_sales', { s_id: songId })
         // Payout Handle: Net amount to artist wallet
         await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
+        
+        await supabase.from('notifications').insert({
+          profile_id: artistId,
+          user_type: 'artist',
+          type: 'track_sold',
+          message: `You sold a track! MWK ${grossAmount.toLocaleString()} earned. 💿`,
+          link: '/artist-hub#dashboard'
+        })
         break;
 
       case 'TIP':
@@ -151,7 +167,7 @@ serve(async (req) => {
 
         if (!anonymous) {
             await supabase.from('notifications').insert({
-              user_id: artistId,
+              profile_id: artistId,
               user_type: 'artist',
               type: 'tip_received',
               message: `You received a MWK ${grossAmount.toLocaleString()} tip! (Net: MWK ${netAmount.toLocaleString()}) 💸`,
@@ -171,7 +187,7 @@ serve(async (req) => {
         })
         await supabase.rpc('increment_wallet_balance', { p_id: artistId, amount: netAmount });
         await supabase.from('notifications').insert({
-          user_id: artistId,
+          profile_id: artistId,
           user_type: 'artist',
           type: 'subscription_started',
           message: `A fan just started a monthly subscription! MWK ${grossAmount.toLocaleString()} 💖 (Net: MWK ${netAmount.toLocaleString()})`,

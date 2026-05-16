@@ -243,10 +243,10 @@ async function startServer() {
         throw payoutReqError;
       }
 
-      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/mobile-money/transfer');
+      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/v1/disbursement');
       // Clean KEY and ensure plural/singular consistency
       const cleanKey = PAYCHANGU_SECRET_KEY.trim();
-      const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
+      const response = await fetch('https://api.paychangu.com/v1/disbursement', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cleanKey}`,
@@ -259,7 +259,6 @@ async function startServer() {
           mobile: phone,
           service: network.toUpperCase(), // TNM or AIRTEL (Uppercase)
           reference: payoutRef,
-          // Removed first_name/last_name as they can trigger different route logic in PayChangu
         })
       });
 
@@ -327,7 +326,7 @@ async function startServer() {
         });
 
         await supabaseAdmin.from('notifications').insert({
-          user_id: payout.artist_id,
+          profile_id: payout.artist_id,
           user_type: 'artist',
           type: 'payout_sent',
           message: `MK ${amount.toLocaleString()} has been sent to your ${payout.network} number 🎉`,
@@ -341,7 +340,7 @@ async function startServer() {
         }).eq('id', payout.artist_id);
 
         await supabaseAdmin.from('notifications').insert({
-          user_id: payout.artist_id,
+          profile_id: payout.artist_id,
           user_type: 'artist',
           type: 'payout_failed',
           message: `Your withdrawal failed. MK ${amount.toLocaleString()} returned to your wallet.`,
@@ -427,11 +426,29 @@ async function startServer() {
 
       switch (type) {
         case 'TRACK_PURCHASE':
-          await supabaseAdmin.from('fan_purchases').insert({ fan_id: userId, song_id: songId, transaction_id: transaction.id });
+          // EXPLICIT LOCK RELIEF
+          const { error: fanError } = await supabaseAdmin.from('fan_purchases').upsert({ 
+            fan_id: userId, 
+            song_id: songId, 
+            transaction_id: transaction.id,
+            amount: amount,
+            status: 'completed'
+          }, { onConflict: 'fan_id,song_id' });
+          
+          if (fanError) console.error('fan_purchases insert error:', fanError);
+
           await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
           const saleFee = 0.15;
           const saleNet = amount * (1 - saleFee);
           await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: saleNet });
+          
+          await supabaseAdmin.from('notifications').insert({
+             profile_id: artistId,
+             user_type: 'artist',
+             type: 'track_sold',
+             message: `You sold a track! MWK ${amount.toLocaleString()} earned. 💿`,
+             link: '/artist-hub#dashboard'
+          });
           break;
 
         case 'TIP':
@@ -440,7 +457,7 @@ async function startServer() {
           await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: tipNet });
           if (!anonymous) {
             await supabaseAdmin.from('notifications').insert({
-              user_id: artistId,
+              profile_id: artistId,
               user_type: 'artist',
               type: 'tip_received',
               message: `You received a MWK ${amount.toLocaleString()} tip! (Net: MWK ${tipNet.toLocaleString()}) 💸`,
@@ -457,6 +474,14 @@ async function startServer() {
             artist_id: artistId,
             status: 'active',
             next_billing_at: renewsAt.toISOString()
+          });
+
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: artistId,
+            user_type: 'artist',
+            type: 'fan_subscribed',
+            message: `A fan has subscribed to you! MWK ${amount.toLocaleString()} earned. 💖`,
+            link: '/artist-hub#fans'
           });
           break;
 

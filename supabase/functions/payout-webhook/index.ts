@@ -48,7 +48,7 @@ serve(async (req) => {
       })
 
       await supabase.from('notifications').insert({
-        user_id: payout.artist_id,
+        profile_id: payout.artist_id,
         user_type: 'artist',
         type: 'payout_sent',
         message: `MK ${amount.toLocaleString()} has been sent to your ${payout.network} number 🎉`,
@@ -68,7 +68,7 @@ serve(async (req) => {
       }).eq('id', payout.artist_id)
 
       await supabase.from('notifications').insert({
-        user_id: payout.artist_id,
+        profile_id: payout.artist_id,
         user_type: 'artist',
         type: 'payout_failed',
         message: `Your withdrawal failed. MK ${amountToRefund.toLocaleString()} returned to your wallet.`,
