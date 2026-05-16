@@ -90,7 +90,17 @@ serve(async (req) => {
       .single()
 
     const parts = tx_ref.split('-');
-    const type = (transaction?.metadata?.payment_type || parts[1]).toUpperCase()
+    // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
+    // Convert it to uppercase for switch matching
+    const metaType = transaction?.metadata?.payment_type;
+    const type = metaType
+      ? metaType.toUpperCase()
+      : parts.slice(1, -2).join('_').toUpperCase();
+    // parts.slice(1, -2) removes 'SMASH' prefix and userId+timestamp suffix
+    // giving us LISTENER_PREMIUM, TRACK_PURCHASE, ARTIST_RISING_STAR etc
+
+    console.log('Resolved type:', type);
+    console.log('Meta payment_type:', metaType);
     const meta = transaction?.metadata || eventData.meta || payload.meta || {};
 
     console.log('Full payload:', bodyText);
@@ -188,16 +198,38 @@ serve(async (req) => {
       case 'FAN_SUBSCRIPTION': {
         const renewsAt = new Date()
         renewsAt.setDate(renewsAt.getDate() + 30)
-        await supabase.from('fan_subscriptions').upsert({
-          fan_id: userId,
-          artist_id: artistId,
-          status: 'active',
-          next_billing_at: renewsAt.toISOString()
-        })
-        
-        const { data: profileDataSub } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-        const currentBalanceSub = Number(profileDataSub?.wallet_balance || 0)
-        await supabase.from('profiles').update({ wallet_balance: currentBalanceSub + netAmount }).eq('id', artistId)
+        const { error: subError } = await supabase
+          .from('fan_subscriptions')
+          .upsert({
+            fan_id: userId,
+            artist_id: artistId,
+            status: 'active',
+            amount: grossAmount,
+            started_at: new Date().toISOString(),
+            next_billing_at: renewsAt.toISOString()
+          }, { onConflict: 'fan_id,artist_id' })
+
+        if (subError) {
+          console.error('fan_subscriptions upsert error:', subError)
+        } else {
+          console.log('Fan subscription activated for artist:', artistId)
+        }
+
+        // Credit artist wallet with net amount
+        const { data: artistWallet } = await supabase
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('id', artistId)
+          .single()
+
+        const newBalance = Number(artistWallet?.wallet_balance || 0) + netAmount
+        const { error: walletError } = await supabase
+          .from('profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', artistId)
+
+        if (walletError) console.error('Artist wallet credit error:', walletError)
+        else console.log('Artist wallet credited:', netAmount, 'new balance:', newBalance)
         
         await supabase.from('notifications').insert({
           profile_id: artistId,
@@ -214,15 +246,29 @@ serve(async (req) => {
         const subEnds = new Date()
         subEnds.setDate(subEnds.getDate() + 30)
         const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family'
-        // Update both tables to handle artist-as-listener cases
-        await supabase.from('user_profiles').update({
-          subscription_tier: subTierName,
-          subscription_ends: subEnds.toISOString()
-        }).eq('id', userId)
+        // userId from metadata, also try fan_id as fallback
+        const listenerId = userId || meta.fan_id || meta.userId
+        console.log('Upgrading listener:', listenerId, 'to tier:', subTierName)
+        
+        const { error: listenerTierError } = await supabase
+          .from('user_profiles')
+          .update({
+            subscription_tier: subTierName,
+            subscription_ends: subEnds.toISOString()
+          })
+          .eq('id', listenerId)
+        
+        if (listenerTierError) {
+          console.error('Listener tier update error:', listenerTierError)
+        } else {
+          console.log('Listener tier updated successfully')
+        }
+
+        // Update profiles to handle artist-as-listener cases
         await supabase.from('profiles').update({
           subscription_tier: subTierName,
           subscription_ends: subEnds.toISOString()
-        }).eq('id', userId)
+        }).eq('id', listenerId)
         break;
 
       case 'ARTIST_RISING_STAR':
@@ -236,12 +282,14 @@ serve(async (req) => {
           'ARTIST_ELITE': 'Elite'
         }
         const artistTierName = tierMap[type] || 'Free'
-        await supabase.from('profiles').update({
+        const { error: tierError } = await supabase.from('profiles').update({
           subscription_tier: artistTierName,
           artist_tier: artistTierName,
           subscription_ends: artistTierEnds.toISOString(),
           approved: true
         }).eq('id', userId)
+        if (tierError) console.error('Artist tier update error:', tierError)
+        else console.log('Artist tier updated to:', artistTierName, 'for user:', userId)
         break;
 
       case 'ARTIST_AD_CAMPAIGN':

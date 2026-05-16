@@ -146,6 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (listenerData) {
           let currentListenerData = listenerData;
           const tier = (listenerData.subscription_tier || 'free').toLowerCase();
+          console.log('Fetched listener tier:', listenerData?.subscription_tier)
           
           if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && tier !== 'free') {
              const { data: updatedListener } = await supabase
@@ -181,6 +182,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (artistData) {
           let currentArtistData = artistData;
           const tier = (artistData.subscription_tier || 'free').toLowerCase();
+          console.log('Fetched artist tier:', artistData?.artist_tier)
+          console.log('Fetched artist subscription_tier:', artistData?.subscription_tier)
           
           if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && tier !== 'free') {
              const { data: updatedArtist } = await supabase
@@ -270,8 +273,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
-  };
+    if (user) {
+      // Force fresh fetch by clearing cached state first
+      setArtistProfile(null)
+      setListenerProfile(null)
+      await fetchProfile(user.id)
+    }
+  }
 
   // userProfile points to whichever profile is active (backwards compat)
   const userProfile = artistProfile || listenerProfile;

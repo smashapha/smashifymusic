@@ -33,44 +33,43 @@ const PaymentSuccess = () => {
 
       const check = async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment?tx_ref=${tx_ref}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          const { data: txData, error } = await supabase
+            .from('transactions')
+            .select('status, type, gross_amount, metadata')
+            .eq('paychangu_ref', tx_ref)
+            .single()
+
+          if (error) {
+            console.error('Transaction check error:', error)
+            attempts++
+            if (attempts >= maxAttempts) {
+              setStatus('pending')
+              return true
             }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.status === 'completed') {
-              setDetails(data.transaction);
-              setStatus('confirmed');
-              // Trigger refresh of user data
-              if (typeof refreshProfile === 'function') {
-                await refreshProfile();
-              }
-              // Backup reload to ensure all data is absolutely fresh
-              setTimeout(() => {
-                // If we're on a tier success page, we might want to stay here, but a refresh of global state is needed.
-                // refreshProfile handles the state.
-              }, 1000);
-              return true;
-            } else if (data.status === 'failed') {
-              navigate(`/payment-failed?tx_ref=${tx_ref}`);
-              return true;
+            return false
+          }
+
+          if (txData?.status === 'completed') {
+            setDetails(txData)
+            setStatus('confirmed')
+            if (typeof refreshProfile === 'function') {
+              await refreshProfile()
             }
+            return true
+          } else if (txData?.status === 'failed') {
+            navigate(`/payment-failed?tx_ref=${tx_ref}`)
+            return true
           }
         } catch (e) {
-          console.error("Verification error", e);
+          console.error('Verification error', e)
         }
-        
-        attempts++;
+
+        attempts++
         if (attempts >= maxAttempts) {
-          setStatus('pending');
-          return true;
+          setStatus('pending')
+          return true
         }
-        return false;
+        return false
       };
 
       const interval = setInterval(async () => {
