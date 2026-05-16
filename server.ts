@@ -106,15 +106,21 @@ async function startServer() {
 
   // 1. Create Payment
   app.post(['/api/functions/v1/create-payment', '/api/functions/create-payment'], async (req, res) => {
+    console.log('[API] create-payment received');
     try {
       if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
+        console.error('[API] PAYCHANGU_SECRET_KEY missing');
         throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
       }
 
       const user = await verifyUser(req);
-      if (!user) return res.status(401).json({ error: 'Unauthorized route access' });
+      if (!user) {
+        console.error('[API] verifyUser failed');
+        return res.status(401).json({ error: 'Unauthorized route access' });
+      }
 
       const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency, callback_url } = req.body;
+      console.log(`[API] Processing ${type} for ${email}, amount: ${amount}`);
 
       const descriptions: Record<string, string> = {
         'track_purchase': `Purchase of music track on Smashify`,
@@ -143,15 +149,16 @@ async function startServer() {
       });
 
       if (txError) {
-        console.error('create-payment: txError:', txError.message);
+        console.error('[API] txError:', txError.message);
         throw txError;
       }
 
       // Initialize PayChangu
+      console.log('[API] Calling PayChangu /payment init...');
       const response = await fetch('https://api.paychangu.com/payment', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${PAYCHANGU_SECRET_KEY}`,
+          'Authorization': `Bearer ${PAYCHANGU_SECRET_KEY.trim()}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -172,36 +179,49 @@ async function startServer() {
       });
 
       const responseText = await response.text();
+      console.log(`[API] PayChangu Response (${response.status}):`, responseText.substring(0, 200));
+
       let payload;
       try {
         payload = JSON.parse(responseText);
       } catch (err) {
-        throw new Error(`PayChangu returned non-JSON: ${responseText.substring(0, 100)}...`);
+        throw new Error(`PayChangu returned non-JSON (${response.status}): ${responseText.substring(0, 100)}...`);
       }
 
       if (!response.ok) {
+        console.error('[API] PayChangu Failed:', payload);
         await supabaseAdmin.from('transactions').delete().eq('paychangu_ref', tx_ref);
         throw new Error(payload.message || 'PayChangu initialization failed');
       }
 
+      if (!payload.data?.checkout_url) {
+        console.error('[API] Missing checkout_url in payload:', payload);
+        throw new Error('PayChangu did not return a checkout URL');
+      }
+
       res.json({ checkout_url: payload.data.checkout_url });
     } catch (error: any) {
-      console.error('Create payment error:', error);
+      console.error('[API] Create payment error:', error);
       res.status(400).json({ error: error.message });
     }
   });
 
   // 2. Process Payout
   app.post(['/api/functions/v1/process-payout', '/api/functions/process-payout'], async (req, res) => {
+    console.log('[API] process-payout received');
     try {
       if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
         throw new Error('PAYCHANGU_SECRET_KEY is missing or not configured');
       }
 
       const user = await verifyUser(req);
-      if (!user) return res.status(401).json({ error: 'Unauthorized route access' });
+      if (!user) {
+        console.error('[API] Payout: verifyUser failed');
+        return res.status(401).json({ error: 'Unauthorized route access' });
+      }
 
       const { amount, phone, network } = req.body;
+      console.log(`[API] Payout request: ${amount} to ${phone} (${network})`);
 
       const { data: artist, error: artistError } = await supabaseAdmin
         .from('profiles')
@@ -213,6 +233,7 @@ async function startServer() {
       if (artist.wallet_balance < amount) throw new Error('Insufficient wallet balance');
       if (amount < 2000) throw new Error('Minimum withdrawal is MK 2,000');
 
+      // Optimistically deduct balance
       const { data: updatedArtist, error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({ wallet_balance: artist.wallet_balance - amount })
@@ -239,16 +260,19 @@ async function startServer() {
         .single();
 
       if (payoutReqError) {
+        console.error('[API] payoutReqError:', payoutReqError);
         await supabaseAdmin.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id);
         throw payoutReqError;
       }
 
-      console.log(`[PAYOUT] Initiating for user: ${user.id}, amount: ${amount}, phone: ${phone}, network: ${network}`);
+      console.log(`[PAYOUT] Initiating for user: ${user.id}, ref: ${payoutRef}`);
       
-      console.log("PayChangu Payout: Calling endpoint...", 'https://api.paychangu.com/v1/disbursement');
-      // Clean KEY and ensure plural/singular consistency
       const cleanKey = PAYCHANGU_SECRET_KEY.trim();
-      const response = await fetch('https://api.paychangu.com/v1/disbursement', {
+      // Trying the endpoint discovered to be correct for some MWK accounts
+      const payoutEndpoint = 'https://api.paychangu.com/v1/disbursements'; 
+      console.log("[PAYOUT] Calling PayChangu:", payoutEndpoint);
+      
+      const response = await fetch(payoutEndpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cleanKey}`,
@@ -265,8 +289,7 @@ async function startServer() {
       });
 
       const responseText = await response.text();
-      console.log("PayChangu Payout Status:", response.status);
-      console.log("PayChangu Payout Response:", responseText);
+      console.log(`[PAYOUT] PayChangu Response (${response.status}):`, responseText);
 
       let payload;
       try {
@@ -276,6 +299,7 @@ async function startServer() {
       }
 
       if (!response.ok) {
+        console.error('[PAYOUT] Failed on PayChangu side');
         await supabaseAdmin.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id);
         await supabaseAdmin.from('payout_requests').update({ status: 'failed', error_message: payload.message || responseText }).eq('id', payoutReq.id);
         throw new Error(payload.message || `PayChangu payout initialization failed (${response.status})`);
@@ -283,12 +307,12 @@ async function startServer() {
 
       await supabaseAdmin.from('payout_requests').update({ 
         status: 'pending',
-        paychangu_reference: payload.data?.reference 
+        paychangu_reference: payload.data?.reference || payload.data?.transaction_reference 
       }).eq('id', payoutReq.id);
 
       res.json({ success: true, reference: payoutRef });
     } catch (error: any) {
-      console.error('Payout error:', error);
+      console.error('[API] Payout error:', error);
       res.status(400).json({ error: error.message });
     }
   });

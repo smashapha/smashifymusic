@@ -59,11 +59,18 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       }
     );
 
-    const data = await response.json();
+    const textToLog = await response.text();
+    let data;
+    try {
+      data = JSON.parse(textToLog);
+    } catch (e) {
+      console.error("Failed to parse response JSON. Raw text:", textToLog);
+      throw new Error(`Server returned invalid response format. Status: ${response.status}`);
+    }
 
     if (!response.ok) {
        console.error("Payment Function Error:", data);
-       throw new Error(data.error || 'Failed to initialize payment');
+       throw new Error(data.error || data.message || 'Failed to initialize payment');
     }
     
     if (!data?.checkout_url) {
@@ -242,11 +249,18 @@ export async function requestPayout({
       }
     );
     
-    const data = await response.json();
+    const textToLog = await response.text();
+    let data;
+    try {
+      data = JSON.parse(textToLog);
+    } catch (e) {
+      console.error("Payout JSON Parse Error. Raw text:", textToLog);
+      throw new Error(`Server returned invalid payout response. Status: ${response.status}`);
+    }
 
     if (!response.ok) {
       console.error("Payout Function Error:", data);
-      throw new Error(data.error || 'Withdrawal failed on server');
+      throw new Error(data.error || data.message || 'Withdrawal failed on server');
     }
     
     toast.success('Withdrawal successful! Funds will land in your mobile wallet shortly.', { id: toastId });
