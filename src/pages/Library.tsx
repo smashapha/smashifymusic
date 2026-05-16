@@ -52,18 +52,22 @@ const Library: React.FC = () => {
     try {
       if (activeTab === 'purchased') {
         const { data: purchases, error: pError } = await supabase
-          .from('purchases')
-          .select('*, songs(*, profiles!artist_id(full_name))')
-          .eq('profile_id', userProfile?.id);
+          .from('fan_purchases')
+          .select('*, songs(*, profiles!artist_id(full_name, stage_name))')
+          .eq('fan_id', userProfile?.id)
+          .order('purchased_at', { ascending: false });
 
         if (pError) throw pError;
 
         const formatted = (purchases || []).map((p: any) => ({
           ...p.songs,
+          id: p.song_id,
           artist_name: p.songs?.profiles?.stage_name || p.songs?.profiles?.full_name || 'Artist',
           cover_url: p.songs?.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
           url: p.songs?.audio_url,
-          is_purchased: true
+          purchased_at: p.purchased_at,
+          is_purchased: true,
+          is_for_sale: false,
         }));
         setSongs(formatted as any);
       } else if (activeTab === 'likes') {

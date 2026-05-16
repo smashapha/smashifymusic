@@ -132,7 +132,7 @@ export default function ArtistHub() {
       const totalStreams = allPlays?.reduce((acc, s) => acc + (s.plays || 0), 0) || 0;
       
       const { data: totalSales } = await supabase
-        .from('purchases')
+        .from('fan_purchases')
         .select('amount')
         .in('song_id', songsData?.map(s => s.id) || []);
       

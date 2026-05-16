@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://play-smashify.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -103,11 +103,10 @@ Deno.serve(async (req) => {
       description: `Withdrawal to ${network} (${phone})`
     })
 
-    // 5. Initialize Payout via PayChangu
-    console.log("Payout Function: Calling PayChangu Payout API...")
-    // Standard endpoint for mobile money transfer is /mobile-money/transfer (singular)
+    // 5. Initialize Payout via PayChangu Disbursement API
+    console.log("Payout Function: Calling PayChangu Disbursement API...")
     const cleanKey = PAYCHANGU_SECRET_KEY.trim()
-    const response = await fetch('https://api.paychangu.com/mobile-money/transfer', {
+    const response = await fetch('https://api.paychangu.com/disbursement', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cleanKey}`,
@@ -115,12 +114,12 @@ Deno.serve(async (req) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        amount,
+        amount: String(amount),
         currency: 'MWK',
-        mobile: phone,
-        service: network.toLowerCase(), // airtel or tnm
+        phone_number: phone,
+        network: network.toUpperCase(),
+        narration: `Smashify payout - ${payoutRef}`,
         reference: payoutRef,
-        callback_url: `${SUPABASE_URL}/functions/v1/payout-webhook`
       })
     })
 

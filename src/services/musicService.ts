@@ -5,7 +5,7 @@ export const musicService = {
   /**
    * Fetches the latest trending songs from Malawi
    */
-  async getTrendingSongs(): Promise<Song[]> {
+  async getTrendingSongs(userId?: string): Promise<Song[]> {
     try {
       const { data, error } = await supabase
         .from('songs')
@@ -19,7 +19,24 @@ export const musicService = {
           throw new Error('No songs found');
       }
 
-      return data as Song[];
+      let songs = data as Song[];
+
+      // Check which songs the user has purchased
+      if (userId) {
+        const { data: userPurchases } = await supabase
+          .from('fan_purchases')
+          .select('song_id')
+          .eq('fan_id', userId);
+
+        const purchasedIds = new Set((userPurchases || []).map(p => p.song_id));
+
+        songs = songs.map(song => ({
+          ...song,
+          is_purchased: purchasedIds.has(song.id)
+        }));
+      }
+
+      return songs;
     } catch (error) {
       console.warn('Supabase fetch failed, using fallback trending data');
       return [
@@ -44,9 +61,9 @@ export const musicService = {
    */
   async recordPurchase(userId: string, songId: string, amount: number, tx_ref: string) {
     const { data, error } = await supabase
-      .from('purchases')
+      .from('fan_purchases')
       .insert({
-        profile_id: userId,
+        fan_id: userId,
         song_id: songId,
         amount,
         transaction_id: tx_ref,
@@ -64,9 +81,9 @@ export const musicService = {
    */
   async checkIfSongPurchased(userId: string, songId: string): Promise<boolean> {
     const { count, error } = await supabase
-      .from('purchases')
+      .from('fan_purchases')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
+      .eq('fan_id', userId)
       .eq('song_id', songId);
 
     if (error) throw error;

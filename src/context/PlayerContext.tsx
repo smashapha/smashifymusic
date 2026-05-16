@@ -492,13 +492,28 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           .limit(50);
         
         if (data) {
-          const formatted = data.map((s: any) => ({
+          let formatted = data.map((s: any) => ({
              ...s,
              artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
              cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
              audio_url: s.audio_url,
              profiles: s.profiles
           }));
+
+          // Check which songs the user has purchased
+          if (userProfile?.id) {
+            const { data: userPurchases } = await supabase
+              .from('fan_purchases')
+              .select('song_id')
+              .eq('fan_id', userProfile.id);
+
+            const purchasedIds = new Set((userPurchases || []).map(p => p.song_id));
+
+            formatted = formatted.map(song => ({
+              ...song,
+              is_purchased: purchasedIds.has(song.id)
+            }));
+          }
 
           if (currentSong) {
             const next = await getRadioNextSong(currentSong, formatted);
