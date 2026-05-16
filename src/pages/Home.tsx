@@ -8,6 +8,7 @@ import Avatar from '../components/common/Avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAiRecommendations } from '../services/aiService';
+import { musicService } from '../services/musicService';
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
@@ -117,9 +118,12 @@ const Home: React.FC = () => {
         url: s.audio_url
       }));
 
-      setTrendingSongs(formattedSongs.sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 10));
-      setNewReleases(formattedSongs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10));
-      setForSaleSongs(formattedSongs.filter(s => s.is_for_sale).slice(0, 10));
+      // Enrich with purchase status if user is logged in
+      const enrichedSongs = await musicService.enrichSongsWithPurchases(formattedSongs as any, userProfile?.id);
+
+      setTrendingSongs(enrichedSongs.sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 10));
+      setNewReleases(enrichedSongs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10));
+      setForSaleSongs(enrichedSongs.filter(s => s.is_for_sale).slice(0, 10));
 
       const { data: artistsData, error: artistsError } = await supabase
         .from('profiles')

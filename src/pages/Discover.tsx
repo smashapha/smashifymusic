@@ -8,6 +8,7 @@ import Avatar from '../components/common/Avatar';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAiRecommendations } from '../services/aiService';
+import { musicService } from '../services/musicService';
 
 const GENRES = [
   { name: 'Afropop', icon: Music2, color: 'text-smash-orange' },
@@ -111,13 +112,16 @@ const Discover: React.FC = () => {
       .eq('approved', true)
       .limit(6);
     if (data) {
-        setTrending(data.map(s => ({
+        const baseSongs = data.map(s => ({
             ...s,
             artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
             cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
             url: s.audio_url,
             profiles: s.profiles
-        })) as any);
+        }));
+        
+        const enriched = await musicService.enrichSongsWithPurchases(baseSongs as any, userProfile?.id);
+        setTrending(enriched as any);
     }
   };
 
@@ -126,7 +130,7 @@ const Discover: React.FC = () => {
     try {
       let songsQuery = supabase
         .from('songs')
-        .select('*, profiles!artist_id(full_name, avatar_url)')
+        .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
         .eq('approved', true);
 
       if (searchQuery) {
@@ -137,6 +141,15 @@ const Discover: React.FC = () => {
       }
 
       const { data: songsData } = await songsQuery.limit(20);
+
+      const baseSongs = (songsData || []).map(s => ({
+          ...s,
+          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+          cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+          url: s.audio_url
+      }));
+
+      const enrichedSongs = await musicService.enrichSongsWithPurchases(baseSongs as any, userProfile?.id);
 
       let artistsQuery = supabase
         .from('profiles')
@@ -154,12 +167,7 @@ const Discover: React.FC = () => {
       const { data: artistsData } = await artistsQuery.limit(10);
 
       setResults({
-        songs: (songsData || []).map(s => ({
-            ...s,
-            artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
-            cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-            url: s.audio_url
-        })) as any,
+        songs: enrichedSongs as any,
         artists: (artistsData || []).map(a => ({
           ...a,
           display_name: a.stage_name || a.full_name

@@ -15,6 +15,7 @@ import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
 import SupportArtistModal from '../components/common/SupportArtistModal';
 import { usePlayer } from '../context/PlayerContext';
+import { musicService } from '../services/musicService';
 
 const ArtistProfile: React.FC = () => {
    const { id } = useParams<{ id: string }>();
@@ -157,7 +158,9 @@ const ArtistProfile: React.FC = () => {
                url: s.audio_url,
                profiles: artistData
              }));
-            setSongs(formattedSongs);
+            
+            const enriched = await musicService.enrichSongsWithPurchases(formattedSongs as any, userProfile?.id);
+            setSongs(enriched);
 
          } catch (err) {
             console.error('Error fetching artist:', err);

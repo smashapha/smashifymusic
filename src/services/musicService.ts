@@ -3,6 +3,29 @@ import { Song, Artist } from '../types';
 
 export const musicService = {
   /**
+   * Enriches a list of songs with purchase status for a specific user
+   */
+  async enrichSongsWithPurchases(songs: Song[], userId?: string): Promise<Song[]> {
+    if (!userId || songs.length === 0) return songs;
+    try {
+      const { data: userPurchases } = await supabase
+        .from('fan_purchases')
+        .select('song_id')
+        .eq('fan_id', userId);
+
+      const purchasedIds = new Set((userPurchases || []).map(p => p.song_id));
+
+      return songs.map(song => ({
+        ...song,
+        is_purchased: purchasedIds.has(song.id)
+      }));
+    } catch (err) {
+      console.warn('Failed to enrich songs with purchases', err);
+      return songs;
+    }
+  },
+
+  /**
    * Fetches the latest trending songs from Malawi
    */
   async getTrendingSongs(userId?: string): Promise<Song[]> {
@@ -19,24 +42,8 @@ export const musicService = {
           throw new Error('No songs found');
       }
 
-      let songs = data as Song[];
-
-      // Check which songs the user has purchased
-      if (userId) {
-        const { data: userPurchases } = await supabase
-          .from('fan_purchases')
-          .select('song_id')
-          .eq('fan_id', userId);
-
-        const purchasedIds = new Set((userPurchases || []).map(p => p.song_id));
-
-        songs = songs.map(song => ({
-          ...song,
-          is_purchased: purchasedIds.has(song.id)
-        }));
-      }
-
-      return songs;
+      const songs = data as Song[];
+      return this.enrichSongsWithPurchases(songs, userId);
     } catch (error) {
       console.warn('Supabase fetch failed, using fallback trending data');
       return [
