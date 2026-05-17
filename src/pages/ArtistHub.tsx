@@ -486,17 +486,17 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
   const [requesting, setRequesting] = useState(false);
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
-  const [network, setNetwork] = useState<'AIRTEL'|'TNM'>('AIRTEL');
+  const [selectedNetwork, setSelectedNetwork] = useState<'Airtel' | 'TNM'>('Airtel');
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const limits = getTierLimits(userProfile);
 
   useEffect(() => {
     const fetchHist = async () => {
       const { data } = await supabase
-        .from('transactions')
+        .from('payout_requests')
         .select('*')
         .eq('artist_id', userProfile?.id)
-        .order('created_at', { ascending: false })
+        .order('requested_at', { ascending: false })
         .limit(10);
       if (data) setHistory(data);
     };
@@ -510,17 +510,66 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
     setShowWithdrawForm(true);
   };
 
-  const handleWithdrawConfirm = async () => {
-    if (!phone) return toast.error('Please enter a phone number.');
+  const handleWithdraw = async () => {
+    if (!withdrawalAmount || withdrawalAmount < 2000) {
+      return toast.error('Minimum withdrawal is MK 2,000');
+    }
+    const currentBalance = Number(userProfile?.wallet_balance || 0);
+    if (withdrawalAmount > currentBalance) {
+      return toast.error('Amount exceeds your available balance');
+    }
+    if (!phone) {
+      return toast.error('Phone number is required for withdrawal');
+    }
+    if (!selectedNetwork) {
+      return toast.error('Please select Airtel or TNM');
+    }
+
     setRequesting(true);
     try {
-      await requestPayout({ amount: withdrawalAmount, phone, network });
+      // 1. Deduct wallet immediately to prevent double requests
+      const { error: walletErr } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: currentBalance - withdrawalAmount
+        })
+        .eq('id', userProfile.id);
+
+      if (walletErr) throw walletErr;
+
+      // 2. Insert payout request
+      const { error: reqErr } = await supabase
+        .from('payout_requests')
+        .insert({
+          artist_id: userProfile.id,
+          artist_name: userProfile.stage_name
+            || userProfile.full_name,
+          artist_phone: phone,
+          amount: withdrawalAmount,
+          network: selectedNetwork,
+          status: 'pending',
+          requested_at: new Date().toISOString()
+        });
+
+      if (reqErr) {
+        // Refund wallet if insert fails
+        await supabase
+          .from('profiles')
+          .update({ wallet_balance: currentBalance })
+          .eq('id', userProfile.id);
+        throw reqErr;
+      }
+
+      toast.success(
+        'Withdrawal requested! We will send your money ' +
+        'within 24 hours to your ' + selectedNetwork + ' number.'
+      );
       setWithdrawalAmount(0);
       setShowWithdrawForm(false);
-      toast.success('Withdrawal request submitted!');
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      toast.error(err.message);
+      console.error('Withdrawal error:', err);
+      toast.error(err.message || 'Withdrawal request failed');
     } finally {
       setRequesting(false);
     }
@@ -607,15 +656,15 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                         <div className="px-3 py-1 bg-bg-elevated text-text-muted border border-border-default rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">3% Network Fee</div>
                      </div>
                   </div>
-                  <div className="w-full md:w-[300px]">
+                   <div className="w-full md:w-[300px]">
                      {showWithdrawForm ? (
                        <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
                           <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block text-left">Select Network</label>
                           <div className="grid grid-cols-2 gap-3 mb-4">
-                            <button onClick={()=>setNetwork('AIRTEL')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${network==='AIRTEL' ? 'bg-smash-red/10 border-smash-red text-smash-red' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
+                            <button onClick={()=>setSelectedNetwork('Airtel')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='Airtel' ? 'bg-smash-red/10 border-smash-red text-smash-red' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
                                <div className="font-display font-bold text-[14px]">AIRTEL</div>
                             </button>
-                            <button onClick={()=>setNetwork('TNM')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${network==='TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
+                            <button onClick={()=>setSelectedNetwork('TNM')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
                                <div className="font-display font-bold text-[14px]">TNM</div>
                             </button>
                           </div>
@@ -631,7 +680,7 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                           </div>
                           <div className="flex gap-3 pt-2">
                              <button onClick={()=>setShowWithdrawForm(false)} className="flex-1 h-[44px] bg-bg-elevated border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-border-default transition-colors">Cancel</button>
-                             <button onClick={handleWithdrawConfirm} disabled={requesting} className="flex-1 h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors">{requesting?'Processing...':'Confirm'}</button>
+                             <button onClick={handleWithdraw} disabled={requesting} className="flex-1 h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors">{requesting?'Processing...':'Confirm'}</button>
                           </div>
                        </div>
                      ) : (
@@ -661,26 +710,56 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 shadow-sm">
                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-[20px] font-studio font-bold uppercase tracking-tight text-text-primary">Recent <span className="text-smash-purple">Activity</span></h3>
+                  <h3 className="text-[20px] font-studio font-bold uppercase tracking-tight text-text-primary">Recent <span className="text-smash-purple">Payouts</span></h3>
                   <button className="text-[11px] font-display font-medium uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors">See Ledger &rarr;</button>
                </div>
                <div className="space-y-3">
-                  {history.length > 0 ? history.map((t, i) => (
-                     <div key={t.id} className="flex items-center gap-5 p-4 md:p-5 bg-bg-elevated rounded-[10px] group transition-colors cursor-default border border-transparent hover:border-border-default hover:bg-bg-elevated/80 h-[60px]">
-                        <div className={`w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 border ${t.type === 'withdrawal' ? 'bg-smash-orange/10 text-smash-orange border-smash-orange/20' : 'bg-smash-green/10 text-smash-green border-smash-green/20'}`}>
-                           {t.type === 'withdrawal' ? <Wallet size={16} /> : <DollarSign size={16} />}
+                  {history.length > 0 ? history.map((payout, i) => {
+                     const statusBadge = (status: string) => {
+                         const styles: Record<string, string> = {
+                           pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+                           approved: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                           paid: 'bg-smash-green/10 text-smash-green border-smash-green/20',
+                           rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
+                         };
+                         const labels: Record<string, string> = {
+                           pending: '⏳ Pending',
+                           approved: '✓ Approved',
+                           paid: '✅ Paid — Check your phone',
+                           rejected: '✗ Rejected',
+                         };
+                         return (
+                           <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${styles[status] || styles.pending}`}>
+                             {labels[status] || status}
+                           </span>
+                         );
+                     };
+
+                     return (
+                     <div key={payout.id} className="flex items-center gap-5 p-4 md:p-5 bg-bg-elevated rounded-[10px] group transition-colors cursor-default border border-transparent hover:border-border-default hover:bg-bg-elevated/80 h-auto min-h-[60px]">
+                        <div className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 border bg-smash-orange/10 text-smash-orange border-smash-orange/20">
+                           <Wallet size={16} />
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                           <p className="font-display font-medium text-[13px] text-text-primary uppercase tracking-wide truncate">{t.type} {t.status === 'pending' && <span className="text-[10px] text-[#eab308] opacity-80 normal-case ml-1 font-sans font-semibold">(Pending)</span>}</p>
-                           <p className="text-[11px] text-text-muted font-sans mt-0.5">{new Date(t.created_at).toLocaleString('en-MW', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                           <div className="flex items-center gap-2">
+                             <p className="font-display font-medium text-[13px] text-text-primary uppercase tracking-wide truncate">WITHDRAWAL</p>
+                             {statusBadge(payout.status)}
+                           </div>
+                           <p className="text-[11px] text-text-muted font-sans mt-0.5">{new Date(payout.requested_at).toLocaleString('en-MW', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                           {payout.status === 'rejected' && payout.admin_note && (
+                             <p className="text-xs text-red-400 mt-1">Reason: {payout.admin_note}</p>
+                           )}
+                           {payout.status === 'paid' && payout.admin_note && (
+                             <p className="text-xs text-smash-green/80 mt-1">Note: {payout.admin_note}</p>
+                           )}
                         </div>
                         <div className="text-right flex items-center h-full">
-                           <p className={`text-[14px] font-sans font-semibold ${t.type === 'withdrawal' ? 'text-smash-orange' : 'text-smash-green'}`}>
-                              {t.type === 'withdrawal' ? '-' : '+'}MK {Number(t.net_amount || t.amount || 0).toLocaleString()}
+                           <p className="text-[14px] font-sans font-semibold text-smash-orange">
+                              -MK {Number(payout.amount || 0).toLocaleString()}
                            </p>
                         </div>
                      </div>
-                  )) : (
+                  )}) : (
                      <div className="p-16 text-center text-text-muted/50 font-display font-medium uppercase tracking-widest border border-dashed border-border-default rounded-[10px]">No activity recorded</div>
                   )}
                </div>

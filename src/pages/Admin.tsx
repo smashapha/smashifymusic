@@ -145,37 +145,61 @@ const Admin = () => {
     setPayoutRequests(data || []);
   };
 
-  const handleUpdatePayoutStatus = async (payoutId: string, status: 'paid' | 'failed') => {
-    const reason = status === 'failed' ? prompt('Reason for rejection:') : null;
-    if (status === 'failed' && reason === null) return;
+  const [processingId, setProcessingId] = useState<string|null>(null);
+  const [adminNote, setAdminNote] = useState('');
 
+  const markAsPaid = async (
+    payoutId: string,
+    note: string
+  ) => {
+    setProcessingId(payoutId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`/api/admin/payouts/${payoutId}/status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({ status, error_message: reason })
-      });
+      const { error } = await supabase
+        .from('payout_requests')
+        .update({
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          paid_by: userProfile?.id,
+          admin_note: note || 'Paid by admin'
+        })
+        .eq('id', payoutId);
 
-      let result;
-      const text = await response.text();
-      try {
-        result = text ? JSON.parse(text) : {};
-      } catch (e) {
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
-      }
-
-      if (!response.ok) throw new Error(result.error || result.message || 'Update failed');
-
-      toast.success(status === 'paid' ? 'Payout marked as paid!' : 'Payout request declined');
-      fetchPayoutRequests();
-      fetchArtists(); // Refresh balances
+      if (error) throw error;
+      toast.success('Marked as paid! Artist has been notified.');
+      fetchPayoutRequests(); // Call the existing fetch
     } catch (err: any) {
-      console.error('Update payout status error:', err);
-      toast.error('Error: ' + err.message);
+      toast.error('Failed: ' + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const rejectPayout = async (
+    payoutId: string,
+    reason: string
+  ) => {
+    if (!reason.trim()) {
+      return toast.error('Please provide a rejection reason');
+    }
+    setProcessingId(payoutId);
+    try {
+      const { error } = await supabase
+        .from('payout_requests')
+        .update({
+          status: 'rejected',
+          admin_note: reason,
+          paid_by: userProfile?.id
+        })
+        .eq('id', payoutId);
+
+      if (error) throw error;
+      // Wallet refund is handled by the DB trigger
+      toast.success('Rejected. Artist wallet has been refunded.');
+      fetchPayoutRequests();
+    } catch (err: any) {
+      toast.error('Failed: ' + err.message);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -755,75 +779,174 @@ const Admin = () => {
               )}
 
               {activeTab === 'payouts' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                  {payoutRequests.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
-                      {payoutRequests.map(p => (
-                        <div key={p.id} className="group relative overflow-hidden bg-[#111118] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-all shadow-xl">
-                          <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-                            <div className="flex items-center gap-5 flex-1">
-                              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white/5 border border-white/10 p-0.5">
-                                <img src={p.profiles?.avatar_url || 'https://placehold.co/48'} className="w-full h-full object-cover rounded-[10px]" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                   <p className="font-bold text-lg text-white">{p.profiles?.stage_name || p.profiles?.full_name || 'Artist'}</p>
-                                   {p.profiles?.wallet_balance !== undefined && (
-                                     <span className="text-[10px] font-black uppercase tracking-widest text-smash-green bg-smash-green/10 px-2 py-0.5 rounded border border-smash-green/10">
-                                       Bal: MK {p.profiles.wallet_balance.toLocaleString()}
-                                     </span>
-                                   )}
-                                </div>
-                                <p className="text-[11px] text-smash-gray font-bold tracking-widest uppercase">{p.phone} • {p.network}</p>
-                                <p className="text-[9px] text-smash-gray/40 font-bold mt-1 uppercase italic tracking-widest">{new Date(p.created_at).toLocaleString()}</p>
-                              </div>
-                            </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-black font-display uppercase italic text-white">
+          Payout Requests
+        </h2>
+        <div className="flex gap-3 text-sm">
+          <span className="px-3 py-1 bg-yellow-500/10 text-yellow-400 rounded-full font-bold">
+            {payoutRequests.filter(p => p.status === 'pending').length} Pending
+          </span>
+          <span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full font-bold">
+            {payoutRequests.filter(p => p.status === 'paid').length} Paid
+          </span>
+        </div>
+      </div>
 
-                            <div className="flex flex-col lg:items-end justify-center px-8 lg:border-l lg:border-white/5">
-                              <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray mb-1">Gross Request</p>
-                              <h4 className="text-3xl font-studio font-black text-white italic leading-none truncate">MK {p.requested_amount?.toLocaleString()}</h4>
-                              <p className="text-[9px] text-smash-orange font-bold mt-1 uppercase tracking-widest">Est. Payout MK {Math.floor(p.requested_amount * 0.97).toLocaleString()}</p>
-                            </div>
+      {loading ? (
+        <div className="text-center py-12 text-smash-gray">
+          Loading...
+        </div>
+      ) : payoutRequests.length === 0 ? (
+        <div className="text-center py-12 text-smash-gray">
+          No payout requests yet
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {payoutRequests.map((payout) => (
+            <div key={payout.id}
+              className={`p-5 rounded-3xl border transition-all ${
+                payout.status === 'pending'
+                  ? 'bg-yellow-500/5 border-yellow-500/20'
+                  : payout.status === 'paid'
+                  ? 'bg-smash-green/5 border-smash-green/20'
+                  : 'bg-white/5 border-white/10'
+              }`}>
 
-                            <div className="flex items-center gap-4 lg:border-l lg:border-white/5 lg:pl-8 shrink-0">
-                                <div className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
-                                  p.status === 'paid' ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 
-                                  (p.status === 'failed' ? 'bg-smash-red/10 text-smash-red border-smash-red/20' : 'bg-smash-orange/10 text-smash-orange border-smash-orange/20 animate-pulse')
-                                }`}>
-                                   {p.status === 'paid' ? 'VERIFIED & SETTLED' : p.status.toUpperCase()}
-                                </div>
+              {/* Header row */}
+              <div className="flex items-start justify-between mb-4 gap-4">
+                <div>
+                  <p className="font-black text-base text-white">
+                    {payout.profiles?.stage_name || payout.artist_name || 'Unknown Artist'}
+                  </p>
+                  <p className="text-xs text-smash-gray mt-0.5">
+                    {payout.profiles?.artist_tier || 'Free'} tier •{' '}
+                    {new Date(payout.requested_at).toLocaleDateString('en-GB', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+                <span className="text-2xl font-black text-smash-orange font-display shrink-0">
+                  MK {Number(payout.amount || payout.requested_amount).toLocaleString()}
+                </span>
+              </div>
 
-                                {p.status === 'processing' && (
-                                  <div className="flex items-center gap-3">
-                                    <button
-                                      onClick={() => handleUpdatePayoutStatus(p.id, 'paid')}
-                                      className="px-6 py-3 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-smash-green hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95"
-                                    >
-                                      Authorize Fund Release
-                                    </button>
-                                    <button
-                                      onClick={() => handleUpdatePayoutStatus(p.id, 'failed')}
-                                      className="h-12 w-12 bg-white/5 text-smash-red border border-white/5 rounded-xl hover:bg-smash-red hover:text-white transition-all flex items-center justify-center"
-                                    >
-                                      <X size={18} />
-                                    </button>
-                                  </div>
-                                )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-20 text-center bg-[#111118] border border-dashed border-white/10 rounded-2xl">
-                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-smash-gray opacity-20">
-                         <Wallet size={24} />
-                      </div>
-                      <p className="text-smash-gray font-black uppercase tracking-widest text-[10px] italic">No active payout requests in current cycle.</p>
-                    </div>
-                  )}
-                </motion.div>
+              {/* Payment details */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-white/5 rounded-2xl">
+                  <p className="text-[10px] text-smash-gray uppercase tracking-widest mb-1">
+                    Network
+                  </p>
+                  <p className="font-bold text-sm text-white">
+                    {payout.network || 'Not specified'}
+                  </p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-2xl">
+                  <p className="text-[10px] text-smash-gray uppercase tracking-widest mb-1">
+                    Phone Number
+                  </p>
+                  <p className="font-bold text-sm font-mono text-white">
+                    {payout.artist_phone || payout.phone || payout.profiles?.phone || 'Not set'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="mb-4">
+                {(payout.status === 'pending' || payout.status === 'processing') && (
+                  <span className="text-xs font-bold px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full">
+                    ⏳ Awaiting Payment
+                  </span>
+                )}
+                {payout.status === 'paid' && (
+                  <div>
+                    <span className="text-xs font-bold px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full">
+                      ✅ Paid
+                    </span>
+                    {payout.paid_at && (
+                      <p className="text-xs text-smash-gray mt-2">
+                        Paid on {new Date(payout.paid_at).toLocaleString('en-GB')}
+                      </p>
+                    )}
+                    {payout.admin_note && (
+                      <p className="text-xs text-smash-gray mt-1">
+                        Note: {payout.admin_note}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {(payout.status === 'rejected' || payout.status === 'failed') && (
+                  <div>
+                    <span className="text-xs font-bold px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full">
+                      ✗ Rejected
+                    </span>
+                    {payout.admin_note && (
+                      <p className="text-xs text-red-400 mt-2">
+                        Reason: {payout.admin_note}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Admin actions — only for pending */}
+              {(payout.status === 'pending' || payout.status === 'processing') && (
+                <div className="space-y-3 pt-3 border-t border-white/10">
+                  <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-2xl p-3">
+                    <p className="text-xs font-bold text-smash-orange mb-1">
+                      📱 Action Required
+                    </p>
+                    <p className="text-xs text-smash-green/80">
+                      Send MK {Number(payout.amount || payout.requested_amount).toLocaleString()} to{' '}
+                      <span className="font-mono font-bold text-white">
+                        {payout.artist_phone || payout.phone || payout.profiles?.phone}
+                      </span>{' '}
+                      via {payout.network}, then mark as paid.
+                    </p>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Add a note (optional, e.g. Sent 9:05am)"
+                    value={processingId === payout.id ? adminNote : ''}
+                    onChange={(e) => {
+                      setProcessingId(payout.id);
+                      setAdminNote(e.target.value);
+                    }}
+                    className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white placeholder-smash-gray outline-none focus:border-smash-orange/50"
+                  />
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => markAsPaid(
+                        payout.id,
+                        processingId === payout.id ? adminNote : ''
+                      )}
+                      disabled={processingId === payout.id ? (!adminNote && false) : false}
+                      className="flex-1 h-11 bg-smash-green text-white rounded-2xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      ✅ Mark as Paid
+                    </button>
+                    <button
+                      onClick={() => {
+                        const reason = prompt('Rejection reason (required):');
+                        if (reason) rejectPayout(payout.id, reason);
+                      }}
+                      className="flex-1 h-11 bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl font-bold text-sm hover:bg-red-500/30 transition-all"
+                    >
+                      ✗ Reject
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
 
               {activeTab === 'songs' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
