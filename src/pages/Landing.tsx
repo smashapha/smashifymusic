@@ -136,9 +136,16 @@ const Landing: React.FC = () => {
   const [topSongs, setTopSongs] = useState<any[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
 
+  const [platformStats, setPlatformStats] = useState({
+    listeners: 0,
+    songs: 0,
+    artists: 0,
+    totalPaidOut: 0
+  });
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('role', 'artist').limit(12);
+      const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('approved', true).limit(12);
       setArtists(artistsData || []);
 
       const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
@@ -146,6 +153,28 @@ const Landing: React.FC = () => {
 
       const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
       setTrendingSongs(trendingData || []);
+
+      // Get real platform stats
+      const [
+        { count: listenerCount },
+        { count: songCount },
+        { count: artistCount },
+        { data: payoutData }
+      ] = await Promise.all([
+        supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', true),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('approved', true),
+        supabase.from('payout_requests').select('amount').eq('status', 'paid')
+      ]);
+
+      const totalPaid = (payoutData || []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+      setPlatformStats({
+        listeners: listenerCount || 0,
+        songs: songCount || 0,
+        artists: artistCount || 0,
+        totalPaidOut: totalPaid
+      });
     };
     fetchData();
   }, []);
@@ -169,7 +198,7 @@ const Landing: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/5 border border-white/8 text-white/70 font-display font-medium text-[12px] mb-8"
             >
-              🇲🇼 #1 Malawi Music Platform
+              🌍 Built in Malawi. Made for Africa.
             </motion.div>
 
             <motion.h1
@@ -178,8 +207,8 @@ const Landing: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-[clamp(3.5rem,7vw,7rem)] font-studio font-extrabold leading-[0.88] tracking-[-0.03em] uppercase mb-8"
             >
-              <span className="italic block">Stream Music.</span>
-              <span className="text-smash-orange block">Support Artists.</span>
+              <span className="italic block">Your fans.</span>
+              <span className="text-smash-orange block">Your money.</span>
             </motion.h1>
 
             <motion.p
@@ -188,7 +217,7 @@ const Landing: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.5 }}
               className="text-[18px] font-sans text-white/60 max-w-lg leading-[1.7] mb-10 mx-auto lg:mx-0"
             >
-              The first streaming platform built for Malawian artists & fans. Stream free, buy songs directly — artists keep 90% of every sale.
+              Sell your music. Accept tips. Get paid today via Airtel Money or TNM. Artists keep up to 95% of every sale — no waiting, no middleman.
             </motion.p>
 
             <motion.div
@@ -213,14 +242,44 @@ const Landing: React.FC = () => {
 
             <div className="flex items-center justify-center lg:justify-start gap-8 md:gap-12 pt-12 border-t border-white/10">
               {[
-                { label: 'Listeners', val: '10K+' },
-                { label: 'Songs', val: '500+', color: 'text-smash-orange' },
-                { label: 'Artist Payout', val: '90%' },
-                { label: 'Status', val: 'Free', color: 'text-smash-green' }
+                { 
+                  label: 'Listeners', 
+                  val: platformStats.listeners > 1000 
+                    ? `${(platformStats.listeners/1000).toFixed(1)}K+` 
+                    : platformStats.listeners > 0 
+                    ? `${platformStats.listeners}+` 
+                    : 'Growing',
+                  color: 'text-white'
+                },
+                { 
+                  label: 'Songs', 
+                  val: platformStats.songs > 0 
+                    ? `${platformStats.songs}+` 
+                    : 'Loading',
+                  color: 'text-smash-orange' 
+                },
+                { 
+                  label: 'Artists', 
+                  val: platformStats.artists > 0 
+                    ? `${platformStats.artists}+` 
+                    : 'Growing',
+                  color: 'text-white'
+                },
+                { 
+                  label: 'Paid Out', 
+                  val: platformStats.totalPaidOut > 0 
+                    ? `MK ${(platformStats.totalPaidOut/1000).toFixed(0)}K` 
+                    : 'Soon',
+                  color: 'text-smash-green' 
+                }
               ].map((stat, i) => (
                 <div key={i} className="flex flex-col">
-                  <span className={`text-[clamp(1.6rem,3vw,2.2rem)] font-studio font-bold leading-none mb-1 ${stat.color || 'text-white'}`}>{stat.val}</span>
-                  <span className="text-[11px] font-display text-white/50 uppercase tracking-widest whitespace-nowrap">{stat.label}</span>
+                  <span className={`text-[clamp(1.6rem,3vw,2.2rem)] font-studio font-bold leading-none mb-1 ${stat.color || 'text-white'}`}>
+                    {stat.val}
+                  </span>
+                  <span className="text-[11px] font-display text-white/50 uppercase tracking-widest whitespace-nowrap">
+                    {stat.label}
+                  </span>
                 </div>
               ))}
             </div>
@@ -306,6 +365,56 @@ const Landing: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* How It Works */}
+      <section className="py-20 px-6 md:px-12 border-b border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-center text-[10px] font-display font-medium text-white/40 uppercase tracking-[0.4em] mb-12">
+            How Smashify Works
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              {
+                step: '01',
+                icon: '🎵',
+                title: 'Artist Uploads',
+                desc: 'Upload your music and set your own prices'
+              },
+              {
+                step: '02',
+                icon: '❤️',
+                title: 'Fans Discover',
+                desc: 'Fans stream, buy tracks, and send tips directly'
+              },
+              {
+                step: '03',
+                icon: '💰',
+                title: 'You Earn',
+                desc: 'Money goes straight to your Smashify wallet instantly'
+              },
+              {
+                step: '04',
+                icon: '📱',
+                title: 'You Withdraw',
+                desc: 'Request a payout to your Airtel Money or TNM anytime'
+              }
+            ].map((item, i) => (
+              <div key={i} className="text-center p-6 bg-white/[0.02] rounded-[20px] border border-white/5 hover:border-smash-orange/20 transition-all">
+                <div className="text-3xl mb-4">{item.icon}</div>
+                <div className="text-[10px] font-black text-smash-orange mb-2 tracking-widest">
+                  STEP {item.step}
+                </div>
+                <h3 className="font-display font-bold text-sm uppercase mb-2 text-white">
+                  {item.title}
+                </h3>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Featured Artists */}
       <section className="pt-24 pb-12 px-6 md:px-12 relative">
@@ -394,12 +503,12 @@ const Landing: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
              {[
-               { icon: Infinity, title: 'Free Streaming', color: 'text-smash-orange', desc: 'Listen to all Malawian hits — no subscription required to stream.' },
+               { icon: Infinity, title: 'Free Streaming', color: 'text-smash-orange', desc: 'Listen to all your favorite hits — no subscription required to stream.' },
                { icon: Heart, title: 'Direct Support', color: 'text-smash-red', desc: 'Buy songs & send donations directly via Airtel Money or TNM Mpamba.' },
                { icon: Download, title: 'Offline Mode', color: 'text-smash-cyan', desc: 'Download songs with Premium. Listen anywhere, anytime.' },
                { icon: Smartphone, title: 'Install as App', color: 'text-smash-purple', desc: 'Install Smashify on your phone like a native app — no app store needed.' },
                { icon: LayoutDashboard, title: 'Smart Queue', color: 'text-smash-green', desc: 'Shuffle, repeat, feed view, crossfade & full player controls built in.' },
-               { icon: ShieldCheck, title: 'Artist First', color: 'text-white/70', desc: '90% payouts, transparent earnings, same-day withdrawals via mobile money.' }
+               { icon: ShieldCheck, title: 'Artist First', color: 'text-white/70', desc: 'Up to 95% payouts, transparent earnings, withdrawals via mobile money.' }
              ].map((feat, i) => (
                 <div key={i} className="bg-bg-surface border border-border-subtle rounded-[14px] p-6 hover:border-smash-orange/30 transition-all group">
                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-6">
@@ -413,20 +522,77 @@ const Landing: React.FC = () => {
         </div>
       </section>
 
+      {/* Artist Trust Section */}
+      <section className="py-24 px-6 md:px-12">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-center text-[clamp(2rem,4vw,3rem)] font-studio font-black uppercase italic mb-4">
+            Why artists choose <span className="text-smash-orange">Smashify</span> over Spotify
+          </h2>
+          <p className="text-center text-white/40 text-sm mb-12 max-w-xl mx-auto">
+            You do not need 1 million streams to earn a living. You just need your fans.
+          </p>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left pb-4 text-white/40 text-xs uppercase tracking-widest font-display w-1/3">
+                  </th>
+                  <th className="pb-4 text-center">
+                    <span className="text-white/40 text-xs uppercase tracking-widest font-display">
+                      Spotify
+                    </span>
+                  </th>
+                  <th className="pb-4 text-center">
+                    <span className="text-smash-orange text-xs uppercase tracking-widest font-black font-display">
+                      Smashify
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="space-y-2">
+                {[
+                  ['Earn MWK 10,000', 'Need 330,000 streams', '20 fans paying MWK 500'],
+                  ['Payment speed', '3-6 months', 'Within 24 hours'],
+                  ['Payment method', 'Bank transfer (USD)', 'Airtel Money / TNM'],
+                  ['Artist keeps', '~30% after labels', 'Up to 95%'],
+                  ['Minimum payout', '$10 USD threshold', 'MWK 2,000'],
+                  ['Available in Malawi', 'Limited', '100% local'],
+                ].map(([feature, spotify, smashify], i) => (
+                  <tr key={i} className="border-b border-white/5">
+                    <td className="py-4 text-white/60 font-medium">
+                      {feature}
+                    </td>
+                    <td className="py-4 text-center text-white/30 text-xs">
+                      {spotify}
+                    </td>
+                    <td className="py-4 text-center">
+                      <span className="text-smash-green text-xs font-bold">
+                        ✓ {smashify}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* Vision & Mission */}
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto border border-white/8 rounded-[40px] overflow-hidden bg-bg-surface flex flex-col md:flex-row">
            <div className="flex-1 p-12 lg:p-20 flex flex-col justify-center">
               <h2 className="text-3xl lg:text-5xl font-studio font-bold uppercase italic text-white mb-6">Our Vision</h2>
               <p className="text-white/60 text-lg lg:text-xl font-sans leading-relaxed">
-                To create a music ecosystem where Malawian artists thrive and fans directly power the industry they love. No more middleman.
+                To create a music economy where African artists thrive — from Malawi to Nigeria, from Nairobi to Cape Town. No middlemen. No waiting. Direct from fan to artist.
               </p>
            </div>
            <div className="w-px bg-white/8 hidden md:block" />
            <div className="flex-1 p-12 lg:p-20 flex flex-col justify-center">
               <h2 className="text-3xl lg:text-5xl font-studio font-bold uppercase italic text-white mb-6">Our Mission</h2>
               <p className="text-white/60 text-lg lg:text-xl font-sans leading-relaxed">
-                A fair, transparent platform where artists keep 90% of earnings and fans enjoy unlimited access to local music.
+                A fair, transparent platform where African artists keep up to 95% of their earnings and fans enjoy unlimited access to the continent's best music — powered by local mobile money.
               </p>
            </div>
         </div>
@@ -499,7 +665,7 @@ const Landing: React.FC = () => {
                <p className="font-display font-medium text-[10px] text-smash-orange uppercase tracking-[0.4em] mb-4">For Content Creators</p>
                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-studio font-extrabold uppercase italic text-white mb-6 leading-tight">ARE YOU AN ARTIST?</h2>
                <p className="text-white/50 text-[18px] font-sans leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0">
-                  Join hundreds of Malawian artists already monetising their music. Keep control, keep your rights, keep 90% of every sale.
+                  Join artists across Africa already monetising their music directly. Keep your rights. Keep your revenue. Get paid via mobile money within 24 hours.
                </p>
                <button 
                   onClick={() => navigate('/artists')}
@@ -517,7 +683,7 @@ const Landing: React.FC = () => {
           <div className="space-y-8">
             <Logo size="lg" />
             <p className="text-white/40 text-[15px] max-w-sm font-sans leading-relaxed">
-              Smashify is a digital music, podcast, and video service that gives you access to millions of Malawian songs and other content.
+              Smashify is a digital music, podcast, and video service that gives you access to millions of African songs and other content.
             </p>
             <div className="flex gap-4">
                {['ti-brand-instagram', 'ti-brand-facebook', 'ti-brand-twitter', 'ti-brand-tiktok'].map((icon, i) => (
@@ -553,7 +719,7 @@ const Landing: React.FC = () => {
 
         <div className="max-w-7xl mx-auto pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
            <p className="text-[13px] text-white/30 font-medium">© {new Date().getFullYear()} Smashify. Built in Blantyre, Malaŵi.</p>
-           <p className="font-display font-bold text-[10px] text-smash-orange uppercase tracking-[0.3em]">Artists keep 90% of every sale.</p>
+           <p className="font-display font-bold text-[10px] text-smash-orange uppercase tracking-[0.3em]">Artists keep up to 95% of every sale.</p>
         </div>
       </footer>
     </div>

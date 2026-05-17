@@ -179,9 +179,9 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
  */
 export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile; tier: 'RisingStar' | 'Standard' | 'Elite' }) {
   const tierPricing: Record<string, number> = {
-    'RisingStar': 15000,
-    'Standard': 25000,
-    'Elite': 45000
+    'RisingStar': 8000,
+    'Standard': 13000,
+    'Elite': 24000
   };
   
   const amount = tierPricing[tier];

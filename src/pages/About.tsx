@@ -22,7 +22,7 @@ const About = () => {
         <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter">About Smashify</h1>
       </div>
       <p className="text-xl text-smash-gray font-medium mb-12 max-w-2xl leading-relaxed">
-        A music ecosystem where Malawian artists earn fairly, fans support directly, and money stays in Malawi.
+        A music ecosystem where African artists earn fairly, fans support directly, and money stays on the continent.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
@@ -30,10 +30,10 @@ const About = () => {
            <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-6">Our Story</h2>
            <div className="space-y-4 text-zinc-300 font-medium leading-relaxed">
              <p>
-               Smashify was founded in 2025 in Blantyre, Malawi, with a single question: why are Malawian artists so talented yet so underpaid?
+               Smashify started in Malawi with a simple belief: African artists deserve to be paid by their fans directly. We are starting in Malawi and expanding across Africa — because every market on this continent has artists with talent and fans willing to pay. They just need the right platform.
              </p>
              <p>
-               Global streaming platforms pay between $0.003 and $0.005 per stream. An artist with 100,000 streams earns less than $500. They don't support MWK. They don't pay out via Airtel or TNM. They don't know who Eli Njuchi is.
+               Global streaming platforms pay between $0.003 and $0.005 per stream. An artist with 100,000 streams earns less than $500. They don't support local mobile money. They don't pay out via Airtel or TNM. They don't understand the local landscape.
              </p>
              <p className="text-white font-bold text-xl italic mt-6">
                We built Smashify to fix that.
@@ -51,7 +51,7 @@ const About = () => {
                <DollarSign size={24} className="text-smash-orange shrink-0 mt-1" />
                <div>
                  <h3 className="font-bold text-white mb-1">Fair Pay</h3>
-                 <p className="text-smash-gray text-sm font-medium">Artists keep 90% of every sale and donation.</p>
+                 <p className="text-smash-gray text-sm font-medium">Artists keep up to 95% of every sale and donation.</p>
                </div>
              </div>
              <div className="flex gap-4 items-start">
@@ -65,7 +65,7 @@ const About = () => {
                <Globe size={24} className="text-smash-orange shrink-0 mt-1" />
                <div>
                  <h3 className="font-bold text-white mb-1">Local First</h3>
-                 <p className="text-smash-gray text-sm font-medium">Built in Malawi, optimised for Malawi.</p>
+                 <p className="text-smash-gray text-sm font-medium">Built in Malawi, expanding across Africa.</p>
                </div>
              </div>
              <div className="flex gap-4 items-start">
@@ -86,7 +86,7 @@ const About = () => {
           </div>
           <h3 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4 relative z-10">For Artists</h3>
           <p className="text-smash-gray font-medium leading-relaxed relative z-10">
-            Upload your music. Set your price. Keep 90%. Withdraw to Airtel Money or TNM Mpamba within minutes. Track every stream with real analytics. Build a real fanbase.
+            Upload your music. Set your price. Keep up to 95%. Withdraw to Airtel Money or TNM Mpamba within minutes. Track every stream with real analytics. Build a real fanbase.
           </p>
         </div>
         
@@ -96,7 +96,7 @@ const About = () => {
           </div>
           <h3 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4 relative z-10">For Listeners</h3>
           <p className="text-smash-gray font-medium leading-relaxed relative z-10">
-            Stream free. Discover authentic Malawian music from Lilongwe, Blantyre, Mzuzu, and Zomba. Buy tracks you love. Donate directly to artists. Know your money reaches them.
+            Stream free. Discover authentic African music. Buy tracks you love. Donate directly to artists. Know your money reaches them.
           </p>
         </div>
       </div>
