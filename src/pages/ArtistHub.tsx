@@ -611,32 +611,32 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
            </Link>
         )}
          <MetricCard
-            label="TOTAL PLAYS"
+            label="TOTAL STREAMS"
             value={stats.streams.toLocaleString()}
             icon={<Play size={20} />}
             color="text-smash-cyan"
-            sub="This is play count only — NOT tied to earnings"
+            sub="Total organic plays across all tracks"
          />
          <MetricCard
-            label="THIS MONTH"
+            label="TOTAL EARNINGS"
             value={`MK ${(stats.revenue || 0).toLocaleString()}`}
             icon={<DollarSign size={20} />}
             color="text-smash-green"
-            sub="Tips + Sales + Subscriptions"
+            sub="Lifetime earnings"
          />
          <MetricCard
-            label="SUPPORTERS"
+            label="TOTAL FANS"
             value={(stats.followers || 0).toLocaleString()}
             icon={<Heart size={20} />}
             color="text-smash-purple"
-            sub="Active monthly fans"
+            sub="Followers on Smashify"
          />
          <MetricCard
-            label="TRACKS"
+            label="ACTIVE TRACKS"
             value={stats.songs || 0}
             icon={<Music2 size={20} />}
             color="text-white"
-            sub="Uploaded"
+            sub="Currently distributed"
          />
       </div>
 
@@ -695,13 +695,21 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                                 />
                                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MK</div>
                              </div>
-                             <button 
-                                onClick={handleInitiateWithdraw} 
-                                disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
-                                className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
-                             >
-                                REQUEST WITHDRAWAL
-                             </button>
+                             {userProfile?.is_verified ? (
+                               <button 
+                                  onClick={handleInitiateWithdraw} 
+                                  disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
+                                  className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
+                               >
+                                  REQUEST WITHDRAWAL
+                               </button>
+                             ) : (
+                               <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-[10px] p-3 text-left">
+                                  <p className="text-smash-orange font-bold text-xs uppercase tracking-widest mb-1"><AlertCircle className="inline" size={14} /> Verification Required</p>
+                                  <p className="text-smash-orange/80 text-[11px] font-sans">You must verify your identity before withdrawing funds.</p>
+                                  <button onClick={() => setActiveTab('profile')} className="mt-2 text-smash-purple text-[10px] font-bold uppercase tracking-widest hover:underline">Verify Identity →</button>
+                               </div>
+                             )}
                         </div>
                      )}
                   </div>
@@ -1184,10 +1192,11 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-bg-elevated text-text-muted text-[11px] font-display font-semibold uppercase tracking-wider">
-                  <th className="px-4 py-3 first:pl-6 last:pr-6 whitespace-nowrap">Track Asset</th>
+                  <th className="px-4 py-3 first:pl-6 last:pr-6 whitespace-nowrap">Song</th>
                   <th className="px-4 py-3 whitespace-nowrap">Status</th>
-                  <th className="px-4 py-3 whitespace-nowrap">Engagement</th>
-                  <th className="px-4 py-3 whitespace-nowrap">Monetization</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Fans</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Type</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Earnings</th>
                   <th className="px-4 py-3 text-right last:pr-6 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
@@ -1224,8 +1233,13 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
                         </div>
                     </td>
                     <td className="px-4 py-3">
-                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-display font-bold uppercase tracking-wider ${song.is_for_sale ? 'bg-smash-green/10 text-smash-green border border-smash-green/20' : 'bg-bg-surface text-text-secondary border border-border-default'}`}>
+                       <span className={`inline-flex items-center px-2 py-1 rounded-[6px] text-[10px] font-display font-bold uppercase tracking-wider border ${song.is_for_sale ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 'bg-bg-surface text-text-secondary border-border-default'}`}>
                          {song.is_for_sale ? `MK ${song.price?.toLocaleString()}` : 'Free Feed'}
+                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                       <span className="text-[14px] font-display font-semibold text-text-primary">
+                         {song.is_for_sale ? 'Processing' : '—'}
                        </span>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2 last:pr-6">
@@ -1468,170 +1482,9 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         <p className="text-text-secondary font-medium font-sans">Sync your sounds with thousands of Malawian fans.</p>
       </div>
 
-      <div className="bg-bg-surface border border-white/5 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-md">
-        <div className="grid grid-cols-3 border-b border-white/5 bg-white/[0.02]">
-           {[
-             { step: 1, label: 'Metadata', icon: Music2 },
-             { step: 2, label: 'Media Info', icon: FileAudio },
-             { step: 3, label: 'Submission', icon: Rocket }
-           ].map((s) => (
-             <div 
-               key={s.step}
-               className={`flex flex-col items-center py-6 transition-all relative ${uploadStep === s.step ? 'text-smash-purple bg-smash-purple/5' : 'text-text-muted opacity-30'}`}
-             >
-                <s.icon size={20} className={`mb-2 ${uploadStep === s.step ? 'animate-pulse' : ''}`} />
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">{s.label}</span>
-                {uploadStep === s.step && <motion.div layoutId="step-indicator" className="absolute bottom-0 left-6 right-6 h-1 bg-smash-purple rounded-full shadow-[0_0_15px_rgba(168,85,247,0.5)]" />}
-             </div>
-           ))}
-        </div>
-
-        <div className="p-8 md:p-12">
-           <AnimatePresence mode="wait">
-           {uploadStep === 1 && (
-             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
-                <div className="flex bg-bg-elevated p-1.5 rounded-full w-fit mx-auto md:mx-0 mb-10 gap-1 border border-white/5 shadow-inner">
-                  {['single', 'album', 'snippet'].map((m) => (
-                    <button key={m} onClick={() => {
-                      if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
-                      if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star Plan required');
-                      setMode(m as any);
-                    }} className={`px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-105' : 'text-text-secondary hover:text-text-primary'}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div className="space-y-8">
-                    <div className="group">
-                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Release Title *</label>
-                      <input 
-                        value={title} 
-                        onChange={e=>setTitle(e.target.value)}
-                        placeholder={mode === 'album' ? "e.g. The Recovery" : "e.g. Mapulani"} 
-                        className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" 
-                      />
-                    </div>
-                    <div className="group">
-                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Primary Genre *</label>
-                      <select 
-                        value={genre} 
-                        onChange={e=>setGenre(e.target.value)}
-                        className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none"
-                      >
-                        <option value="">Select genre</option>
-                        <option value="Afropop">Afropop</option>
-                        <option value="Gospel">Gospel</option>
-                        <option value="Hip Hop">Hip Hop</option>
-                        <option value="R&B">R&B</option>
-                        <option value="Amapiano">Amapiano</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-8">
-                    <div className="group">
-                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Featured Artist</label>
-                      <input value={featuredArtist} onChange={e=>setFeaturedArtist(e.target.value)} placeholder="e.g. Namadingo" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
-                    </div>
-                    <div className="group">
-                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Release Date</label>
-                      <input type="date" value={releaseDate} onChange={e=>setReleaseDate(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white" />
-                    </div>
-                  </div>
-                </div>
-
-                {mode !== 'snippet' && (
-                  <div className="grid md:grid-cols-2 gap-10 pt-10 border-t border-white/5">
-                    <div className="group">
-                      <div className="flex justify-between items-center mb-3">
-                         <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block transition-colors group-focus-within:text-smash-purple">Distribution Mode</label>
-                         {!limits.canSellSongs && <span className="text-[9px] font-display font-bold bg-smash-orange/10 text-smash-orange px-2 py-0.5 rounded-full uppercase">Premium Feature</span>}
-                      </div>
-                      <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
-                         <button 
-                           onClick={() => setIsForSale(false)} 
-                           className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}
-                         >
-                            Free Stream
-                         </button>
-                         <button 
-                           disabled={!limits.canSellSongs}
-                           onClick={() => setIsForSale(true)} 
-                           className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} disabled:opacity-30 disabled:cursor-not-allowed`}
-                         >
-                            Paid Download
-                         </button>
-                      </div>
-                    </div>
-
-                    <AnimatePresence>
-                      {isForSale && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }} 
-                          animate={{ opacity: 1, y: 0 }} 
-                          exit={{ opacity: 0, y: 10 }}
-                          className="group"
-                        >
-                          <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-3 group-focus-within:text-smash-purple transition-colors">Download Price (MWK)</label>
-                          <div className="relative">
-                             <input 
-                               type="number" 
-                               value={price} 
-                               onChange={e => setPrice(Number(e.target.value))}
-                               min="100"
-                               step="500"
-                               className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" 
-                             />
-                             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
-
-                <div className="pt-10 border-t border-white/5 flex justify-end">
-                   <button onClick={() => title && genre ? setUploadStep(2) : toast.error('Fill required fields')} className="h-16 px-12 bg-white text-black font-display font-black uppercase tracking-[0.2em] text-[13px] rounded-2xl hover:scale-105 transition-all flex items-center gap-4">Next Step <ArrowRight size={20} /></button>
-                </div>
-             </motion.div>
-           )}
-            {uploadStep === 2 && (
-             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
-                <div className="grid md:grid-cols-2 gap-12">
-                   <div className="aspect-square bg-bg-elevated border-2 border-dashed border-white/10 rounded-[40px] flex flex-col items-center justify-center p-12 text-center cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('cover-file')?.click()}>
-                      {coverFile ? <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover shadow-2xl" /> : (
-                        <>
-                          <ImageIcon size={48} className="text-smash-purple mb-4" />
-                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">Master Artwork</p>
-                        </>
-                      )}
-                      <input id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
-                   </div>
-                   <div className="aspect-square bg-bg-elevated border-2 border-dashed border-white/10 rounded-[40px] flex flex-col items-center justify-center p-12 text-center cursor-pointer hover:border-smash-orange transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('audio-file')?.click()}>
-                      {(mode === 'album' ? albumFiles.length > 0 : songFile) ? (
-                        <div className="text-center animate-pulse">
-                          <Music2 size={64} className="text-smash-green mx-auto mb-4" />
-                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">{mode === 'album' ? `${albumFiles.length} Tracks` : 'Audio Verified'}</p>
-                        </div>
-                      ) : (
-                        <>
-                          <UploadCloud size={48} className="text-smash-orange mb-4" />
-                          <p className="text-white font-display font-black uppercase tracking-[0.2em] text-[12px]">Select Audio</p>
-                        </>
-                      )}
-                      <input id="audio-file" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e=> mode === 'album' ? setAlbumFiles(Array.from(e.target.files || [])) : setSongFile(e.target.files?.[0]||null)} className="hidden" />
-                   </div>
-                </div>
-                <div className="pt-10 border-t border-white/5 flex justify-between items-center">
-                   <button onClick={()=>setUploadStep(1)} className="h-14 px-10 border border-white/10 text-text-secondary font-display font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-white/5 transition-all">Back</button>
-                   <button disabled={!coverFile || (mode==='album'?albumFiles.length===0:!songFile)} onClick={()=>setUploadStep(3)} className="h-16 px-12 bg-white text-black font-display font-black uppercase tracking-widest text-[13px] rounded-2xl hover:scale-105 disabled:opacity-20 flex items-center gap-4 transition-all">Review & Launch <ArrowRight size={20}/></button>
-                </div>
-             </motion.div>
-           )}
-
-           {uploadStep === 3 && (
-             <motion.div key="step3" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-12 py-10 text-center">
+      <div className="bg-bg-surface border border-white/5 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-md p-6 md:p-12">
+         {uploading ? (
+             <motion.div key="uploading" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-12 py-10 text-center">
                 <div className="relative w-56 h-56 mx-auto">
                    <div className={`w-full h-full rounded-full border-4 border-smash-purple border-t-transparent ${uploading?'animate-spin':''}`} />
                    <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -1639,31 +1492,111 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                       <span className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-smash-purple mt-3 animate-pulse">Syncing</span>
                    </div>
                 </div>
-                <div className="max-w-md mx-auto space-y-8">
+                <div className="max-w-md mx-auto space-y-4">
                    <h3 className="text-3xl font-studio font-black uppercase italic text-white tracking-widest">Engine Processing</h3>
-                   <p className="text-text-secondary font-sans leading-relaxed text-[15px]">Optimization complete. "{title}" is ready for distribution to Smashify nodes across Malawi.</p>
-                   {!uploading && (
-                     <div className="space-y-6">
-                        <button 
-                          onClick={mode === 'album' ? handleUploadAlbum : handleUploadSingle} 
-                          className="h-20 w-full bg-smash-purple text-white font-display font-black uppercase tracking-[0.4em] text-[15px] rounded-3xl hover:brightness-110 shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all flex items-center justify-center gap-6 group"
-                        >
-                           {mode === 'snippet' ? 'POST TO FEED' : 'PUBLISH TO SMASHIFY'} <Rocket size={28} className="group-hover:-translate-y-2 group-hover:translate-x-2 transition-transform duration-500" />
-                        </button>
-
-                        <div className="bg-white/5 border border-white/5 rounded-[20px] p-6 flex gap-4 text-left">
-                           <Info size={18} className="text-smash-purple shrink-0 mt-1" />
-                           <p className="text-[12px] font-sans font-medium text-text-secondary leading-relaxed">
-                              Your track will be reviewed by the <span className="text-white font-bold">Smashify Team</span> within 24–48 hours. You'll receive a notification once approved. <span className="text-smash-purple">High-quality files distribute faster.</span>
-                           </p>
-                        </div>
-                     </div>
-                   )}
+                   <p className="text-text-secondary font-sans leading-relaxed text-[15px]">Please stay on this page while we distribute "{title}" to the nodes.</p>
                 </div>
-             </motion.div>
-           )}
-           </AnimatePresence>
-        </div>
+             </motion.div>         
+         ) : (
+             <form onSubmit={mode === 'album' ? handleUploadAlbum : handleUploadSingle} className="space-y-10">
+                 <div className="flex bg-bg-elevated p-1.5 rounded-full w-fit mx-auto md:mx-0 gap-1 border border-white/5 shadow-inner">
+                   {['single', 'album', 'snippet'].map((m) => (
+                     <button type="button" key={m} onClick={() => {
+                       if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
+                       if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star Plan required');
+                       setMode(m as any);
+                     }} className={`px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-105' : 'text-text-secondary hover:text-text-primary'}`}>
+                       {m}
+                     </button>
+                   ))}
+                 </div>
+
+                 <div className="grid md:grid-cols-3 gap-8">
+                    <div className="aspect-square bg-bg-elevated border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-smash-purple transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('cover-file')?.click()}>
+                       {coverFile ? <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover shadow-2xl" /> : (
+                         <>
+                           <ImageIcon size={32} className="text-smash-purple mb-3" />
+                           <p className="text-white font-display font-black uppercase tracking-[0.1em] text-[10px]">Artwork</p>
+                         </>
+                       )}
+                       <input id="cover-file" type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="hidden" />
+                    </div>
+
+                    <div className="aspect-square md:col-span-2 bg-bg-elevated border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-smash-orange transition-all relative overflow-hidden group shadow-inner" onClick={() => document.getElementById('audio-file')?.click()}>
+                       {(mode === 'album' ? albumFiles.length > 0 : songFile) ? (
+                         <div className="text-center">
+                           <CheckCircle2 size={40} className="text-smash-green mx-auto mb-3" />
+                           <p className="text-white font-display font-black uppercase tracking-[0.1em] text-[12px]">{mode === 'album' ? `${albumFiles.length} Tracks Selected` : songFile?.name}</p>
+                         </div>
+                       ) : (
+                         <>
+                           <UploadCloud size={40} className="text-smash-orange mb-3" />
+                           <p className="text-white font-display font-black uppercase tracking-[0.1em] text-[12px]">Select Audio File</p>
+                         </>
+                       )}
+                       <input id="audio-file" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e=> mode === 'album' ? setAlbumFiles(Array.from(e.target.files || [])) : setSongFile(e.target.files?.[0]||null)} className="hidden" />
+                    </div>
+                 </div>
+
+                 <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="group">
+                        <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Release Title *</label>
+                        <input value={title} onChange={e=>setTitle(e.target.value)} required placeholder={mode === 'album' ? "e.g. The Recovery" : "e.g. Mapulani"} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
+                      </div>
+                      <div className="group">
+                        <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Primary Genre *</label>
+                        <select required value={genre} onChange={e=>setGenre(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none">
+                          <option value="">Select genre</option>
+                          <option value="Afropop">Afropop</option>
+                          <option value="Gospel">Gospel</option>
+                          <option value="Hip Hop">Hip Hop</option>
+                          <option value="R&B">R&B</option>
+                          <option value="Amapiano">Amapiano</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="group">
+                        <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Featured Artist</label>
+                        <input value={featuredArtist} onChange={e=>setFeaturedArtist(e.target.value)} placeholder="e.g. Namadingo" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
+                      </div>
+                      <div className="group">
+                        <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Release Date</label>
+                        <input required type="date" value={releaseDate} onChange={e=>setReleaseDate(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white" />
+                      </div>
+                    </div>
+                 </div>
+
+                 {mode !== 'snippet' && (
+                   <div className="grid md:grid-cols-2 gap-8 pt-8 border-t border-white/5">
+                     <div className="group">
+                       <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Distribution Mode</label>
+                       <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
+                          <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
+                          <button type="button" disabled={!limits.canSellSongs} onClick={() => setIsForSale(true)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} disabled:opacity-30 disabled:cursor-not-allowed`}>Paid Download</button>
+                       </div>
+                     </div>
+                     {isForSale && (
+                       <div className="group">
+                         <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Download Price (MWK)</label>
+                         <div className="relative">
+                            <input type="number" required={isForSale} value={price} onChange={e => setPrice(Number(e.target.value))} min="100" step="500" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 <div className="pt-8 flex flex-col gap-4">
+                    <button type="submit" disabled={!coverFile || (mode === 'album' ? albumFiles.length === 0 : !songFile)} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-[0.2em] text-[13px] rounded-2xl hover:brightness-110 disabled:opacity-50 transition-all flex items-center justify-center gap-4 shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                       PUBLISH TO SMASHIFY <Rocket size={20} />
+                    </button>
+                    <p className="text-[11px] font-sans text-center mt-4 text-text-muted">By publishing, you confirm you own the rights to this audio.</p>
+                 </div>
+             </form>
+         )}
       </div>
     </div>
   );

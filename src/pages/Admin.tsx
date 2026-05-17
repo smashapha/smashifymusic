@@ -321,9 +321,14 @@ const Admin = () => {
         phone: application.phone,
         approved: true,
         verified: false,
+        is_verified: false,
         wallet_balance: 0,
         user_type: 'artist',
         artist_tier: 'Free',
+        nrc_number: application.nrc_number,
+        id_document_url: application.id_document_url,
+        selfie_url: application.selfie_url,
+        id_type: application.id_type
       });
       if (profileError) throw profileError;
 
@@ -397,7 +402,7 @@ const Admin = () => {
   const toggleArtistVerification = async (artistId: string, currentStatus: boolean) => {
     const { error } = await supabase
       .from('profiles')
-      .update({ verified: !currentStatus })
+      .update({ verified: !currentStatus, is_verified: !currentStatus })
       .eq('id', artistId);
     
     if (error) toast.error(error.message);
@@ -715,8 +720,9 @@ const Admin = () => {
                          <tr className="text-[9px] font-black uppercase tracking-[0.2em] text-smash-gray bg-white/[0.02]">
                            <th className="px-8 py-5">Artist Signature</th>
                            <th className="px-8 py-5">Studio Wallet</th>
-                           <th className="px-8 py-5">Moderation Queue</th>
-                           <th className="px-8 py-5 text-right">Logic Gates</th>
+                           <th className="px-8 py-5">ID Details</th>
+                           <th className="px-8 py-5">Queue</th>
+                           <th className="px-8 py-5 text-right">Gate</th>
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-white/5 text-sm">
@@ -730,7 +736,7 @@ const Admin = () => {
                                   <div>
                                     <p className="font-bold text-sm text-white group-hover:text-smash-purple transition-colors flex items-center gap-2">
                                       {a.stage_name} 
-                                      {a.verified && <ShieldCheck size={14} className="text-smash-cyan" />}
+                                      {(a.verified || a.is_verified) && <ShieldCheck size={14} className="text-smash-cyan" />}
                                     </p>
                                     <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest opacity-60">
                                       {a.city} • {a.genre}
@@ -745,25 +751,38 @@ const Admin = () => {
                                 </div>
                              </td>
                              <td className="px-8 py-6">
+                                <div className="flex flex-col gap-2">
+                                   <p className="text-[10px] font-black uppercase text-white/50">{a.id_type || 'ID'}: {a.nrc_number || 'N/A'}</p>
+                                   <div className="flex gap-2">
+                                     {a.id_document_url && (
+                                       <a href={a.id_document_url} target="_blank" rel="noopener noreferrer" className="text-[9px] hover:underline text-smash-cyan">View ID</a>
+                                     )}
+                                     {a.selfie_url && (
+                                       <a href={a.selfie_url} target="_blank" rel="noopener noreferrer" className="text-[9px] hover:underline text-smash-purple">View Selfie</a>
+                                     )}
+                                   </div>
+                                </div>
+                             </td>
+                             <td className="px-8 py-6">
                                 {a.pending_songs > 0 ? (
                                    <div onClick={() => setActiveTab('song-reviews')} className="flex items-center gap-2 text-smash-orange font-black text-[10px] uppercase tracking-widest cursor-pointer hover:underline">
                                       <div className="w-2 h-2 bg-smash-orange rounded-full animate-pulse" />
-                                      {a.pending_songs} Review items
+                                      {a.pending_songs} items
                                    </div>
                                 ) : (
-                                   <span className="text-smash-gray text-[9px] uppercase font-black italic tracking-widest opacity-40">Queue Clear</span>
+                                   <span className="text-smash-gray text-[9px] uppercase font-black italic tracking-widest opacity-40">Clear</span>
                                 )}
                              </td>
                              <td className="px-8 py-6 text-right flex items-center justify-end gap-3">
                                 <button 
-                                  onClick={() => toggleArtistVerification(a.id, !!a.verified)}
+                                  onClick={() => toggleArtistVerification(a.id, !!(a.verified || a.is_verified))}
                                   className={`px-4 py-1.5 border rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
-                                    a.verified 
+                                    (a.verified || a.is_verified)
                                       ? 'bg-smash-cyan/10 text-smash-cyan border-smash-cyan/20 hover:bg-smash-cyan hover:text-black' 
                                       : 'bg-white/5 text-smash-gray border-white/5 hover:border-smash-cyan hover:text-smash-cyan'
                                   }`}
                                 >
-                                  {a.verified ? 'Verified' : 'Verify'}
+                                  {(a.verified || a.is_verified) ? 'Verified' : 'Verify'}
                                 </button>
                                 
                                 <button onClick={() => deleteArtist(a.id, a.stage_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-smash-red text-smash-gray hover:text-white rounded-lg transition-all">
