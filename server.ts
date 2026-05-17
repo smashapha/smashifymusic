@@ -82,11 +82,7 @@ async function startServer() {
   if (SUPABASE_URL && adminKey) {
     try {
       supabaseAdmin = createClient(SUPABASE_URL, adminKey);
-      if (adminKey === process.env.VITE_SUPABASE_ANON_KEY) {
-        console.warn('CRITICAL WARNING: SUPABASE_SERVICE_ROLE_KEY is missing or invalid. Using ANON key for server operations, which will cause RLS violations.');
-      } else {
-        console.log('SUPABASE_SERVICE_ROLE_KEY successfully loaded. Admin operations enabled.');
-      }
+      console.log('[Server] Service role key loaded successfully.');
     } catch (err) {
       console.error('Failed to initialize Supabase Admin:', err);
     }

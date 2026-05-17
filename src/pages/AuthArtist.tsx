@@ -92,19 +92,46 @@ const AuthArtist: React.FC = () => {
 
     // Check stage name is not already taken
     const stageTrimmed = stageName.trim();
-    const { data: existingStage } = await supabase
-      .from('profiles')
-      .select('id')
-      .ilike('stage_name', stageTrimmed)
-      .maybeSingle();
-
-    if (existingStage) {
-      toast.error(
-        'This stage name is already registered. ' +
-        'If you are the real artist, contact support@smashify.mw'
-      );
+    if (stageTrimmed.length < 2) {
+      toast.error('Stage name must be at least 2 characters');
       setLoadingState(false);
       return;
+    }
+
+    try {
+      const { data: existingStage } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('stage_name', stageTrimmed)
+        .maybeSingle();
+
+      if (existingStage) {
+        toast.error(
+          `"${stageTrimmed}" is already registered on Smashify. ` +
+          'If you are the real artist, contact support@smashify.mw'
+        );
+        setLoadingState(false);
+        return;
+      }
+
+      const { data: pendingApp } = await supabase
+        .from('artist_applications')
+        .select('id')
+        .ilike('stage_name', stageTrimmed)
+        .neq('status', 'rejected')
+        .maybeSingle();
+
+      if (pendingApp) {
+        toast.error(
+          `"${stageTrimmed}" already has a pending application. ` +
+          'Contact support@smashify.mw if this is your name.'
+        );
+        setLoadingState(false);
+        return;
+      }
+    } catch (checkErr) {
+      console.warn('Stage name check failed:', checkErr);
+      // Non-fatal — continue with signup
     }
 
     setLoadingState(true);
@@ -411,11 +438,39 @@ const AuthArtist: React.FC = () => {
                              </div>
                              <p className="text-[12px] text-text-muted font-sans font-medium">Applications are reviewed within 48 hours. By applying, you agree to our Terms.</p>
                           </div>
-                          <div className="flex gap-2 pt-2">
-                             <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
-                             <button onClick={submitApplication} disabled={loadingState} className="flex-1 h-[52px] text-white rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide transition-all shadow-sm hover:brightness-110 active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
-                                {loadingState ? 'Submitting...' : 'Submit Application'}
-                             </button>
+                          <div className="flex flex-col gap-4 pt-2">
+                             <label className="flex items-start gap-3 cursor-pointer text-left">
+                               <div
+                                 onClick={() => setAgreedToTerms(!agreedToTerms)}
+                                 className={`mt-0.5 w-5 h-5 rounded-md border-2
+                                   flex items-center justify-center shrink-0
+                                   transition-all cursor-pointer
+                                   ${agreedToTerms
+                                     ? 'bg-smash-orange border-smash-orange'
+                                     : 'border-white/20 bg-white/5'
+                                   }`}
+                               >
+                                 {agreedToTerms && (
+                                   <svg className="w-3 h-3 text-white" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor">
+                                     <path strokeLinecap="round" strokeLinejoin="round"
+                                       strokeWidth={3} d="M5 13l4 4L19 7" />
+                                   </svg>
+                                 )}
+                               </div>
+                               <span className="text-smash-gray text-xs leading-relaxed font-sans">
+                                 I confirm this account represents me or my official
+                                 brand. Creating fake artist accounts violates
+                                 Smashify Terms of Service and may result in permanent
+                                 account removal and legal action under Malawian law.
+                               </span>
+                             </label>
+                             <div className="flex gap-2">
+                               <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
+                               <button onClick={submitApplication} disabled={loadingState || !agreedToTerms || !idPhoto} className="flex-1 h-[52px] text-white rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide transition-all shadow-sm hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
+                                  {loadingState ? 'Submitting...' : 'Submit Application'}
+                               </button>
+                             </div>
                           </div>
                        </motion.div>
                     )}

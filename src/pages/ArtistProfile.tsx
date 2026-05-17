@@ -62,6 +62,16 @@ const ArtistProfile: React.FC = () => {
       toast.success('Profile link copied!');
       setTimeout(() => setCopied(false), 2000);
    };
+
+   const handleWhatsAppShare = () => {
+      const profileUrl = window.location.href;
+      const text = encodeURIComponent(
+         `🎵 Check out ${artist?.stage_name} on Smashify!\n` +
+         `Stream their music and support them directly.\n\n` +
+         `${profileUrl}`
+      );
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+   };
  
    useEffect(() => {
       const checkFollow = async () => {
@@ -300,6 +310,16 @@ const ArtistProfile: React.FC = () => {
                         <button onClick={handleShare} className="w-[40px] h-[40px] md:w-[44px] md:h-[44px] bg-bg-elevated/80 backdrop-blur-md border border-border-default text-text-primary rounded-[8px] md:rounded-[10px] flex items-center justify-center hover:bg-bg-elevated transition-colors">
                            <Share size={16} />
                         </button>
+                        <button
+                           onClick={handleWhatsAppShare}
+                           className="h-[40px] md:h-[44px] px-4 rounded-[8px] md:rounded-[10px] bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 flex items-center gap-2 text-[10px] md:text-[11px] font-bold transition-all uppercase tracking-widest"
+                           title="Share on WhatsApp"
+                        >
+                           <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                           </svg>
+                           <span className="hidden sm:inline">WhatsApp</span>
+                        </button>
                      </div>
                   </div>
                </div>
@@ -368,121 +388,69 @@ const ArtistProfile: React.FC = () => {
 
                   {activeTab === 'community' && (
                      <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 md:space-y-12">
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-                           {/* Supporters Dashboard */}
-                           <section className="xl:col-span-2 p-5 md:p-10 bg-bg-surface border border-border-default rounded-[12px] md:rounded-[14px] space-y-6 md:space-y-8 relative overflow-hidden group shadow-sm min-h-[300px]">
-                              <div className="absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-smash-orange/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
-                              
-                              <div className="flex items-center justify-between relative z-10">
-                                 <div className="flex items-center gap-3">
-                                    <Crown className="text-smash-orange w-5 h-5 md:w-6 md:h-6" />
-                                    <h2 className="text-lg md:text-[22px] font-studio font-bold uppercase tracking-tight text-white">Board of <span className="text-smash-orange">Patrons</span></h2>
-                                 </div>
-                                 <Trophy className="text-text-muted/30 w-5 h-5 md:w-6 md:h-6" />
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 relative z-10">
-                                 {topSupporters.length > 0 ? topSupporters.map((s, i) => (
-                                    <div key={i} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-bg-elevated rounded-[10px] group/item hover:border-border-subtle transition-all border border-border-default">
-                                       <div className="relative">
-                                          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-border-default overflow-hidden shadow-sm">
-                                             <Avatar src={s.avatar_url} name={s.name} className="w-full h-full scale-110 object-cover" />
-                                          </div>
-                                          {i < 3 && (
-                                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[8px] md:text-[10px] font-display font-bold border-2 border-bg-elevated shadow-sm ${
-                                              i === 0 ? 'bg-smash-orange text-white' : i === 1 ? 'bg-white/90 text-black' : 'bg-orange-800 text-white'
-                                            }`}>
-                                              {i + 1}
-                                            </div>
-                                          )}
-                                       </div>
-                                       <div className="flex-1 min-w-0">
-                                          <p className="font-display font-semibold text-xs md:text-[14px] text-text-primary truncate group-hover/item:text-smash-orange transition-colors">{s.name}</p>
-                                          <div className="flex flex-col mt-0.5">
-                                             <p className="text-[8px] md:text-[10px] font-display font-medium text-text-muted uppercase tracking-wider">Contribution</p>
-                                             <p className="text-[10px] md:text-[12px] font-sans font-semibold text-text-secondary">MK {s.total.toLocaleString()}</p>
-                                          </div>
-                                       </div>
-                                       <ArrowUpRight size={14} className="text-text-muted group-hover/item:text-text-primary transition-colors md:w-4 md:h-4" />
+                        <div className="space-y-4 pb-32">
+                           {/* Artist bio as first post */}
+                           {artist?.bio && (
+                              <div className="p-5 bg-white/5 rounded-3xl border border-white/10">
+                                 <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
+                                       {artist.avatar_url
+                                          ? <img src={artist.avatar_url} className="w-full h-full object-cover" />
+                                          : <span className="text-xs font-bold">{artist.stage_name?.[0]}</span>
+                                       }
                                     </div>
-                                 )) : (
-                                    <div className="col-span-full py-12 md:py-16 text-center border border-dashed border-border-default rounded-[10px] space-y-3">
-                                       <Users className="mx-auto text-text-muted/30" size={28} />
-                                       <p className="text-xs font-sans text-text-secondary">No top patrons recorded yet</p>
-                                       <button onClick={() => setShowSupportModal(true)} className="text-[10px] font-display font-semibold uppercase tracking-widest text-smash-purple hover:underline">Claim spot &rarr;</button>
+                                    <div>
+                                       <p className="font-bold text-sm text-text-primary">{artist.stage_name}</p>
+                                       <p className="text-[11px] text-text-muted">Artist bio</p>
                                     </div>
-                                 )}
-                              </div>
-                           </section>
-
-                           {/* Fan Interaction Card */}
-                           <section className="xl:col-span-1 space-y-6">
-                              <div className="p-6 md:p-8 bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 rounded-[14px] space-y-6 text-center md:text-left shadow-sm">
-                                 <Zap className="text-smash-purple mx-auto md:mx-0" size={28} />
-                                 <div>
-                                    <h3 className="text-[20px] font-display font-bold uppercase tracking-tight text-text-primary">Fan Power Index</h3>
-                                    <p className="text-[13px] font-sans text-text-secondary mt-1">"The community is 78% active this week"</p>
                                  </div>
-                                 
+                                 <p className="text-sm text-text-secondary leading-relaxed">{artist.bio}</p>
+                              </div>
+                           )}
+
+                           {/* Top Supporters */}
+                           {topSupporters && topSupporters.length > 0 && (
+                              <div className="p-5 bg-white/5 rounded-3xl border border-white/10">
+                                 <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-text-primary">
+                                    <Crown size={16} className="text-smash-orange" /> Top Supporters
+                                 </h3>
                                  <div className="space-y-3">
-                                    <div className="flex justify-between items-center text-[10px] font-display font-semibold uppercase tracking-wider">
-                                       <span className="text-text-muted">Hype Score</span>
-                                       <span className="text-text-primary">9.2 / 10</span>
-                                    </div>
-                                    <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden border border-border-default">
-                                       <motion.div 
-                                          initial={{ width: 0 }}
-                                          animate={{ width: '92%' }}
-                                          className="h-full bg-gradient-to-r from-smash-purple to-smash-pink"
-                                       />
-                                    </div>
+                                    {topSupporters.slice(0, 5).map((s: any, i: number) => (
+                                       <div key={i} className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-smash-orange font-bold text-sm w-6">#{i + 1}</span>
+                                             <span className="text-sm text-text-primary">{s.name || s.fan_name || 'Anonymous Fan'}</span>
+                                          </div>
+                                          <span className="text-xs text-smash-green font-bold font-display">MK {Number(s.total || 0).toLocaleString()}</span>
+                                       </div>
+                                    ))}
                                  </div>
+                              </div>
+                           )}
 
-                                 <button onClick={() => setShowSupportModal(true)} className="w-full h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] shadow-sm hover:bg-smash-purple/90 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                    <Sparkles size={16} /> Empower Artist
+                           {/* Subscribe CTA */}
+                           {!isSubscribed && (
+                              <div className="p-5 bg-gradient-to-br from-smash-purple/20 to-smash-orange/10 rounded-3xl border border-smash-purple/20 text-center">
+                                 <Heart size={28} className="mx-auto mb-3 text-smash-purple" />
+                                 <p className="font-bold text-sm mb-1 text-text-primary">Support {artist?.stage_name} Every Month</p>
+                                 <p className="text-xs text-text-muted mb-4">MK 500/month goes directly to the artist. Cancel anytime.</p>
+                                 <button
+                                    onClick={handleSubscribe}
+                                    disabled={subscribing}
+                                    className="h-10 px-6 bg-smash-purple rounded-full text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                                 >
+                                    {subscribing ? 'Loading...' : 'Subscribe MK 500/month'}
                                  </button>
                               </div>
+                           )}
 
-                              <div className="p-6 md:p-8 bg-bg-surface border border-border-default rounded-[14px] space-y-6 shadow-sm">
-                                 <h3 className="text-[18px] font-display font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
-                                    <MessageSquare size={16} className="text-text-muted" /> Collab Space
-                                 </h3>
-                                 <p className="text-[13px] text-text-secondary font-sans leading-relaxed">
-                                    "Open for collaboration with local producers and lyricists. Premium tier artists only."
-                                 </p>
-                                 <button className="text-[11px] font-display font-semibold uppercase tracking-widest text-smash-purple hover:text-text-primary transition-colors">Send Request &rarr;</button>
+                           {isSubscribed && (
+                              <div className="p-4 bg-smash-green/10 rounded-3xl border border-smash-green/20 flex items-center gap-3">
+                                 <CheckCircle2 size={20} className="text-smash-green shrink-0" />
+                                 <p className="text-sm text-smash-green font-bold">You are supporting {artist?.stage_name} monthly!</p>
                               </div>
-                           </section>
+                           )}
                         </div>
-
-                        {/* Recent Fan Activity Feed */}
-                        <section className="space-y-6">
-                           <div className="flex items-center gap-3">
-                              <div className="w-[4px] h-[20px] bg-smash-orange rounded-full" />
-                              <h2 className="text-[20px] font-display font-bold uppercase tracking-tight text-text-primary">Live <span className="text-smash-gray">Activity</span></h2>
-                           </div>
-                           
-                           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                              {[
-                                 { user: 'Chifundo M.', action: 'loved "The Horizon"', time: '2m ago', type: 'like' },
-                                 { user: 'Blessings T.', action: 'supported with MK 5,000', time: '15m ago', type: 'support' },
-                                 { user: 'Tiwonge K.', action: 'bought "Summer Vibes"', time: '1h ago', type: 'sale' },
-                                 { user: 'Andrew P.', action: 'joined the fan club', time: '4h ago', type: 'follow' },
-                              ].map((item, i) => (
-                                 <div key={i} className="p-4 bg-bg-surface border border-border-default rounded-[10px] flex items-center gap-3 shadow-sm">
-                                    <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 border ${
-                                       item.type === 'support' ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 'bg-bg-elevated text-text-secondary border-border-default'
-                                    }`}>
-                                       {item.type === 'support' ? <Trophy size={14} /> : <TrendingUp size={14} />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                       <p className="text-[12px] font-sans text-text-primary truncate"><span className="font-semibold text-smash-purple">{item.user}</span> {item.action}</p>
-                                       <p className="text-[10px] font-sans text-text-muted mt-0.5">{item.time}</p>
-                                    </div>
-                                 </div>
-                              ))}
-                           </div>
-                        </section>
                      </motion.div>
                   )}
 

@@ -37,12 +37,16 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
 
     setLoading(true);
     try {
-      sendTip({
+      await sendTip({
         artist,
         fan: userProfile,
-        amount: Number(amount)
+        amount: Number(amount),
+        anonymous: false
       });
+      // sendTip redirects to PayChangu checkout
+      // If we reach here without redirect, it failed silently
     } catch (err: any) {
+      console.error('sendTip error:', err);
       toast.error('Payment failed: ' + err.message);
       setLoading(false);
     }

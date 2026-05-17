@@ -551,8 +551,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const fetchedIds = new Set(
               (userPurchases || []).map(p => p.song_id as string)
             );
+            // Update state so SongCard BUY buttons update immediately
             setPurchasedIds(fetchedIds);
-
             formatted = formatted.map(song => ({
               ...song,
               is_purchased: fetchedIds.has(song.id)
