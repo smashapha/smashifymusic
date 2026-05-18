@@ -703,7 +703,7 @@ const AuthArtist: React.FC = () => {
                              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-smash-orange text-white text-[9px] font-semibold px-2 py-[2px] rounded-b-[4px] uppercase tracking-widest">Popular</div>
                              <div className="flex justify-between items-center mb-1 mt-2">
                                 <h4 className="font-sans font-semibold text-[14px] text-smash-orange">Standard</h4>
-                                <span className="font-sans font-semibold text-[13px] text-white">MK 25,000 /yr</span>
+                                <span className="font-sans font-semibold text-[13px] text-white">MK 25,000 / 6mo</span>
                              </div>
                              <p className="text-[12px] text-text-muted">Unlimited uploads, 7% fee, advanced analytics.</p>
                           </div>

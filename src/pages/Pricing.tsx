@@ -109,7 +109,7 @@ const Pricing = () => {
          ) : (
             <>
               <h1 className="text-3xl md:text-7xl font-black font-display italic uppercase tracking-tighter mb-4 leading-tight md:leading-none">
-                MALAWI'S <span className="text-smash-orange">BEST MUSIC</span>
+                STREAM <span className="text-smash-orange">AFRICA'S BEST</span>
               </h1>
               <p className="text-smash-gray text-base md:text-xl font-medium tracking-tight mt-4">Support your favorite artists directly.</p>
             </>
@@ -197,68 +197,74 @@ const Pricing = () => {
                 isArtist={true}
                 title="Free Studio" 
                 price="0" 
-                period="yr"
                 subtitle="For beginners"
                 onAction={() => handleAction()}
                 features={[
-                  "5 Total Uploads", 
-                  "15% Platform fee on tips", 
-                  "20% Platform fee on subs",
-                  "Basic Analytics",
-                  "MK 50K max withdrawal/mo",
+                  "5 total uploads (lifetime)",
+                  "Streaming only — no track sales",
+                  "15% fee on tips",
+                  "Basic play analytics",
+                  "MK 50,000 max withdrawal",
                   "7 day payout speed"
                 ]} 
              />
              <PricingCard 
                 isArtist={true}
                 title="Rising Star" 
-                price="15,000" 
+                price="8,000" 
                 period="6 MO"
-                annualText="26,000"
+                annualText="14,000"
                 subtitle="Build your fanbase"
                 onAction={() => handleAction('RisingStar')}
                 features={[
-                  "30 Uploads/month", 
-                  "10% Platform fee on tips",
-                  "15% Platform fee on subs",
-                  "Standard Analytics",
-                  "Fan messaging",
-                  "MK 200K max withdrawal/mo"
+                  "30 uploads per month",
+                  "Sell tracks to fans",
+                  "Accept fan subscriptions",
+                  "10% fee on tips & sales",
+                  "Fan messaging enabled",
+                  "Standard analytics",
+                  "MK 200,000 max withdrawal",
+                  "3 day payout speed"
                 ]} 
              />
              <PricingCard 
                 isArtist={true}
                 title="Standard" 
-                price="25,000" 
+                price="13,000" 
                 period="6 MO"
-                annualText="44,000"
+                annualText="23,000"
                 badge="POPULAR" 
                 subtitle="For full-time artists"
                 onAction={() => handleAction('Standard')}
                 features={[
-                  "Unlimited Uploads", 
-                  "7% Platform fee on tips",
-                  "10% Platform fee on subs",
-                  "Advanced Analytics",
-                  "1 Free featured placement",
-                  "MK 500K max withdrawal/mo"
+                  "Unlimited uploads",
+                  "Sell tracks to fans",
+                  "Accept fan subscriptions",
+                  "7% fee on tips & sales",
+                  "1 free featured placement/month",
+                  "Advanced analytics suite",
+                  "Verified badge on profile",
+                  "MK 500,000 max withdrawal",
+                  "24 hour payout speed"
                 ]} 
              />
              <PricingCard 
                 isArtist={true}
                 title="Elite / Label" 
-                price="45,000" 
+                price="24,000" 
                 period="6 MO"
-                annualText="80,000"
+                annualText="42,000"
                 subtitle="For Serious Artists"
                 onAction={() => handleAction('Elite')}
                 features={[
-                  "Manage up to 10 Profiles", 
-                  "5% Platform fee on tips",
-                  "8% Platform fee on subs",
-                  "Full Label Analytics",
-                  "Unlimited Withdrawals",
-                  "Gold Verified Badge"
+                  "Manage up to 10 artist profiles",
+                  "Unlimited uploads",
+                  "5% fee on tips & sales",
+                  "3 free featured placements/month",
+                  "Full analytics with CSV export",
+                  "Gold verified badge",
+                  "Instant payouts",
+                  "Unlimited withdrawals"
                 ]} 
              />
           </div>
@@ -303,6 +309,10 @@ const Pricing = () => {
                   <span className="font-bold text-xs md:text-sm text-smash-orange truncate mr-2">Standard (93%):</span>
                   <span className="text-base md:text-lg font-black text-white shrink-0">MK {calculateKeep('Standard').toLocaleString()}</span>
                 </div>
+                <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
+                  <span className="font-bold text-xs md:text-sm text-smash-gray truncate mr-2">Elite (95%):</span>
+                  <span className="text-base md:text-lg font-black shrink-0">MK {calculateKeep('Elite').toLocaleString()}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -336,7 +346,7 @@ const Pricing = () => {
           {[
             { q: "How do I get paid?", a: "When your wallet reaches the minimum withdrawal amount for your tier, you can cash out directly to your registered Airtel Money or TNM Mpamba number." },
             { q: "Are there hidden fees?", a: "No. PayChangu charges a standard ~1.5% processing fee, and we take our platform cut (which depends on your tier). The rest is 100% yours." },
-            { q: "Can I upgrade or downgrade anytime?", a: "Yes. All subscriptions are billed yearly. You can switch tiers at any time and it will apply to your next billing cycle." },
+            { q: "Can I upgrade or downgrade anytime?", a: "Yes. Listener plans are billed monthly. Artist Studio plans are billed every 6 months. You can upgrade at any time — the new plan takes effect immediately." },
             { q: "Do listeners have to pay to hear my music?", a: "No, listeners on the Free plan can hear your music with ads. However, they can tip you directly. Only music you explicitly set a price for requires purchase." }
           ].map((faq, i) => (
             <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10">

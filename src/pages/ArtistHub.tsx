@@ -503,6 +503,10 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   }, [userProfile]);
 
   const handleInitiateWithdraw = () => {
+    if (!limits.canWithdraw) {
+      toast.error('Free tier cannot withdraw. Upgrade to Rising Star or higher to unlock withdrawals.');
+      return;
+    }
     if (balance <= 0) return toast.error('No funds to withdraw.');
     if (withdrawalAmount < 2000) return toast.error('Minimum withdrawal is MK 2,000.');
     if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
@@ -1403,8 +1407,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     return createdDate >= startOfMonth;
   }).length;
   const totalSongsUploaded = songs.length;
-  const hasReachedLimit = (limits.songLimit !== null && totalSongsUploaded >= limits.songLimit) || 
-                          (limits.monthlyLimit !== null && songsUploadedThisMonth >= limits.monthlyLimit);
+  const canUploadMore = limits.maxUploads === Infinity ? true : totalSongsUploaded < limits.maxUploads;
 
   const handleUploadSingle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1484,23 +1487,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     );
   }
 
-  if (hasReachedLimit && mode === 'single') {
-    return (
-      <div className="max-w-4xl mx-auto py-20 px-6">
-        <div className="bg-bg-surface border border-smash-orange/20 rounded-[40px] p-16 text-center shadow-2xl">
-          <AlertCircle size={64} className="text-smash-orange mx-auto mb-8" />
-          <h2 className="text-3xl font-studio font-black uppercase italic text-white mb-4">Uploader Locked</h2>
-          <p className="text-text-secondary font-medium mb-12 max-w-md mx-auto">
-            {isFree 
-              ? "You've reached the 3-song limit. Upgrade to unlock unlimited uploads."
-              : `You've reached your monthly allowance of ${limits.monthlyLimit} songs.`}
-          </p>
-          <button onClick={() => setActiveTab('subscription')} className="h-16 px-12 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110">View Plans</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-4xl mx-auto pb-20 mt-6 px-4">
       <div className="mb-10 text-center md:text-left">
@@ -1531,7 +1517,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                    {['single', 'album', 'snippet'].map((m) => (
                      <button type="button" key={m} onClick={() => {
                        if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
-                       if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star Plan required');
+                       if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star plan required to post MotoFeed snippets');
                        setMode(m as any);
                      }} className={`px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-105' : 'text-text-secondary hover:text-text-primary'}`}>
                        {m}
@@ -1602,7 +1588,13 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Distribution Mode</label>
                        <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
                           <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
-                          <button type="button" disabled={!limits.canSellSongs} onClick={() => setIsForSale(true)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} disabled:opacity-30 disabled:cursor-not-allowed`}>Paid Download</button>
+                          <button type="button" onClick={() => {
+                            if (!limits.canSellSongs) {
+                              toast.error('Upgrade to Rising Star to sell tracks to fans');
+                              return;
+                            }
+                            setIsForSale(true);
+                          }} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} ${!limits.canSellSongs ? 'opacity-50' : ''}`}>Paid Download</button>
                        </div>
                      </div>
                      {isForSale && (
@@ -1618,7 +1610,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                  )}
 
                  <div className="pt-8 flex flex-col gap-4">
-                    <button type="submit" disabled={!coverFile || (mode === 'album' ? albumFiles.length === 0 : !songFile)} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-[0.2em] text-[13px] rounded-2xl hover:brightness-110 disabled:opacity-50 transition-all flex items-center justify-center gap-4 shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                    <button type="submit" disabled={!canUploadMore || !coverFile || (mode === 'album' ? albumFiles.length === 0 : !songFile)} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-[0.2em] text-[13px] rounded-2xl hover:brightness-110 disabled:opacity-50 transition-all flex items-center justify-center gap-4 shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                        PUBLISH TO SMASHIFY <Rocket size={20} />
                     </button>
                     <p className="text-[11px] font-sans text-center mt-4 text-text-muted">By publishing, you confirm you own the rights to this audio.</p>
@@ -1631,6 +1623,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 };
 
 const ProfileTab = ({ userProfile }: any) => {
+  const limits = getTierLimits(userProfile);
   const { refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File|null>(null);
@@ -1775,7 +1768,12 @@ const ProfileTab = ({ userProfile }: any) => {
          </div>
          <div>
             <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Fan Club Monthly Price (MWK)</label>
-            <input type="number" name="subscription_price" defaultValue={userProfile?.subscription_price || ''} placeholder="e.g. 500" min="500" className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary placeholder:text-text-muted" />
+            <input type="number" name="subscription_price" defaultValue={userProfile?.subscription_price || ''} placeholder="e.g. 500" min="500" onChange={(e) => {
+              if (!limits.canReceiveSubs) {
+                toast.error('Upgrade to Rising Star to accept fan subscriptions');
+                e.target.value = '';
+              }
+            }} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary placeholder:text-text-muted" />
             <p className="text-[10px] text-text-muted mt-2 font-sans font-medium">Minimum price is MK 500. This is the amount fans will pay monthly to join your VIP fan club.</p>
          </div>
          <div>
@@ -1849,13 +1847,13 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             {currentTier === 'rising_star' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
             <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Rocket className="text-smash-orange" size={20} /> Rising Star</h4>
             <div className="flex items-baseline gap-1 mb-8">
-               <span className="text-[32px] font-studio font-bold text-text-primary">15,000</span>
+               <span className="text-[32px] font-studio font-bold text-text-primary">8,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Upload up to 10 songs/month</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Basic analytics</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Airtel/TNM withdrawals</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 30 uploads per month</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Sell tracks to fans</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Accept fan subscriptions</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('RisingStar')} 
@@ -1871,14 +1869,13 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             {currentTier === 'standard' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
             <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Star className="text-smash-orange" size={20} /> Standard</h4>
             <div className="flex items-baseline gap-1 mb-8">
-               <span className="text-[32px] font-studio font-bold text-text-primary">25,000</span>
+               <span className="text-[32px] font-studio font-bold text-text-primary">13,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Unlimited uploads</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Full analytics dashboard</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Priority support</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Album creation</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 1 free featured placement/mo</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Advanced analytics suite</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('Standard')}
@@ -1893,13 +1890,13 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             {currentTier === 'elite' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
             <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><ShieldCheck className="text-smash-purple" size={20} /> Elite / Label</h4>
             <div className="flex items-baseline gap-1 mb-8">
-               <span className="text-[32px] font-studio font-bold text-text-primary">45,000</span>
+               <span className="text-[32px] font-studio font-bold text-text-primary">24,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Everything in Standard</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Multiple artist management</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Dedicated account manager</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Manage up to 10 profiles</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 3 free featured placements/mo</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Full analytics with CSV export</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('Elite')}

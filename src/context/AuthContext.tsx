@@ -254,12 +254,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: existing } = await supabase.from('user_profiles').select('id').eq('id', userId).maybeSingle();
           if (existing) return;
 
+          const { data: existingArtist } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+          let listenerTier = 'free';
+          let listenerEnds: string | null = null;
+          if (existingArtist && existingArtist.artist_tier && existingArtist.artist_tier.toLowerCase() !== 'free') {
+             listenerTier = 'Premium';
+             listenerEnds = existingArtist.subscription_ends;
+          }
+
           const profileData: any = {
             id: userId,
             full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New Listener',
             email: authUser.email,
             phone: authUser.user_metadata?.phone || null,
-            subscription_tier: 'free',
+            subscription_tier: listenerTier,
+            subscription_ends: listenerEnds,
             user_type: 'listener'
           };
           const { error: createError } = await supabase.from('user_profiles').upsert(profileData);

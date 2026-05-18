@@ -179,13 +179,18 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
  */
 export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile; tier: 'RisingStar' | 'Standard' | 'Elite' }) {
   const tierPricing: Record<string, number> = {
-    'RisingStar': 15000,
-    'Standard': 25000,
-    'Elite': 45000
+    'RisingStar': 8000,
+    'Standard': 13000,
+    'Elite': 24000
   };
   
   const amount = tierPricing[tier];
-  const type = `artist_${tier.toLowerCase().replace('star', '_star')}` as PaymentType;
+  const tierTypeMap: Record<string, string> = {
+    'RisingStar': 'artist_rising_star',
+    'Standard': 'artist_standard',
+    'Elite': 'artist_elite'
+  };
+  const type = tierTypeMap[tier] as PaymentType;
 
   return initiatePayment({
     amount,

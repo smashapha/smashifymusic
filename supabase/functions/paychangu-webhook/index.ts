@@ -275,7 +275,7 @@ serve(async (req) => {
       case 'ARTIST_STANDARD':
       case 'ARTIST_ELITE':
         const artistTierEnds = new Date()
-        artistTierEnds.setDate(artistTierEnds.getDate() + 365) // Yearly for studio tiers
+        artistTierEnds.setMonth(artistTierEnds.getMonth() + 6) // Artist tiers are billed every 6 months
         const tierMap: Record<string,string> = {
           'ARTIST_RISING_STAR': 'RisingStar',
           'ARTIST_STANDARD': 'Standard', 
@@ -288,8 +288,16 @@ serve(async (req) => {
           subscription_ends: artistTierEnds.toISOString(),
           approved: true
         }).eq('id', userId)
-        if (tierError) console.error('Artist tier update error:', tierError)
-        else console.log('Artist tier updated to:', artistTierName, 'for user:', userId)
+        if (tierError) {
+          console.error('Artist tier update error:', tierError)
+        } else {
+          console.log('Artist tier updated to:', artistTierName, 'for user:', userId)
+          // Also grant premium listener features
+          await supabase.from('user_profiles').update({
+            subscription_tier: 'Premium',
+            subscription_ends: artistTierEnds.toISOString()
+          }).eq('id', userId)
+        }
         break;
 
       case 'ARTIST_AD_CAMPAIGN':
