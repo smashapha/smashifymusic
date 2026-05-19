@@ -1416,6 +1416,159 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const totalSongsUploaded = songs.length;
   const canUploadMore = limits.maxUploads === Infinity ? true : totalSongsUploaded < limits.maxUploads;
 
+  // ── Image compression utility ─────────────────────────────
+  const compressCoverImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 800;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else { width = Math.round((width * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => resolve(blob || file),
+          'image/jpeg',
+          0.82   // 82% quality — good balance of size vs quality
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  };
+
+  // ── Audio compression utility ─────────────────────────────
+  // Converts any audio file to a compressed version using
+  // Web Audio API offline rendering + MediaRecorder
+  const compressAudio = (file: File): Promise<Blob> => {
+    return new Promise(async (resolve) => {
+      try {
+        // Skip if already a small MP3 (< 8MB) — no point recompressing
+        if (file.type === 'audio/mpeg' && file.size < 8 * 1024 * 1024) {
+          resolve(file);
+          return;
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioContext();
+        const decoded = await ctx.decodeAudioData(arrayBuffer);
+        ctx.close();
+
+        // Render at same sample rate — we'll compress via MediaRecorder
+        const offlineCtx = new OfflineAudioContext(
+          Math.min(decoded.numberOfChannels, 2), // max stereo
+          decoded.length,
+          Math.min(decoded.sampleRate, 44100)    // max 44.1kHz
+        );
+        const source = offlineCtx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(offlineCtx.destination);
+        source.start(0);
+        const rendered = await offlineCtx.startRendering();
+
+        // Convert AudioBuffer → WAV Blob → MediaRecorder compression
+        // Use a smaller channel to reduce size
+        const numChannels = rendered.numberOfChannels;
+        const sampleRate = rendered.sampleRate;
+        const length = rendered.length;
+
+        // Build WAV from rendered buffer (needed for MediaRecorder input)
+        const wavBuffer = audioBufferToWav(rendered);
+        const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+        // If browser supports MediaRecorder with audio/webm (most do)
+        // encode to webm/opus which is ~50-70% smaller than WAV
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          const audioEl = new Audio();
+          audioEl.src = URL.createObjectURL(wavBlob);
+          
+          const stream = (audioEl as any).captureStream 
+            ? (audioEl as any).captureStream()
+            : null;
+          
+          if (stream) {
+            const chunks: BlobPart[] = [];
+            const recorder = new MediaRecorder(stream, { 
+              mimeType: 'audio/webm;codecs=opus',
+              audioBitsPerSecond: 128000  // 128kbps
+            });
+            recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+            recorder.onstop = () => {
+              URL.revokeObjectURL(audioEl.src);
+              const compressed = new Blob(chunks, { type: 'audio/webm' });
+              // Only use compressed if it's actually smaller
+              resolve(compressed.size < file.size ? compressed : file);
+            };
+            recorder.start();
+            audioEl.play();
+            audioEl.onended = () => recorder.stop();
+            // Safety timeout: stop after duration + 2s
+            setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 
+              (decoded.duration + 2) * 1000);
+            return;
+          }
+        }
+
+        // Fallback: return the WAV (at least it's been decoded and re-encoded cleanly)
+        // If WAV is larger than original, just return original
+        resolve(wavBlob.size < file.size ? wavBlob : file);
+
+      } catch (err) {
+        // If anything fails, upload original — never block the artist
+        console.warn('Audio compression failed, using original:', err);
+        resolve(file);
+      }
+    });
+  };
+
+  // WAV encoder helper (pure JS, no deps)
+  const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const numChannels = Math.min(buffer.numberOfChannels, 2);
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = buffer.length * blockAlign;
+    const arrayBuf = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(arrayBuf);
+    const writeStr = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeStr(36, 'data');
+    view.setUint32(40, dataSize, true);
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+    return arrayBuf;
+  };
+
   const handleUploadSingle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
@@ -1424,17 +1577,28 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     setUploadProgress(10);
     
     try {
+      setUploadProgress(15);
+      toast.loading('Optimising cover art...', { id: 'compress' });
+      const compressedCover = await compressCoverImage(coverFile);
+      toast.dismiss('compress');
+
       setUploadProgress(20);
-      const coverExt = coverFile.name.split('.').pop();
+      const coverExt = 'jpg'; // always JPEG after compression
       const coverPath = `covers/${userProfile?.id}/cover-${Date.now()}.${coverExt}`;
-      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, coverFile);
+      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, compressedCover, { contentType: 'image/jpeg' });
       if (coverErr) throw coverErr;
       const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
-      setUploadProgress(40);
-      const audioExt = songFile.name.split('.').pop();
+      setUploadProgress(30);
+      toast.loading('Compressing audio (saves storage)...', { id: 'audiocompress' });
+      const compressedAudio = await compressAudio(songFile);
+      toast.dismiss('audiocompress');
+
+      setUploadProgress(45);
+      const isWebm = compressedAudio.type === 'audio/webm';
+      const audioExt = isWebm ? 'webm' : songFile.name.split('.').pop();
       const audioPath = `songs/${userProfile?.id}/song-${Date.now()}.${audioExt}`;
-      const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, songFile);
+      const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
       if (audioErr) throw audioErr;
       const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
 
@@ -1479,9 +1643,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     
     try {
       // 1. Upload Cover
-      const coverExt = coverFile.name.split('.').pop();
+      toast.loading('Optimising album artwork...', { id: 'covercomp' });
+      const compressedAlbumCover = await compressCoverImage(coverFile);
+      toast.dismiss('covercomp');
+      const coverExt = 'jpg';
       const coverPath = `covers/${userProfile?.id}/cover-${Date.now()}.${coverExt}`;
-      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, coverFile);
+      const { error: coverErr } = await supabase.storage.from('covers').upload(coverPath, compressedAlbumCover, { contentType: 'image/jpeg' });
       if (coverErr) throw coverErr;
       const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
@@ -1502,9 +1669,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       let completed = 0;
 
       for (const track of albumTracks) {
-        const audioExt = track.file.name.split('.').pop();
+        const compressedTrack = await compressAudio(track.file);
+        const isTrackWebm = compressedTrack.type === 'audio/webm';
+        const audioExt = isTrackWebm ? 'webm' : track.file.name.split('.').pop();
         const audioPath = `songs/${userProfile?.id}/song-${Date.now()}-${Math.random().toString(36).substring(7)}.${audioExt}`;
-        const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, track.file);
+        const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedTrack, { contentType: compressedTrack.type || 'audio/mpeg' });
         if (audioErr) throw audioErr;
         
         const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
@@ -1619,7 +1788,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                    <div className="text-center space-y-2">
                      <h3 className="text-xl font-studio font-black uppercase italic text-white tracking-widest animate-pulse">Engine Processing</h3>
                      <p className="text-[13px] font-sans text-text-muted">
-                        Distributing "{title}" to the nodes. Please don't close this page.
+                        Compressing &amp; distributing "{title}" to the nodes.<br/>
+                        <span className="text-smash-purple text-[11px]">Audio is being optimised to save storage. Please don't close this page.</span>
                      </p>
                    </div>
                 </div>
@@ -1652,7 +1822,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         if (files.length === 0) return toast.error('Please drop valid audio files');
                         
                         if (mode === 'album') {
-                           setAlbumTracks(files.map(f => ({ file: f as File, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
+                           setAlbumTracks(files.map((f: any) => ({ file: f as File, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
                         } else {
                            const file = files[0] as File;
                            setSongFile(file);
@@ -1730,7 +1900,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                             </div>
                             <div>
                                <h3 className="font-studio text-2xl md:text-3xl text-white uppercase tracking-tight mb-2">Drop your audio here</h3>
-                               <p className="text-text-muted text-[13px] md:text-sm font-sans">MP3, WAV, FLAC · Max 50MB</p>
+                               <p className="text-text-muted text-[13px] md:text-sm font-sans">MP3, WAV, FLAC · Max 50MB · Auto-compressed on upload</p>
                             </div>
                             <button type="button" className="px-8 py-3 rounded-full bg-smash-orange text-black font-display font-black uppercase text-xs tracking-widest hover:brightness-110 shadow-[0_0_20px_rgba(255,95,0,0.3)] transition-all pointer-events-auto">
                                Browse Files
@@ -1740,7 +1910,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        <input id="audio-file-wizard" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e => {
                          if (mode === 'album') {
                            const files = Array.from(e.target.files || []);
-                           setAlbumTracks(files.map(f => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
+                           setAlbumTracks(files.map((f: any) => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
                          } else {
                            const file = e.target.files?.[0];
                            if (!file) return;
