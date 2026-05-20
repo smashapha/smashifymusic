@@ -378,7 +378,7 @@ const Admin = () => {
   const fetchArtists = async () => {
     const { data: artistsData, error } = await supabase
       .from('profiles')
-      .select('*, artist_applications:artist_applications!profile_id(email, phone)')
+      .select('*')
       .eq('user_type', 'artist')
       .eq('approved', true)
       .order('created_at', { ascending: false });
@@ -416,6 +416,7 @@ const Admin = () => {
         id_document_url: application.id_document_url,
         selfie_url: application.selfie_url,
         id_type: application.id_type,
+        email: application.email,
         agent_reference: application.agent_reference || application.referral_code || null
       }).eq('id', application.profile_id);
       
@@ -935,7 +936,7 @@ const Admin = () => {
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-white/5 text-sm">
-                         {artists.filter(a => a.stage_name?.toLowerCase().includes(searchQuery.toLowerCase()) || (a.email || a.artist_applications?.[0]?.email)?.toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
+                         {artists.filter(a => a.stage_name?.toLowerCase().includes(searchQuery.toLowerCase()) || a.email?.toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
                            <tr key={a.id} className="hover:bg-white/[0.02] transition-colors group">
                              <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
@@ -947,8 +948,11 @@ const Admin = () => {
                                       {a.stage_name} 
                                       {(a.verified || a.is_verified) && <ShieldCheck size={14} className="text-smash-cyan" />}
                                     </p>
-                                    <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest opacity-60">
+                                    <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest opacity-60 mb-1">
                                       {a.city} • {a.genre}
+                                    </p>
+                                    <p className="text-[10px] text-smash-purple font-medium tracking-tight truncate max-w-[140px] lowercase underline opacity-80">
+                                      {a.email}
                                     </p>
                                   </div>
                                 </div>
@@ -1707,8 +1711,8 @@ const Admin = () => {
                       </div>
 
                       <h4 className="font-bold text-sm text-white mb-2">Platform Identity</h4>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Email Address</span><span className="font-semibold text-white">{selectedArtist.email || selectedArtist.artist_applications?.[0]?.email || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Phone / Mobile Money</span><span className="font-semibold text-white">{selectedArtist.phone || selectedArtist.artist_applications?.[0]?.phone || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Email Address</span><span className="font-semibold text-white">{selectedArtist.email || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Phone / Mobile Money</span><span className="font-semibold text-white">{selectedArtist.phone || 'N/A'}</span></div>
 
                       <h4 className="font-bold text-sm text-white mb-2 mt-8">KYC Information</h4>
                       <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Name</span><span className="font-semibold text-white">{selectedArtist.full_name || selectedArtist.name || 'N/A'}</span></div>
