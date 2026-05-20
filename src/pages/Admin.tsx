@@ -251,6 +251,10 @@ const Admin = () => {
     if (!reason.trim()) {
       return toast.error('Please provide a rejection reason');
     }
+    
+    const payout = payoutRequests.find(p => p.id === payoutId);
+    if (!payout) return toast.error('Payout not found');
+
     setProcessingId(payoutId);
     try {
       const { error } = await supabase
@@ -263,7 +267,24 @@ const Admin = () => {
         .eq('id', payoutId);
 
       if (error) throw error;
-      // Wallet refund is handled by the DB trigger
+      
+      // Manually refund the wallet balance
+      if (payout.artist_id && payout.amount) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('id', payout.artist_id)
+          .single();
+          
+        if (profile) {
+          const newBalance = Number(profile.wallet_balance || 0) + Number(payout.amount);
+          await supabase
+            .from('profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('id', payout.artist_id);
+        }
+      }
+
       toast.success('Rejected. Artist wallet has been refunded.');
       fetchPayoutRequests();
     } catch (err: any) {
