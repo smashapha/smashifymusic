@@ -4,7 +4,7 @@ import {
   ShieldCheck, CircleCheck, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
-  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown
+  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -15,6 +15,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts'>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -579,10 +580,13 @@ const Admin = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 bg-[#0c0c10]/80 backdrop-blur-xl border-b border-white/5 px-8 flex items-center justify-between shrink-0 z-30">
-          <div className="flex items-center gap-4">
+        <header className="h-16 bg-[#0c0c10]/80 backdrop-blur-xl border-b border-white/5 px-4 lg:px-8 flex items-center justify-between shrink-0 z-30">
+          <div className="flex items-center gap-2 lg:gap-4">
              <button onClick={() => navigate('/')} className="p-2 -ml-2 text-smash-gray hover:text-white transition-colors lg:hidden">
-                <ArrowLeft size={20} />
+                <ArrowLeft size={18} />
+             </button>
+             <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-smash-gray hover:text-white transition-colors lg:hidden">
+                <Menu size={18} />
              </button>
              <h2 className="text-sm font-studio font-black uppercase tracking-widest italic">{activeTab.replace('-', ' ')}</h2>
           </div>
@@ -598,9 +602,9 @@ const Admin = () => {
                   className="w-full bg-[#16161e] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[11px] font-bold focus:outline-none focus:border-smash-purple transition-all"
                 />
              </div>
-             <div className="h-4 w-px bg-white/10 mx-2" />
+             <div className="hidden md:block h-4 w-px bg-white/10 mx-2" />
              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-smash-purple/10 flex items-center justify-center text-smash-purple font-black text-xs">{userProfile?.full_name?.[0]}</div>
+                <div className="w-8 h-8 rounded-lg bg-[#4c9aff]/10 flex items-center justify-center text-[#4c9aff] font-black text-xs">{userProfile?.full_name?.[0] || 'A'}</div>
                 <div className="hidden sm:block">
                    <p className="text-[10px] font-black uppercase tracking-tighter leading-none">{userProfile?.full_name?.split(' ')[0]}</p>
                    <p className="text-[8px] text-smash-gray uppercase font-bold tracking-widest mt-0.5">Administrator</p>
@@ -608,6 +612,59 @@ const Admin = () => {
              </div>
           </div>
         </header>
+
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="w-64 h-full bg-[#0c0c10] border-r border-white/5 flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-smash-purple flex items-center justify-center text-white shrink-0">
+                       <ShieldCheck size={20} />
+                    </div>
+                    <div className="leading-tight">
+                      <h1 className="font-studio font-black text-sm uppercase tracking-tighter">Admin <span className="text-white/40">HQ</span></h1>
+                    </div>
+                  </div>
+                  <button onClick={() => setMobileMenuOpen(false)} className="text-smash-gray hover:text-white">
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto no-scrollbar">
+                  <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <div className="h-px bg-white/5 my-4 mx-3" />
+                  <p className="text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3">Governance</p>
+                  <AdminSidebarItem id="applications" label="Applicants" icon={CircleCheck} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={applications.length} />
+                  <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSongs.length} />
+                  <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSnippets.length} />
+                  <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={payoutRequests.filter(p => p.status === 'pending').length} />
+                  
+                  <div className="h-px bg-white/5 my-4 mx-3" />
+                  <p className="text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3">Directory</p>
+                  <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                </nav>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar">
            <div className="max-w-7xl mx-auto space-y-12">
