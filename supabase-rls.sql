@@ -351,7 +351,7 @@ ALTER TABLE songs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "songs_select_public" ON songs;
 CREATE POLICY "songs_select_public" 
 ON songs FOR SELECT 
-USING (approved = true OR auth.uid() = artist_id OR is_admin(auth.uid()));
+USING ((approved = true AND (release_date IS NULL OR release_date::date <= now()::date)) OR auth.uid() = artist_id OR is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "songs_insert_artist" ON songs;
 CREATE POLICY "songs_insert_artist" 

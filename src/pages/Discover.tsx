@@ -62,10 +62,12 @@ const Discover: React.FC = () => {
 
   const fetchRecommendations = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data: allSongs } = await supabase
         .from('songs')
         .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
         .eq('approved', true)
+        .lte('release_date', today)
         .limit(100);
       
       if (allSongs) {
@@ -106,10 +108,12 @@ const Discover: React.FC = () => {
   }, [searchQuery, selectedGenre]);
 
   const fetchTrending = async () => {
+    const today = new Date().toISOString().split('T')[0];
     const { data } = await supabase
       .from('songs')
       .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
       .eq('approved', true)
+      .lte('release_date', today)
       .limit(6);
     if (data) {
         const baseSongs = data.map(s => ({
@@ -128,10 +132,12 @@ const Discover: React.FC = () => {
   const handleSearch = async () => {
     setLoading(true);
     try {
+      const today = new Date().toISOString().split('T')[0];
       let songsQuery = supabase
         .from('songs')
         .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
-        .eq('approved', true);
+        .eq('approved', true)
+        .lte('release_date', today);
 
       if (searchQuery) {
         songsQuery = songsQuery.ilike('title', `%${searchQuery}%`);

@@ -19,6 +19,7 @@ const Home: React.FC = () => {
   const [forSaleSongs, setForSaleSongs] = useState<Song[]>([]);
   const [recentSongs, setRecentSongs] = useState<Song[]>([]);
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
+  const [albums, setAlbums] = useState<Album[]>([]);
   const [aiPicks, setAiPicks] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,11 +63,13 @@ const Home: React.FC = () => {
   const performSearch = async () => {
     setIsSearching(true);
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data: songsData } = await supabase
         .from('songs')
         .select('*, profiles:artist_id(*)')
         .ilike('title', `%${searchQuery}%`)
         .eq('approved', true)
+        .lte('release_date', today)
         .limit(5);
 
       const { data: artistsData } = await supabase
@@ -98,6 +101,7 @@ const Home: React.FC = () => {
 
   const fetchData = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data: songsData, error: songsError } = await supabase
         .from('songs')
         .select(`
@@ -109,7 +113,8 @@ const Home: React.FC = () => {
             verified
           )
         `)
-        .eq('approved', true);
+        .eq('approved', true)
+        .lte('release_date', today);
 
       if (songsError) throw songsError;
 
@@ -138,6 +143,14 @@ const Home: React.FC = () => {
       if (!artistsError) {
         setTopArtists(artistsData as any);
       }
+
+      const { data: albumsData } = await supabase
+        .from('albums')
+        .select('*, profiles:artist_id(full_name, stage_name)')
+        .limit(10)
+        .order('created_at', { ascending: false });
+
+      if (albumsData) setAlbums(albumsData as any);
 
       if (userProfile) {
         const { data: recentData } = await supabase
@@ -451,6 +464,26 @@ const Home: React.FC = () => {
               <SongCard key={`new-${song.id}-${i}`} song={song} queue={newReleases} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
             )) : (
               <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No new releases yet</div>
+            )}
+         </div>
+      </HomeSection>
+
+      <HomeSection title="Albums & EPs" subtitle="Dive deeper into complete projects.">
+         <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            {albums.length > 0 ? albums.map((al: any) => (
+               <div key={al.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
+                  <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
+                     <img src={al.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{al.title}</h4>
+                  <div className="flex items-center gap-1.5 opacity-80">
+                     <span className="font-display font-black text-[9px] uppercase tracking-widest text-text-muted">{al.release_year} • Album</span>
+                  </div>
+                  <p className="font-sans text-[12px] text-text-muted truncate mt-0.5">{al.profiles?.stage_name || al.profiles?.full_name}</p>
+               </div>
+            )) : (
+              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No albums yet</div>
             )}
          </div>
       </HomeSection>

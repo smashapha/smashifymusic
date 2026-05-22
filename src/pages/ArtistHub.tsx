@@ -1393,7 +1393,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [audioFileSize, setAudioFileSize] = useState<string>('');
 
   const [songFile, setSongFile] = useState<File | null>(null);
-  const [albumTracks, setAlbumTracks] = useState<{file: File, title: string, price: number}[]>([]);
+  const [albumTracks, setAlbumTracks] = useState<{file: File, title: string, price: number, lyrics?: string, is_explicit?: boolean, featured_artist?: string}[]>([]);
   const [albumPricingMode, setAlbumPricingMode] = useState<'album' | 'individual'>('album');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   
@@ -1694,11 +1694,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           artist_id: userProfile?.id,
           audio_url: audioUrl,
           cover_url: coverUrl,
-          is_explicit: isExplicit,
+          is_explicit: track.is_explicit || false,
           release_date: releaseDate,
-          featured_artist: featuredArtist,
+          featured_artist: track.featured_artist || '',
           language: language,
-          lyrics: lyrics, // same lyrics? probably empty if they bulk upload, but fine
+          lyrics: track.lyrics || '',
           genre: genre,
           album_id: newAlbum.id,
           price: trackPrice,
@@ -1829,10 +1829,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         if (files.length === 0) return toast.error('Please drop valid audio files');
                         
                         if (mode === 'album') {
-                           setAlbumTracks(files.map((f: any) => ({ file: f as File, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
+                           setAlbumTracks(files.map((f: any) => ({ file: f as File, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500, lyrics: '', is_explicit: false, featured_artist: '' })));
                         } else {
                            const file = files[0] as File;
                            setSongFile(file);
+                           setTitle(file.name.replace(/\.[^/.]+$/, ""));
                            const audio = new Audio();
                            audio.src = URL.createObjectURL(file);
                            setAudioPreviewUrl(audio.src);
@@ -1917,11 +1918,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        <input id="audio-file-wizard" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e => {
                          if (mode === 'album') {
                            const files = Array.from(e.target.files || []);
-                           setAlbumTracks(files.map((f: any) => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500 })));
+                           setAlbumTracks(files.map((f: any) => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500, lyrics: '', is_explicit: false, featured_artist: '' })));
                          } else {
                            const file = e.target.files?.[0];
                            if (!file) return;
                            setSongFile(file);
+                           setTitle(file.name.replace(/\.[^/.]+$/, ""));
                            const audio = new Audio();
                            audio.src = URL.createObjectURL(file);
                            setAudioPreviewUrl(audio.src);
@@ -2054,7 +2056,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              </div>
                            )}
 
-                           <div className="flex items-center justify-between p-4 bg-bg-elevated border border-white/5 rounded-2xl">
+                           {mode !== 'album' && <div className="flex items-center justify-between p-4 bg-bg-elevated border border-white/5 rounded-2xl">
                               <div>
                                  <div className="text-[13px] font-display font-bold text-white mb-1">🔞 Contains explicit content</div>
                                  <div className="text-[11px] text-text-muted font-sans">Will show a warning badge on the track</div>
@@ -2062,7 +2064,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                               <button type="button" onClick={() => setIsExplicit(!isExplicit)} className={`w-12 h-6 rounded-full transition-all relative ${isExplicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
                                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${isExplicit ? 'right-1' : 'left-1'}`} />
                               </button>
-                           </div>
+                           </div>}
 
                            {mode !== 'snippet' && (
                              <div className="pt-4 border-t border-white/5">
@@ -2084,6 +2086,45 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  </div>
                                )}
                              </div>
+                           )}
+
+                           {mode === 'album' && (
+                              <div className="pt-4 border-t border-white/5 space-y-4">
+                                 {isForSale && (
+                                   <div className="space-y-4">
+                                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Pricing Mode</label>
+                                      <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
+                                         <button type="button" onClick={() => setAlbumPricingMode('album')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${albumPricingMode === 'album' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Single Price for full Album</button>
+                                         <button type="button" onClick={() => setAlbumPricingMode('individual')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${albumPricingMode === 'individual' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Set Track Prices</button>
+                                      </div>
+                                   </div>
+                                 )}
+
+                                 <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Individual Tracks Metadata</label>
+                                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                   {albumTracks.map((track, idx) => (
+                                      <div key={idx} className="bg-bg-elevated p-4 rounded-2xl border border-white/5">
+                                         <input required placeholder="Track Title" value={track.title} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].title = e.target.value; setAlbumTracks(newTracks); }} className="w-full bg-transparent font-sans font-bold text-[14px] text-white mb-3 focus:outline-none border-b border-transparent focus:border-white/20 pb-1 px-1 transition-all" />
+                                         <div className="space-y-3">
+                                           {isForSale && albumPricingMode === 'individual' && (
+                                              <div className="relative">
+                                                <input type="number" required value={track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = Number(e.target.value); setAlbumTracks(newTracks); }} min="100" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
+                                              </div>
+                                           )}
+                                           <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].featured_artist = e.target.value; setAlbumTracks(newTracks); }} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple" />
+                                           <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].lyrics = e.target.value; setAlbumTracks(newTracks); }} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple resize-y max-h-[100px]" />
+                                           <div className="flex items-center justify-between pt-1">
+                                              <span className="text-[11px] font-sans text-text-muted">🔞 Contains explicit content</span>
+                                              <button type="button" onClick={() => { const newTracks = [...albumTracks]; newTracks[idx].is_explicit = !newTracks[idx].is_explicit; setAlbumTracks(newTracks); }} className={`w-10 h-5 rounded-full transition-all relative ${track.is_explicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
+                                                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${track.is_explicit ? 'right-0.5' : 'left-0.5'}`} />
+                                              </button>
+                                           </div>
+                                         </div>
+                                      </div>
+                                   ))}
+                                 </div>
+                              </div>
                            )}
                         </div>
                      </div>
@@ -2141,21 +2182,21 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                               <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Genre:</strong> {genre}</div>
                            </div>
 
-                           <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
+                           {mode !== 'album' && <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
                               {lyrics ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <AlertTriangle size={20} className="text-smash-orange shrink-0" />}
                               <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Lyrics:</strong> {lyrics ? 'Added' : 'Not added (optional but helps fans)'}</div>
-                           </div>
+                           </div>}
                            
-                           <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
+                           {mode !== 'album' && <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
                               {featuredArtist ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <div className="w-5 text-center text-text-muted shrink-0">—</div>}
                               <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Featured:</strong> {featuredArtist || 'None'}</div>
-                           </div>
+                           </div>}
                         </div>
 
-                        <div>
+                        {mode !== 'album' && <div>
                            <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">📝 Lyrics (optional — helps fans sing along)</label>
                            <textarea value={lyrics} onChange={e=>setLyrics(e.target.value)} rows={6} placeholder="Paste your lyrics here..." className="w-full min-h-[120px] bg-bg-elevated border border-white/5 rounded-2xl px-6 py-4 text-[14px] font-sans focus:border-smash-purple transition-all outline-none text-white resize-y" />
-                        </div>
+                        </div>}
 
                         <div className="bg-smash-purple/10 border border-smash-purple/20 rounded-2xl p-6">
                            <h4 className="text-[12px] font-display font-black text-smash-purple uppercase tracking-widest mb-3">After Publishing</h4>

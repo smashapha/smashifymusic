@@ -149,11 +149,13 @@ const ArtistProfile: React.FC = () => {
             checkSubscription();
             fetchTopSupporters();
 
+            const today = new Date().toISOString().split('T')[0];
             const { data: songsData, error: songsError } = await supabase
                .from('songs')
                .select('*')
                .eq('artist_id', id)
                .eq('approved', true)
+               .lte('release_date', today)
                .order('created_at', { ascending: false });
 
             if (songsError) throw songsError;
@@ -462,7 +464,7 @@ const ArtistProfile: React.FC = () => {
                   {activeTab === 'albums' && (
                      <motion.div key="albums" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {albums.map((al) => (
-                           <div key={al.id} className="group cursor-pointer flex flex-col" onClick={() => navigate(`/discover?album=${al.id}`)}>
+                           <div key={al.id} className="group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
                               <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
                                  <img src={al.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />

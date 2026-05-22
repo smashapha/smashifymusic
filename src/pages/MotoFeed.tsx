@@ -733,10 +733,13 @@ const MotoFeed: React.FC = () => {
          ? await supabase.from('followers').select('artist_id').eq('follower_id', userProfile.id) : { data: [] };
       const followedIds = followed?.map(f => f.artist_id) || [];
 
+      const today = new Date().toISOString().split('T')[0];
+
       // 1. Featured/Trending
       const { data: featured } = await supabase.from('songs')
          .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
          .eq('approved', true)
+         .lte('release_date', today)
          .order('plays', { ascending: false }).limit(10);
 
       // 2. Artists followed
@@ -744,7 +747,7 @@ const MotoFeed: React.FC = () => {
       if (followedIds.length > 0) {
          const { data: fs } = await supabase.from('songs')
             .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
-            .eq('approved', true).in('artist_id', followedIds).limit(10);
+            .eq('approved', true).lte('release_date', today).in('artist_id', followedIds).limit(10);
          if (fs) followedSongs = fs;
       }
 
@@ -753,7 +756,7 @@ const MotoFeed: React.FC = () => {
       if (userProfile?.city) {
          const { data: rs } = await supabase.from('songs')
             .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
-            .eq('approved', true).eq('region', userProfile.city).limit(10);
+            .eq('approved', true).lte('release_date', today).eq('region', userProfile.city).limit(10);
          if (rs) regionSongs = rs;
       }
 

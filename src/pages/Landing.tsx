@@ -158,10 +158,11 @@ const Landing: React.FC = () => {
       const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('approved', true).limit(12);
       setArtists(artistsData || []);
 
-      const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
+      const today = new Date().toISOString().split('T')[0];
+      const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTopSongs(topSongsData || []);
 
-      const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).order('plays', { ascending: false }).limit(10);
+      const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTrendingSongs(trendingData || []);
 
       // Get real platform stats

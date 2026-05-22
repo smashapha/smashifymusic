@@ -438,10 +438,24 @@ const Admin = () => {
   };
 
   const approveSong = async (songId: string) => {
-    const { error } = await supabase.from('songs').update({ approved: true }).eq('id', songId);
+    // First figure out if the song belongs to an album
+    let albumIdToApprove = null;
+    const { data: song } = await supabase.from('songs').select('album_id').eq('id', songId).single();
+    if (song?.album_id) {
+       albumIdToApprove = song.album_id;
+    }
+
+    let query = supabase.from('songs').update({ approved: true });
+    if (albumIdToApprove) {
+       query = query.eq('album_id', albumIdToApprove);
+    } else {
+       query = query.eq('id', songId);
+    }
+    
+    const { error } = await query;
     if (error) toast.error(error.message);
     else {
-      toast.success('Song approved and is now live!');
+      toast.success(albumIdToApprove ? 'Album and all its songs approved and are now live!' : 'Song approved and is now live!');
       fetchPendingSongs();
       fetchArtists();
     }

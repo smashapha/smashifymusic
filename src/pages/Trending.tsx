@@ -37,10 +37,12 @@ const Trending: React.FC = () => {
       try {
          const limits = getListenerLimits(userProfile);
          
+         const today = new Date().toISOString().split('T')[0];
          const { data, error } = await supabase
             .from('songs')
             .select('*, profiles!artist_id(full_name, stage_name)')
             .eq('approved', true)
+            .lte('release_date', today)
             .order('plays', { ascending: false })
             .limit(20);
          

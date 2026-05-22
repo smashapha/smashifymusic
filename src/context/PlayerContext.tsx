@@ -526,10 +526,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const handleRadioNext = async () => {
       try {
         // Fetch some available songs to pick from
+        const today = new Date().toISOString().split('T')[0];
         const { data } = await supabase
           .from('songs')
           .select('*, profiles!artist_id(full_name, stage_name)')
           .eq('approved', true)
+          .lte('release_date', today)
           .limit(50);
         
         if (data) {
