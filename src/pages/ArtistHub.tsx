@@ -2081,7 +2081,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                </div>
                                {(isForSale && (mode !== 'album' || albumPricingMode === 'album')) && (
                                  <div className="relative">
-                                    <input type="number" required={isForSale} value={price} onChange={e => setPrice(Number(e.target.value))} min="100" step="500" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
+                                    <input type="number" required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
                                  </div>
                                )}
@@ -2108,7 +2108,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          <div className="space-y-3">
                                            {isForSale && albumPricingMode === 'individual' && (
                                               <div className="relative">
-                                                <input type="number" required value={track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = Number(e.target.value); setAlbumTracks(newTracks); }} min="100" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
+                                                <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
                                               </div>
                                            )}

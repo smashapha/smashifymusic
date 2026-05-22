@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Song, Artist } from '../types';
+import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
 import { useNavigate } from 'react-router-dom';
@@ -144,13 +144,29 @@ const Home: React.FC = () => {
         setTopArtists(artistsData as any);
       }
 
-      const { data: albumsData } = await supabase
-        .from('albums')
-        .select('*, profiles:artist_id(full_name, stage_name)')
-        .limit(10)
-        .order('created_at', { ascending: false });
+      const { data: songsWithAlbums } = await supabase
+        .from('songs')
+        .select('album_id')
+        .eq('approved', true)
+        .lte('release_date', today)
+        .not('album_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      if (albumsData) setAlbums(albumsData as any);
+      const validAlbumIds = Array.from(new Set((songsWithAlbums || []).map(s => s.album_id)));
+
+      if (validAlbumIds.length > 0) {
+        const { data: albumsData } = await supabase
+          .from('albums')
+          .select('*, profiles:artist_id(full_name, stage_name)')
+          .in('id', validAlbumIds)
+          .limit(10)
+          .order('created_at', { ascending: false });
+
+        setAlbums((albumsData || []) as any);
+      } else {
+        setAlbums([]);
+      }
 
       if (userProfile) {
         const { data: recentData } = await supabase

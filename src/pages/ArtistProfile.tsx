@@ -160,13 +160,17 @@ const ArtistProfile: React.FC = () => {
 
             if (songsError) throw songsError;
 
-            const { data: albumsData } = await supabase
-               .from('albums')
-               .select('*')
-               .eq('artist_id', id)
-               .order('release_year', { ascending: false });
-
-            setAlbums(albumsData || []);
+            const validAlbumIds = Array.from(new Set((songsData || []).map(s => s.album_id).filter(Boolean)));
+            if (validAlbumIds.length > 0) {
+               const { data: albumsData } = await supabase
+                  .from('albums')
+                  .select('*')
+                  .in('id', validAlbumIds)
+                  .order('release_year', { ascending: false });
+               setAlbums(albumsData || []);
+            } else {
+               setAlbums([]);
+            }
 
             const formattedSongs = (songsData || []).map((s: any) => ({
                ...s,

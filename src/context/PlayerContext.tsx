@@ -329,11 +329,82 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeOutInterval = useRef<NodeJS.Timeout | null>(null);
+  const fadeInInterval = useRef<NodeJS.Timeout | null>(null);
+  const crossfadeScheduled = useRef(false);
   
   // Lazy initialize audio element on first render in browser
   if (!audioRef.current && typeof document !== 'undefined') {
     audioRef.current = document.createElement('audio');
+    secondaryAudioRef.current = document.createElement('audio');
   }
+
+  const startCrossfade = (oldAudio: HTMLAudioElement, newAudio: HTMLAudioElement, targetVolume: number) => {
+    if (fadeOutInterval.current) clearInterval(fadeOutInterval.current);
+    if (fadeInInterval.current) clearInterval(fadeInInterval.current);
+
+    const fadeStep = 50; 
+    const fadeDuration = 3000;
+    const volumeStep = targetVolume / (fadeDuration / fadeStep);
+
+    let oldVol = oldAudio.volume;
+
+    // If new audio was idle (paused or no source), start it at 0 to avoid popping on first play
+    if (newAudio.paused) {
+      try { newAudio.volume = 0; } catch(e){}
+    }
+    let newVol = newAudio.volume;
+
+    fadeOutInterval.current = setInterval(() => {
+      if (oldVol > volumeStep) {
+        oldVol -= volumeStep;
+        try { oldAudio.volume = oldVol; } catch(e){}
+      } else {
+        try { oldAudio.volume = 0; oldAudio.pause(); oldAudio.src = ''; } catch(e){}
+        if (fadeOutInterval.current) clearInterval(fadeOutInterval.current);
+        fadeOutInterval.current = null;
+      }
+    }, fadeStep);
+
+    fadeInInterval.current = setInterval(() => {
+      if (newVol < targetVolume - volumeStep) {
+        newVol += volumeStep;
+        try { newAudio.volume = newVol; } catch(e){}
+      } else {
+        try { newAudio.volume = targetVolume; } catch(e){}
+        if (fadeInInterval.current) clearInterval(fadeInInterval.current);
+        fadeInInterval.current = null;
+      }
+    }, fadeStep);
+  };
+
+  const transitionToSong = (song: Song) => {
+    if (currentSong && isPlaying && currentSong.id !== song.id && audioRef.current && secondaryAudioRef.current && !adPlaying) {
+      // Crossfade
+      const oldAudio = audioRef.current;
+      audioRef.current = secondaryAudioRef.current;
+      secondaryAudioRef.current = oldAudio;
+      
+      startCrossfade(secondaryAudioRef.current, audioRef.current, volume);
+    } else {
+      if (fadeOutInterval.current) clearInterval(fadeOutInterval.current);
+      if (fadeInInterval.current) clearInterval(fadeInInterval.current);
+      if (audioRef.current) audioRef.current.volume = volume;
+    }
+
+    crossfadeScheduled.current = false;
+    lastIncrementedSongId.current = null;
+    setCurrentSong(song);
+    setIsPlaying(true);
+    
+    if (audioRef.current) {
+       const srcToUse = dataSaver && song.snippet_url ? song.snippet_url : song.audio_url;
+       audioRef.current.src = srcToUse;
+       audioRef.current.load();
+    }
+  };
+  
   const audio = audioRef.current as HTMLAudioElement;
 
   useEffect(() => {
@@ -361,11 +432,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       audio.load();
     }
 
-    audio.volume = volume;
+    if (!fadeInInterval.current) {
+      audio.volume = volume;
+    }
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       
+      if (!adPlaying && audio.duration > 3.0 && (audio.duration - audio.currentTime <= 3.0) && !crossfadeScheduled.current) {
+        crossfadeScheduled.current = true;
+        handleEnded();
+        return;
+      }
+
       if (adPlaying) {
         // Ads are unskippable in the new system
         if (audio.currentTime >= 30) {
@@ -512,12 +591,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           genre: 'AD'
         } as any;
 
-        setCurrentSong(adSong);
-        setIsPlaying(true);
-        if (audioRef.current) {
-            audioRef.current.src = ad.audio_url;
-            audioRef.current.load();
-        }
+        transitionToSong(adSong);
       } catch (err) {
         nextTrack();
       }
@@ -670,13 +744,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (currentSong?.id === song.id) {
       togglePlay();
     } else {
-      lastIncrementedSongId.current = null; // Reset for new song
-      setCurrentSong(song);
-      setIsPlaying(true);
-      if (audioRef.current) {
-        audioRef.current.src = song.audio_url;
-        audioRef.current.load();
-      }
+      transitionToSong(song);
     }
   };
 
@@ -685,13 +753,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setQueue(songs);
     const songToPlay = songs[startIndex] || songs[0];
     
-    lastIncrementedSongId.current = null;
-    setCurrentSong(songToPlay);
-    setIsPlaying(true);
-    if (audioRef.current) {
-      audioRef.current.src = songToPlay.audio_url;
-      audioRef.current.load();
-    }
+    transitionToSong(songToPlay);
   };
 
   const togglePlay = () => {
