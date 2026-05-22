@@ -155,8 +155,8 @@ BEGIN
   SELECT subscription_tier INTO v_tier FROM profiles WHERE id = NEW.artist_id;
   
   -- Determine limit
-  IF LOWER(v_tier) = 'standard' THEN v_limit := 20;
-  ELSIF LOWER(v_tier) = 'elite' THEN v_limit := 9999;
+  IF LOWER(v_tier) = 'standard' THEN v_limit := 999999;
+  ELSIF LOWER(v_tier) = 'elite' THEN v_limit := 999999;
   ELSE v_limit := 3; -- Free/Rising Star
   END IF;
 

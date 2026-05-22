@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart } from 'lucide-react';
+import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Song, Artist } from '../types';
 import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
+  const { playSong, playQueue } = usePlayer();
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [newReleases, setNewReleases] = useState<Song[]>([]);
   const [forSaleSongs, setForSaleSongs] = useState<Song[]>([]);
@@ -372,6 +374,44 @@ const Home: React.FC = () => {
               </div>
            </div>
         </motion.section>
+      )}
+      
+      {/* Quick Picks */}
+      {trendingSongs.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <p className="text-[13px] font-display font-medium text-text-muted mb-1">Start radio from a song</p>
+              <h2 className="text-[26px] font-studio font-bold tracking-tight text-white leading-none">Quick picks</h2>
+            </div>
+            <button onClick={() => playQueue(trendingSongs)} className="px-4 py-1.5 border border-white/20 text-white font-display font-semibold text-[12px] rounded-full hover:bg-white/10 transition-all flex items-center gap-2">
+               <Play size={12} className="fill-white" /> Play all
+            </button>
+          </div>
+          
+          <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2 overflow-x-auto snap-x no-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0 auto-cols-[85vw] md:auto-cols-[340px]">
+            {trendingSongs.map((song) => (
+              <div key={`quick-${song.id}`} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-white/5 snap-start group cursor-pointer transition-colors" onClick={() => playSong(song)}>
+                <div className="relative w-[48px] h-[48px] md:w-[54px] md:h-[54px] rounded-[6px] overflow-hidden flex-shrink-0">
+                   <img src={song.cover_url} className="w-full h-full object-cover" />
+                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play size={20} className="fill-white text-white ml-0.5" />
+                   </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[14px] md:text-[15px] font-sans font-bold text-white truncate mb-0.5 group-hover:text-smash-orange transition-colors">{song.title}</h4>
+                  <div className="flex items-center gap-1.5">
+                    {(song as any).is_explicit && <span className="px-1 bg-white/20 text-white rounded-[2px] text-[8px] font-bold">E</span>}
+                    <span className="text-[13px] font-sans text-text-muted truncate">{song.artist_name}</span>
+                  </div>
+                </div>
+                <button className="p-2 text-white/50 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); }}>
+                  <MoreVertical size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Sections */}
