@@ -532,43 +532,31 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
     setRequesting(true);
     try {
-      // 1. Deduct wallet immediately to prevent double requests
-      const { error: walletErr } = await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: currentBalance - withdrawalAmount
+      const session = (await supabase.auth.getSession()).data.session;
+      const response = await fetch('/api/functions/v1/process-payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({
+          amount: withdrawalAmount,
+          phone,
+          network: selectedNetwork
         })
-        .eq('id', userProfile.id);
+      });
 
-      if (walletErr) throw walletErr;
-
-      // 2. Insert payout request
-      const { error: reqErr } = await supabase
-        .from('payout_requests')
-        .insert({
-          artist_id: userProfile.id,
-          requested_amount: withdrawalAmount,
-          phone: phone,
-          network: selectedNetwork,
-          status: 'pending'
-        });
-
-      if (reqErr) {
-        // Refund wallet if insert fails
-        await supabase
-          .from('profiles')
-          .update({ wallet_balance: currentBalance })
-          .eq('id', userProfile.id);
-        throw reqErr;
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Withdrawal request failed');
       }
 
       toast.success(
-        'Withdrawal requested! We will send your money ' +
-        'within 24 hours to your ' + selectedNetwork + ' number.'
+        data.message || 'Withdrawal requested! We will send your money within 24 hours.'
       );
       setWithdrawalAmount(0);
       setShowWithdrawForm(false);
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => window.location.reload(), 2000);
     } catch (err: any) {
       console.error('Withdrawal error:', err);
       toast.error(err.message || 'Withdrawal request failed');

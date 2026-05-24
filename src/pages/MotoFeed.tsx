@@ -365,9 +365,10 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                      onClick={() => {
                         if (!userProfile) return toast.error('Sign in to tip artists');
                         sendTip({ 
-                           artist: song.profiles as any, 
+                           artist: { id: song.artist_id, ...song.profiles } as any, 
                            fan: userProfile, 
-                           amount: tipAmount
+                           amount: tipAmount,
+                           anonymous: isAnonymous
                         });
                      }}
                      className="w-full py-4 bg-smash-cyan text-black font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
@@ -415,7 +416,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                         onClick={() => {
                            if (!userProfile) return toast.error('Sign in to subscribe');
                            startFanSubscription({ 
-                              artist: song.profiles as any, 
+                              artist: { id: song.artist_id, ...song.profiles } as any, 
                               fan: userProfile
                            });
                         }}

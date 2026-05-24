@@ -586,14 +586,14 @@ async function startServer() {
       if (pFee > 0) {
         try {
           const { data: adminUser } = await supabaseAdmin
-            .from('user_profiles')
-            .select('id')
-            .eq('role', 'admin')
+            .from('profiles')
+            .select('id, wallet_balance')
+            .eq('is_admin', true)
             .limit(1)
             .maybeSingle();
             
           if (adminUser) {
-            await supabaseAdmin.rpc('increment_wallet_balance', { p_id: adminUser.id, amount: pFee });
+             await supabaseAdmin.from('profiles').update({ wallet_balance: (adminUser.wallet_balance || 0) + pFee }).eq('id', adminUser.id);
           }
         } catch (adminErr) {
           console.error('[WEBHOOK] Admin wallet update error:', adminErr);
