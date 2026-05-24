@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Smashify 🎵
 
-# Run and deploy your AI Studio app
+Welcome to **Smashify**! A premium, next-generation music streaming platform designed to empower artists and connect listeners through seamless audio experiences.
 
-This contains everything you need to run your app locally.
+## Features ✨
 
-View your app in AI Studio: https://ai.studio/apps/44ef012b-d3da-473c-9c43-98e4bb0dcb1e
+### For Listeners
+- **Discover & Stream**: Access a massive catalog of high-quality tracks.
+- **Premium Subscriptions**: Upgrade to Listener Premium or Family tiers for an ad-free, unparalleled listening experience.
+- **Support Creators**: Directly purchase tracks and tip your favorite artists.
 
-## Run Locally
+### For Artists
+- **Artist Hub**: A comprehensive dashboard to upload tracks, manage releases, and engage with your fanbase.
+- **Monetization**: Earn through streams, direct purchases, tips, and tier upgrades (Rising Star, Pro, Icon).
+- **Analytics**: Deep insights into your listener demographics and play counts.
 
-**Prerequisites:**  Node.js
+## Tech Stack 🚀
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Motion (Animations), Lucide React (Icons).
+- **Backend & Database**: Supabase (PostgreSQL, Row Level Security, Edge Functions).
+- **Routing**: React Router v7.
 
+## Launch Details
+Built efficiently with scalable infrastructure to allow for global community streaming and monetization out of the box.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+*Crafted for the love of music.*
