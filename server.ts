@@ -533,7 +533,8 @@ async function startServer() {
 
       const type = (transaction.metadata?.payment_type || tx_ref.split('-')[1]).toUpperCase();
       const metadata = transaction.metadata || {};
-      const { userId, artistId, songId, anonymous } = metadata;
+      const userId = metadata.userId || transaction.fan_id;
+      const { artistId, songId, anonymous } = metadata;
 
       console.log(`[WEBHOOK] Payload received:`, JSON.stringify(payload));
       console.log(`[WEBHOOK] Processing type: ${type} for ref: ${tx_ref}, userId: ${userId}, artistId: ${artistId}`);

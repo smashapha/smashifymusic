@@ -127,7 +127,8 @@ serve(async (req) => {
     }
 
     // 4. Process Successful Payment based on Type
-    const { userId, artistId, songId, plan, tier, plays, anonymous } = transaction.metadata || {}
+    const { artistId, songId, plan, tier, plays, anonymous } = transaction.metadata || {}
+    const userId = transaction.metadata?.userId || transaction.fan_id
     const netAmount = Number(transaction.net_amount)
     const grossAmount = Number(transaction.gross_amount)
 

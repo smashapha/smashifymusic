@@ -81,7 +81,8 @@ serve(async (req) => {
           const eventData = payload.data;
           const { amount } = eventData
           const type = (dbTx.metadata?.payment_type || '').toUpperCase()
-          const { userId, artistId, songId, plan, tier, plays, anonymous } = dbTx.metadata || {}
+          const { artistId, songId, plan, tier, plays, anonymous } = dbTx.metadata || {}
+          const userId = dbTx.metadata?.userId || dbTx.fan_id
           const grossAmount = Number(dbTx.gross_amount)
           const netAmount = Number(dbTx.net_amount)
 
