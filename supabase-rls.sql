@@ -15,14 +15,8 @@ END $$;
 -- Ensure transactions.metadata column is JSONB (not TEXT)
 ALTER TABLE transactions ALTER COLUMN metadata TYPE JSONB USING metadata::jsonb;
 
--- Fix increment_wallet_balance function (ensure it exists)
-CREATE OR REPLACE FUNCTION increment_wallet_balance(p_id UUID, amount NUMERIC)
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  UPDATE profiles SET wallet_balance = COALESCE(wallet_balance, 0) + amount WHERE id = p_id;
-END;$$;
-GRANT EXECUTE ON FUNCTION increment_wallet_balance TO authenticated;
-GRANT EXECUTE ON FUNCTION increment_wallet_balance TO anon;
+-- Removed vulnerable increment_wallet_balance function
+DROP FUNCTION IF EXISTS increment_wallet_balance(uuid, numeric) CASCADE;
 
 -- Fix payout_requests RLS so service role can update
 ALTER TABLE payout_requests ENABLE ROW LEVEL SECURITY;
@@ -618,25 +612,16 @@ ALTER TABLE webhook_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "webhook_logs_admin_select" ON webhook_logs FOR SELECT USING (is_admin(auth.uid()));
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- RPC: wallet and sales increments
+-- RPC: wallet and sales increments (VULNERABILITY FIX)
 -- ─────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION increment_wallet_balance(p_id UUID, amount NUMERIC)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE profiles
-  SET wallet_balance = COALESCE(wallet_balance, 0) + amount
-  WHERE id = p_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- DROP vulnerable functions
+DROP FUNCTION IF EXISTS increment_wallet_balance(uuid, numeric) CASCADE;
 
-CREATE OR REPLACE FUNCTION increment_song_sales(s_id UUID)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE songs
-  SET sales_count = COALESCE(sales_count, 0) + 1
-  WHERE id = s_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Ensure service role can still do it
+-- (Service role doesn't need RLS, it bypasses it)
+
+-- Removed vulnerable increment_song_sales (handled completely server-side)
+DROP FUNCTION IF EXISTS increment_song_sales(uuid) CASCADE;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- FINAL COMMENT

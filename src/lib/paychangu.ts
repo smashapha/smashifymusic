@@ -276,3 +276,33 @@ export async function requestPayout({
     throw err;
   }
 }
+
+/**
+ * Verify a payment by its transaction reference
+ */
+export async function verifyPayment(tx_ref: string) {
+  try {
+    const session = (await supabase.auth.getSession()).data.session;
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/verify-payment`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ tx_ref })
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to verify payment');
+    }
+    
+    return await response.json();
+  } catch (err: any) {
+    console.error('Verify payment error:', err);
+    throw err;
+  }
+}

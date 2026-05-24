@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CircleCheck, Music2, ArrowRight, Loader2, Heart, Sparkles, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { verifyPayment } from '../lib/paychangu';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 
@@ -32,6 +33,11 @@ const PaymentSuccess = () => {
     const pollStatus = async () => {
       let attempts = 0;
       const maxAttempts = 15; // 30 seconds total
+
+      // Trigger server-side verification immediately
+      verifyPayment(tx_ref).catch(err => {
+        console.error("Manual verification trigger failed:", err);
+      });
 
       const check = async () => {
         try {
