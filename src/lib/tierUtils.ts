@@ -24,9 +24,7 @@ export const getListenerLimits = (user: any) => {
     };
   }
 
-  const isPremiumListener = ['premium', 'risingstar', 'rising_star', 'standard', 'elite'].includes(tier);
-
-  if (isPremiumListener) {
+  if (tier === 'premium') {
     return {
       hdAudio: true,
       hasAds: false,

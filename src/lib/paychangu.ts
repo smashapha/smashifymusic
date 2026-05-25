@@ -25,7 +25,8 @@ interface InitiatePaymentParams {
   return_url: string;
 }
 
-const APP_URL = window.location.origin;
+const envAppUrl = import.meta.env.VITE_APP_URL;
+const APP_URL = (envAppUrl && envAppUrl !== 'YOUR_APP_URL') ? envAppUrl : window.location.origin;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -42,12 +43,13 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `/api/pay/v1/create-payment`,
+      `${SUPABASE_URL}/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
           ...params,
@@ -240,12 +242,13 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `/api/pay/v1/process-payout`,
+      `${SUPABASE_URL}/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({ amount, phone, network })
       }
@@ -281,7 +284,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `/api/pay/v1/verify-payment`,
+      `${SUPABASE_URL}/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
