@@ -32,7 +32,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
- * Common function to initiate payment via Supabase Edge Functions
+ * Common function to initiate payment via local API route
  */
 export async function initiatePayment(params: InitiatePaymentParams) {
   const toastId = toast.loading('Initializing secure payment...');
@@ -43,13 +43,12 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
+      `/api/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': SUPABASE_ANON_KEY
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           ...params,
@@ -242,13 +241,12 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
+      `/api/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-          'apikey': SUPABASE_ANON_KEY
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({ amount, phone, network })
       }

@@ -45,6 +45,42 @@ async function startServer() {
     next();
   });
 
+  // Temporary debug endpoint to read db logs
+  app.get('/api/debug-db', async (req, res) => {
+    try {
+      const { data: logs } = await supabaseAdmin.from('webhook_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      const { data: up } = await supabaseAdmin.from('user_profiles').select('*').limit(10);
+      const { data: tx } = await supabaseAdmin.from('transactions').select('*').order('created_at', { ascending: false }).limit(20);
+      res.json({ logs, up, tx });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Temporary debug endpoint to simulate listener upgrade
+  app.get('/api/debug-upgrade', async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('No admin');
+      const userId = req.query.id as string;
+      if (!userId) return res.status(400).json({ error: 'Missing id' });
+      
+      const subEnds = new Date();
+      subEnds.setDate(subEnds.getDate() + 30);
+      const subTierName = 'Premium';
+
+      const before = await supabaseAdmin.from('user_profiles').select('*').eq('id', userId).single();
+
+      const { data, error } = await supabaseAdmin.from('user_profiles').update({
+        subscription_tier: subTierName,
+        subscription_ends: subEnds.toISOString()
+      }).eq('id', userId).select();
+
+      res.json({ before: before.data, updated: data, error });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({ 
@@ -118,11 +154,28 @@ async function startServer() {
   // --- API ROUTES (Functions) ---
   
   // CORS Preflight for all functions
-  app.options(['/api/functions/v1/create-payment', '/api/functions/create-payment', '/api/functions/v1/process-payout', '/api/functions/process-payout'], (req, res) => {
+  app.options(['/api/functions/v1/create-payment', '/api/functions/create-payment', '/api/functions/v1/process-payout', '/api/functions/process-payout', '/api/functions/v1/verify-payment'], (req, res) => {
     res.sendStatus(204);
   });
 
-  // 1. Create Payment - explicit routes
+  // 1. Verify Payment
+  app.post('/api/functions/v1/verify-payment', async (req, res) => {
+    try {
+      const user = await verifyUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { tx_ref } = req.body;
+      if (!supabaseAdmin) throw new Error('No admin');
+      
+      const { data, error } = await supabaseAdmin.from('transactions').select('*').eq('paychangu_ref', tx_ref).single();
+      if (error) throw error;
+      res.json({ data: { status: data.status, tx_ref: data.paychangu_ref } });
+    } catch(e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // 2. Create Payment - explicit routes
   const handleCreatePayment = async (req: express.Request, res: express.Response) => {
     console.log('[API] create-payment received');
     try {
@@ -710,14 +763,16 @@ async function startServer() {
           const subEnds = new Date();
           subEnds.setDate(subEnds.getDate() + 30);
           const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family';
-          await supabaseAdmin.from('user_profiles').update({
+          const { error: up1 } = await supabaseAdmin.from('user_profiles').update({
             subscription_tier: subTierName,
             subscription_ends: subEnds.toISOString()
           }).eq('id', userId);
-          await supabaseAdmin.from('profiles').update({
+          if (up1) console.error('[WEBHOOK] user_profiles update error:', up1);
+          const { error: up2 } = await supabaseAdmin.from('profiles').update({
             subscription_tier: subTierName,
             subscription_ends: subEnds.toISOString()
           }).eq('id', userId);
+          if (up2) console.error('[WEBHOOK] profiles update error:', up2);
           console.log(`[WEBHOOK] Updated listener subscription for ${userId} to ${type}`);
           break;
 
