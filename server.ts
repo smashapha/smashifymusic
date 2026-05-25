@@ -72,14 +72,18 @@ async function startServer() {
     console.error('Server cannot perform admin operations safely.');
     console.error('Set SUPA_ADMIN_KEY in your environment variables.');
   }
-  const adminKey = SUPABASE_SERVICE_ROLE_KEY;
+  const adminKey = SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
   console.log('[DEBUG] PAYCHANGU_SECRET_KEY present:', !!PAYCHANGU_SECRET_KEY);
 
   if (SUPABASE_URL && adminKey) {
     try {
       supabaseAdmin = createClient(SUPABASE_URL, adminKey);
-      console.log('[Server] Service role key loaded successfully.');
+      if (SUPABASE_SERVICE_ROLE_KEY) {
+        console.log('[Server] Service role key loaded successfully.');
+      } else {
+        console.log('[Server] No service role key, loaded anon key fallback for token verification.');
+      }
     } catch (err) {
       console.error('Failed to initialize Supabase Admin:', err);
     }
