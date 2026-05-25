@@ -135,14 +135,14 @@ const Admin = () => {
          else splits.events += tx.platform_fee || 0;
       });
       setRevenueSplits([
-        { name: 'Subscriptions', value: splits.subscriptions, color: '#FF6B35' },
-        { name: 'Tips', value: splits.tips, color: '#00D68F' },
-        { name: 'Sales', value: splits.sales, color: '#4C9AFF' },
+        { name: 'Subscriptions', value: splits.subscriptions, color: '#0ea5e9' },
+        { name: 'Tips', value: splits.tips, color: '#10b981' },
+        { name: 'Sales', value: splits.sales, color: '#38bdf8' },
       ].filter(s => s.value > 0).length ? [
-        { name: 'Subscriptions', value: splits.subscriptions, color: '#FF6B35' },
-        { name: 'Tips', value: splits.tips, color: '#00D68F' },
-        { name: 'Sales', value: splits.sales, color: '#4C9AFF' },
-      ] : [{ name: 'No Data', value: 1, color: '#22223E' }]);
+        { name: 'Subscriptions', value: splits.subscriptions, color: '#0ea5e9' },
+        { name: 'Tips', value: splits.tips, color: '#10b981' },
+        { name: 'Sales', value: splits.sales, color: '#38bdf8' },
+      ] : [{ name: 'No Data', value: 1, color: 'rgba(100, 116, 139, 0.2)' }]);
 
       // Process monthly trend
       const monthlyData: Record<string, any> = {};
@@ -760,7 +760,7 @@ const Admin = () => {
                 <div className="space-y-6">
                   {/* Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-[#141428] border border-[#22223e] rounded-[14px] p-6 hover:border-[#2e2e50] transition-all">
+                    <div className="lg:col-span-2 bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/30 transition-all">
                       <h3 className="text-base font-semibold text-white mb-1">Revenue Overview</h3>
                       <p className="text-xs text-[#7878a0] mb-6">Monthly revenue breakdown by source</p>
                       <div className="h-[260px]">
@@ -768,20 +768,20 @@ const Admin = () => {
                           <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#FF6B35" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                               </linearGradient>
                             </defs>
-                            <XAxis dataKey="name" stroke="#505070" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#505070" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `MK${v/1000}k`} />
-                            <Tooltip contentStyle={{ backgroundColor: '#141428', borderColor: '#22223E', borderRadius: '8px' }} itemStyle={{ color: '#EAEAF2' }} />
-                            <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#FF6B35" fillOpacity={1} fill="url(#colorRev)" />
+                            <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `MK${v/1000}k`} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100, 116, 139, 0.3)', borderRadius: '8px' }} itemStyle={{ color: '#EAEAF2' }} />
+                            <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorRev)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
 
-                    <div className="bg-[#141428] border border-[#22223e] rounded-[14px] p-6 hover:border-[#2e2e50] transition-all">
+                    <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/30 transition-all">
                       <h3 className="text-base font-semibold text-white mb-1">Revenue Split</h3>
                       <p className="text-xs text-[#7878a0] mb-6">By source this quarter</p>
                       <div className="h-[230px]">
@@ -792,7 +792,7 @@ const Admin = () => {
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#141428', borderColor: '#22223E', borderRadius: '8px' }} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100, 116, 139, 0.3)', borderRadius: '8px' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -809,16 +809,16 @@ const Admin = () => {
 
                   {/* Goal + Recent Txs */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-[#141428] border border-[#22223e] rounded-[14px] p-6">
+                    <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
                       <h3 className="text-base font-semibold text-white mb-1">Platform Goal</h3>
                       <p className="text-xs text-[#7878a0] mb-6">Target: MK 5,000,000</p>
                       <div className="mt-8">
                         <div className="flex justify-between text-[13px] mb-2">
                           <span className="text-[#7878a0]">Progress</span>
-                          <span className="font-bold text-[#FF6B35]">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%</span>
+                          <span className="font-bold text-[#0ea5e9]">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%</span>
                         </div>
-                        <div className="w-full h-3 bg-[#22223e] rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#FF6B35] to-[#FF8F65] rounded-full" style={{ width: `${Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%` }} />
+                        <div className="w-full h-3 bg-bg-elevated rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] rounded-full" style={{ width: `${Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%` }} />
                         </div>
                       </div>
                       

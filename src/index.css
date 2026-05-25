@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Syne:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
-  --font-studio: "Syne", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-bg-page: var(--bg-page);
   --color-bg-surface: var(--bg-surface);
@@ -18,24 +18,24 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
 
-  --color-smash-orange: #ff5f00;
-  --color-smash-red: #e60000;
-  --color-smash-purple: #7c3aed;
-  --color-smash-green: #00d68f;
-  --color-smash-cyan: #00d4ff;
+  --color-smash-orange: #0ea5e9;
+  --color-smash-red: #ef4444;
+  --color-smash-purple: #38bdf8;
+  --color-smash-green: #10b981;
+  --color-smash-cyan: #0ea5e9;
 }
 
 @layer base {
   :root {
-    --bg-page: #0a0a0d;
-    --bg-surface: #141418;
-    --bg-elevated: #1c1c22;
-    --bg-modal: #242430;
-    --border-subtle: rgba(255,255,255,0.05);
-    --border-default: rgba(255,255,255,0.10);
-    --text-primary: #f5f5f7;
-    --text-secondary: #aaaabc;
-    --text-muted: #666677;
+    --bg-page: #121824;
+    --bg-surface: #1a2232;
+    --bg-elevated: #242f44;
+    --bg-modal: #2a374e;
+    --border-subtle: rgba(100, 116, 139, 0.15);
+    --border-default: rgba(100, 116, 139, 0.3);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
   }
 
   body {
@@ -43,7 +43,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-studio tracking-tight text-text-primary;
+    @apply font-display tracking-tight text-text-primary;
   }
 }
 

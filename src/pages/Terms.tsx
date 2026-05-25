@@ -11,76 +11,75 @@ const Terms = () => {
       exit={{ opacity: 0, y: -20 }}
       className="p-8 md:p-12 pb-32 max-w-4xl mx-auto"
     >
-        <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
-           <Link to="/" className="hover:text-white transition-colors">Home</Link>
-           <ChevronRight size={14} />
-           <span className="text-smash-orange">Terms of Service</span>
-        </div>
+      <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
+         <Link to="/" className="hover:text-white transition-colors">Home</Link>
+         <ChevronRight size={14} />
+         <span className="text-smash-orange">Terms of Service</span>
+      </div>
 
       <div className="flex items-center gap-4 mb-4">
         <Shield size={32} className="text-smash-orange" />
         <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter">Terms of Service</h1>
       </div>
-      <p className="text-smash-gray font-medium mb-12">Effective: 1 January 2026 | Last Updated: 1 January 2026</p>
+      <p className="text-smash-gray font-medium mb-12">Last Updated: May 25, 2026</p>
 
       <div className="space-y-12 text-zinc-300 font-medium leading-relaxed bg-zinc-900/30 p-8 md:p-12 rounded-3xl border border-white/5">
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">1. ACCEPTANCE</h2>
-          <p>By accessing or using Smashify ("Platform"), you agree to these Terms of Service ("Terms"). If you do not agree, please do not use the Platform.</p>
-        </section>
+        <p className="text-lg text-white">
+          Welcome to Smashify! These Terms of Service ("Terms") govern your access to and use of the Smashify website, mobile applications, and streaming services (collectively, the "Platform"). By creating an account or using the Platform, you agree to be bound by these Terms.
+        </p>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">2. ELIGIBILITY</h2>
-          <p>You must be at least 13 years old to use Smashify as a listener. Artist accounts require users to be at least 18 years old and possess a valid national ID, passport, or driver's licence. Smashify reserves the right to request identity verification documents at any time.</p>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">3. PLATFORM FEES</h2>
-          <p>Smashify charges a 10% platform fee on all song purchases and fan donations. Artists receive 90% of the transaction amount. Withdrawal fees are 3% (PayChangu processing fee). There are no hidden charges. All prices are in Malawian Kwacha (MWK).</p>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">4. ARTIST CONTENT POLICY</h2>
-          <p className="mb-4">By uploading content, you confirm that:</p>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">1. Description of Service</h2>
+          <p className="mb-4">Smashify is a direct-to-fan music streaming and creator management platform.</p>
           <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>(a) You own or have obtained all necessary rights to the content.</li>
-            <li>(b) Your content does not infringe any third-party copyright, trademark, or privacy rights.</li>
-            <li>(c) Your content does not contain explicit or offensive material without appropriate age-rating.</li>
+            <li>Listeners can access, stream, and subscribe to music tiers, and directly support independent artists.</li>
+            <li>Artists/Creators can distribute music, manage content via the Artist Dashboard, and receive direct payments, tips, or subscription revenues.</li>
           </ul>
-          <p className="mt-4">Smashify reserves the right to remove content that violates these policies without prior notice.</p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">5. PAYMENTS & WITHDRAWALS</h2>
-          <p>Payments are processed by PayChangu. Smashify does not store payment card details. Withdrawals are sent to the mobile money number registered on your artist account. Minimum withdrawal amount: MK 5,000. Withdrawal fees: 3% (deducted from the withdrawal amount).</p>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">2. Eligibility and Account Registration</h2>
+          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
+            <li>You must be at least 13 years old to use this Platform (or the minimum legal age in your country).</li>
+            <li>You agree to provide accurate, current, and complete information during registration.</li>
+            <li>You are solely responsible for safeguarding your account credentials and for any activity under your account.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">6. SUBSCRIPTIONS</h2>
-          <p>Listener Premium and Family subscriptions are billed monthly. Artist subscriptions are billed annually. All subscriptions renew automatically. You may cancel at any time; your plan remains active until the end of the billing period. No refunds are issued for partial periods.</p>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">3. Artist Content and Intellectual Property</h2>
+          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
+            <li><strong className="text-white">Ownership:</strong> Artists retain full ownership of the intellectual property rights in the music, lyrics, artwork, and other content they upload ("User Content").</li>
+            <li><strong className="text-white">License to Smashify:</strong> By uploading User Content, you grant Smashify a non-exclusive, worldwide, royalty-free license to stream, host, store, reproduce, and distribute your content solely for the purpose of operating and promoting the Platform.</li>
+            <li><strong className="text-white">Copyright Infringement:</strong> Smashify respects intellectual property. If you believe your work has been infringed, please submit a formal DMCA/Takedown notice to our designated agent.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">7. INTELLECTUAL PROPERTY</h2>
-          <p>Smashify and its logo, design, and platform technology are the intellectual property of Smashify Ltd., registered in Malawi. Artists retain full copyright ownership of their uploaded music.</p>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">4. Monetization, Payments, and Tipping</h2>
+          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
+            <li><strong className="text-white">Revenue Splits:</strong> Smashify facilitates direct-to-fan payments, including subscriptions and digital tipping. Platform fees and processing costs will be deducted as detailed in the Artist Dashboard.</li>
+            <li><strong className="text-white">Local Payment Gateways:</strong> Smashify integrates with regional and mobile payment systems. Users agree to abide by the terms of our third-party payment processors.</li>
+            <li><strong className="text-white">Refunds:</strong> All listener subscriptions, purchases, and tips are final and non-refundable unless required by local consumer law.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">8. LIMITATION OF LIABILITY</h2>
-          <p>Smashify is provided "as is". We are not liable for interruptions, data loss, or payment failures caused by third-party services including PayChangu, Airtel, or TNM.</p>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">5. Prohibited Conduct</h2>
+          <p className="mb-4">You agree not to:</p>
+          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
+            <li>Upload content that is illegal, defamatory, hateful, or infringes on third-party intellectual property.</li>
+            <li>Artificially inflate stream counts or manipulate platform algorithms using bots, scripts, or automated tools.</li>
+            <li>Reverse engineer, decompile, or attempt to extract the source code of the Platform.</li>
+          </ul>
         </section>
 
         <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">9. GOVERNING LAW</h2>
-          <p>These Terms are governed by the laws of the Republic of Malawi. Disputes shall be resolved in Malawian courts.</p>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">10. CONTACT</h2>
-          <div className="bg-white/5 p-6 rounded-2xl border border-white/5 text-smash-gray mt-4">
-            <p><strong>Email:</strong> legal@smashify.mw</p>
-            <p className="mt-2"><strong>Address:</strong> Smashify Ltd., Livingstone Towers, Blantyre, Malawi</p>
-          </div>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">6. Limitation of Liability and Termination</h2>
+          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
+            <li>Smashify is provided "as is" without warranties of any kind. We do not guarantee uninterrupted service.</li>
+            <li>We reserve the right to suspend or terminate accounts that violate these Terms or harm the integrity of the ecosystem.</li>
+          </ul>
         </section>
       </div>
     </motion.div>
