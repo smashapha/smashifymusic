@@ -131,11 +131,22 @@ Deno.serve(async (req) => {
     const responseText = await response.text();
     console.log(`PayChangu Response (${response.status}):`, responseText);
 
-    let payload;
+    let payload: any;
     try {
       payload = JSON.parse(responseText);
     } catch (err) {
       console.error('PayChangu non-JSON response:', responseText);
+      // Don't continue blindly — treat non-JSON error response as a failure
+      if (!response.ok) {
+        await supabase.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id)
+        await supabase.from('payout_requests').update({ status: 'failed', error_message: responseText.substring(0, 500) }).eq('id', payoutReq.id)
+        return new Response(JSON.stringify({
+          error: `Payment processor error (${response.status}). Please try again.`
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        })
+      }
     }
 
     if (!response.ok) {

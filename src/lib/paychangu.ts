@@ -257,7 +257,7 @@ export async function requestPayout({
     );
     
     const textToLog = await response.text();
-    let data;
+    let data: any;
     try {
       data = JSON.parse(textToLog);
     } catch (e) {
