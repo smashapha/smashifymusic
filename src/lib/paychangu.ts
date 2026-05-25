@@ -43,7 +43,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `/api/functions/v1/create-payment`,
+      `${SUPABASE_URL}/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
@@ -241,7 +241,7 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `/api/functions/v1/process-payout`,
+      `${SUPABASE_URL}/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
@@ -282,7 +282,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `/api/functions/v1/verify-payment`,
+      `${SUPABASE_URL}/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
