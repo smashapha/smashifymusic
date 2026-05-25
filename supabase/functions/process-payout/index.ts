@@ -13,11 +13,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const PAYCHANGU_SECRET_KEY = Deno.env.get("PAYCHANGU_SECRET_KEY")
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
-    if (!PAYCHANGU_SECRET_KEY) throw new Error("PAYCHANGU_SECRET_KEY is missing in Secrets")
     if (!SUPABASE_URL) throw new Error("SUPABASE_URL is missing in Secrets")
     if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing in Secrets")
 
@@ -36,7 +34,7 @@ Deno.serve(async (req) => {
     }
 
     const { amount, phone, network } = await req.json()
-    console.log("Payout Function: Processing:", { amount, phone, network, user: user.id })
+    console.log("Payout Function: Processing manual payout request:", { amount, phone, network, user: user.id })
 
     // 2. Validate Request
     const { data: artist, error: artistError } = await supabase
@@ -69,8 +67,8 @@ Deno.serve(async (req) => {
 
     const payoutRef = `WD-${user.id}-${Date.now()}`
 
-    // 4. Record Payout Request
-    console.log("Payout Function: Recording payout request...")
+    // 4. Record Payout Request - Directly set as 'pending' for Admin review
+    console.log("Payout Function: Recording manual payout request...")
     const { data: payoutReq, error: payoutReqError } = await supabase
       .from('payout_requests')
       .insert({
@@ -78,7 +76,7 @@ Deno.serve(async (req) => {
         requested_amount: amount,
         phone,
         network,
-        status: 'processing',
+        status: 'pending', // Directly set to pending so that the administrator can process it manually from their panel
         reference: payoutRef
       })
       .select()
@@ -91,7 +89,7 @@ Deno.serve(async (req) => {
         throw payoutReqError
     }
 
-    // 4.1 Record in Transactions table for history
+    // 5. Record in Transactions table for history as pending
     console.log("Payout Function: Recording in transactions table...")
     await supabase.from('transactions').insert({
       artist_id: user.id,
@@ -103,74 +101,13 @@ Deno.serve(async (req) => {
       description: `Withdrawal to ${network} (${phone})`
     })
 
-    // 5. Initialize Payout via PayChangu Mobile Money Transfer API
-    console.log("Payout Function: Calling PayChangu Mobile Money Transfer API...")
-    const cleanKey = PAYCHANGU_SECRET_KEY.trim()
-    
-    const response = await fetch('https://api.paychangu.com/mobile-money/payments/initiate', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${cleanKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        amount: Number(amount),
-        currency: 'MWK',
-        mobile: phone.replace(/\s/g, ''),
-        operator: network.toUpperCase(), // 'AIRTEL' or 'TNM'
-        reference: payoutRef,
-        first_name: artist.full_name?.split(' ')[0] || 'Artist',
-        last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
-        email: artist.email || '',
-        callback_url: `${SUPABASE_URL}/functions/v1/payout-webhook`,
-        type: 'payment'
-      })
-    })
+    console.log("Payout Function: Manual payout request registered successfully!")
 
-    const responseText = await response.text();
-    console.log(`PayChangu Response (${response.status}):`, responseText);
-
-    let payload: any;
-    try {
-      payload = JSON.parse(responseText);
-    } catch (err) {
-      console.error('PayChangu non-JSON response:', responseText);
-      // Don't continue blindly — treat non-JSON error response as a failure
-      if (!response.ok) {
-        await supabase.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id)
-        await supabase.from('payout_requests').update({ status: 'failed', error_message: responseText.substring(0, 500) }).eq('id', payoutReq.id)
-        return new Response(JSON.stringify({
-          error: `Payment processor error (${response.status}). Please try again.`
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        })
-      }
-    }
-
-    if (!response.ok) {
-        console.error("Payout Function: PayChangu Error:", response.status, responseText)
-        // REFUND Wallet on failure
-        await supabase.from('profiles').update({ wallet_balance: artist.wallet_balance }).eq('id', user.id)
-        await supabase.from('payout_requests').update({ status: 'failed', error_message: responseText.substring(0, 500) }).eq('id', payoutReq.id)
-        
-        return new Response(JSON.stringify({ 
-          error: payload?.message || `PayChangu error (${response.status}): ${responseText.substring(0, 200)}` 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        })
-    }
-
-    // 6. Update Request with PayChangu ref
-    console.log("Payout Function: Finalizing request in DB...")
-    await supabase.from('payout_requests').update({ 
-      status: 'pending',
-      paychangu_reference: payload.data?.reference 
-    }).eq('id', payoutReq.id)
-
-    return new Response(JSON.stringify({ success: true, reference: payoutRef }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      reference: payoutRef,
+      message: 'Withdrawal request submitted! Please wait for a moment while we verify your payout.'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
