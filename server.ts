@@ -241,7 +241,7 @@ async function startServer() {
           first_name,
           last_name,
           tx_ref,
-          callback_url: callback_url || `${APP_URL}/api/paychangu-webhook`,
+          callback_url: callback_url || `${req.get('origin') || APP_URL}/api/paychangu-webhook`,
           return_url: `${return_url}${tx_ref}`,
           customization: {
             title: 'Smashify',

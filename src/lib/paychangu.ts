@@ -25,8 +25,7 @@ interface InitiatePaymentParams {
   return_url: string;
 }
 
-const envAppUrl = import.meta.env.VITE_APP_URL;
-const APP_URL = (envAppUrl && envAppUrl !== 'YOUR_APP_URL') ? envAppUrl : window.location.origin;
+const APP_URL = window.location.origin;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -43,7 +42,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
+      `/api/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
@@ -241,7 +240,7 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
+      `/api/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
@@ -282,7 +281,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/verify-payment`,
+      `/api/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
