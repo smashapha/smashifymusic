@@ -169,7 +169,8 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
     return_url: `${APP_URL}/upgrade-success?plan=${normalizedPlan}&tx_ref=`,
     meta: {
       userId: user.id,
-      plan: normalizedPlan
+      plan: normalizedPlan,
+      payment_type: type // Explicitly add payment_type to prevent fallback string parsing issues
     }
   });
 }
@@ -201,7 +202,8 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     return_url: `${APP_URL}/tier-success?tier=${tier}&tx_ref=`,
     meta: {
       userId: artist.id,
-      tier
+      tier,
+      payment_type: type // Explicitly add payment_type for consistency and robust tier decoding
     }
   });
 }

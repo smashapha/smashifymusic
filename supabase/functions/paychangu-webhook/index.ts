@@ -89,15 +89,12 @@ serve(async (req) => {
       .eq('paychangu_ref', tx_ref)
       .single()
 
-    const parts = tx_ref.split('-');
     // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
-    // Convert it to uppercase for switch matching
+    // Convert it to uppercase for switch matching. If not in metadata, use regex fallback immune to UUID hyphens.
     const metaType = transaction?.metadata?.payment_type;
     const type = metaType
       ? metaType.toUpperCase()
-      : parts.slice(1, -2).join('_').toUpperCase();
-    // parts.slice(1, -2) removes 'SMASH' prefix and userId+timestamp suffix
-    // giving us LISTENER_PREMIUM, TRACK_PURCHASE, ARTIST_RISING_STAR etc
+      : (tx_ref.match(/^SMASH-([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)-/)?.[1] || '').toUpperCase();
 
     console.log('Resolved type:', type);
     console.log('Meta payment_type:', metaType);
@@ -294,10 +291,21 @@ serve(async (req) => {
         } else {
           console.log('Artist tier updated to:', artistTierName, 'for user:', userId)
           // Also grant premium listener features
-          await supabase.from('user_profiles').update({
-            subscription_tier: 'Premium',
-            subscription_ends: artistTierEnds.toISOString()
-          }).eq('id', userId)
+          // Crucial fix: Use upsert with onConflict: 'id' so that new artist users who do not have
+          // a row in user_profiles yet will successfully have it created, rather than a silent failure.
+          const { error: listenerUpsertError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              id: userId,
+              subscription_tier: 'Premium',
+              subscription_ends: artistTierEnds.toISOString()
+            }, { onConflict: 'id' })
+
+          if (listenerUpsertError) {
+            console.error('Failed to upsert Premium listener features for artist:', listenerUpsertError)
+          } else {
+            console.log('Successfully upserted Premium listener features for artist:', userId)
+          }
         }
         break;
 
