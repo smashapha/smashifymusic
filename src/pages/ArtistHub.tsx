@@ -546,7 +546,15 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
         })
       });
 
-      const data = await response.json();
+      const textToLog = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(textToLog);
+      } catch (e) {
+        console.error("Payout Frontend JSON Parse Error. Raw text:", textToLog);
+        throw new Error(`Server returned invalid response. Status: ${response.status}`);
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Withdrawal request failed');
       }

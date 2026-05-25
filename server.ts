@@ -280,7 +280,7 @@ async function startServer() {
           // net_amount: netAmount, // Temporarily disabled until schema update
           phone,
           network,
-          status: 'processing',
+          status: 'pending',
           reference: payoutRef
         })
         .select()
