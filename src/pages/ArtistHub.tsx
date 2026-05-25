@@ -533,7 +533,7 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
     setRequesting(true);
     try {
       const session = (await supabase.auth.getSession()).data.session;
-      const response = await fetch('/api/functions/v1/process-payout', {
+      const response = await fetch('/api/pay/v1/process-payout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
