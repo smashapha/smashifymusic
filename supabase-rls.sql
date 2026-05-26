@@ -21,15 +21,15 @@ DROP FUNCTION IF EXISTS increment_wallet_balance(uuid, numeric) CASCADE;
 -- Fix payout_requests RLS so service role can update
 ALTER TABLE payout_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_all" ON payout_requests;
-CREATE POLICY "service_role_all" ON payout_requests FOR ALL USING (true);
+CREATE POLICY "service_role_all" ON payout_requests FOR ALL TO service_role USING (true);
 
 -- Fix profiles update for tier upgrades (service role needs to update any row)
 DROP POLICY IF EXISTS "profiles_service_update" ON profiles;
-CREATE POLICY "profiles_service_update" ON profiles FOR UPDATE USING (true);
+CREATE POLICY "profiles_service_update" ON profiles FOR UPDATE TO service_role USING (true);
 
 -- Fix user_profiles update for subscription (service role)
 DROP POLICY IF EXISTS "up_service_update" ON user_profiles;
-CREATE POLICY "up_service_update" ON user_profiles FOR UPDATE USING (true);
+CREATE POLICY "up_service_update" ON user_profiles FOR UPDATE TO service_role USING (true);
 
 -- Fix fan_purchases RLS
 ALTER TABLE fan_purchases ENABLE ROW LEVEL SECURITY;

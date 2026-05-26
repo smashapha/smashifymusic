@@ -18,7 +18,13 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
     const url = new URL(req.url)
-    const tx_ref = url.searchParams.get('tx_ref')
+    let tx_ref = url.searchParams.get('tx_ref')
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json()
+        if (body?.tx_ref) tx_ref = body.tx_ref
+      } catch (_) {}
+    }
 
     if (!tx_ref) {
       return new Response(JSON.stringify({ error: 'Missing tx_ref' }), { 
@@ -157,10 +163,11 @@ serve(async (req) => {
               subEnds.setDate(subEnds.getDate() + 30)
               const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family'
               // Update both tables to handle artist-as-listener cases
-              await supabase.from('user_profiles').update({
+              await supabase.from('user_profiles').upsert({
+                id: userId,
                 subscription_tier: subTierName,
                 subscription_ends: subEnds.toISOString()
-              }).eq('id', userId)
+              }, { onConflict: 'id' })
               await supabase.from('profiles').update({
                 subscription_tier: subTierName,
                 subscription_ends: subEnds.toISOString()
@@ -170,7 +177,7 @@ serve(async (req) => {
             case 'ARTIST_STANDARD':
             case 'ARTIST_ELITE':
               const artistTierEnds = new Date()
-              artistTierEnds.setDate(artistTierEnds.getDate() + 365)
+              artistTierEnds.setMonth(artistTierEnds.getMonth() + 6)
               const tierMap: Record<string,string> = {
                 'ARTIST_RISING_STAR': 'RisingStar',
                 'ARTIST_STANDARD': 'Standard', 
@@ -183,6 +190,11 @@ serve(async (req) => {
                 subscription_ends: artistTierEnds.toISOString(),
                 approved: true
               }).eq('id', userId)
+              await supabase.from('user_profiles').upsert({
+                id: userId,
+                subscription_tier: 'Premium',
+                subscription_ends: artistTierEnds.toISOString()
+              }, { onConflict: 'id' })
               break;
             case 'ARTIST_AD_CAMPAIGN':
               await supabase.from('audio_ads').insert({

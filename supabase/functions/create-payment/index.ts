@@ -25,7 +25,16 @@ Deno.serve(async (req) => {
     
     const body = await req.json()
     const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency } = body
-    console.log("Payment Function: Initiating:", { type, tx_ref, amount })
+    const CANONICAL_PRICES: Record<string, number> = {
+      'LISTENER_PREMIUM': 750,
+      'LISTENER_FAMILY': 3500,
+      'ARTIST_RISING_STAR': 8000,
+      'ARTIST_STANDARD': 13000,
+      'ARTIST_ELITE': 24000,
+    };
+    const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
+    const finalAmount = canonicalAmount ?? Number(amount);
+    console.log("Payment Function: Initiating:", { type, tx_ref, amount: finalAmount })
 
     // 1. Verify Authentication
     const authHeader = req.headers.get('Authorization')
@@ -108,14 +117,14 @@ Deno.serve(async (req) => {
       };
       platformFeeRate = tierFees[artistProfile?.artist_tier || 'Free'] || 0.15;
     }
-    const platformFee = Math.round(amount * platformFeeRate);
-    const netAmount = amount - platformFee;
+    const platformFee = Math.round(finalAmount * platformFeeRate);
+    const netAmount = finalAmount - platformFee;
 
     const { error: txError } = await supabase.from('transactions').insert({
       artist_id: meta.artistId || null,
       fan_id: meta.userId || user.id,
       type: dbType,
-      gross_amount: amount,
+      gross_amount: finalAmount,
       status: 'pending',
       paychangu_ref: tx_ref,
       description: descriptions[type] || 'Smashify Payment',
@@ -139,7 +148,7 @@ Deno.serve(async (req) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        amount,
+        amount: finalAmount,
         currency: currency || 'MWK',
         email,
         first_name,

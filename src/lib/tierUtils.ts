@@ -8,8 +8,11 @@ export const getListenerTier = (user: any): ListenerTier => {
 
 export const getListenerLimits = (user: any) => {
   const tier = (getListenerTier(user) || 'free').toLowerCase();
+  const artistTier = (user?.artist_tier || '').toLowerCase();
+  const hasPaidArtistTier = ['risingstar', 'rising_star', 'standard', 'elite'].includes(artistTier);
+  const effectiveTier = hasPaidArtistTier ? 'premium' : tier;
 
-  if (tier === 'family') {
+  if (effectiveTier === 'family') {
     return {
       hdAudio: true,
       hasAds: false,
@@ -24,7 +27,7 @@ export const getListenerLimits = (user: any) => {
     };
   }
 
-  if (tier === 'premium') {
+  if (effectiveTier === 'premium') {
     return {
       hdAudio: true,
       hasAds: false,

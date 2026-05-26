@@ -64,19 +64,22 @@ const Pricing = () => {
       return;
     }
     if (!planId) {
-       navigate(activeTab === 'artists' ? '/artist-hub' : '/');
-       return;
+      navigate(activeTab === 'artists' ? '/artist-hub' : '/');
+      return;
     }
+
+    // Build a safe user object sourced from the auth user, not the profile
+    const safeUser = {
+      id: user.id,
+      email: user.email ?? userProfile?.email ?? '',
+      full_name: userProfile?.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'User',
+      ...userProfile,
+    };
+
     if (activeTab === 'artists') {
-      upgradeArtistTier({
-        tier: planId as any,
-        artist: userProfile
-      });
+      upgradeArtistTier({ tier: planId as any, artist: safeUser });
     } else {
-      upgradeListenerPlan({
-        plan: planId as any,
-        user: userProfile
-      });
+      upgradeListenerPlan({ plan: planId as any, user: safeUser });
     }
   };
 
