@@ -244,29 +244,22 @@ serve(async (req) => {
         const subEnds = new Date()
         subEnds.setDate(subEnds.getDate() + 30)
         const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family'
-        // userId from metadata, also try fan_id as fallback
         const listenerId = userId || meta.fan_id || meta.userId
         console.log('Upgrading listener:', listenerId, 'to tier:', subTierName)
-        
+
         const { error: listenerTierError } = await supabase
           .from('user_profiles')
-          .update({
+          .upsert({
+            id: listenerId,
             subscription_tier: subTierName,
             subscription_ends: subEnds.toISOString()
-          })
-          .eq('id', listenerId)
-        
+          }, { onConflict: 'id' })
+
         if (listenerTierError) {
           console.error('Listener tier update error:', listenerTierError)
         } else {
           console.log('Listener tier updated successfully')
         }
-
-        // Update profiles to handle artist-as-listener cases
-        await supabase.from('profiles').update({
-          subscription_tier: subTierName,
-          subscription_ends: subEnds.toISOString()
-        }).eq('id', listenerId)
         break;
 
       case 'ARTIST_RISING_STAR':

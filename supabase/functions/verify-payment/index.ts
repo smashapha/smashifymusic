@@ -162,16 +162,11 @@ serve(async (req) => {
               const subEnds = new Date()
               subEnds.setDate(subEnds.getDate() + 30)
               const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family'
-              // Update both tables to handle artist-as-listener cases
               await supabase.from('user_profiles').upsert({
                 id: userId,
                 subscription_tier: subTierName,
                 subscription_ends: subEnds.toISOString()
               }, { onConflict: 'id' })
-              await supabase.from('profiles').update({
-                subscription_tier: subTierName,
-                subscription_ends: subEnds.toISOString()
-              }).eq('id', userId)
               break;
             case 'ARTIST_RISING_STAR':
             case 'ARTIST_STANDARD':
