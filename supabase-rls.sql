@@ -27,9 +27,7 @@ CREATE POLICY "service_role_all" ON payout_requests FOR ALL TO service_role USIN
 DROP POLICY IF EXISTS "profiles_service_update" ON profiles;
 CREATE POLICY "profiles_service_update" ON profiles FOR UPDATE TO service_role USING (true);
 
--- Fix user_profiles update for subscription (service role)
-DROP POLICY IF EXISTS "up_service_update" ON user_profiles;
-CREATE POLICY "up_service_update" ON user_profiles FOR UPDATE TO service_role USING (true);
+
 
 -- Fix fan_purchases RLS
 ALTER TABLE fan_purchases ENABLE ROW LEVEL SECURITY;
@@ -270,6 +268,12 @@ DROP POLICY IF EXISTS "user_profiles_insert_auth" ON user_profiles;
 CREATE POLICY "user_profiles_insert_auth" 
 ON user_profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "up_service_update" ON user_profiles;
+CREATE POLICY "up_service_update" ON user_profiles FOR UPDATE TO service_role USING (true);
+
+DROP POLICY IF EXISTS "up_service_insert" ON user_profiles;
+CREATE POLICY "up_service_insert" ON user_profiles FOR INSERT TO service_role WITH CHECK (true);
 
 COMMENT ON POLICY "user_profiles_select_owner" ON user_profiles IS 'Owners read their own profile; Admins read all.';
 COMMENT ON POLICY "user_profiles_update_owner" ON user_profiles IS 'Owners update their profile; cannot change admin status.';
