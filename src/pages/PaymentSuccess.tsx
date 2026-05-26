@@ -60,9 +60,9 @@ const PaymentSuccess = () => {
           if (txData?.status === 'completed') {
             setDetails(txData)
             setStatus('confirmed')
-            // Wait 2 seconds for webhook to finish processing
+            // Wait 4 seconds for webhook to finish processing
             // before refreshing profile so tier changes are visible
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            await new Promise(resolve => setTimeout(resolve, 4000))
             if (typeof refreshProfile === 'function') {
               await refreshProfile()
             }

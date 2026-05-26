@@ -111,6 +111,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userProfilesChannel = supabase
         .channel(`user-profiles-realtime-${userId}`)
         .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'user_profiles', 
+          filter: `id=eq.${userId}` 
+        }, () => fetchProfile(userId))
+        .on('postgres_changes', { 
           event: 'UPDATE', 
           schema: 'public', 
           table: 'user_profiles', 
