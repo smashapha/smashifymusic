@@ -165,7 +165,7 @@ serve(async (req) => {
               await supabase.from('user_profiles').upsert({
                 id: userId,
                 subscription_tier: subTierName,
-                subscription_ends: subEnds.toISOString()
+                subscription_expires_at: subEnds.toISOString()
               }, { onConflict: 'id' })
               break;
             case 'ARTIST_RISING_STAR':
@@ -188,7 +188,7 @@ serve(async (req) => {
               await supabase.from('user_profiles').upsert({
                 id: userId,
                 subscription_tier: 'Premium',
-                subscription_ends: artistTierEnds.toISOString()
+                subscription_expires_at: artistTierEnds.toISOString()
               }, { onConflict: 'id' })
               break;
             case 'ARTIST_AD_CAMPAIGN':

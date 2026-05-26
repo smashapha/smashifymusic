@@ -154,8 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const tier = (listenerData.subscription_tier || 'free').toLowerCase();
           console.log('Fetched listener tier:', listenerData?.subscription_tier)
           
-          if (listenerData.subscription_ends && tier !== 'free') {
-            const endsAt = new Date(listenerData.subscription_ends);
+          if (listenerData.subscription_expires_at && tier !== 'free') {
+            const endsAt = new Date(listenerData.subscription_expires_at);
             const now = new Date();
             if (endsAt.getTime() < now.getTime()) {
                const { data: updatedListener } = await supabase
@@ -278,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: authUser?.email || '',
             phone: authUser?.user_metadata?.phone || null,
             subscription_tier: listenerTier,
-            subscription_ends: listenerEnds,
+            subscription_expires_at: listenerEnds,
             user_type: 'listener'
           };
           const { error: createError } = await supabase.from('user_profiles').upsert(profileData);

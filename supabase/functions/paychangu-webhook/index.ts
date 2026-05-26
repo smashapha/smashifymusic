@@ -252,7 +252,7 @@ serve(async (req) => {
           .upsert({
             id: listenerId,
             subscription_tier: subTierName,
-            subscription_ends: subEnds.toISOString()
+            subscription_expires_at: subEnds.toISOString()
           }, { onConflict: 'id' })
 
         if (listenerTierError) {
@@ -291,7 +291,7 @@ serve(async (req) => {
             .upsert({
               id: userId,
               subscription_tier: 'Premium',
-              subscription_ends: artistTierEnds.toISOString()
+              subscription_expires_at: artistTierEnds.toISOString()
             }, { onConflict: 'id' })
 
           if (listenerUpsertError) {
