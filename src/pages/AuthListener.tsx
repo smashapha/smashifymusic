@@ -94,7 +94,7 @@ const AuthListener: React.FC = () => {
       
       if (!data.user) throw new Error("Registration failed");
       
-      const { error: profileError } = await supabase.from('user_profiles').insert({
+      const { error: profileError } = await supabase.from('user_profiles').upsert({
         id: data.user.id,
         full_name: fullName,
         email: email,
@@ -102,7 +102,7 @@ const AuthListener: React.FC = () => {
         phone_verified: true,
         subscription_tier: 'Free',
         user_type: 'listener'
-      });
+      }, { onConflict: 'id' });
       if (profileError) throw profileError;
       
       const userProfileObj = { id: data.user.id, email, full_name: fullName, is_artist: false };
