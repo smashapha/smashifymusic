@@ -533,34 +533,23 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
     setRequesting(true);
     try {
       const session = (await supabase.auth.getSession()).data.session;
-      const response = await fetch('/api/functions/v1/process-payout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('process-payout', {
+        body: {
           amount: withdrawalAmount,
           phone,
           network: selectedNetwork
-        })
+        }
       });
 
-      const textToLog = await response.text();
-      let data: any;
-      try {
-        data = JSON.parse(textToLog);
-      } catch (e) {
-        console.error("Payout Frontend JSON Parse Error. Raw text:", textToLog);
-        throw new Error(`Server returned invalid response. Status: ${response.status}`);
+      if (response.error) {
+        console.error("Payout Frontend Invoke Error:", response.error);
+        throw new Error(response.error.message || 'Withdrawal request failed');
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Withdrawal request failed');
-      }
+      const data = response.data;
 
       toast.success(
-        data.message || 'Withdrawal requested! We will send your money within 24 hours.'
+        data?.message || 'Withdrawal requested! We will send your money within 24 hours.'
       );
       setWithdrawalAmount(0);
       setShowWithdrawForm(false);
