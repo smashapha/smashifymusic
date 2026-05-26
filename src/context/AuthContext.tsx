@@ -148,16 +148,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const tier = (listenerData.subscription_tier || 'free').toLowerCase();
           console.log('Fetched listener tier:', listenerData?.subscription_tier)
           
-          if (listenerData.subscription_ends && new Date(listenerData.subscription_ends) < new Date() && tier !== 'free') {
-             const { data: updatedListener } = await supabase
-               .from('user_profiles')
-               .update({ subscription_tier: 'free' })
-               .eq('id', userId)
-               .select()
-               .single();
-             if (updatedListener) {
-                currentListenerData = updatedListener;
-             }
+          if (listenerData.subscription_ends && tier !== 'free') {
+            const endsAt = new Date(listenerData.subscription_ends);
+            const now = new Date();
+            if (endsAt.getTime() < now.getTime()) {
+               const { data: updatedListener } = await supabase
+                 .from('user_profiles')
+                 .update({ subscription_tier: 'free' })
+                 .eq('id', userId)
+                 .select()
+                 .single();
+               if (updatedListener) {
+                  currentListenerData = updatedListener;
+               }
+            }
           }
           
           if (listenerData.is_admin || listenerData.role === 'admin') {
@@ -295,9 +299,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
-      // Force fresh fetch by clearing cached state first
-      setArtistProfile(null)
-      setListenerProfile(null)
       await fetchProfile(user.id)
     }
   }
