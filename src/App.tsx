@@ -168,7 +168,7 @@ const NotFound = () => {
 };
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-smash-black flex items-center justify-center">
+  <div className="min-h-screen bg-bg-page flex items-center justify-center">
     <div className="w-12 h-12 border-4 border-smash-purple border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
@@ -195,7 +195,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-smash-black flex items-center justify-center">
+      <div className="min-h-screen bg-bg-page flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -203,7 +203,7 @@ function AppContent() {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-smash-black flex items-center justify-center">
+      <div className="min-h-screen bg-bg-page flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
       </div>
     }>

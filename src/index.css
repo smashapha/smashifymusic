@@ -27,15 +27,44 @@
 
 @layer base {
   :root {
-    --bg-page: #121824;
-    --bg-surface: #1a2232;
-    --bg-elevated: #242f44;
-    --bg-modal: #2a374e;
+    /* DEFAULT TO LIGHT MODE */
+    --bg-page: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F1F5F9;
+    --bg-modal: #FFFFFF;
     --border-subtle: rgba(100, 116, 139, 0.15);
     --border-default: rgba(100, 116, 139, 0.3);
-    --text-primary: #ffffff;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* DARK MODE */
+      --bg-page: #121824;
+      --bg-surface: #1a2232;
+      --bg-elevated: #242f44;
+      --bg-modal: #2a374e;
+      --border-subtle: rgba(100, 116, 139, 0.15);
+      --border-default: rgba(100, 116, 139, 0.3);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+    }
+  }
+
+  /* FOR EXPLICIT .dark class TOGGLE IF NEEDED */
+  .dark {
+      --bg-page: #121824;
+      --bg-surface: #1a2232;
+      --bg-elevated: #242f44;
+      --bg-modal: #2a374e;
+      --border-subtle: rgba(100, 116, 139, 0.15);
+      --border-default: rgba(100, 116, 139, 0.3);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
   }
 
   body {

@@ -1,11 +1,11 @@
 {
   "name": "Smashify",
   "short_name": "Smashify",
-  "description": "Malawi's #1 music streaming platform",
+  "description": "Africa's first direct fan-to-artist music platform.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f12",
-  "theme_color": "#ff5f00",
+  "background_color": "#121824",
+  "theme_color": "#0EA5E9",
   "icons": [
     {
       "src": "/smashify-icon.svg",
