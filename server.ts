@@ -762,8 +762,24 @@ async function startServer() {
     console.log('--- PRODUCTION MODE ---');
     if (indexHtmlExists) {
       console.log('Serving static files from dist/');
-      app.use(express.static(distPath));
+      app.use(express.static(distPath, {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+          } else if (filePath.match(/\.(js|css|webp|png|jpg|jpeg|gif|svg|woff2?)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+          }
+        }
+      }));
+      
       app.get('*', (req, res) => {
+        // Do not return index.html for missing static assets
+        if (req.originalUrl.match(/\.(js|css|webp|png|jpg|jpeg|gif|svg|woff2?|map)$/)) {
+          return res.status(404).send('Not found');
+        }
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.sendFile(path.join(distPath, 'index.html'));
       });
     } else {
