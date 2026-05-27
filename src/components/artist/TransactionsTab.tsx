@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Receipt, Music2, Heart, Sparkles, Lock } from 'lucide-react';
-import { getArtistTier } from '../../lib/tierUtils';
+import { Loader2, Receipt, Music2, Heart, Sparkles } from 'lucide-react';
 
-export const TransactionsTab = ({ userProfile, setActiveTab }: any) => {
+export const TransactionsTab = ({ userProfile }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const isElite = getArtistTier(userProfile) === 'elite';
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!userProfile?.id || !isElite) {
-        setLoading(false);
-        return;
-      }
+      if (!userProfile?.id) return;
       
       const { data, error } = await supabase
         .from('transactions')
@@ -106,31 +101,6 @@ export const TransactionsTab = ({ userProfile, setActiveTab }: any) => {
       bg: 'bg-slate-500/10'
     };
   };
-
-  if (!isElite) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-text-primary">Transaction History</h2>
-        </div>
-        <div className="bg-bg-surface rounded-2xl border border-border-subtle p-12 text-center flex flex-col items-center">
-          <div className="w-16 h-16 bg-[#0EA5E9]/10 rounded-full flex items-center justify-center mb-6">
-            <Lock className="w-8 h-8 text-[#0EA5E9]" />
-          </div>
-          <h3 className="text-xl font-bold text-text-primary mb-3">Elite Analytics Required</h3>
-          <p className="text-text-secondary max-w-md mx-auto mb-8">
-            Detailed transaction history and fan insights are only available for Elite tier artists. Upgrade your subscription to see exactly who is buying your music and tipping you.
-          </p>
-          <button
-            onClick={() => setActiveTab && setActiveTab('subscription')}
-            className="px-8 py-3 bg-[#0EA5E9] text-white rounded-full font-bold hover:bg-[#0284c7] transition-all"
-          >
-            Upgrade to Elite
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

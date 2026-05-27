@@ -401,7 +401,7 @@ export default function ArtistHub() {
                   {activeTab === 'profile' && <ProfileTab userProfile={userProfile} />}
                   {activeTab === 'subscription' && <SubscriptionTab userProfile={userProfile} role={role} />}
                   {activeTab === 'notifications' && <NotificationsTab userProfile={userProfile} />}
-                  {activeTab === 'transactions' && <TransactionsTab userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'transactions' && <TransactionsTab userProfile={userProfile} />}
                 </motion.div>
             </AnimatePresence>
           </div>
