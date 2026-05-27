@@ -38,7 +38,10 @@ export async function initiatePayment(params: InitiatePaymentParams) {
   const toastId = toast.loading('Initializing secure payment...');
   
   try {
-    const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${Date.now()}`;
+    const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${randomHex}-${Date.now()}`;
     
     const session = (await supabase.auth.getSession()).data.session;
 

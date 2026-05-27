@@ -57,6 +57,22 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Rate limiting: max 3 payment initiations per user per 60 seconds
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString()
+    const { count } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('fan_id', user.id)
+      .eq('status', 'pending')
+      .gte('created_at', oneMinuteAgo)
+
+    if ((count ?? 0) >= 3) {
+      return new Response(
+        JSON.stringify({ error: 'Too many payment attempts. Please wait a moment before trying again.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // 2. Map Payment Description
     const descriptions: Record<string, string> = {
       'track_purchase': `Purchase of music track on Smashify`,

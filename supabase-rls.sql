@@ -631,3 +631,12 @@ DROP FUNCTION IF EXISTS increment_song_sales(uuid) CASCADE;
 -- FINAL COMMENT
 -- ─────────────────────────────────────────────────────────────────────────────
 COMMENT ON DATABASE postgres IS 'Smashify Production Database - Security Level 1 (Hardened RLS)';
+
+-- Wallet Increment RPC
+CREATE OR REPLACE FUNCTION public.increment_wallet(artist_id uuid, amount numeric)
+RETURNS void AS $$
+  UPDATE profiles
+  SET wallet_balance = wallet_balance + amount,
+      updated_at = now()
+  WHERE id = artist_id;
+$$ LANGUAGE sql SECURITY DEFINER;

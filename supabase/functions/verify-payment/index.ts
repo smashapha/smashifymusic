@@ -108,9 +108,7 @@ serve(async (req) => {
               )
               if (fpError) console.error('fan_purchases upsert failed:', fpError.message, fpError.details)
               
-              const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-              const currentBalance = Number(profileData?.wallet_balance || 0)
-              await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+              await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
               
               // Increment sales count safely
               const { data: songData } = await supabase.from('songs').select('sales').eq('id', songId).single()
@@ -119,9 +117,7 @@ serve(async (req) => {
               break;
 
             case 'TIP': {
-              const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-              const currentBalance = Number(profileData?.wallet_balance || 0)
-              await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+              await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
               
               if (!anonymous) {
                   await supabase.from('notifications').insert({
@@ -144,9 +140,7 @@ serve(async (req) => {
                 next_billing_at: renewsAt.toISOString()
               })
               
-              const { data: profileDataSub } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-              const currentBalanceSub = Number(profileDataSub?.wallet_balance || 0)
-              await supabase.from('profiles').update({ wallet_balance: currentBalanceSub + netAmount }).eq('id', artistId)
+              await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
               
               await supabase.from('notifications').insert({
                 profile_id: artistId,

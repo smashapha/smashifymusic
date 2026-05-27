@@ -52,27 +52,20 @@ serve(async (req) => {
     const signature = req.headers.get('x-paychangu-signature')
     const bodyText = await req.text()
     
-    // 1. Verify Webhook Signature (If secret is present)
-    if (PAYCHANGU_WEBHOOK_SECRET && signature) {
-      const hmac = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["verify"]
-      );
-      const verified = await crypto.subtle.verify(
-        "HMAC",
-        hmac,
-        hexToBytes(signature || ""),
-        new TextEncoder().encode(bodyText)
-      );
-      if (!verified) {
-          console.error("Webhook signature mismatch");
-          return new Response('Unauthorized', { status: 401 });
-      }
-    } else {
-      console.warn("Skipping Payload Signature Verification (Missing Secret or Header)")
+    // 1. Verify Webhook Signature
+    if (!PAYCHANGU_WEBHOOK_SECRET) {
+      console.error('WEBHOOK_SECRET is not configured — rejecting request')
+      return new Response('Webhook secret not configured', { status: 500 })
+    }
+    // signature verification (always runs)
+    const signature = req.headers.get('x-paychangu-signature')
+    if (!signature) {
+      return new Response('Missing signature', { status: 401 })
+    }
+    const expectedSig = await computeHmac(PAYCHANGU_WEBHOOK_SECRET, bodyText)
+    if (signature !== expectedSig) {
+      console.error('Invalid webhook signature')
+      return new Response('Invalid signature', { status: 401 })
     }
 
     const payload = JSON.parse(bodyText)
@@ -88,6 +81,17 @@ serve(async (req) => {
       .select('*')
       .eq('paychangu_ref', tx_ref)
       .single()
+
+    const { data: existingTx } = await supabase
+      .from('transactions')
+      .select('status')
+      .eq('paychangu_ref', tx_ref)
+      .single()
+
+    if (existingTx?.status === 'completed') {
+      console.log(`Duplicate webhook received for ${tx_ref} — already processed, skipping`)
+      return new Response('Already processed', { status: 200 })
+    }
 
     // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
     // Convert it to uppercase for switch matching. If not in metadata, use regex fallback immune to UUID hyphens.
@@ -162,9 +166,7 @@ serve(async (req) => {
         const currentSales = Number(songData?.sales || 0)
         await supabase.from('songs').update({ sales: currentSales + 1 }).eq('id', songId)
         
-        const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-        const currentBalance = Number(profileData?.wallet_balance || 0)
-        await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+        await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
         
         await supabase.from('notifications').insert({
           profile_id: artistId,
@@ -177,9 +179,7 @@ serve(async (req) => {
       }
 
       case 'TIP': {
-        const { data: profileData } = await supabase.from('profiles').select('wallet_balance').eq('id', artistId).single()
-        const currentBalance = Number(profileData?.wallet_balance || 0)
-        await supabase.from('profiles').update({ wallet_balance: currentBalance + netAmount }).eq('id', artistId)
+        await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
 
         if (!anonymous) {
             await supabase.from('notifications').insert({
@@ -214,20 +214,10 @@ serve(async (req) => {
         }
 
         // Credit artist wallet with net amount
-        const { data: artistWallet } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('id', artistId)
-          .single()
-
-        const newBalance = Number(artistWallet?.wallet_balance || 0) + netAmount
-        const { error: walletError } = await supabase
-          .from('profiles')
-          .update({ wallet_balance: newBalance })
-          .eq('id', artistId)
+        const { error: walletError } = await supabase.rpc('increment_wallet', { artist_id: artistId, amount: netAmount })
 
         if (walletError) console.error('Artist wallet credit error:', walletError)
-        else console.log('Artist wallet credited:', netAmount, 'new balance:', newBalance)
+        else console.log('Artist wallet credited:', netAmount)
         
         await supabase.from('notifications').insert({
           profile_id: artistId,
@@ -319,6 +309,24 @@ serve(async (req) => {
     return new Response('Internal error', { status: 200 }) // Return 200 to prevent PayChangu retrying broken code
   }
 })
+
+async function computeHmac(secret: string, data: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(data)
+  );
+  return Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 function hexToBytes(hex: string) {
   const bytes = new Uint8Array(hex.length / 2);
