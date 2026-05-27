@@ -23,11 +23,15 @@
   --color-smash-purple: #38bdf8;
   --color-smash-green: #10b981;
   --color-smash-cyan: #0ea5e9;
+  --color-smash-black: #121824;
+  --color-smash-dark: #1a2232;
+  --color-smash-gray: #64748b;
+  --color-smash-pink: #ec4899;
 }
 
 @layer base {
   :root {
-    /* DEFAULT TO DARK MODE */
+    /* DEFAULT ALWAYS DARK MODE */
     --bg-page: #121824;
     --bg-surface: #1a2232;
     --bg-elevated: #242f44;
@@ -37,21 +41,6 @@
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
-  }
-
-  @media (prefers-color-scheme: light) {
-    :root {
-      /* LIGHT MODE */
-      --bg-page: #F8FAFC;
-      --bg-surface: #FFFFFF;
-      --bg-elevated: #F1F5F9;
-      --bg-modal: #FFFFFF;
-      --border-subtle: rgba(100, 116, 139, 0.15);
-      --border-default: rgba(100, 116, 139, 0.3);
-      --text-primary: #0F172A;
-      --text-secondary: #475569;
-      --text-muted: #64748B;
-    }
   }
 
   /* FOR EXPLICIT .dark class TOGGLE IF NEEDED */
