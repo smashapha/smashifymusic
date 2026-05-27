@@ -140,6 +140,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
   
+  const controlsRef = useRef<any>({});
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('smash_datasaver') === 'true';
@@ -247,20 +249,38 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const handlers: [MediaSessionAction, (details: MediaSessionActionDetails) => void][] = [
-      ['play', () => setIsPlaying(true)],
-      ['pause', () => setIsPlaying(false)],
-      ['nexttrack', () => nextTrack()],
-      ['previoustrack', () => previousTrack()],
+      ['play', async () => {
+        const { audioRef, setIsPlaying } = controlsRef.current;
+        if (audioRef.current) {
+           try { await audioRef.current.play(); } catch(e){}
+        }
+        setIsPlaying(true);
+      }],
+      ['pause', () => {
+        const { audioRef, setIsPlaying } = controlsRef.current;
+        if (audioRef.current) {
+           audioRef.current.pause();
+        }
+        setIsPlaying(false);
+      }],
+      ['nexttrack', () => { if (controlsRef.current.nextTrack) controlsRef.current.nextTrack(); }],
+      ['previoustrack', () => { if (controlsRef.current.previousTrack) controlsRef.current.previousTrack(); }],
       ['seekbackward', (details) => {
         const skipTime = details.seekOffset || 10;
-        if (audioRef.current) seek(Math.max(0, audioRef.current.currentTime - skipTime));
+        const { audioRef, seek } = controlsRef.current;
+        if (audioRef.current && seek) seek(Math.max(0, audioRef.current.currentTime - skipTime));
       }],
       ['seekforward', (details) => {
         const skipTime = details.seekOffset || 10;
-        if (audioRef.current) seek(Math.min(duration, audioRef.current.currentTime + skipTime));
+        const { audioRef, seek } = controlsRef.current;
+        if (audioRef.current && seek) seek(Math.min(duration, audioRef.current.currentTime + skipTime));
       }],
-      ['seekto', (details) => { if (details.seekTime !== undefined) seek(details.seekTime); }],
-      ['stop', () => { setIsPlaying(false); if (audioRef.current) audioRef.current.currentTime = 0; }]
+      ['seekto', (details) => { if (details.seekTime !== undefined && controlsRef.current.seek) controlsRef.current.seek(details.seekTime); }],
+      ['stop', () => { 
+        const { audioRef, setIsPlaying } = controlsRef.current;
+        setIsPlaying(false); 
+        if (audioRef.current) audioRef.current.currentTime = 0; 
+      }]
     ];
 
     handlers.forEach(([action, handler]) => {
@@ -910,6 +930,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     eqPreset, playbackRate, sleepTimerRemaining, isExpanded, radioMode,
     adPlaying, adSkipAvailable, isShuffle, repeatMode, purchasedIds
   ]);
+
+  controlsRef.current = { nextTrack, previousTrack, seek, setIsPlaying, audioRef };
 
   return (
     <PlayerContext.Provider value={value}>
