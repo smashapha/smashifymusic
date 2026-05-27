@@ -7,7 +7,7 @@ import {
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
   ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
-  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud
+  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -80,6 +80,8 @@ const NotificationsTab = ({ userProfile }: any) => {
     </div>
   );
 };
+
+import { TransactionsTab } from '../components/artist/TransactionsTab';
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
@@ -181,6 +183,7 @@ export default function ArtistHub() {
         { id: 'upload', label: 'Upload', icon: UploadCloud },
         { id: 'promotion', label: 'Promote', icon: Flame },
         { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'transactions', label: 'History', icon: Receipt },
       ]
     },
     {
@@ -398,6 +401,7 @@ export default function ArtistHub() {
                   {activeTab === 'profile' && <ProfileTab userProfile={userProfile} />}
                   {activeTab === 'subscription' && <SubscriptionTab userProfile={userProfile} role={role} />}
                   {activeTab === 'notifications' && <NotificationsTab userProfile={userProfile} />}
+                  {activeTab === 'transactions' && <TransactionsTab userProfile={userProfile} setActiveTab={setActiveTab} />}
                 </motion.div>
             </AnimatePresence>
           </div>
