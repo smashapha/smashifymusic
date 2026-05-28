@@ -43,6 +43,11 @@ const AuthListener: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   if (loading && !user) {
     return (
@@ -71,14 +76,52 @@ const AuthListener: React.FC = () => {
     }
   };
 
+  const sendOtp = async () => {
+    if (!phone) return toast.error('Phone number is required');
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('twilio-verify', {
+        body: { action: 'send', phone }
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      setOtpSent(true);
+      toast.success('Verification code sent to your phone!');
+    } catch (err: any) {
+      toast.error('Failed to send code: ' + err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode || otpCode.length < 4) return toast.error('Enter the code sent to your phone');
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('twilio-verify', {
+        body: { action: 'check', phone, code: otpCode }
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      if (!data.verified) throw new Error('Incorrect code. Please try again.');
+      setOtpVerified(true);
+      toast.success('Phone verified! Creating your account...');
+      await handleSignupAndSubscribe('Free');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) { toast.error('Email is required'); return; }
-    if (!password || password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    if (!fullName) { toast.error('Full name is required'); return; }
-    if (!phone) { toast.error('Phone is required'); return; }
-    
-    await handleSignupAndSubscribe('Free');
+    if (!email) return toast.error('Email is required');
+    if (!password || password.length < 8) return toast.error('Password must be at least 8 characters');
+    if (!fullName) return toast.error('Full name is required');
+    if (!phone) return toast.error('Phone is required');
+    if (!otpSent) {
+      await sendOtp();
+      return;
+    }
   };
 
   const handleSignupAndSubscribe = async (plan: PlanChoice) => {
@@ -243,10 +286,38 @@ const AuthListener: React.FC = () => {
                  <AuthInput icon={User} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} disabled={loadingState} />
                  <AuthInput icon={Mail} type="email" placeholder="Email Address" value={email} onChange={setEmail} disabled={loadingState} />
                  <AuthInput icon={Phone} type="tel" placeholder="Phone" value={phone} onChange={setPhone} disabled={loadingState} />
+                 {otpSent && !otpVerified && (
+                   <div className="space-y-3">
+                     <p className="text-[12px] text-text-muted text-center">
+                       Enter the 6-digit code sent to <span className="text-white font-bold">{phone}</span>
+                     </p>
+                     <input
+                       type="text"
+                       inputMode="numeric"
+                       maxLength={6}
+                       placeholder="000000"
+                       value={otpCode}
+                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                       className="w-full h-[52px] text-center text-2xl font-mono tracking-[0.5em] bg-white/5 border border-white/10 rounded-[14px] text-white focus:outline-none focus:border-smash-orange/60 focus:ring-[3px] focus:ring-smash-orange/12 transition-all"
+                     />
+                     <button
+                       type="button"
+                       onClick={verifyOtp}
+                       disabled={otpLoading || otpCode.length < 4}
+                       className="w-full h-[52px] rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide text-white transition-all hover:brightness-110 disabled:opacity-50"
+                       style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}
+                     >
+                       {otpLoading ? 'Verifying...' : 'Verify & Create Account'}
+                     </button>
+                     <button type="button" onClick={sendOtp} disabled={otpLoading} className="w-full text-[12px] text-text-muted hover:text-white transition-colors">
+                       Resend code
+                     </button>
+                   </div>
+                 )}
                  <AuthInput icon={AppLockIcon} type="password" placeholder="Create Password" value={password} onChange={setPassword} disabled={loadingState} />
                  
-                 <button type="submit" disabled={loadingState} className="w-full h-[52px] rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 hover:scale-[1.01] active:scale-[0.98] mt-2" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
-                    REGISTER
+                 <button type="submit" disabled={loadingState || otpLoading} className="w-full h-[52px] rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 hover:scale-[1.01] active:scale-[0.98] mt-2" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
+                    {otpSent ? 'Code Sent ✓' : loadingState ? 'Sending...' : 'REGISTER'}
                  </button>
 
                  <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/10 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] hover:bg-white/5 transition-colors mt-4">

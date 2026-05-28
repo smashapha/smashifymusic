@@ -36,6 +36,10 @@ const AuthArtist: React.FC = () => {
   const [idPhoto, setIdPhoto] = useState<File | null>(null);
 
   const [nrcNumber, setNrcNumber] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
   const [nrcFormatValid, setNrcFormatValid] = useState(false);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [idDocFile, setIdDocFile] = useState<File | null>(null);
@@ -330,12 +334,48 @@ const AuthArtist: React.FC = () => {
     }
   };
 
+  const sendOtp = async () => {
+    if (!phone) return toast.error('Phone number is required');
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('twilio-verify', {
+        body: { action: 'send', phone }
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      setOtpSent(true);
+      toast.success('Verification code sent!');
+    } catch (err: any) {
+      toast.error('Failed to send code: ' + err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode || otpCode.length < 4) return toast.error('Enter the code sent to your phone');
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('twilio-verify', {
+        body: { action: 'check', phone, code: otpCode }
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      if (!data.verified) throw new Error('Incorrect code. Please try again.');
+      setOtpVerified(true);
+      toast.success('Phone verified!');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const nextArtistStep = () => {
     if (artistStep === 1) {
        if (!fullName || !stageName || !email) return toast.error('Please fill all fields');
     } else if (artistStep === 2) {
       if (!genre) return toast.error('Please select your genre');
       if (!phone) return toast.error('Phone number is required');
+      if (!otpVerified) return toast.error('Please verify your phone number before continuing');
       if (!city) return toast.error('City is required');
       if (!idDocFile) return toast.error('Please upload a photo of your ID document');
       if (!selfieFile) return toast.error('Please take a selfie holding your ID');
@@ -468,6 +508,55 @@ const AuthArtist: React.FC = () => {
                        <motion.div key="as2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                           <AuthInput icon={Disc} type="text" placeholder="Primary Genre" value={genre} onChange={setGenre} />
                           <AuthInput icon={Phone} type="text" placeholder="Phone" value={phone} onChange={setPhone} />
+                          
+                          {/* Phone verification */}
+                          {!otpVerified ? (
+                            <div className="space-y-2">
+                              {!otpSent ? (
+                                <button
+                                  type="button"
+                                  onClick={sendOtp}
+                                  disabled={otpLoading || !phone}
+                                  className="w-full h-[44px] rounded-[12px] border border-smash-orange/40 text-smash-orange text-[13px] font-bold hover:bg-smash-orange/10 transition-all disabled:opacity-40"
+                                >
+                                  {otpLoading ? 'Sending...' : 'Send Verification Code'}
+                                </button>
+                              ) : (
+                                <div className="space-y-2">
+                                  <p className="text-[11px] text-text-muted text-center">
+                                    Code sent to <span className="text-white font-bold">{phone}</span>
+                                  </p>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    placeholder="000000"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full h-[48px] text-center text-xl font-mono tracking-[0.5em] bg-white/5 border border-white/10 rounded-[12px] text-white focus:outline-none focus:border-smash-orange/60 transition-all"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={verifyOtp}
+                                    disabled={otpLoading || otpCode.length < 4}
+                                    className="w-full h-[44px] rounded-[12px] text-white font-bold text-[13px] uppercase disabled:opacity-40 transition-all"
+                                    style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}
+                                  >
+                                    {otpLoading ? 'Verifying...' : 'Verify Code'}
+                                  </button>
+                                  <button type="button" onClick={sendOtp} disabled={otpLoading} className="w-full text-[11px] text-text-muted hover:text-white transition-colors">
+                                    Resend code
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-[10px]">
+                              <Check size={14} className="text-green-400" />
+                              <span className="text-green-400 text-[12px] font-bold">Phone verified</span>
+                            </div>
+                          )}
+
                           <AuthInput icon={MapPin} type="text" placeholder="City" value={city} onChange={setCity} />
                           
                           {/* Verification Method Selector */}

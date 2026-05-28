@@ -13,6 +13,7 @@ import { Mail, Phone, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { lazy, Suspense } from 'react';
+import Maintenance from './pages/Maintenance';
 const Landing = lazy(() => import('./pages/Landing'));
 const AuthListener = lazy(() => import('./pages/AuthListener'));
 const AuthArtist = lazy(() => import('./pages/AuthArtist'));
@@ -174,7 +175,13 @@ const LoadingSpinner = () => (
 );
 
 function AppContent() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
+  const [maintenance, setMaintenance] = useState<{
+    active: boolean;
+    message?: string;
+    estimatedTime?: string;
+  } | null>(null);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
 
   useEffect(() => {
     const handleOffline = () => {
@@ -193,11 +200,55 @@ function AppContent() {
     };
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    // Initial fetch
+    const fetchMaintenance = async () => {
+      try {
+        const { data } = await supabase
+          .from('app_config')
+          .select('value')
+          .eq('key', 'maintenance')
+          .single();
+        setMaintenance(data?.value || { active: false });
+      } catch {
+        setMaintenance({ active: false });
+      } finally {
+        setMaintenanceLoading(false);
+      }
+    };
+    fetchMaintenance();
+
+    // Realtime subscription — updates instantly when you change the flag
+    const channel = supabase
+      .channel('app-config-maintenance')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'app_config',
+        filter: 'key=eq.maintenance'
+      }, (payload) => {
+        setMaintenance(payload.new.value);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  if (maintenanceLoading || authLoading) {
     return (
       <div className="min-h-screen bg-bg-page flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin"></div>
       </div>
+    );
+  }
+
+  // Block all non-admin users during maintenance
+  if (maintenance?.active && role !== 'admin') {
+    return (
+      <Maintenance
+        message={maintenance.message}
+        estimatedTime={maintenance.estimatedTime}
+      />
     );
   }
 
