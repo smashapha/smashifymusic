@@ -53,11 +53,7 @@ Deno.serve(async (req) => {
     // 3. Pessimistically Deduct from Wallet
     console.log("Payout Function: Deducting from wallet...")
     const { data: updatedArtist, error: updateError } = await supabase
-      .from('profiles')
-      .update({ wallet_balance: artist.wallet_balance - amount })
-      .eq('id', user.id)
-      .gte('wallet_balance', amount) // Atomic check
-      .select()
+      .rpc('decrement_wallet', { artist_id: user.id, amount })
       .single()
 
     if (updateError || !updatedArtist) {
