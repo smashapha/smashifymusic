@@ -57,22 +57,29 @@ serve(async (req) => {
     } 
     // 3. Handle Failure
     else if (status === 'failed') {
-      await supabase.from('payout_requests').update({ status: 'failed' }).eq('id', payout.id)
-      
-      // REFUND WALLET
-      const { data: artist } = await supabase.from('profiles').select('wallet_balance').eq('id', payout.artist_id).single()
-      const amountToRefund = payout.requested_amount || payout.amount || payout.payout_amount || 0;
-      
-      await supabase.from('profiles').update({
-        wallet_balance: (artist?.wallet_balance || 0) + amountToRefund
-      }).eq('id', payout.artist_id)
+      // Duplicate protection - only refund if still pending
+      if (payout.status !== 'pending') {
+        return new Response('Already processed', { status: 200 })
+      }
+
+      await supabase.from('payout_requests')
+        .update({ status: 'failed' })
+        .eq('id', payout.id)
+
+      const amountToRefund = Number(payout.requested_amount || 0)
+      if (amountToRefund > 0) {
+        await supabase.rpc('increment_wallet', {
+          artist_id: payout.artist_id,
+          amount: amountToRefund
+        })
+      }
 
       await supabase.from('notifications').insert({
         profile_id: payout.artist_id,
         user_type: 'artist',
         type: 'payout_failed',
-        message: `Your withdrawal failed. MK ${amountToRefund.toLocaleString()} returned to your wallet.`,
-        link: '/artist-hub#payouts'
+        message: `Your withdrawal of MK ${amountToRefund.toLocaleString()} failed. Amount returned to your wallet.`,
+        link: '/artist-hub#wallet'
       })
     }
 

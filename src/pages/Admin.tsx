@@ -269,21 +269,21 @@ const Admin = () => {
       if (error) throw error;
       
       // Manually refund the wallet balance
-      const refundAmount = payout.amount || payout.requested_amount;
-      if (payout.artist_id && refundAmount) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('id', payout.artist_id)
-          .single();
-          
-        if (profile) {
-          const newBalance = Number(profile.wallet_balance || 0) + Number(refundAmount);
-          await supabase
-            .from('profiles')
-            .update({ wallet_balance: newBalance })
-            .eq('id', payout.artist_id);
-        }
+      const refundAmount = Number(payout.requested_amount || 0);
+      if (payout.artist_id && refundAmount > 0) {
+        const { error: refundError } = await supabase.rpc('increment_wallet', {
+          artist_id: payout.artist_id,
+          amount: refundAmount
+        });
+        if (refundError) throw new Error('Refund failed: ' + refundError.message);
+        
+        await supabase.from('notifications').insert({
+          profile_id: payout.artist_id,
+          user_type: 'artist',
+          type: 'payout_rejected',
+          message: `Your withdrawal of MK ${refundAmount.toLocaleString()} was rejected. Reason: ${reason}. Amount returned to your wallet.`,
+          link: '/artist-hub#wallet'
+        });
       }
 
       toast.success('Rejected. Artist wallet has been refunded.');
