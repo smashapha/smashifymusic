@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 
-const TopBar = () => {
+const TopBar = ({ unreadCount }: { unreadCount: number }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
   const { user, userProfile, signOut, role } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +52,30 @@ const TopBar = () => {
               <ShieldCheck size={14} /> Admin access
            </Link>
         )}
+        
+        {/* Mobile Notifications Bell */}
+        {user && (
+          <button 
+            onClick={() => navigate('/notifications')}
+            className="md:hidden p-2.5 relative bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none"
+            title="Notifications"
+          >
+            <Bell size={16} />
+            <AnimatePresence>
+               {unreadCount > 0 && (
+                 <motion.div
+                   initial={{ scale: 0 }}
+                   animate={{ scale: 1 }}
+                   exit={{ scale: 0 }}
+                   className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-smash-orange text-white text-[8px] font-semibold flex items-center justify-center px-1 border-2 border-bg-page"
+                 >
+                   {unreadCount > 99 ? '99+' : unreadCount}
+                 </motion.div>
+               )}
+            </AnimatePresence>
+          </button>
+        )}
+
         <ThemeToggle />
         <button 
            onClick={toggleDataSaver}
@@ -74,7 +98,7 @@ const TopBar = () => {
   );
 };
 
-export const Sidebar = ({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean, setIsCollapsed: (val: boolean) => void }) => {
+export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollapsed: boolean, setIsCollapsed: (val: boolean) => void, unreadCount: number }) => {
   const { user, userProfile, role } = useAuth();
   const navigate = useNavigate();
 
@@ -85,9 +109,6 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean,
     { icon: Flame, label: 'Feed', path: '/moto-feed' },
     { icon: TrendingUp, label: 'Trending', path: '/trending' },
   ];
-
-  // Placeholder for real notification count
-  const unreadCount = 0; 
 
   const activeStyle = "bg-smash-orange/10 text-smash-orange border-l-[4px] border-smash-orange";
   const inactiveStyle = "text-text-secondary hover:bg-bg-elevated hover:text-text-primary border-l-[4px] border-transparent";
@@ -148,27 +169,36 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean,
             {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-display font-medium uppercase tracking-widest text-text-muted">ACCOUNT</div>}
             <ul className="space-y-1">
               <li className="relative">
-                <button
-                  className={`w-full flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px] w-auto' : 'px-5'} gap-3 font-display font-medium text-[13px] text-text-secondary hover:bg-bg-elevated hover:text-text-primary border-l-[4px] border-transparent transition-all group`}
+                <NavLink
+                  to="/notifications"
+                  className={({ isActive }) => 
+                    `w-full flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px] w-auto' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
+                      isActive ? activeStyle : inactiveStyle
+                    } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
+                  }
                   title="Notifications"
                 >
-                   <Bell size={20} className="shrink-0 opacity-70 group-hover:opacity-100" strokeWidth={1.5} />
-                   {!isCollapsed && <span className="truncate">Notifications</span>}
+                  {({ isActive }) => (
+                    <>
+                       <Bell size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                       {!isCollapsed && <span className="truncate">Notifications</span>}
 
-                   <AnimatePresence>
-                     {unreadCount > 0 && (
-                       <motion.div
-                         initial={{ scale: 0 }}
-                         animate={{ scale: 1 }}
-                         exit={{ scale: 0 }}
-                         transition={{ type: 'spring', damping: 14, stiffness: 300 }}
-                         className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-5'} min-w-[18px] h-[18px] rounded-full bg-smash-orange text-white text-[9px] font-semibold flex items-center justify-center px-1`}
-                       >
-                         {unreadCount > 99 ? '99+' : unreadCount}
-                       </motion.div>
-                     )}
-                   </AnimatePresence>
-                </button>
+                       <AnimatePresence>
+                         {unreadCount > 0 && (
+                           <motion.div
+                             initial={{ scale: 0 }}
+                             animate={{ scale: 1 }}
+                             exit={{ scale: 0 }}
+                             transition={{ type: 'spring', damping: 14, stiffness: 300 }}
+                             className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-5'} min-w-[18px] h-[18px] rounded-full bg-smash-orange text-white text-[9px] font-semibold flex items-center justify-center px-1`}
+                           >
+                             {unreadCount > 99 ? '99+' : unreadCount}
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+                    </>
+                  )}
+                </NavLink>
               </li>
 
               <li>
@@ -300,6 +330,34 @@ export const BottomNav = () => {
 const MainLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
+  const { userProfile } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!userProfile?.id) return;
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('profile_id', userProfile.id)
+        .eq('read', false);
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnreadCount();
+
+    if (!userProfile?.id) return;
+    const channel = supabase
+      .channel('public:notifications:main')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `profile_id=eq.${userProfile.id}` }, () => {
+        fetchUnreadCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.id]);
 
   useEffect(() => {
     const update = () => {
@@ -317,7 +375,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-bg-page text-text-primary flex">
       {/* Sidebar navigation */}
       <div className="hidden md:block fixed left-0 top-0 bottom-0 z-40 transition-all duration-300">
-        <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+        <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} unreadCount={unreadCount} />
       </div>
 
       {/* Main content area */}
@@ -325,7 +383,7 @@ const MainLayout: React.FC = () => {
         style={{ marginLeft: 'var(--content-margin)' }}
         className="flex-1 flex flex-col min-w-0 transition-all duration-300"
       >
-        <TopBar />
+        <TopBar unreadCount={unreadCount} />
         
         {/* Content container with padding for sticky player and mobile tab bar */}
         <main className="flex-1 w-full pb-[148px] md:pb-[96px]">

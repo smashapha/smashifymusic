@@ -268,7 +268,7 @@ const Profile: React.FC = () => {
                   <span className="font-display font-medium text-xs md:text-[14px] text-text-primary">Security</span>
                   <Settings size={16} className="text-text-muted group-hover:rotate-90 transition-transform" />
                </button>
-               <button className="w-full flex items-center justify-between group">
+               <button onClick={() => navigate('/notifications')} className="w-full flex items-center justify-between group cursor-pointer hover:opacity-80 transition-opacity">
                   <span className="font-display font-medium text-xs md:text-[14px] text-text-primary">Notifications</span>
                   <div className="w-8 h-4 md:w-10 md:h-5 bg-smash-orange rounded-full relative">
                      <div className="absolute right-0.5 top-0.5 md:right-1 md:top-1 w-3 h-3 bg-white rounded-full shadow-sm" />

@@ -31,6 +31,7 @@ const Discover = lazy(() => import('./pages/Discover'));
 const Library = lazy(() => import('./pages/Library'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Trending = lazy(() => import('./pages/Trending'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const ApplicationPending = lazy(() => import('./pages/ApplicationPending'));
 const Admin = lazy(() => import('./pages/Admin'));
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
@@ -308,6 +309,14 @@ function AppContent() {
             element={
               <ListenerRoute>
                 <Profile />
+              </ListenerRoute>
+            } 
+          />
+          <Route 
+            path="notifications" 
+            element={
+              <ListenerRoute>
+                <Notifications />
               </ListenerRoute>
             } 
           />
