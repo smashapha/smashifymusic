@@ -4,7 +4,7 @@ import {
   ShieldCheck, CircleCheck, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
-  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu
+  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -13,14 +13,14 @@ import { useAuth } from '../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'maintenance' | 'notifications'>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab') as any;
-    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts'].includes(tab)) {
+    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'maintenance', 'notifications'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -32,6 +32,15 @@ const Admin = () => {
   const [pendingSnippets, setPendingSnippets] = useState<any[]>([]); 
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
+  const [maintenance, setMaintenance] = useState({ active: false, message: '', estimatedTime: '' });
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  
+  const [notificationTarget, setNotificationTarget] = useState<'all' | 'artists' | 'listeners' | 'specific'>('all');
+  const [notificationUserId, setNotificationUserId] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationLink, setNotificationLink] = useState('');
+  const [notificationSending, setNotificationSending] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdForm, setShowAdForm] = useState(false);
@@ -69,9 +78,50 @@ const Admin = () => {
       fetchAllSongs(),
       fetchAds(),
       fetchPayoutRequests(),
-      fetchPlatformStats()
+      fetchPlatformStats(),
+      fetchMaintenance()
     ]);
     setLoading(false);
+  };
+
+  const fetchMaintenance = async () => {
+    try {
+      const { data } = await supabase.from('app_config').select('value').eq('key', 'maintenance').single();
+      if (data?.value) {
+        setMaintenance(data.value);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleMaintenance = async (active: boolean) => {
+    setMaintenanceLoading(true);
+    const newVal = { ...maintenance, active };
+    try {
+      const { error } = await supabase.from('app_config').update({ value: newVal, updated_at: new Date().toISOString() }).eq('key', 'maintenance');
+      if (error) throw error;
+      setMaintenance(newVal);
+      toast.success(`Maintenance mode ${active ? 'activated' : 'deactivated'}`);
+    } catch (e: any) {
+      toast.error('Failed to update maintenance: ' + e.message);
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
+  const saveMaintenanceConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMaintenanceLoading(true);
+    try {
+      const { error } = await supabase.from('app_config').update({ value: maintenance, updated_at: new Date().toISOString() }).eq('key', 'maintenance');
+      if (error) throw error;
+      toast.success('Maintenance config saved');
+    } catch (e: any) {
+      toast.error('Failed to save config: ' + e.message);
+    } finally {
+      setMaintenanceLoading(false);
+    }
   };
 
   const fetchPendingSnippets = async () => {
@@ -375,6 +425,75 @@ const Admin = () => {
     }
   };
 
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notificationMessage.trim()) return toast.error('Message is required.');
+    if (notificationTarget === 'specific' && !notificationUserId.trim()) return toast.error('User ID is required.');
+    
+    if (!confirm(`Are you sure you want to send this notification to ${notificationTarget}?`)) return;
+
+    setNotificationSending(true);
+    try {
+      let targets: any[] = [];
+      
+      if (notificationTarget === 'specific') {
+        let isArtist = null;
+        const { data: artistProfile } = await supabase.from('profiles').select('id').eq('id', notificationUserId.trim()).single();
+        if (artistProfile) {
+          targets = [{ id: notificationUserId.trim(), role: 'artist' }];
+        } else {
+          const { data: listenerProfile } = await supabase.from('user_profiles').select('id').eq('id', notificationUserId.trim()).single();
+          if (listenerProfile) {
+            targets = [{ id: notificationUserId.trim(), role: 'listener' }];
+          } else {
+            throw new Error('User UUID not found in any database');
+          }
+        }
+      } else if (notificationTarget === 'artists') {
+        const { data } = await supabase.from('profiles').select('id');
+        targets = (data || []).map((p: any) => ({ id: p.id, role: 'artist' }));
+      } else if (notificationTarget === 'listeners') {
+        const { data } = await supabase.from('user_profiles').select('id');
+        targets = (data || []).map((p: any) => ({ id: p.id, role: 'listener' }));
+      } else if (notificationTarget === 'all') {
+        const [{ data: artists }, { data: listeners }] = await Promise.all([
+          supabase.from('profiles').select('id'),
+          supabase.from('user_profiles').select('id')
+        ]);
+        targets = [
+          ...(artists || []).map((p: any) => ({ id: p.id, role: 'artist' })),
+          ...(listeners || []).map((p: any) => ({ id: p.id, role: 'listener' }))
+        ];
+      }
+
+      if (targets.length === 0) throw new Error('No targets found');
+
+      // Chunk the inserts to avoid payload limits
+      const chunkSize = 500;
+      for (let i = 0; i < targets.length; i += chunkSize) {
+        const chunk = targets.slice(i, i + chunkSize);
+        const payloads = chunk.map(t => ({
+          profile_id: t.id,
+          user_type: t.role,
+          type: 'system_alert',
+          message: notificationMessage,
+          link: notificationLink || null
+        }));
+        
+        const { error } = await supabase.from('notifications').insert(payloads);
+        if (error) throw error;
+      }
+
+      toast.success(`Notification sent to ${targets.length} user(s)`);
+      setNotificationMessage('');
+      setNotificationLink('');
+    } catch (err: any) {
+      toast.error('Failed to send notifications: ' + err.message);
+    } finally {
+      setNotificationSending(false);
+    }
+  };
+
   const fetchArtists = async () => {
     const { data: artistsData, error } = await supabase
       .from('profiles')
@@ -599,6 +718,8 @@ const Admin = () => {
             <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="notifications" label="Notifications" icon={Bell} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
          </nav>
 
          <div className="p-4 border-t border-white/5">
@@ -694,6 +815,8 @@ const Admin = () => {
                   <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="notifications" label="Notifications" icon={Bell} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                 </nav>
               </motion.div>
             </motion.div>
@@ -1611,6 +1734,147 @@ const Admin = () => {
                    </AnimatePresence>
                 </motion.div>
               )}
+
+              {activeTab === 'maintenance' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                   <div className="bg-[#111118] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
+                     <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-6">System Maintenance</h2>
+                     
+                     <div className="flex flex-col md:flex-row gap-6 relative z-10">
+                        <div className="flex-1 space-y-6">
+                           <form onSubmit={saveMaintenanceConfig} className="space-y-4 max-w-xl">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Maintenance Message</label>
+                                <textarea 
+                                  value={maintenance.message} 
+                                  onChange={e => setMaintenance({...maintenance, message: e.target.value})} 
+                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-orange transition-all min-h-[100px]"
+                                  placeholder="We are upgrading..."
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Estimated Time</label>
+                                <input 
+                                  type="text"
+                                  value={maintenance.estimatedTime} 
+                                  onChange={e => setMaintenance({...maintenance, estimatedTime: e.target.value})} 
+                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-orange transition-all"
+                                  placeholder="e.g. 30 minutes, 1 hour"
+                                />
+                              </div>
+                              <button 
+                                type="submit" 
+                                disabled={maintenanceLoading}
+                                className="px-6 py-3 bg-white/10 text-white rounded-lg font-bold text-sm hover:bg-white/20 transition-all"
+                              >
+                                {maintenanceLoading ? 'Saving...' : 'Save Configuration'}
+                              </button>
+                           </form>
+                        </div>
+                        
+                        <div className="w-full md:w-80 shrink-0 p-6 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center text-center justify-center space-y-4">
+                           <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${maintenance.active ? 'bg-smash-orange text-white shadow-smash-orange/30 animate-pulse' : 'bg-white/10 text-smash-gray'}`}>
+                              <Settings size={36} className={maintenance.active ? 'animate-spin-slow' : ''} />
+                           </div>
+                           <div>
+                             <h4 className="font-bold text-lg">{maintenance.active ? 'Maintenance Mode ACTIVE' : 'Maintenance Mode OFF'}</h4>
+                             <p className="text-xs text-smash-gray mt-1">
+                               {maintenance.active ? 'Users currently see the maintenance screen.' : 'App is functioning normally.'}
+                             </p>
+                           </div>
+                           
+                           <button 
+                             type="button"
+                             onClick={() => toggleMaintenance(!maintenance.active)}
+                             disabled={maintenanceLoading}
+                             className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-xl ${
+                               maintenance.active 
+                               ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20' 
+                               : 'bg-smash-orange hover:bg-smash-orange/90 text-black shadow-smash-orange/20'
+                             }`}
+                           >
+                              {maintenanceLoading ? 'Updating...' : (maintenance.active ? 'Deactivate Maintenance' : 'Activate Maintenance')}
+                           </button>
+                        </div>
+                     </div>
+                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'notifications' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                   <div className="bg-[#111118] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
+                     <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-6">Send Out Notifications</h2>
+                     
+                     <form onSubmit={handleSendNotification} className="space-y-6 max-w-2xl">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Target Audience</label>
+                           <div className="flex flex-wrap gap-2">
+                             {['all', 'artists', 'listeners', 'specific'].map((t) => (
+                               <button
+                                 key={t}
+                                 type="button"
+                                 onClick={() => setNotificationTarget(t as any)}
+                                 className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors ${
+                                   notificationTarget === t 
+                                   ? 'bg-smash-purple text-white' 
+                                   : 'bg-white/5 text-smash-gray hover:bg-white/10 hover:text-white'
+                                 }`}
+                               >
+                                 {t}
+                               </button>
+                             ))}
+                           </div>
+                        </div>
+
+                        {notificationTarget === 'specific' && (
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">User ID (Specific User)</label>
+                            <input 
+                              type="text"
+                              value={notificationUserId}
+                              onChange={e => setNotificationUserId(e.target.value)}
+                              placeholder="Enter user UUID..."
+                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Notification Message</label>
+                          <textarea 
+                            value={notificationMessage}
+                            onChange={e => setNotificationMessage(e.target.value)}
+                            placeholder="Type the message to send out..."
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all min-h-[120px]"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Optional Link (Where should it go when clicked?)</label>
+                          <input 
+                            type="text"
+                            value={notificationLink}
+                            onChange={e => setNotificationLink(e.target.value)}
+                            placeholder="e.g. /discover or /artist-hub"
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all"
+                          />
+                        </div>
+
+                        <button 
+                          type="submit"
+                          disabled={notificationSending}
+                          className="px-8 py-4 bg-smash-purple hover:bg-smash-purple/90 text-white rounded-xl font-bold uppercase tracking-widest text-sm transition-all flex items-center gap-2"
+                        >
+                          <Send size={18} />
+                          {notificationSending ? 'Sending...' : 'Dispatch Notification'}
+                        </button>
+                     </form>
+                   </div>
+                </motion.div>
+              )}
+
                 </div>
               </AnimatePresence>
             )}
