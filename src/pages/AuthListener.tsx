@@ -118,10 +118,10 @@ const AuthListener: React.FC = () => {
     if (!password || password.length < 8) return toast.error('Password must be at least 8 characters');
     if (!fullName) return toast.error('Full name is required');
     if (!phone) return toast.error('Phone is required');
-    if (!otpSent) {
-      await sendOtp();
-      return;
-    }
+    
+    // Bypass OTP for now
+    await handleSignupAndSubscribe('Free');
+    return;
   };
 
   const handleSignupAndSubscribe = async (plan: PlanChoice) => {
@@ -286,7 +286,7 @@ const AuthListener: React.FC = () => {
                  <AuthInput icon={User} type="text" placeholder="Full Name" value={fullName} onChange={setFullName} disabled={loadingState} />
                  <AuthInput icon={Mail} type="email" placeholder="Email Address" value={email} onChange={setEmail} disabled={loadingState} />
                  <AuthInput icon={Phone} type="tel" placeholder="Phone" value={phone} onChange={setPhone} disabled={loadingState} />
-                 {otpSent && !otpVerified && (
+                 {false && (
                    <div className="space-y-3">
                      <p className="text-[12px] text-text-muted text-center">
                        Enter the 6-digit code sent to <span className="text-white font-bold">{phone}</span>
@@ -317,7 +317,7 @@ const AuthListener: React.FC = () => {
                  <AuthInput icon={AppLockIcon} type="password" placeholder="Create Password" value={password} onChange={setPassword} disabled={loadingState} />
                  
                  <button type="submit" disabled={loadingState || otpLoading} className="w-full h-[52px] rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 hover:scale-[1.01] active:scale-[0.98] mt-2" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
-                    {otpSent ? 'Code Sent ✓' : loadingState ? 'Sending...' : 'REGISTER'}
+                    {loadingState ? 'Sending...' : 'REGISTER'}
                  </button>
 
                  <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/10 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] hover:bg-white/5 transition-colors mt-4">

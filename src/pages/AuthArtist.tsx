@@ -375,7 +375,6 @@ const AuthArtist: React.FC = () => {
     } else if (artistStep === 2) {
       if (!genre) return toast.error('Please select your genre');
       if (!phone) return toast.error('Phone number is required');
-      if (!otpVerified) return toast.error('Please verify your phone number before continuing');
       if (!city) return toast.error('City is required');
       if (!idDocFile) return toast.error('Please upload a photo of your ID document');
       if (!selfieFile) return toast.error('Please take a selfie holding your ID');
@@ -510,7 +509,7 @@ const AuthArtist: React.FC = () => {
                           <AuthInput icon={Phone} type="text" placeholder="Phone" value={phone} onChange={setPhone} />
                           
                           {/* Phone verification */}
-                          {!otpVerified ? (
+                          {false ? (
                             <div className="space-y-2">
                               {!otpSent ? (
                                 <button

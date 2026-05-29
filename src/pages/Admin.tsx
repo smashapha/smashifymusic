@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, CircleCheck, Trash2, Music2, Plus, FileAudio, X, Flame, 
@@ -37,6 +37,8 @@ const Admin = () => {
   
   const [notificationTarget, setNotificationTarget] = useState<'all' | 'artists' | 'listeners' | 'specific'>('all');
   const [notificationUserId, setNotificationUserId] = useState('');
+  const [userSearchText, setUserSearchText] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationLink, setNotificationLink] = useState('');
   const [notificationSending, setNotificationSending] = useState(false);
@@ -54,6 +56,16 @@ const Admin = () => {
 
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+
+  const filteredNotificationUsers = useMemo(() => {
+    if (!userSearchText.trim()) return [];
+    const searchLower = userSearchText.toLowerCase();
+    const combined = [
+      ...artists.map(a => ({ id: a.id, name: `${a.stage_name || ''} ${a.full_name || ''}`.trim(), type: 'Artist' })),
+      ...listeners.map(l => ({ id: l.id, name: l.full_name || 'Unknown', type: 'Listener' }))
+    ];
+    return combined.filter(u => u.name.toLowerCase().includes(searchLower) || u.id.toLowerCase().includes(searchLower)).slice(0, 5);
+  }, [artists, listeners, userSearchText]);
 
   useEffect(() => {
     const isAdmin = userProfile?.is_admin || userProfile?.role === 'admin';
@@ -1828,15 +1840,59 @@ const Admin = () => {
                         </div>
 
                         {notificationTarget === 'specific' && (
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">User ID (Specific User)</label>
+                          <div className="space-y-2 relative">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Search User (Specific User)</label>
                             <input 
                               type="text"
-                              value={notificationUserId}
-                              onChange={e => setNotificationUserId(e.target.value)}
-                              placeholder="Enter user UUID..."
+                              value={userSearchText}
+                              onChange={e => {
+                                setUserSearchText(e.target.value);
+                                setShowUserDropdown(true);
+                                if (!e.target.value) setNotificationUserId('');
+                              }}
+                              onFocus={() => setShowUserDropdown(true)}
+                              placeholder="Search by name or UUID..."
                               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all"
                             />
+                            {notificationUserId && (
+                              <p className="text-[10px] text-green-400 mt-1">Selected UUID: {notificationUserId}</p>
+                            )}
+
+                            <AnimatePresence>
+                              {showUserDropdown && userSearchText.trim() && (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 5 }}
+                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                                >
+                                  {filteredNotificationUsers.length > 0 ? (
+                                    filteredNotificationUsers.map(u => (
+                                      <button
+                                        key={u.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setNotificationUserId(u.id);
+                                          setUserSearchText(`${u.name} (${u.type})`);
+                                          setShowUserDropdown(false);
+                                        }}
+                                        className="w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between"
+                                      >
+                                        <div>
+                                          <p className="text-sm font-bold text-white">{u.name}</p>
+                                          <p className="text-[10px] text-smash-gray font-mono">{u.id}</p>
+                                        </div>
+                                        <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${u.type === 'Artist' ? 'bg-smash-orange/20 text-smash-orange' : 'bg-smash-purple/20 text-smash-purple'}`}>
+                                          {u.type}
+                                        </span>
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <div className="px-4 py-3 text-sm text-smash-gray">No users found</div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         )}
 
