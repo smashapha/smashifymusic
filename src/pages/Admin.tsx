@@ -571,7 +571,7 @@ const Admin = () => {
   const approveSong = async (songId: string) => {
     // First figure out if the song belongs to an album
     let albumIdToApprove = null;
-    const { data: song } = await supabase.from('songs').select('album_id').eq('id', songId).single();
+    const { data: song } = await supabase.from('songs').select('album_id, artist_id, title, profiles!artist_id(stage_name)').eq('id', songId).single();
     if (song?.album_id) {
        albumIdToApprove = song.album_id;
     }
@@ -587,6 +587,35 @@ const Admin = () => {
     if (error) toast.error(error.message);
     else {
       toast.success(albumIdToApprove ? 'Album and all its songs approved and are now live!' : 'Song approved and is now live!');
+      
+      // Notify artist
+      if (song?.artist_id) {
+        await supabase.from('notifications').insert({
+          profile_id: song.artist_id,
+          user_type: 'artist',
+          type: 'system_alert',
+          message: `Your song "${song.title}" has been approved!`,
+          link: '/artist-hub'
+        });
+
+        // Notify followers
+        const { data: followers } = await supabase
+          .from('followers')
+          .select('follower_id')
+          .eq('artist_id', song.artist_id);
+          
+        if (followers && followers.length > 0) {
+          const stageName = (song as any).profiles?.stage_name || 'An artist you follow';
+          const payload = followers.map((f: any) => ({
+            listener_id: f.follower_id,
+            type: 'new_release',
+            message: `${stageName} just dropped a new song: ${song.title}`,
+            link: '/'
+          }));
+          await supabase.from('listener_notifications').insert(payload);
+        }
+      }
+
       fetchPendingSongs();
       fetchArtists();
     }

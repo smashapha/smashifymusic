@@ -1,5 +1,8 @@
 // Basic Service Worker for Smashify PWA
-const CACHE_NAME = 'smashify-cache-v2';
+const CACHE_NAME = 'smashify-cache-v3';
+const AUDIO_CACHE_NAME = 'smashify-audio-cache-v1'
+const MAX_AUDIO_CACHE = 10 // Only keep last 10 songs
+
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -32,6 +35,37 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url
+
+  // Cache audio files with cache-first strategy
+  if (url.includes('.mp3') || url.includes('.m4a') || url.includes('.wav') ||
+      url.includes('audio') || url.includes('supabase') && url.includes('storage')) {
+    event.respondWith(
+      caches.open(AUDIO_CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request)
+        if (cached) return cached
+
+        // Fetch and cache, but only cache full responses (not range requests)
+        try {
+          const response = await fetch(event.request.clone())
+          if (response.ok && response.status === 200) {
+            cache.put(event.request, response.clone())
+            // Trim cache to MAX_AUDIO_CACHE entries
+            cache.keys().then(keys => {
+              if (keys.length > MAX_AUDIO_CACHE) {
+                cache.delete(keys[0])
+              }
+            })
+          }
+          return response
+        } catch {
+          return cached || new Response('Offline', { status: 503 })
+        }
+      })
+    )
+    return
+  }
+
   // Simple network-first strategy for most things
   event.respondWith(
     fetch(event.request)

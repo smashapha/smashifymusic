@@ -57,7 +57,8 @@ export async function initiatePayment(params: InitiatePaymentParams) {
         body: JSON.stringify({
           ...params,
           tx_ref,
-          currency: 'MWK'
+          currency: 'MWK',
+          cancel_url: `${APP_URL}/payment-failed?type=${params.type.toUpperCase()}&tx_ref=${tx_ref}`
         })
       }
     );

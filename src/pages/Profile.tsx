@@ -2,13 +2,14 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
   User, CreditCard, ShoppingBag, Settings, LogOut, 
-  ChevronRight, BadgeCheck, Shield, ShieldCheck, ExternalLink, Sparkles, Mail, Phone, MapPin, Camera, Upload
+  ChevronRight, BadgeCheck, Shield, ShieldCheck, ExternalLink, Sparkles, Mail, Phone, MapPin, Camera, Upload, Crown, Check
 } from 'lucide-react';
 import Avatar from '../components/common/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { getListenerTier, getListenerLimits } from '../lib/tierUtils'
 
 const Profile: React.FC = () => {
   const { user, userProfile, signOut, refreshProfile, role } = useAuth();
@@ -16,6 +17,28 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const tier = getListenerTier(userProfile)
+  const limits = getListenerLimits(userProfile)
+  const [phone, setPhone] = useState(userProfile?.phone_number || '')
+  const [savingPhone, setSavingPhone] = useState(false)
+
+  const handleUpdatePhone = async () => {
+    if (!phone.trim()) return toast.error('Enter a valid phone number')
+    setSavingPhone(true)
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ phone_number: phone })
+        .eq('id', userProfile?.id)
+      if (error) throw error
+      toast.success('Phone number updated!')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSavingPhone(false)
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut();
@@ -247,33 +270,99 @@ const Profile: React.FC = () => {
 
          {/* Sidebar Controls */}
          <div className="space-y-6">
-            <div className="bg-bg-surface border border-smash-orange/20 rounded-[12px] md:rounded-[14px] p-5 shadow-sm">
-               <h3 className="text-xs md:text-[14px] font-display font-semibold mb-3 flex items-center gap-2 text-text-primary">
-                  PLAN: <span className="text-smash-orange">{userProfile.subscription_tier || 'Free'}</span>
-               </h3>
-               <p className="text-[12px] md:text-[14px] text-text-secondary font-sans leading-relaxed mb-6">
-                  Experience MK 0% ads, high fidelity audio, and offline mode.
-               </p>
-               <button 
-                 onClick={() => navigate('/pricing')} 
-                 className="w-full h-[40px] md:h-[44px] px-5 bg-transparent border border-border-default text-text-primary rounded-[10px] font-display font-semibold text-[10px] md:text-[12px] uppercase tracking-widest hover:border-smash-orange hover:text-smash-orange transition-colors"
-               >
-                  UPGRADE NOW
-               </button>
+            {/* Subscription Status */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Crown size={20} className={tier === 'free' ? 'text-white/30' : 'text-smash-orange'} />
+                  <div>
+                    <p className="text-white font-black uppercase text-sm tracking-widest">
+                      {tier === 'free' ? 'Free Plan' : tier === 'premium' ? 'Premium' : 'Family Plan'}
+                    </p>
+                    <p className="text-white/40 text-xs font-bold mt-0.5">
+                      {tier === 'free'
+                        ? 'Upgrade to remove ads and unlock HD audio'
+                        : `Active · Renews ${userProfile?.subscription_expires_at
+                            ? new Date(userProfile.subscription_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                            : 'soon'}`
+                      }
+                    </p>
+                  </div>
+                </div>
+                {tier === 'free' ? (
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="px-4 py-2 bg-smash-orange text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform"
+                  >
+                    Upgrade
+                  </button>
+                ) : (
+                  <div className="w-8 h-8 bg-smash-orange/10 rounded-full flex items-center justify-center">
+                    <Check size={16} className="text-smash-orange" />
+                  </div>
+                )}
+              </div>
+
+              {/* Feature list */}
+              <div className="pt-2 space-y-2 border-t border-white/5">
+                {[
+                  { label: 'Ad-free listening', enabled: !limits.hasAds },
+                  { label: 'HD audio quality', enabled: limits.hdAudio },
+                  { label: 'Offline downloads', enabled: limits.canDownload },
+                  { label: 'Exclusive snippets', enabled: limits.canAccessSnippets },
+                ].map(f => (
+                  <div key={f.label} className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${f.enabled ? 'bg-smash-orange/20' : 'bg-white/5'}`}>
+                      <Check size={10} className={f.enabled ? 'text-smash-orange' : 'text-white/20'} />
+                    </div>
+                    <span className={`text-xs font-bold ${f.enabled ? 'text-white' : 'text-white/30'}`}>{f.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="bg-bg-surface border border-border-default rounded-[12px] md:rounded-[14px] p-5 space-y-4 md:space-y-5 shadow-sm">
-               <h4 className="text-[9px] md:text-[11px] font-display font-semibold uppercase tracking-widest text-text-muted">Settings</h4>
-               <button className="w-full flex items-center justify-between group">
-                  <span className="font-display font-medium text-xs md:text-[14px] text-text-primary">Security</span>
-                  <Settings size={16} className="text-text-muted group-hover:rotate-90 transition-transform" />
-               </button>
-               <button onClick={() => navigate('/notifications')} className="w-full flex items-center justify-between group cursor-pointer hover:opacity-80 transition-opacity">
-                  <span className="font-display font-medium text-xs md:text-[14px] text-text-primary">Notifications</span>
-                  <div className="w-8 h-4 md:w-10 md:h-5 bg-smash-orange rounded-full relative">
-                     <div className="absolute right-0.5 top-0.5 md:right-1 md:top-1 w-3 h-3 bg-white rounded-full shadow-sm" />
-                  </div>
-               </button>
+            {/* Phone number */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Phone size={12} /> Phone Number
+              </p>
+              <div className="flex gap-3">
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+265 XXX XXX XXX"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-smash-orange/60 transition-colors"
+                />
+                <button
+                  onClick={handleUpdatePhone}
+                  disabled={savingPhone}
+                  className="px-4 py-3 bg-smash-orange text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform disabled:opacity-50"
+                >
+                  {savingPhone ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+
+            {/* Account info */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+              <p className="text-white/40 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <Shield size={12} /> Account
+              </p>
+              <div className="flex items-center gap-3 py-2 border-b border-white/5">
+                <Mail size={14} className="text-white/30 shrink-0" />
+                <p className="text-white text-sm font-bold truncate">{user?.email || 'No email'}</p>
+              </div>
+              <button
+                onClick={() => navigate('/pricing')}
+                className="w-full flex items-center justify-between py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <CreditCard size={14} className="text-white/30" />
+                  <p className="text-white text-sm font-bold">Manage Subscription</p>
+                </div>
+                <ChevronRight size={14} className="text-white/30" />
+              </button>
             </div>
 
             <button 

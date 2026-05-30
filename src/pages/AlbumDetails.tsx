@@ -96,8 +96,8 @@ const AlbumDetails: React.FC = () => {
 
       <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-8">
          <div className="flex items-center gap-4 mb-10">
-            <button onClick={() => playQueue(songs)} className="w-14 h-14 bg-smash-purple rounded-full flex items-center justify-center pl-1 hover:scale-105 transition-transform shadow-lg shadow-smash-purple/20 text-white">
-               <Play fill="currentColor" size={24} />
+            <button onClick={() => playQueue(songs, 0)} className="h-14 px-8 bg-smash-purple rounded-full flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-lg shadow-smash-purple/20 text-white font-black uppercase tracking-widest text-sm">
+               <Play fill="currentColor" size={20} /> Play All
             </button>
             <button className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center text-white/70 hover:bg-white/5 hover:text-white transition-colors">
                <Heart size={20} />
@@ -110,7 +110,7 @@ const AlbumDetails: React.FC = () => {
          <div className="space-y-2">
             {songs.length === 0 && <p className="text-text-muted text-sm px-4">No songs found for this album.</p>}
             {songs.map((song, index) => (
-               <div key={song.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer" onClick={() => playSong(song, songs)}>
+               <div key={song.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer" onClick={() => playQueue(songs, index)}>
                   <div className="w-8 text-center text-text-muted font-mono">{index + 1}</div>
                   <div className="w-10 h-10 rounded-md overflow-hidden relative shadow-sm">
                      <img src={song.cover_url} className="w-full h-full object-cover" />

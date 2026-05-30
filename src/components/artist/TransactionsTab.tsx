@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Receipt, Music2, Heart, Sparkles } from 'lucide-react';
+import { Loader2, Receipt, Music2, Heart, Sparkles, DollarSign } from 'lucide-react';
 
 export const TransactionsTab = ({ userProfile }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -110,8 +110,14 @@ export const TransactionsTab = ({ userProfile }: any) => {
 
       <div className="bg-bg-surface rounded-2xl border border-border-subtle overflow-hidden">
         {transactions.length === 0 ? (
-          <div className="p-12 text-center text-text-secondary">
-            No transactions found yet.
+          <div className="p-12 md:p-20 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-[#0EA5E9]/10 rounded-full flex items-center justify-center mb-6">
+              <DollarSign className="w-8 h-8 text-[#0EA5E9]" />
+            </div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">No earnings yet</h3>
+            <p className="text-text-secondary max-w-sm">
+              Your transaction history will appear here once fans start buying your music, subscribing, or sending tips.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border-subtle">

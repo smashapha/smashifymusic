@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical } from 'lucide-react';
+import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
@@ -23,9 +24,11 @@ const Home: React.FC = () => {
   const [aiPicks, setAiPicks] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ songs: Song[], artists: Artist[] }>({ songs: [], artists: [] });
-  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const [refreshing, setRefreshing] = useState(false);
   const startY = React.useRef(0);
@@ -45,59 +48,48 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    fetchNotifications();
   }, [userProfile]);
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (searchQuery.trim().length > 1) {
-        performSearch();
-      } else {
-        setIsSearching(false);
-        setSearchResults({ songs: [], artists: [] });
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  const performSearch = async () => {
-    setIsSearching(true);
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: songsData } = await supabase
-        .from('songs')
-        .select('*, profiles:artist_id(*)')
-        .ilike('title', `%${searchQuery}%`)
-        .eq('approved', true)
-        .lte('release_date', today)
-        .limit(5);
-
-      const { data: artistsData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', 'artist')
-        .eq('approved', true)
-        .ilike('stage_name', `%${searchQuery}%`)
-        .limit(5);
-
-      setSearchResults({
-        songs: (songsData || []).map(s => ({
-          ...s,
-          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
-          cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-          audio_url: s.audio_url
-        })),
-        artists: (artistsData || []).map(a => ({
-          ...a,
-          name: a.stage_name || a.full_name
-        })) as any
-      });
-    } catch (err) {
-      console.error('Search error:', err);
-    } finally {
-      setIsSearching(false);
-    }
+  const fetchNotifications = async () => {
+    if (!userProfile?.id) return;
+    const { data } = await supabase
+      .from('listener_notifications')
+      .select('*')
+      .eq('listener_id', userProfile.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (data) setNotifications(data);
   };
+
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    const channel = supabase
+      .channel(`listener-notifs-${userProfile.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'listener_notifications',
+        filter: `listener_id=eq.${userProfile.id}`
+      }, (payload) => {
+        setNotifications(prev => [payload.new, ...prev]);
+        toast.success(payload.new.message, { icon: '🔔' });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userProfile?.id]);
+
+  const markAllRead = async () => {
+    if (!userProfile?.id) return;
+    await supabase
+      .from('listener_notifications')
+      .update({ read: true })
+      .eq('listener_id', userProfile.id)
+      .eq('read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  // search removed
 
   const fetchData = async () => {
     try {
@@ -285,83 +277,45 @@ const Home: React.FC = () => {
           )}
         </div>
 
-        <div className="relative w-full lg:w-[400px] group">
-          <Search size={16} className="absolute left-[16px] top-1/2 -translate-y-1/2 text-text-muted transition-colors opacity-70" strokeWidth={2} />
-          <input 
-            type="text" 
-            placeholder="Search artists or tracks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-               if (e.key === 'Enter' && searchQuery.trim().length > 0) {
-                 navigate(`/discover?q=${encodeURIComponent(searchQuery)}`);
-               }
-            }}
-            className="w-full h-[44px] bg-white/5 border border-white/10 rounded-[14px] pl-10 pr-4 text-[14px] font-display text-text-primary placeholder:text-text-muted focus:outline-none focus:border-white/20 transition-all focus:bg-white/10"
-          />
-          <AnimatePresence>
-            {searchQuery.trim().length > 1 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-bg-elevated border border-white/10 rounded-[16px] shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
-              >
-                <div className="p-3 space-y-3">
-                  {isSearching ? (
-                    <div className="py-6 flex justify-center">
-                      <div className="w-5 h-5 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  ) : (searchResults.songs.length === 0 && searchResults.artists.length === 0) ? (
-                    <p className="text-[13px] font-sans text-text-muted text-center py-4">No results found</p>
-                  ) : (
-                    <>
-                      {searchResults.artists.length > 0 && (
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-display font-medium text-text-muted uppercase tracking-wider ml-2 mb-1">Artists</p>
-                          {searchResults.artists.map((artist, i) => (
-                            <div 
-                              key={`search-artist-${artist.id}-${i}`}
-                              onClick={() => { navigate(`/artist/${artist.id}`); setSearchQuery(''); }}
-                              className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-[10px] cursor-pointer transition-colors"
-                            >
-                              <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-9 h-9 rounded-full" />
-                              <div className="min-w-0">
-                                <p className="text-[14px] font-sans font-medium text-text-primary truncate">{artist.stage_name || artist.full_name}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {searchResults.songs.length > 0 && (
-                        <div className="space-y-1 mt-3">
-                          <p className="text-[10px] font-display font-medium text-text-muted uppercase tracking-wider ml-2 mb-1">Tracks</p>
-                          {searchResults.songs.map((song, i) => (
-                            <div 
-                              key={`search-song-${song.id}-${i}`}
-                              className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-[10px] cursor-pointer transition-colors"
-                            >
-                              <img src={song.cover_url} className="w-9 h-9 rounded-[6px] object-cover" />
-                              <div className="min-w-0">
-                                <p className="text-[14px] font-sans font-medium text-text-primary truncate">{song.title}</p>
-                                <p className="text-[12px] font-sans text-text-muted truncate">{song.artist_name}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <button 
-                        onClick={() => navigate(`/discover?q=${encodeURIComponent(searchQuery)}`)}
-                        className="w-full mt-2 py-2.5 bg-white/5 hover:bg-white/10 text-[12px] font-sans font-semibold text-text-primary rounded-[10px] transition-colors"
-                      >
-                        View all results
-                      </button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="relative flex-1 lg:w-[400px] group">
+            <Search size={16} className="absolute left-[16px] top-1/2 -translate-y-1/2 text-text-muted transition-colors opacity-70" strokeWidth={2} />
+            <input 
+              type="text" 
+              placeholder="Search artists or tracks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim().length > 0) {
+                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`)
+                  setSearchQuery('')
+                }
+              }}
+              className="w-full h-[44px] bg-white/5 border border-white/10 rounded-[14px] pl-10 pr-12 text-[14px] font-display text-text-primary placeholder:text-text-muted focus:outline-none focus:border-white/20 transition-all focus:bg-white/10"
+            />
+            <button
+              onClick={() => {
+                if (searchQuery.trim().length > 0) {
+                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`)
+                  setSearchQuery('')
+                }
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-smash-orange rounded-lg flex items-center justify-center hover:scale-105 transition-transform"
+            >
+              <Search size={14} className="text-white" />
+            </button>
+          </div>
+          <button
+          onClick={() => { setShowNotifications(true); markAllRead(); }}
+          className="relative w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors"
+        >
+          <Bell size={20} className="text-white" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-smash-orange rounded-full text-[10px] font-black text-white flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
         </div>
       </div>
 
@@ -565,6 +519,72 @@ const Home: React.FC = () => {
             </button>
          </div>
       </div>
+
+      <AnimatePresence>
+        {showNotifications && (
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowNotifications(false)}
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-[#111] border-l border-white/10 flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+                <h2 className="text-lg font-black uppercase tracking-widest text-white">Notifications</h2>
+                <button onClick={() => setShowNotifications(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-white/5">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
+                    <Bell size={40} className="text-white/10" />
+                    <p className="text-smash-gray font-bold text-sm uppercase tracking-widest">No notifications yet</p>
+                    <p className="text-white/20 text-xs">When artists you follow drop new music or you get updates, they'll appear here.</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => { if (n.link) navigate(n.link); setShowNotifications(false); }}
+                      className={`flex items-start gap-4 px-6 py-4 transition-colors cursor-pointer hover:bg-white/5 ${!n.read ? 'bg-smash-orange/5 border-l-2 border-smash-orange' : ''}`}
+                    >
+                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-smash-orange' : 'bg-white/10'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-bold leading-snug">{n.message}</p>
+                        <p className="text-white/30 text-[11px] font-bold mt-1 uppercase tracking-widest">
+                          {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              {notifications.length > 0 && (
+                <div className="px-6 py-4 border-t border-white/10">
+                  <button
+                    onClick={() => setNotifications([])}
+                    className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 text-xs font-black uppercase tracking-widest transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

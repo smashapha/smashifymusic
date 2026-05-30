@@ -635,105 +635,122 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
          {/* Wallet Control */}
          <div className="lg:col-span-2 space-y-8">
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-8 md:p-10 relative overflow-hidden group shadow-sm min-h-[300px]">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-smash-purple/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
-               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                  <div className="flex-1 text-center md:text-left">
-                     <p className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple mb-4">Withdrawable Profit</p>
-                     <h3 className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-text-primary leading-none">
-                        MK {balance.toLocaleString()}
-                     </h3>
-                     <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
-                        <div className="px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">Payout Valid</div>
-                        <div className="px-3 py-1 bg-bg-elevated text-text-muted border border-border-default rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">3% Network Fee</div>
-                     </div>
+               {stats.revenue === 0 ? (
+                  <div className="relative z-10 flex flex-col items-center justify-center text-center h-full space-y-4 py-8">
+                    <div className="w-16 h-16 bg-[#0EA5E9]/10 rounded-full flex items-center justify-center mb-2">
+                       <DollarSign className="w-8 h-8 text-[#0EA5E9]" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-text-primary">No earnings yet</h3>
+                    <p className="text-text-secondary max-w-sm mx-auto">
+                      Start promoting your tracks and engage with your fans to earn from tips, purchases, and subscriptions. Your withdrawable balance will appear here.
+                    </p>
+                    <button onClick={() => setActiveTab('promotion')} className="mt-4 px-6 py-3 bg-smash-purple text-white font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-colors">
+                       Promote Your Music
+                    </button>
                   </div>
-                   <div className="w-full md:w-[300px]">
-                     {showWithdrawForm ? (
-                       <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
-                          <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block text-left">Select Network</label>
-                          <div className="grid grid-cols-2 gap-3 mb-4">
-                            <button onClick={()=>setSelectedNetwork('Airtel')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='Airtel' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
-                               <div className="font-display font-bold text-[14px]">AIRTEL</div>
-                            </button>
-                            <button onClick={()=>setSelectedNetwork('TNM')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
-                               <div className="font-display font-bold text-[14px]">TNM</div>
-                            </button>
-                          </div>
-                          <div className="text-left">
-                            <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Verified Phone Number</label>
-                            <input 
-                              value={phone}
-                              readOnly
-                              placeholder="099..."
-                              className="w-full h-[44px] bg-bg-elevated/50 border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-muted outline-none cursor-not-allowed"
-                            />
-                            <p className="text-[9px] text-text-muted mt-1 italic">To change your payout number, please update your profile.</p>
-                          </div>
-
-                          <div className="p-4 bg-bg-elevated border border-border-subtle rounded-[14px] space-y-2">
-                             <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
-                                <span>Requested:</span>
-                                <span>MK {withdrawalAmount.toLocaleString()}</span>
-                             </div>
-                             <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
-                                <span>Fee (3%):</span>
-                                <span>-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
-                             </div>
-                             <div className="flex justify-between text-[12px] uppercase tracking-widest text-smash-green font-black pt-2 border-t border-border-subtle">
-                                <span>Receive:</span>
-                                <span>MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
-                             </div>
-                          </div>
-
-                          <div className="flex gap-3 pt-2">
-                             <button onClick={()=>setShowWithdrawForm(false)} className="flex-1 h-[44px] bg-bg-elevated border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-border-default transition-colors">Cancel</button>
-                             <button onClick={handleWithdraw} disabled={requesting} className="flex-1 h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors">{requesting?'Processing...':'Confirm'}</button>
-                          </div>
-                       </div>
-                     ) : (
-                        <div className="space-y-4 animate-in slide-in-from-bottom-4 fade-in duration-300">
-                             <div className="relative">
+               ) : (
+                 <>
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-smash-purple/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
+                   <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                      <div className="flex-1 text-center md:text-left">
+                         <p className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple mb-4">Withdrawable Profit</p>
+                         <h3 className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-text-primary leading-none">
+                            MK {balance.toLocaleString()}
+                         </h3>
+                         <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
+                            <div className="px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">Payout Valid</div>
+                            <div className="px-3 py-1 bg-bg-elevated text-text-muted border border-border-default rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">3% Network Fee</div>
+                         </div>
+                      </div>
+                       <div className="w-full md:w-[300px]">
+                         {showWithdrawForm ? (
+                           <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
+                              <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block text-left">Select Network</label>
+                              <div className="grid grid-cols-2 gap-3 mb-4">
+                                <button onClick={()=>setSelectedNetwork('Airtel')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='Airtel' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
+                                   <div className="font-display font-bold text-[14px]">AIRTEL</div>
+                                </button>
+                                <button onClick={()=>setSelectedNetwork('TNM')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
+                                   <div className="font-display font-bold text-[14px]">TNM</div>
+                                </button>
+                              </div>
+                              <div className="text-left">
+                                <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Verified Phone Number</label>
                                 <input 
-                                   type="number" 
-                                   value={withdrawalAmount || ''} 
-                                   onChange={e => setWithdrawalAmount(Number(e.target.value))}
-                                   placeholder="0"
-                                   className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-6 py-4 font-studio font-bold text-[32px] outline-none focus:border-smash-purple focus:border-b-smash-purple focus:bg-bg-elevated transition-all text-text-primary placeholder:text-text-muted text-center"
+                                  value={phone}
+                                  readOnly
+                                  placeholder="099..."
+                                  className="w-full h-[44px] bg-bg-elevated/50 border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-muted outline-none cursor-not-allowed"
                                 />
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MK</div>
-                             </div>
+                                <p className="text-[9px] text-text-muted mt-1 italic">To change your payout number, please update your profile.</p>
+                              </div>
 
-                             {withdrawalAmount >= 2000 && (
-                                <div className="p-4 bg-bg-elevated/50 border border-border-subtle rounded-[14px] space-y-2 animate-in fade-in zoom-in-95 duration-300">
-                                   <div className="flex justify-between items-center text-[11px] font-display font-medium uppercase tracking-wider text-text-muted">
-                                      <span>Platform Fee (3%)</span>
-                                      <span>MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
+                              <div className="p-4 bg-bg-elevated border border-border-subtle rounded-[14px] space-y-2">
+                                 <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
+                                    <span>Requested:</span>
+                                    <span>MK {withdrawalAmount.toLocaleString()}</span>
+                                 </div>
+                                 <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
+                                    <span>Fee (3%):</span>
+                                    <span>-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
+                                 </div>
+                                 <div className="flex justify-between text-[12px] uppercase tracking-widest text-smash-green font-black pt-2 border-t border-border-subtle">
+                                    <span>Receive:</span>
+                                    <span>MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
+                                 </div>
+                              </div>
+
+                              <div className="flex gap-3 pt-2">
+                                 <button onClick={()=>setShowWithdrawForm(false)} className="flex-1 h-[44px] bg-bg-elevated border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-border-default transition-colors">Cancel</button>
+                                 <button onClick={handleWithdraw} disabled={requesting} className="flex-1 h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors">{requesting?'Processing...':'Confirm'}</button>
+                              </div>
+                           </div>
+                         ) : (
+                            <div className="space-y-4 animate-in slide-in-from-bottom-4 fade-in duration-300">
+                                 <div className="relative">
+                                    <input 
+                                       type="number" 
+                                       value={withdrawalAmount || ''} 
+                                       onChange={e => setWithdrawalAmount(Number(e.target.value))}
+                                       placeholder="0"
+                                       className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-6 py-4 font-studio font-bold text-[32px] outline-none focus:border-smash-purple focus:border-b-smash-purple focus:bg-bg-elevated transition-all text-text-primary placeholder:text-text-muted text-center"
+                                    />
+                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MK</div>
+                                 </div>
+
+                                 {withdrawalAmount >= 2000 && (
+                                    <div className="p-4 bg-bg-elevated/50 border border-border-subtle rounded-[14px] space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                                       <div className="flex justify-between items-center text-[11px] font-display font-medium uppercase tracking-wider text-text-muted">
+                                          <span>Platform Fee (3%)</span>
+                                          <span>MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
+                                       </div>
+                                       <div className="pt-2 border-t border-border-subtle flex justify-between items-center">
+                                          <span className="text-[11px] font-display font-bold uppercase tracking-widest text-text-primary">Net Receive</span>
+                                          <span className="text-[18px] font-studio font-bold text-smash-green">MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
+                                       </div>
+                                    </div>
+                                 )}
+                                 {userProfile?.is_verified ? (
+                                   <button 
+                                      onClick={handleInitiateWithdraw} 
+                                      disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
+                                      className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
+                                   >
+                                      REQUEST WITHDRAWAL
+                                   </button>
+                                 ) : (
+                                   <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-[10px] p-3 text-left">
+                                      <p className="text-smash-orange font-bold text-xs uppercase tracking-widest mb-1"><AlertCircle className="inline" size={14} /> Verification Required</p>
+                                      <p className="text-smash-orange/80 text-[11px] font-sans">You must verify your identity before withdrawing funds.</p>
+                                      <button onClick={() => setActiveTab('profile')} className="mt-2 text-smash-purple text-[10px] font-bold uppercase tracking-widest hover:underline">Verify Identity →</button>
                                    </div>
-                                   <div className="pt-2 border-t border-border-subtle flex justify-between items-center">
-                                      <span className="text-[11px] font-display font-bold uppercase tracking-widest text-text-primary">Net Receive</span>
-                                      <span className="text-[18px] font-studio font-bold text-smash-green">MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
-                                   </div>
-                                </div>
-                             )}
-                             {userProfile?.is_verified ? (
-                               <button 
-                                  onClick={handleInitiateWithdraw} 
-                                  disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
-                                  className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
-                               >
-                                  REQUEST WITHDRAWAL
-                               </button>
-                             ) : (
-                               <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-[10px] p-3 text-left">
-                                  <p className="text-smash-orange font-bold text-xs uppercase tracking-widest mb-1"><AlertCircle className="inline" size={14} /> Verification Required</p>
-                                  <p className="text-smash-orange/80 text-[11px] font-sans">You must verify your identity before withdrawing funds.</p>
-                                  <button onClick={() => setActiveTab('profile')} className="mt-2 text-smash-purple text-[10px] font-bold uppercase tracking-widest hover:underline">Verify Identity →</button>
-                               </div>
-                             )}
-                        </div>
-                     )}
-                  </div>
-               </div>
+                                 )}
+                            </div>
+                         )}
+                      </div>
+                   </div>
+                 </>
+               )}
             </div>
 
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 shadow-sm">

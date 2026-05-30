@@ -8,6 +8,13 @@ const PaymentFailed = () => {
   const [searchParams] = useSearchParams();
   const tx_ref = searchParams.get('tx_ref');
 
+  const type = searchParams.get('type') || ''
+  const getRetryPath = () => {
+    if (type.includes('LISTENER') || type.includes('ARTIST')) return '/pricing'
+    if (type.includes('FAN_SUBSCRIPTION')) return '/'
+    return '/pricing'
+  }
+
   return (
     <div className="min-h-screen bg-smash-black flex flex-col items-center justify-center p-6 text-center">
       <motion.div 
@@ -29,11 +36,20 @@ const PaymentFailed = () => {
             <p className="text-smash-gray font-bold text-sm leading-relaxed px-4">
               The transaction was not completed. This could be due to insufficient funds, a network error, or the payment being cancelled.
             </p>
+            {type && (
+              <p className="text-smash-orange text-xs font-black uppercase tracking-widest">
+                {type.includes('LISTENER_PREMIUM') ? 'Premium Subscription Failed' :
+                 type.includes('LISTENER_FAMILY') ? 'Family Plan Failed' :
+                 type.includes('ARTIST') ? 'Artist Tier Payment Failed' :
+                 type.includes('TRACK') ? 'Track Purchase Failed' :
+                 'Payment Failed'}
+              </p>
+            )}
           </div>
 
           <div className="pt-8 space-y-4">
              <button 
-                onClick={() => window.history.back()}
+                onClick={() => navigate(getRetryPath())}
                 className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-white text-smash-black font-black uppercase text-xs tracking-widest rounded-full hover:scale-105 transition-transform shadow-xl"
              >
                 <RefreshCw size={16} /> Try Again

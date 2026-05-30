@@ -37,6 +37,13 @@ const ArtistProfile: React.FC = () => {
    const [subscribing, setSubscribing] = useState(false);
    const [topSupporters, setTopSupporters] = useState<any[]>([]);
 
+   const [communityData, setCommunityData] = useState<{
+     topSupporters: any[]
+     recentTips: any[]
+     recentComments: any[]
+   }>({ topSupporters: [], recentTips: [], recentComments: [] })
+   const [communityLoading, setCommunityLoading] = useState(false)
+
    const handleSubscribe = async () => {
       if (!userProfile) {
          toast.error('Please sign in to subscribe.');
@@ -74,6 +81,50 @@ const ArtistProfile: React.FC = () => {
    };
  
    useEffect(() => {
+      const fetchCommunityData = async () => {
+        if (!id) return
+        setCommunityLoading(true)
+        try {
+          // Top supporters by total tips
+          const { data: tips } = await supabase
+            .from('transactions')
+            .select('gross_amount, fan_id, user_profiles!fan_id(full_name, avatar_url)')
+            .eq('artist_id', id)
+            .eq('type', 'donation')
+            .eq('status', 'completed')
+            .order('gross_amount', { ascending: false })
+            .limit(5)
+
+          // Recent comments on artist songs from moto_comments
+          const { data: songIds } = await supabase
+            .from('songs')
+            .select('id')
+            .eq('artist_id', id)
+
+          let comments: any[] = []
+          if (songIds && songIds.length > 0) {
+            const ids = songIds.map(s => s.id)
+            const { data: c } = await supabase
+              .from('moto_comments')
+              .select('*, user_profiles!profile_id(full_name, avatar_url)')
+              .in('song_id', ids)
+              .order('created_at', { ascending: false })
+              .limit(10)
+            if (c) comments = c
+          }
+
+          setCommunityData({
+            topSupporters: tips || [],
+            recentTips: tips || [],
+            recentComments: comments
+          })
+        } catch (err) {
+          console.error(err)
+        } finally {
+          setCommunityLoading(false)
+        }
+      }
+
       const checkFollow = async () => {
          if (!userProfile || !id) return;
          const { data } = await supabase
@@ -148,6 +199,7 @@ const ArtistProfile: React.FC = () => {
             checkFollow();
             checkSubscription();
             fetchTopSupporters();
+            fetchCommunityData();
 
             const today = new Date().toISOString().split('T')[0];
             const { data: songsData, error: songsError } = await supabase
@@ -398,70 +450,62 @@ const ArtistProfile: React.FC = () => {
                   )}
 
                   {activeTab === 'community' && (
-                     <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 md:space-y-12">
-                        <div className="space-y-4 pb-32">
-                           {/* Artist bio as first post */}
-                           {artist?.bio && (
-                              <div className="p-5 bg-white/5 rounded-3xl border border-white/10">
-                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
-                                       {artist.avatar_url
-                                          ? <img src={artist.avatar_url} className="w-full h-full object-cover" />
-                                          : <span className="text-xs font-bold">{artist.stage_name?.[0]}</span>
-                                       }
-                                    </div>
-                                    <div>
-                                       <p className="font-bold text-sm text-text-primary">{artist.stage_name}</p>
-                                       <p className="text-[11px] text-text-muted">Artist bio</p>
-                                    </div>
-                                 </div>
-                                 <p className="text-sm text-text-secondary leading-relaxed">{artist.bio}</p>
-                              </div>
-                           )}
-
+                     <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                       {communityLoading ? (
+                         <div className="flex justify-center py-12">
+                           <div className="w-8 h-8 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+                         </div>
+                       ) : (
+                         <>
                            {/* Top Supporters */}
-                           {topSupporters && topSupporters.length > 0 && (
-                              <div className="p-5 bg-white/5 rounded-3xl border border-white/10">
-                                 <h3 className="font-bold text-sm mb-4 flex items-center gap-2 text-text-primary">
-                                    <Trophy size={16} className="text-smash-orange" /> Top Supporters
-                                 </h3>
-                                 <div className="space-y-3">
-                                    {topSupporters.slice(0, 5).map((s: any, i: number) => (
-                                       <div key={i} className="flex items-center justify-between">
-                                          <div className="flex items-center gap-2">
-                                             <span className="text-smash-orange font-bold text-sm w-6">#{i + 1}</span>
-                                             <span className="text-sm text-text-primary">{s.name || s.fan_name || 'Anonymous Fan'}</span>
-                                          </div>
-                                          <span className="text-xs text-smash-green font-bold font-display">MK {Number(s.total || 0).toLocaleString()}</span>
-                                       </div>
-                                    ))}
-                                 </div>
-                              </div>
-                           )}
+                           <div>
+                             <h3 className="text-lg font-black uppercase tracking-widest text-white mb-4 flex items-center gap-2">
+                               <Trophy size={18} className="text-smash-orange" /> Top Supporters
+                             </h3>
+                             {communityData.topSupporters.length === 0 ? (
+                               <p className="text-white/30 text-sm font-bold italic">No tips yet — be the first to support!</p>
+                             ) : (
+                               <div className="space-y-3">
+                                 {communityData.topSupporters.map((t, i) => (
+                                   <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                                     <span className="text-smash-orange font-black text-lg w-6">#{i + 1}</span>
+                                     <Avatar src={t.user_profiles?.avatar_url} name={t.user_profiles?.full_name} className="w-10 h-10" />
+                                     <div className="flex-1">
+                                       <p className="text-white font-black text-sm">{t.user_profiles?.full_name || 'Anonymous'}</p>
+                                     </div>
+                                     <p className="text-smash-orange font-black text-sm">MK {Number(t.gross_amount).toLocaleString()}</p>
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
 
-                           {/* Subscribe CTA */}
-                           {!isSubscribed && (
-                              <div className="p-5 bg-gradient-to-br from-smash-purple/20 to-smash-orange/10 rounded-3xl border border-smash-purple/20 text-center">
-                                 <Heart size={28} className="mx-auto mb-3 text-smash-purple" />
-                                 <p className="font-bold text-sm mb-1 text-text-primary">Support {artist?.stage_name} Every Month</p>
-                                 <p className="text-xs text-text-muted mb-4">MK 500/month goes directly to the artist. Cancel anytime.</p>
-                                 <button
-                                    onClick={handleSubscribe}
-                                    disabled={subscribing}
-                                    className="h-10 px-6 bg-smash-purple rounded-full text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-                                 >
-                                    {subscribing ? 'Loading...' : 'Subscribe MK 500/month'}
-                                 </button>
-                              </div>
-                           )}
-
-                           {isSubscribed && (
-                              <div className="p-4 bg-smash-green/10 rounded-3xl border border-smash-green/20 flex items-center gap-3">
-                                 <CircleCheck size={20} className="text-smash-green shrink-0" />
-                                 <p className="text-sm text-smash-green font-bold">You are supporting {artist?.stage_name} monthly!</p>
-                              </div>
-                           )}
-                        </div>
+                           {/* Recent Comments */}
+                           <div>
+                             <h3 className="text-lg font-black uppercase tracking-widest text-white mb-4 flex items-center gap-2">
+                               <MessageCircle size={18} className="text-smash-cyan" /> Fan Comments
+                             </h3>
+                             {communityData.recentComments.length === 0 ? (
+                               <p className="text-white/30 text-sm font-bold italic">No comments yet on this artist's songs.</p>
+                             ) : (
+                               <div className="space-y-3">
+                                 {communityData.recentComments.map((c) => (
+                                   <div key={c.id} className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                     <div className="flex items-center gap-3 mb-2">
+                                       <Avatar src={c.user_profiles?.avatar_url} name={c.user_profiles?.full_name} className="w-8 h-8" />
+                                       <p className="text-white font-black text-sm">{c.user_profiles?.full_name || 'Listener'}</p>
+                                       <p className="text-white/30 text-xs font-bold ml-auto">
+                                         {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                       </p>
+                                     </div>
+                                     <p className="text-white/70 text-sm leading-relaxed">{c.content}</p>
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
+                         </>
+                       )}
                      </motion.div>
                   )}
 
