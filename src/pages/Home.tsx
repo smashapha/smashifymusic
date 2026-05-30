@@ -72,7 +72,7 @@ const Home: React.FC = () => {
         table: 'listener_notifications',
         filter: `listener_id=eq.${userProfile.id}`
       }, (payload) => {
-        setNotifications(prev => [payload.new, ...prev]);
+        setNotifications(prev => prev.some(n => n.id === payload.new.id) ? prev : [payload.new, ...prev]);
         toast.success(payload.new.message, { icon: '🔔' });
       })
       .subscribe();

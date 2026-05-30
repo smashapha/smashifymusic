@@ -5,7 +5,7 @@ import {
   Play, Share2, Instagram, Twitter, Music2, MapPin, Users, Check, 
   Trophy, Heart, CircleCheck, Disc, Sparkles, TrendingUp,
   Calendar, Info, Plus, UserPlus, Share, MessageSquare, Flame,
-  ShieldCheck, ArrowUpRight, Zap
+  ShieldCheck, ArrowUpRight, Zap, MessageCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -413,7 +413,7 @@ const ArtistProfile: React.FC = () => {
                               </div>
                               <div className="bg-bg-surface border border-border-default rounded-[12px] md:rounded-[14px] overflow-hidden p-4 md:p-6 space-y-1 md:space-y-2 shadow-sm">
                                  {popularTracks.map((song, i) => (
-                                    <div key={song.id} className="group relative flex items-center gap-3 md:gap-4 p-2 md:p-3 rounded-[10px] hover:bg-white/5 transition-all text-left">
+                                    <div key={`popular-${song.id}-${i}`} className="group relative flex items-center gap-3 md:gap-4 p-2 md:p-3 rounded-[10px] hover:bg-white/5 transition-all text-left">
                                        <span className="w-5 md:w-6 text-xs md:text-[14px] font-display font-normal text-text-muted/40 transition-colors">{i+1}</span>
                                        <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-[8px] md:rounded-[10px] overflow-hidden shrink-0 shadow-sm">
                                           <img src={song.cover_url} className="w-full h-full object-cover" />
@@ -442,7 +442,7 @@ const ArtistProfile: React.FC = () => {
                            </div>
                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                               {songs.map((song, i) => (
-                                 <SongCard key={song.id} song={song} queue={songs} layout="grid" />
+                                 <SongCard key={`collection-${song.id}-${i}`} song={song} queue={songs} layout="grid" />
                               ))}
                            </div>
                         </section>
