@@ -211,13 +211,13 @@ const Profile: React.FC = () => {
                </form>
             </section>
 
-            <section className="bg-bg-surface border border-border-default rounded-[12px] md:rounded-[14px] p-5 md:p-8 space-y-5 md:space-y-6">
+            <section className="bg-bg-surface border border-border-default rounded-[12px] md:rounded-[14px] p-5 md:p-8 flex flex-col gap-5 md:gap-6 relative overflow-hidden">
                <h2 className="text-lg md:text-[20px] font-studio font-bold text-text-primary uppercase tracking-tight">Quick Actions</h2>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+               <div className="flex flex-col md:flex-row flex-wrap gap-3 md:gap-4">
                   <button 
                     key="action-collection" 
                     onClick={() => navigate('/library')} 
-                    className="p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
+                    className="flex-1 min-w-[200px] p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
                   >
                      <div className="flex items-center gap-3">
                         <ShoppingBag className="text-smash-orange shrink-0" size={18} />
@@ -230,7 +230,7 @@ const Profile: React.FC = () => {
                      <button 
                        key="action-artist-hub" 
                        onClick={() => navigate('/artist-hub')} 
-                       className="p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
+                       className="flex-1 min-w-[200px] p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
                      >
                         <div className="flex items-center gap-3">
                            <Sparkles className="text-smash-purple shrink-0" size={18} />
@@ -244,7 +244,7 @@ const Profile: React.FC = () => {
                      <button 
                        key="action-admin-main" 
                        onClick={() => navigate('/admin')} 
-                       className="p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
+                       className="flex-1 min-w-[200px] p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
                      >
                         <div className="flex items-center gap-3">
                            <ShieldCheck className="text-smash-purple shrink-0" size={18} />
@@ -256,7 +256,8 @@ const Profile: React.FC = () => {
 
                   <button 
                     key="action-billing" 
-                    className="p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
+                    onClick={() => navigate('/pricing')}
+                    className="flex-1 min-w-[200px] p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
                   >
                      <div className="flex items-center gap-3">
                         <CreditCard className="text-smash-green shrink-0" size={18} />
