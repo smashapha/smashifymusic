@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { 
   Play, Pause, Heart, Share2, ShoppingBag, Music2, 
-  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check, X as XIcon, Gift, Ban, Clock
+  ArrowUp, ArrowDown, UserPlus, Disc, Flame, Volume2, VolumeX, Check, X as XIcon, Gift, Ban, Clock,
+  MessageCircle, Send
 } from 'lucide-react';
 import { startFanSubscription, sendTip, purchaseTrack } from '../lib/paychangu';
 import toast from 'react-hot-toast';
@@ -21,6 +22,68 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const navigate = useNavigate();
   const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
+  
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [commentCount, setCommentCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(song.likes_count || 0);
+
+  const lastTapTime = useRef(0);
+  const [showHeartBurst, setShowHeartBurst] = useState(false);
+
+  const [isLiked, setIsLiked] = useState(() => {
+    try {
+      const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+      return Array.isArray(liked) && liked.includes(song.id);
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const formatCount = (n: number) => n > 1000 ? `${(n/1000).toFixed(1)}K` : n;
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      const { data, count } = await supabase
+        .from('moto_comments')
+        .select('*, profiles:profile_id(stage_name, full_name, avatar_url)', { count: 'exact' })
+        .eq('song_id', song.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data) setComments(data.reverse());
+      if (count !== null) setCommentCount(count);
+    };
+    fetchComments();
+
+    const channel = supabase.channel(`comments-${song.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'moto_comments', filter: `song_id=eq.${song.id}` }, () => {
+        fetchComments();
+      }).subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [song.id]);
+  
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !userProfile) return;
+    try {
+      await supabase.from('moto_comments').insert({
+        song_id: song.id,
+        profile_id: userProfile.id,
+        content: newComment.substring(0, 200)
+      });
+      setNewComment("");
+    } catch (err) {
+      toast.error("Failed to post comment");
+    }
+  };
+
+  useEffect(() => {
+      const handleGlobalLike = () => { if (active) handleLike(); };
+      window.addEventListener('motofeed_like_trigger', handleGlobalLike);
+      return () => window.removeEventListener('motofeed_like_trigger', handleGlobalLike);
+  }, [active, isLiked, song.id]);
   
   const logEvent = async (eventType: string) => {
     try {
@@ -46,14 +109,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       setHasLoggedComplete(true);
     }
   }, [currentTime, duration, active, hasLoggedComplete]);
-  const [isLiked, setIsLiked] = useState(() => {
-    try {
-      const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
-      return Array.isArray(liked) && liked.includes(song.id);
-    } catch (e) {
-      return false;
-    }
-  });
 
   // Sync likes with global events and DB
   useEffect(() => {
@@ -153,7 +208,12 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     const previouslyLiked = isLiked;
     setIsLiked(!previouslyLiked);
 
-    if (!previouslyLiked) logEvent('like');
+    if (!previouslyLiked) {
+       logEvent('like');
+       setLikeCount((prev: number) => prev + 1);
+    } else {
+       setLikeCount((prev: number) => prev > 0 ? prev - 1 : 0);
+    }
 
     try {
       let newLiked;
@@ -179,6 +239,8 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       console.error('Like error', err);
       // Rollback on offline or error
       setIsLiked(previouslyLiked);
+      if (!previouslyLiked) setLikeCount((prev: number) => prev > 0 ? prev - 1 : 0);
+      else setLikeCount((prev: number) => prev + 1);
     }
   };
 
@@ -218,9 +280,10 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     });
   };
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     logEvent('share');
+    await supabase.rpc('increment_shares', { song_id: song.id }).catch(() => {});
     const url = `${window.location.origin}/artist/${song.artist_id}`;
     if (navigator.share) {
       navigator.share({
@@ -238,8 +301,23 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const isPreviewLimit = !isPurchased && currentTime >= 30;
   const isApproachingLimit = !isPurchased && currentTime >= 25 && currentTime < 30;
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      if (!isLiked) {
+        handleLike(e);
+        setShowHeartBurst(true);
+        setTimeout(() => setShowHeartBurst(false), 800);
+      }
+    } else {
+      togglePlay();
+    }
+    lastTapTime.current = now;
+  };
+
   return (
-    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={togglePlay}>
+    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={handleContainerClick}>
       {/* Background Layer */}
       <div className="absolute inset-0 bg-smash-black">
         <img 
@@ -279,6 +357,20 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   {isPlaying ? <Pause size={40} /> : <Play size={40} className="ml-2" />}
                </div>
             </div>
+            {/* Heart Burst Animation */}
+            <AnimatePresence>
+               {showHeartBurst && (
+                 <motion.div 
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1.5, opacity: 1 }}
+                    exit={{ opacity: 0, scale: 2 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+                 >
+                    <Heart size={120} className="text-white fill-white drop-shadow-[0_0_40px_rgba(255,255,255,1)]" />
+                 </motion.div>
+               )}
+            </AnimatePresence>
          </motion.div>
 
          {isApproachingLimit && !song.is_unreleased && (
@@ -538,7 +630,96 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                />
             </div>
          )}
+         {(isPurchased || ['premium', 'Premium'].includes((userProfile as any)?.subscription_tier)) && (
+            <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/60 to-transparent pt-4">
+               <div className="px-6 py-2 flex items-center justify-between pointer-events-none text-[10px] font-bold text-white/80 tracking-widest drop-shadow-md">
+                  <span>{Math.floor(currentTime / 60)}:{(Math.floor(currentTime % 60)).toString().padStart(2, '0')}</span>
+                  <span>{Math.floor(duration / 60)}:{(Math.floor(duration % 60)).toString().padStart(2, '0')}</span>
+               </div>
+               <div 
+                  className="h-3 bg-white/10 w-full cursor-pointer touch-none pointer-events-auto group" 
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     const rect = e.currentTarget.getBoundingClientRect();
+                     const x = e.clientX - rect.left;
+                     const pct = x / rect.width;
+                     seek(pct * duration);
+                  }}
+               >
+                  <div 
+                     className="h-full bg-smash-orange transition-all duration-100 group-hover:bg-smash-cyan"
+                     style={{ width: `${Math.min((currentTime / duration) * 100, 100)}%` }}
+                  />
+               </div>
+            </div>
+         )}
       </div>
+
+      {/* Comments Drawer */}
+      <AnimatePresence>
+        {showComments && (
+           <>
+              <motion.div 
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                 className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
+                 onClick={(e: any) => { e.stopPropagation(); setShowComments(false); }}
+              />
+              <motion.div 
+                 initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                 className="absolute bottom-0 left-0 right-0 h-[60vh] bg-smash-black border-t border-white/10 rounded-t-[32px] z-50 flex flex-col cursor-auto"
+                 onClick={(e: any) => e.stopPropagation()}
+              >
+                 <div className="p-4 flex flex-col items-center border-b border-white/10 shrink-0 relative">
+                    <div className="w-12 h-1.5 bg-white/20 rounded-full mb-4" />
+                    <h3 className="text-lg font-black uppercase text-white tracking-widest">Comments <span className="text-smash-gray text-sm ml-1">({commentCount})</span></h3>
+                    <button onClick={() => setShowComments(false)} className="absolute right-6 top-6 p-2 rounded-full bg-white/5 hover:bg-white/10">
+                       <XIcon size={20} />
+                    </button>
+                 </div>
+                 
+                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {comments.length === 0 ? (
+                       <div className="h-full flex flex-col items-center justify-center text-smash-gray/50">
+                          <MessageCircle size={48} className="mb-4" />
+                          <p className="font-bold uppercase tracking-widest">No comments yet.</p>
+                       </div>
+                    ) : (
+                       comments.map((c) => (
+                          <div key={c.id} className="flex gap-4 items-start">
+                             <Avatar src={c.profiles?.avatar_url} name={c.profiles?.stage_name || c.profiles?.full_name} className="w-10 h-10 rounded-full shrink-0" />
+                             <div className="flex-1">
+                                <span className="text-xs font-black text-smash-gray">{c.profiles?.stage_name || c.profiles?.full_name}</span>
+                                <p className="text-sm text-white font-bold leading-relaxed">{c.content}</p>
+                             </div>
+                          </div>
+                       ))
+                    )}
+                 </div>
+
+                 <div className="p-4 border-t border-white/10 bg-smash-dark/80 shrink-0">
+                    <form onSubmit={handlePostComment} className="flex gap-3 items-center">
+                       <input 
+                         type="text" 
+                         value={newComment}
+                         onChange={(e) => setNewComment(e.target.value)}
+                         maxLength={200}
+                         placeholder="Add a comment..."
+                         className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-3 text-sm text-white focus:outline-none focus:border-smash-orange font-bold transition-colors"
+                       />
+                       <button 
+                         type="submit" 
+                         disabled={!newComment.trim()}
+                         className="w-12 h-12 bg-smash-orange text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-white/10"
+                       >
+                          <Send size={18} />
+                       </button>
+                    </form>
+                 </div>
+              </motion.div>
+           </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -716,6 +897,7 @@ const LiveActivity = () => {
 const MotoFeed: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { togglePlay } = usePlayer();
   const [songs, setSongs] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -861,6 +1043,24 @@ const MotoFeed: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+     const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        
+        if (e.key === 'ArrowUp' || e.key === 'k') handlePrev();
+        if (e.key === 'ArrowDown' || e.key === 'j') handleNext();
+        if (e.key === ' ') {
+           e.preventDefault();
+           togglePlay();
+        }
+        if (e.key === 'l' || e.key === 'L') {
+           window.dispatchEvent(new CustomEvent('motofeed_like_trigger'));
+        }
+     };
+     window.addEventListener('keydown', handleKeyDown);
+     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, songs.length]);
+
   const handleDragEnd = (_: any, info: any) => {
     if (info.offset.y < -100) handleNext();
     else if (info.offset.y > 100) handlePrev();
@@ -874,15 +1074,28 @@ const MotoFeed: React.FC = () => {
 
   if (songs.length === 0) return (
      <div className="h-screen bg-smash-black flex flex-col items-center justify-center p-8 text-center">
-        <Disc className="text-smash-gray/20 animate-spin-slow mb-8" size={120} />
+        <motion.div 
+           animate={{ scale: [1, 1.05, 1], rotate: [0, 180, 360] }}
+           transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        >
+           <Disc className="text-smash-gray/20 mb-8" size={120} />
+        </motion.div>
         <h2 className="text-[32px] font-studio font-bold uppercase tracking-tight mb-4 text-white">The Feed is Cold</h2>
         <p className="text-smash-gray font-bold max-w-sm mx-auto mb-12">No anthems found in the warm heart today. Check back soon for fresh drops.</p>
-        <button 
-          onClick={() => navigate('/')}
-          className="px-8 py-4 bg-white text-smash-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-        >
-          Back to Home
-        </button>
+        <div className="flex flex-col gap-4">
+           <button 
+             onClick={() => { setLoading(true); fetchSongs(); }}
+             className="px-8 py-4 bg-white text-smash-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+           >
+             <Music2 size={18} /> Refresh Feed
+           </button>
+           <button 
+             onClick={() => navigate('/')}
+             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
+           >
+             Back to Home
+           </button>
+        </div>
         <BottomNav />
      </div>
   );
