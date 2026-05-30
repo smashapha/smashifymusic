@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
+import { optimizeImage } from '../../lib/imageUtils';
 import toast from 'react-hot-toast';
 
 interface SongCardProps {
@@ -170,7 +171,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     return (
        <div className={`group relative flex flex-col gap-3 p-2 hover:bg-white/5 rounded-[12px] transition-all cursor-pointer ${className}`} onClick={handlePlay}>
          <div className="relative aspect-square w-full rounded-[8px] overflow-hidden shadow-sm">
-           <img src={song.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={song.title} />
+           <img src={optimizeImage(song.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={song.title} />
            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
              <Play size={24} fill="white" className="text-white" />
            </div>
@@ -187,7 +188,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     <div className={`group flex items-center gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-smash-orange shadow-sm border-smash-orange/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
-            <img src={song.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+            <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
           ) : (
             <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
                <Music2 size={24} className="text-text-muted/30" />

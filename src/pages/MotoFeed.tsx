@@ -27,7 +27,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [commentCount, setCommentCount] = useState(0);
-  const [likeCount, setLikeCount] = useState(song.likes_count || 0);
+  const [likeCount, setLikeCount] = useState((song as any).likes_count || 0);
 
   const lastTapTime = useRef(0);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
@@ -283,7 +283,9 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     logEvent('share');
-    await supabase.rpc('increment_shares', { song_id: song.id }).catch(() => {});
+    try {
+       await supabase.rpc('increment_shares', { song_id: song.id });
+    } catch {}
     const url = `${window.location.origin}/artist/${song.artist_id}`;
     if (navigator.share) {
       navigator.share({
@@ -1140,7 +1142,7 @@ const MotoFeed: React.FC = () => {
        
        {/* Sidebar for Desktop, BottomNav for Mobile */}
        <div className="hidden md:block absolute left-0 top-0 bottom-0 z-40 bg-black/50 backdrop-blur-md">
-           <Sidebar isCollapsed={true} setIsCollapsed={() => {}} />
+           <Sidebar isCollapsed={true} setIsCollapsed={() => {}} unreadCount={0} />
        </div>
        <BottomNav />
     </div>

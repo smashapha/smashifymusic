@@ -10,6 +10,7 @@ import { useNavigate, Navigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { optimizeImage } from '../lib/imageUtils';
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -342,7 +343,7 @@ const Landing: React.FC = () => {
                           ease: "easeInOut" 
                         }}
                       >
-                        <img src={artist.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt={artist.stage_name} />
+                        <img src={optimizeImage(artist.avatar_url, 80, 80)} className="w-full h-full object-cover" alt={artist.stage_name} />
                       </motion.div>
                     </motion.div>
                   );
@@ -350,7 +351,7 @@ const Landing: React.FC = () => {
 
                 {/* Now Playing Mini Card */}
                 <div className="absolute bottom-10 right-0 w-[200px] h-[100px] bg-[#141418]/85 backdrop-blur-xl border border-white/8 rounded-[16px] p-4 flex items-center gap-3 shadow-2xl animate-fade-in">
-                   <img src="https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100" className="w-[60px] h-[60px] rounded-[10px] object-cover" />
+                   <img src={optimizeImage("https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100", 120, 120)} className="w-[60px] h-[60px] rounded-[10px] object-cover" />
                    <div className="flex-1 min-w-0">
                       <p className="text-[8px] font-black text-smash-orange uppercase tracking-widest mb-1">Live Now</p>
                       <p className="text-[13px] font-display font-bold text-white truncate">Top Hits 2024</p>
@@ -498,7 +499,7 @@ const Landing: React.FC = () => {
             {artists.map((artist) => (
               <div key={artist.id} className="flex-shrink-0 w-[110px] flex flex-col items-center group cursor-pointer" onClick={() => navigate(`/artist/${artist.id}`)}>
                 <div className="w-20 h-20 rounded-full border-2 border-white/8 overflow-hidden transition-all duration-300 group-hover:border-smash-orange/40 group-hover:scale-[1.05]">
-                  <img src={artist.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt={artist.stage_name} />
+                  <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-full h-full object-cover" alt={artist.stage_name} />
                 </div>
                 <p className="font-display font-semibold text-[13px] text-center mt-3 truncate w-full group-hover:text-smash-orange transition-colors">{artist.stage_name || artist.full_name}</p>
                 <p className="font-display text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{artist.genre || 'Afro'}</p>
@@ -540,7 +541,7 @@ const Landing: React.FC = () => {
                   {i + 1}
                 </span>
                 <div className="w-[52px] h-[52px] rounded-[10px] bg-white/5 overflow-hidden ml-6 shrink-0 shadow-lg">
-                   <img src={song.cover_url || "https://placehold.co/100"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 </div>
                 <div className="flex-1 ml-6 min-w-0">
                   <p className="font-display font-bold text-[15px] truncate group-hover:text-smash-orange transition-colors uppercase italic tracking-tight">{song.title}</p>

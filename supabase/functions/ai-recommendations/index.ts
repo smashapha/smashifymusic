@@ -31,14 +31,45 @@ Deno.serve(async (req) => {
     let prompt = "";
     if (action === 'recommendations') {
       const { userLikes, availableSongs } = data
+      const limitedSongs = (availableSongs || [])
+        .slice(0, 50)
+        .map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          genre: s.genre,
+          artist_name: s.artist_name || s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+          language: s.language,
+          bpm: s.bpm
+        }));
+
       prompt = `User likes these songs: ${userLikes.join(", ")}. 
-      Available songs (Metadata): ${JSON.stringify(availableSongs)}.
+      Available songs (Metadata): ${JSON.stringify(limitedSongs)}.
       Recommend up to 5 songs that the user might like from the available list.
       Return ONLY a JSON array of the song IDs like ["id1", "id2"].`
     } else if (action === 'radio') {
       const { currentSong, otherSongs } = data
-      prompt = `The user just finished listening to: "${currentSong.title}" by "${currentSong.artist_name}" (Genre: ${currentSong.genre}).
-      Available songs for next play: ${JSON.stringify(otherSongs)}.
+      const strippedCurrentSong = {
+        id: currentSong.id,
+        title: currentSong.title,
+        genre: currentSong.genre,
+        artist_name: currentSong.artist_name || currentSong.profiles?.stage_name || currentSong.profiles?.full_name || 'Artist',
+        language: currentSong.language,
+        bpm: currentSong.bpm
+      };
+
+      const limitedOtherSongs = (otherSongs || [])
+        .slice(0, 50)
+        .map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          genre: s.genre,
+          artist_name: s.artist_name || s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+          language: s.language,
+          bpm: s.bpm
+        }));
+
+      prompt = `The user just finished listening to: "${strippedCurrentSong.title}" by "${strippedCurrentSong.artist_name}" (Genre: ${strippedCurrentSong.genre}).
+      Available songs for next play: ${JSON.stringify(limitedOtherSongs)}.
       Pick the best ONE song that matches the vibe for an "endless radio" experience.
       Return ONLY the JSON mapping with the song ID like: {"id": "song_id_here"}`
     }

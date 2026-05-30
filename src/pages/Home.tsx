@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
+import { optimizeImage } from '../lib/imageUtils';
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
@@ -330,7 +331,7 @@ const Home: React.FC = () => {
            {/* Image on Right */}
            <div className="absolute inset-0 md:left-1/2">
               <img 
-                src={featured.cover_url} 
+                src={optimizeImage(featured.cover_url, 600, 600)} 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[8s]" 
                 alt="" 
                 referrerPolicy="no-referrer"
@@ -376,7 +377,7 @@ const Home: React.FC = () => {
             {trendingSongs.map((song) => (
               <div key={`quick-${song.id}`} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-white/5 snap-start group cursor-pointer transition-colors" onClick={() => playSong(song)}>
                 <div className="relative w-[48px] h-[48px] md:w-[54px] md:h-[54px] rounded-[6px] overflow-hidden flex-shrink-0">
-                   <img src={song.cover_url} className="w-full h-full object-cover" />
+                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" />
                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Play size={20} className="fill-white text-white ml-0.5" />
                    </div>
@@ -443,7 +444,7 @@ const Home: React.FC = () => {
             {albums.length > 0 ? albums.map((al: any) => (
                <div key={al.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
                   <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
-                     <img src={al.cover_url || "https://placehold.co/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{al.title}</h4>

@@ -32,6 +32,13 @@ const Discover: React.FC = () => {
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [activeTab, setActiveTab] = useState<'songs' | 'artists'>('songs');
 
+  // Pagination state for all songs
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [songsPage, setSongsPage] = useState(0);
+  const [hasMoreSongs, setHasMoreSongs] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
+
   const [refreshing, setRefreshing] = useState(false);
   const startY = React.useRef(0);
 
@@ -43,7 +50,7 @@ const Discover: React.FC = () => {
     const deltaY = e.changedTouches[0].clientY - startY.current;
     if (deltaY > 80 && window.scrollY === 0) {
       setRefreshing(true);
-      await Promise.all([fetchTrending(), fetchRecommendations(), handleSearch()]);
+      await Promise.all([fetchTrending(), fetchRecommendations(), fetchAllSongs(), handleSearch()]);
       setRefreshing(false);
     }
   };
@@ -58,7 +65,75 @@ const Discover: React.FC = () => {
   useEffect(() => {
     fetchTrending();
     fetchRecommendations();
+    fetchAllSongs();
   }, [userProfile]);
+
+  const fetchAllSongs = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: allSongs } = await supabase
+        .from('songs')
+        .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
+        .eq('approved', true)
+        .lte('release_date', today)
+        .order('plays', { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+
+      if (allSongs) {
+        const formatted = allSongs.map((s: any) => ({
+          ...s,
+          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+          cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+          url: s.audio_url,
+          profiles: s.profiles
+        }));
+
+        const enriched = await musicService.enrichSongsWithPurchases(formatted as any, userProfile?.id);
+        setSongs(enriched as any);
+        setHasMoreSongs(allSongs.length === PAGE_SIZE);
+        setSongsPage(1);
+      }
+    } catch (err) {
+      console.error('Error fetching all songs:', err);
+    }
+  };
+
+  const loadMoreSongs = async () => {
+    if (loadingMore || !hasMoreSongs) return;
+    setLoadingMore(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const from = songsPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data } = await supabase
+        .from('songs')
+        .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
+        .eq('approved', true)
+        .lte('release_date', today)
+        .order('plays', { ascending: false })
+        .range(from, to);
+
+      if (data && data.length > 0) {
+        const formatted = data.map((s: any) => ({
+          ...s,
+          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+          cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+          url: s.audio_url,
+          profiles: s.profiles
+        }));
+        const enriched = await musicService.enrichSongsWithPurchases(formatted as any, userProfile?.id);
+        setSongs(prev => [...prev, ...enriched as any]);
+        setSongsPage(prev => prev + 1);
+        setHasMoreSongs(data.length === PAGE_SIZE);
+      } else {
+        setHasMoreSongs(false);
+      }
+    } catch (err) {
+      console.error('Load more error:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const fetchRecommendations = async () => {
     try {
@@ -68,7 +143,8 @@ const Discover: React.FC = () => {
         .select('*, profiles!artist_id(full_name, stage_name, avatar_url)')
         .eq('approved', true)
         .lte('release_date', today)
-        .limit(100);
+        .order('plays', { ascending: false })
+        .range(0, PAGE_SIZE - 1);
       
       if (allSongs) {
         const formatted = allSongs.map((s: any) => ({
@@ -366,7 +442,34 @@ const Discover: React.FC = () => {
              
              {/* Browse Categories */}
              <div className="space-y-5">
-                <h2 className="text-[20px] font-studio font-bold text-text-primary">Browse Categories</h2>
+                {songs.length > 0 && (
+                <div className="space-y-5 mb-12">
+                   <h2 className="text-[20px] font-studio font-bold text-text-primary">All Songs</h2>
+                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {songs.map((song, i) => (
+                         <SongCard key={`discover-all-${song.id}-${i}`} song={song} queue={songs} layout="grid" />
+                      ))}
+                   </div>
+                   {hasMoreSongs && (
+                      <div className="flex justify-center pt-6">
+                         <button
+                           onClick={loadMoreSongs}
+                           disabled={loadingMore}
+                           className="px-6 py-2.5 bg-white/5 border border-white/10 text-[12px] font-display font-medium text-white transition-all uppercase tracking-widest rounded-full hover:bg-white/10 hover:border-white/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                         >
+                           {loadingMore ? (
+                             <>
+                               <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                               Loading...
+                             </>
+                           ) : 'Load More'}
+                         </button>
+                      </div>
+                   )}
+                </div>
+              )}
+
+              <h2 className="text-[20px] font-studio font-bold text-text-primary">Browse Categories</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                    {GENRES.map((cat) => (
                       <div 

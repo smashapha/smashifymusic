@@ -1,5 +1,6 @@
 import React from 'react';
 import { User } from 'lucide-react';
+import { optimizeImage } from '../../lib/imageUtils';
 
 interface AvatarProps {
   src?: string | null;
@@ -9,7 +10,10 @@ interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({ src, name, className = "" }) => {
   if (src) {
-    return <img src={src} className={`object-cover ${className}`} alt={name || "Avatar"} />;
+    const widthVal = Number(className.match(/(?:w|h)-(\d+)/)?.[1] || 12);
+    const isLarge = widthVal >= 20 || className.includes('h-[') || className.includes('w-[');
+    const size = isLarge ? 200 : 80;
+    return <img src={optimizeImage(src, size, size)} className={`object-cover ${className}`} alt={name || "Avatar"} />;
   }
 
   // Fallback: Initial or placeholder
