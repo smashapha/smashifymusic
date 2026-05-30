@@ -9,7 +9,7 @@ import { supabase } from './lib/supabase';
 
 import ErrorBoundary from './components/common/ErrorBoundary';
 
-import { Mail, Phone, MessageSquare, Send } from 'lucide-react';
+import { Mail, Phone, MessageSquare, Send, Facebook, Instagram, Youtube, Music } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { lazy, Suspense } from 'react';
@@ -87,7 +87,7 @@ const Contact = () => {
             </div>
             <div>
               <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray mb-1">Email Us</p>
-              <p className="font-bold text-lg">support@smashify.mw</p>
+              <p className="font-bold text-lg">smashfymusic@gmail.com</p>
             </div>
           </div>
 
@@ -96,14 +96,31 @@ const Contact = () => {
               <Phone size={24} />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray mb-1">WhatsApp</p>
+              <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray mb-1">WhatsApp & Call</p>
               <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="font-bold text-lg hover:text-smash-cyan transition-colors">+265 88 372 88 68</a>
             </div>
           </div>
 
           <div className="p-8 bg-smash-purple/10 rounded-3xl border border-smash-purple/20">
-            <h3 className="text-lg font-black uppercase italic mb-2">Artist Support</h3>
-            <p className="text-sm text-smash-gray leading-relaxed">Dedicated line for Malawian artists. We help you with distribution, payouts, and promotion.</p>
+            <h3 className="text-lg font-black uppercase italic mb-2 text-smash-purple">Social Media</h3>
+            <div className="space-y-4 mt-4">
+              <a href="https://facebook.com/Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+                <Facebook size={18} className="text-blue-500" />
+                <span className="font-bold">Smashify</span>
+              </a>
+              <a href="https://instagram.com/Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+                <Instagram size={18} className="text-pink-500" />
+                <span className="font-bold">Smashify</span>
+              </a>
+              <a href="https://tiktok.com/@Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+                <Music size={18} className="text-white" />
+                <span className="font-bold">Smashify</span>
+              </a>
+              <a href="https://youtube.com/@Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+                <Youtube size={18} className="text-red-500" />
+                <span className="font-bold">Smashify</span>
+              </a>
+            </div>
           </div>
         </div>
 
