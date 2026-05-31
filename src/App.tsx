@@ -6,6 +6,8 @@ import { AuthProvider } from './context/AuthContext';
 import MainLayout from './components/common/MainLayout';
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
+import PaymentModal from './components/common/PaymentModal';
+import { verifyPayment } from './lib/paychangu';
 
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -201,6 +203,33 @@ function AppContent() {
   } | null>(null);
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
 
+  const [paymentModal, setPaymentModal] = useState<{
+    checkoutUrl: string
+    txRef: string
+  } | null>(null)
+
+  const handlePaymentSuccess = async (txRef: string) => {
+    setPaymentModal(null)
+    toast.loading('Confirming payment...', { id: 'payment-confirm' })
+    try {
+      await verifyPayment(txRef)
+      toast.success('Payment confirmed! ✅', { id: 'payment-confirm' })
+      // Give backend 2 seconds then refresh profile
+      await new Promise(r => setTimeout(r, 2000))
+      window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }))
+    } catch {
+      toast.error('Payment received but confirmation is taking longer than usual. Your account will update shortly.', { id: 'payment-confirm', duration: 6000 })
+    }
+  }
+
+  // Expose globally so paychangu.ts can trigger it
+  useEffect(() => {
+    (window as any).__smashifyShowPayment = (checkoutUrl: string, txRef: string) => {
+      setPaymentModal({ checkoutUrl, txRef })
+    }
+    return () => { delete (window as any).__smashifyShowPayment }
+  }, [])
+
   useEffect(() => {
     const handleOffline = () => {
       toast.error('You are offline. Some features may not be available.', { duration: 5000 });
@@ -349,6 +378,14 @@ function AppContent() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
+      {paymentModal && (
+        <PaymentModal
+          checkoutUrl={paymentModal.checkoutUrl}
+          txRef={paymentModal.txRef}
+          onSuccess={handlePaymentSuccess}
+          onClose={() => setPaymentModal(null)}
+        />
+      )}
     </Suspense>
   );
 }

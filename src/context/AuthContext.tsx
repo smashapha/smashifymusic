@@ -55,6 +55,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const handlePaymentSuccess = async () => {
+      await new Promise(r => setTimeout(r, 3000))
+      if (user) await fetchProfile(user.id)
+    }
+    window.addEventListener('smashify:payment-success', handlePaymentSuccess)
+    return () => window.removeEventListener('smashify:payment-success', handlePaymentSuccess)
+  }, [user])
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Session fetch error:", error);
