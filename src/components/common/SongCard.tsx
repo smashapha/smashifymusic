@@ -169,17 +169,90 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
 
   if (layout === 'grid') {
     return (
-       <div className={`group relative flex flex-col gap-3 p-2 hover:bg-white/5 rounded-[12px] transition-all cursor-pointer ${className}`} onClick={handlePlay}>
+       <div
+         className={`group relative flex flex-col gap-2 p-2 hover:bg-white/5 rounded-[12px] transition-all cursor-pointer ${className}`}
+         onClick={handlePlay}
+       >
+         {/* Cover art */}
          <div className="relative aspect-square w-full rounded-[8px] overflow-hidden shadow-sm">
-           <img src={optimizeImage(song.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={song.title} />
+           <img
+             src={optimizeImage(song.cover_url, 200, 200)}
+             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+             alt={song.title}
+           />
+           {/* Play overlay */}
            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-             <Play size={24} fill="white" className="text-white" />
+             {isCurrent && isPlaying
+               ? <Pause size={24} fill="white" className="text-white" />
+               : <Play size={24} fill="white" className="text-white" />
+             }
+           </div>
+           {/* Currently playing indicator */}
+           {isCurrent && isPlaying && (
+             <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5">
+               {[...Array(3)].map((_, i) => (
+                 <motion.div
+                   key={i}
+                   animate={{ height: [4, 12, 6, 10, 4] }}
+                   transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
+                   className="w-0.5 bg-smash-orange rounded-full"
+                 />
+               ))}
+             </div>
+           )}
+           {/* Buy badge */}
+           {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && (
+             <button
+               onClick={handleBuy}
+               className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-smash-orange text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg"
+             >
+               <ShoppingBag size={10} /> MK {song.price}
+             </button>
+           )}
+           {/* Menu button - top right */}
+           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+             <button
+               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+               className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
+             >
+               <MoreVertical size={14} className="text-white" />
+             </button>
+             <AnimatePresence>
+               {showMenu && (
+                 <SongMenu
+                   song={song}
+                   onClose={() => setShowMenu(false)}
+                   onBuy={handleBuy}
+                   onAddToPlaylist={() => setShowPlaylistModal(true)}
+                 />
+               )}
+             </AnimatePresence>
            </div>
          </div>
-         <div className="space-y-1 mt-1 text-center px-1">
-           <h3 className="text-white font-display font-semibold text-[13px] md:text-[14px] truncate leading-tight">{song.title}</h3>
-           <p className="text-[11px] md:text-[12px] text-text-muted font-sans font-normal truncate">{song.artist_name}</p>
+   
+         {/* Title + artist + actions row */}
+         <div className="flex items-start justify-between gap-1 px-1">
+           <div className="flex-1 min-w-0">
+             <h3 className={`font-display font-semibold text-[13px] truncate leading-tight ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
+               {song.title}
+             </h3>
+             <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
+               {song.artist_name}
+             </p>
+           </div>
+           {/* Like button */}
+           <button
+             onClick={handleLike}
+             className={`shrink-0 p-1 rounded-full transition-colors ${isLiked ? 'text-red-400' : 'text-text-muted opacity-0 group-hover:opacity-100'}`}
+           >
+             <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} />
+           </button>
          </div>
+   
+         <AnimatePresence>
+           {showPlaylistModal && <AddToPlaylistModal song={song} onClose={() => setShowPlaylistModal(false)} />}
+           {showSupportModal && artistData && <SupportArtistModal artist={artistData} onClose={() => setShowSupportModal(false)} />}
+         </AnimatePresence>
        </div>
     );
   }
@@ -224,7 +297,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
-           {!song.is_purchased && !purchasedIds.has(song.id) && song.is_for_sale && (
+           {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && (
              <button 
                onClick={handleBuy}
                className="flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white"
