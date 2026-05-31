@@ -16,13 +16,18 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     if (!userProfile?.id) return;
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('profile_id', userProfile.id)
-      .order('created_at', { ascending: false });
-    setNotifications(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('profile_id', userProfile.id)
+        .order('created_at', { ascending: false });
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const markAsRead = async (id: string) => {

@@ -336,12 +336,16 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       if (!userProfile?.id) return;
-      const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('profile_id', userProfile.id)
-        .eq('read', false);
-      setUnreadCount(count || 0);
+      try {
+        const { count } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('profile_id', userProfile.id)
+          .eq('read', false);
+        setUnreadCount(count || 0);
+      } catch (err) {
+        console.error(err);
+      }
     };
 
     fetchUnreadCount();

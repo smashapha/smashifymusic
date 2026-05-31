@@ -54,13 +54,17 @@ const Home: React.FC = () => {
 
   const fetchNotifications = async () => {
     if (!userProfile?.id) return;
-    const { data } = await supabase
-      .from('listener_notifications')
-      .select('*')
-      .eq('listener_id', userProfile.id)
-      .order('created_at', { ascending: false })
-      .limit(30);
-    if (data) setNotifications(data);
+    try {
+      const { data } = await supabase
+        .from('listener_notifications')
+        .select('*')
+        .eq('listener_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (data) setNotifications(data);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
   };
 
   useEffect(() => {

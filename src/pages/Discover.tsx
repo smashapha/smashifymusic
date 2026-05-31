@@ -53,7 +53,7 @@ const Discover: React.FC = () => {
   const [hasMoreSongs, setHasMoreSongs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 20;
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
@@ -227,30 +227,35 @@ const Discover: React.FC = () => {
   }, [searchQuery, selectedGenre]);
 
   const fetchTrending = async () => {
-    const today = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("songs")
-      .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
-      .eq("approved", true)
-      .lte("release_date", today)
-      .limit(6);
-    if (data) {
-      const baseSongs = data.map((s) => ({
-        ...s,
-        artist_name:
-          s.profiles?.stage_name || s.profiles?.full_name || "Artist",
-        cover_url:
-          s.cover_url ||
-          "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
-        url: s.audio_url,
-        profiles: s.profiles,
-      }));
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("songs")
+        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+        .eq("approved", true)
+        .lte("release_date", today)
+        .order("plays", { ascending: false })
+        .limit(6);
+      if (data) {
+        const baseSongs = data.map((s) => ({
+          ...s,
+          artist_name:
+            s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+          cover_url:
+            s.cover_url ||
+            "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
+          url: s.audio_url,
+          profiles: s.profiles,
+        }));
 
-      const enriched = await musicService.enrichSongsWithPurchases(
-        baseSongs as any,
-        userProfile?.id,
-      );
-      setTrending(enriched as any);
+        const enriched = await musicService.enrichSongsWithPurchases(
+          baseSongs as any,
+          userProfile?.id,
+        );
+        setTrending(enriched as any);
+      }
+    } catch (err) {
+      console.error("Error fetching trending:", err);
     }
   };
 

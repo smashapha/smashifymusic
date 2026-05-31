@@ -49,19 +49,23 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     // Initial DB check
     const checkLikeStatus = async () => {
       if (!userProfile) return;
-      const { data } = await supabase
-        .from('likes')
-        .select('*')
-        .eq('user_id', userProfile.id)
-        .eq('song_id', song.id)
-        .maybeSingle();
-      
-      if (data) {
-        setIsLiked(true);
-        const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
-        if (Array.isArray(liked) && !liked.includes(song.id)) {
-           localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, song.id]));
+      try {
+        const { data } = await supabase
+          .from('likes')
+          .select('*')
+          .eq('user_id', userProfile.id)
+          .eq('song_id', song.id)
+          .maybeSingle();
+        
+        if (data) {
+          setIsLiked(true);
+          const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+          if (Array.isArray(liked) && !liked.includes(song.id)) {
+             localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, song.id]));
+          }
         }
+      } catch (err) {
+        console.error('Error fetching like status:', err);
       }
     };
     checkLikeStatus();
@@ -231,13 +235,13 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
          </div>
    
          {/* Title + artist + actions row */}
-         <div className="flex items-start justify-between gap-1 px-1">
+         <div className="flex items-start justify-between gap-1 px-1 mt-1">
            <div className="flex-1 min-w-0">
              <h3 className={`font-display font-semibold text-[13px] truncate leading-tight ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
-               {song.title}
+               {song.title || "Unknown Title"}
              </h3>
              <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
-               {song.artist_name}
+               {song.artist_name || "Unknown Artist"}
              </p>
            </div>
            {/* Like button */}
@@ -285,13 +289,13 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
         </div>
         <div className="flex-1 min-w-0">
           <h4 className={`font-sans font-semibold text-[14px] md:text-[15px] truncate mb-0.5 ${isCurrent ? 'text-smash-orange' : 'text-text-primary'}`}>
-            {song.title}
+            {song.title || "Unknown Title"}
           </h4>
           <div className="flex items-center gap-2">
-            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.artist_name}</p>
-            {song.plays !== undefined && (
+            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.artist_name || "Unknown Artist"}</p>
+            {song.plays != null && (
               <span className="text-[11px] text-text-secondary font-sans font-medium flex items-center gap-1">
-                <Play size={10} fill="currentColor" /> {song.plays.toLocaleString()}
+                <Play size={10} fill="currentColor" /> {Number(song.plays || 0).toLocaleString()}
               </span>
             )}
           </div>
