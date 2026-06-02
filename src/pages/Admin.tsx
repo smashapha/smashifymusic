@@ -141,6 +141,7 @@ const Admin = () => {
       .from('moto_feed')
       .select('*, profiles:artist_id(stage_name, avatar_url)')
       .eq('approved', false)
+      .neq('status', 'draft')
       .order('created_at', { ascending: true });
     setPendingSnippets(data || []);
   };
@@ -181,7 +182,7 @@ const Admin = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'artist'),
         supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', true),
-        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', false),
+        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', false).neq('status', 'draft'),
         supabase.from('transactions').select('platform_fee, type, created_at, net_amount').eq('status', 'completed'),
         supabase.from('transactions').select('id, type, platform_fee, created_at, net_amount, profiles:artist_id(full_name, stage_name)').eq('status', 'completed').order('created_at', { ascending: false }).limit(6),
       ]);
@@ -406,6 +407,7 @@ const Admin = () => {
       .from('songs')
       .select('*, profiles!artist_id(stage_name, full_name, email)')
       .eq('approved', false)
+      .neq('status', 'draft')
       .order('created_at', { ascending: true });
     setPendingSongs(data || []);
   };
@@ -520,7 +522,7 @@ const Admin = () => {
     
     if (artistsData) {
       const artistsWithPending = await Promise.all(artistsData.map(async (art) => {
-        const { count } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('artist_id', art.id).eq('approved', false);
+        const { count } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('artist_id', art.id).eq('approved', false).neq('status', 'draft');
         return { ...art, pending_songs: count || 0 };
       }));
       setArtists(artistsWithPending);
@@ -576,7 +578,7 @@ const Admin = () => {
        albumIdToApprove = song.album_id;
     }
 
-    let query = supabase.from('songs').update({ approved: true });
+    let query = supabase.from('songs').update({ approved: true, status: 'approved' });
     if (albumIdToApprove) {
        query = query.eq('album_id', albumIdToApprove);
     } else {
@@ -654,7 +656,7 @@ const Admin = () => {
   };
 
   const approveAllSongs = async (artistId: string) => {
-    const { error } = await supabase.from('songs').update({ approved: true }).eq('artist_id', artistId).eq('approved', false);
+    const { error } = await supabase.from('songs').update({ approved: true, status: 'approved' }).eq('artist_id', artistId).eq('approved', false).neq('status', 'draft');
     if (error) toast.error(error.message);
     else {
       toast.success('All songs for this artist approved!');

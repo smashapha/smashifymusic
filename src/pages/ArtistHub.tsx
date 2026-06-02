@@ -1156,7 +1156,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 };
 
 const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
-  const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale'>('all');
+  const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale' | 'draft'>('all');
   
   const extractStoragePath = (url: string, bucket: string) => {
     if(!url) return null;
@@ -1184,9 +1184,11 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
   };
 
   const filteredSongs = songs.filter((s: any) => {
-    if (filter === 'live') return s.approved;
-    if (filter === 'pending') return !s.approved;
-    if (filter === 'for_sale') return s.is_for_sale;
+    if (filter === 'draft') return s.status === 'draft';
+    if (filter === 'live') return s.approved && s.status !== 'draft';
+    if (filter === 'pending') return !s.approved && s.status !== 'draft';
+    if (filter === 'for_sale') return s.is_for_sale && s.status !== 'draft';
+    if (filter === 'all') return s.status !== 'draft';
     return true;
   });
 
@@ -1215,7 +1217,8 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
              { id: 'all', label: 'All Catalog' },
              { id: 'live', label: 'Live Tracks' },
              { id: 'pending', label: 'Reviewing' },
-             { id: 'for_sale', label: 'Premium' }
+             { id: 'for_sale', label: 'Premium' },
+             { id: 'draft', label: 'Drafts' }
            ].map(t => (
              <button 
                key={t.id}
@@ -1257,9 +1260,9 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
                     </td>
                     <td className="px-4 py-3">
                        <div className="flex items-center gap-2">
-                          <div className={`w-[6px] h-[6px] rounded-full ${song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
-                          <span className={`text-[12px] font-display font-medium ${song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
-                             {song.approved ? 'Distributed' : 'Reviewing'}
+                          <div className={`w-[6px] h-[6px] rounded-full ${song.status === 'draft' ? 'bg-text-muted' : song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
+                          <span className={`text-[12px] font-display font-medium ${song.status === 'draft' ? 'text-text-muted' : song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
+                             {song.status === 'draft' ? 'Draft' : song.approved ? 'Distributed' : 'Reviewing'}
                           </span>
                        </div>
                     </td>
@@ -1388,6 +1391,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [mode, setMode] = useState<'single' | 'album' | 'snippet'>('single');
   const [uploadStep, setUploadStep] = useState<1 | 2 | 3>(1);
   const [uploading, setUploading] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -1582,7 +1586,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     return arrayBuf;
   };
 
-  const handleUploadSingle = async (e: React.FormEvent) => {
+  const handleUploadSingle = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
     if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
     
@@ -1631,6 +1635,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         price: isForSale ? price : 0,
         is_for_sale: isForSale,
         approved: false,
+        status: asDraft ? 'draft' : 'pending',
         type: mode === 'snippet' ? 'snippet' : 'single',
         plays: 0
       });
@@ -1647,7 +1652,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     }
   };
 
-  const handleUploadAlbum = async (e: React.FormEvent) => {
+  const handleUploadAlbum = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
     if (albumTracks.length === 0 || !coverFile || !title) return toast.error('Check files and fields');
     
@@ -1710,6 +1715,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           price: trackPrice,
           is_for_sale: isForSale,
           approved: false,
+          status: asDraft ? 'draft' : 'pending',
           type: 'single',
           plays: 0
         });
@@ -1737,10 +1743,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           <div className="w-24 h-24 bg-smash-purple/20 rounded-full flex items-center justify-center mx-auto mb-8">
             <CircleCheck size={48} className="text-smash-purple" />
           </div>
-          <h2 className="text-4xl font-studio font-black italic uppercase text-white mb-4">Submission Sent!</h2>
-          <p className="text-text-secondary font-medium mb-12">Your music is headed to the Smashify review team. This usually takes 2-4 hours.</p>
+          <h2 className="text-4xl font-studio font-black italic uppercase text-white mb-4">
+            {isDrafting ? 'Draft Saved!' : 'Submission Sent!'}
+          </h2>
+          <p className="text-text-secondary font-medium mb-12">
+            {isDrafting ? 'Your music has been saved as a draft. You can publish it anytime from your inventory.' : 'Your music is headed to the Smashify review team. This usually takes 2-4 hours.'}
+          </p>
           <div className="space-y-4">
-            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">Submit Another</button>
+            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
             <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-display font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
           </div>
         </motion.div>
@@ -1808,7 +1818,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                 </div>
              </motion.div>         
          ) : (
-             <form onSubmit={mode === 'album' ? handleUploadAlbum : handleUploadSingle}>
+             <form onSubmit={(e) => {
+               if (mode === 'album') handleUploadAlbum(e, isDrafting);
+               else handleUploadSingle(e, isDrafting);
+             }}>
                 
                 {currentStep === 1 && (
                   <div className={`p-6 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-smash-orange bg-smash-orange/5' : ''}`}>
@@ -2219,8 +2232,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                You have reached your upload limit. Upgrade your plan to upload more songs.
                              </div>
                            )}
-                           <button type="submit" disabled={!canUploadMore} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={!canUploadMore} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
+                           </button>
+                           <button type="submit" onClick={() => setIsDrafting(true)} className="w-full h-16 bg-white/5 border border-white/10 text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center">
+                             💾 SAVE AS DRAFT
                            </button>
                            <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
                         </div>
