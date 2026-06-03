@@ -22,6 +22,7 @@ export interface Song {
   genre?: string;
   region?: string;
   lyrics?: string;
+  featured_artist?: string;
   plays?: number;
   approved?: boolean;
   status?: 'draft' | 'pending' | 'approved';

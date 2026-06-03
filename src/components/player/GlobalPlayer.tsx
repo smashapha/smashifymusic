@@ -134,7 +134,8 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${currentSong.title} - ${currentSong.artist_name}.mp3`;
+      const displayArtist = (currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name;
+      link.download = `${currentSong.title} - ${displayArtist}.mp3`;
       link.style.display = 'none';
       if (document.body) {
         document.body.appendChild(link);
@@ -260,7 +261,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 transition={{ delay: 0.1 }}
                 className="text-lg md:text-xl text-text-secondary font-sans font-medium"
               >
-                {adPlaying ? currentSong?.title : (currentSong?.profiles?.stage_name || currentSong?.artist_name)}
+                {adPlaying ? currentSong?.title : (((currentSong as any)?.featured_artist ? `${currentSong?.profiles?.stage_name || currentSong?.artist_name} ft. ${(currentSong as any)?.featured_artist}` : (currentSong?.profiles?.stage_name || currentSong?.artist_name)))}
               </motion.p>
               {adPlaying && (
                  <div className="mt-8">
@@ -450,7 +451,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                     </div>
                     <div className="min-w-0 flex-1">
                        <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
-                       <p className="text-xs text-text-secondary font-medium truncate">{song.artist_name}</p>
+                       <p className="text-xs text-text-secondary font-medium truncate">{(song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name}</p>
                     </div>
                  </div>
                ))}
@@ -696,7 +697,7 @@ const GlobalPlayer: React.FC = () => {
                     <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>MK {currentSong.price}</span>
                   )}
                 </div>
-                <p className="font-sans text-xs text-text-secondary truncate">{currentSong.profiles?.stage_name || currentSong.artist_name}</p>
+                <p className="font-sans text-xs text-text-secondary truncate">{((currentSong as any).featured_artist ? `${currentSong.profiles?.stage_name || currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : (currentSong.profiles?.stage_name || currentSong.artist_name))}</p>
               </div>
             </div>
 
@@ -861,7 +862,7 @@ const GlobalPlayer: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
-                      <p className="text-xs text-text-secondary font-medium truncate">{song.artist_name}</p>
+                      <p className="text-xs text-text-secondary font-medium truncate">{(song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name}</p>
                     </div>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 

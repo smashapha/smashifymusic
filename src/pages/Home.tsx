@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X } from 'lucide-react';
+import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
@@ -12,6 +12,49 @@ import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
+
+const FEATURED_CHARTS = [
+  {
+    id: 'top-songs-global',
+    title: 'Top Songs Global',
+    subtitle: 'Your weekly update of the most played tracks right now - Global.',
+    style: 'from-purple-800 to-indigo-950',
+    type: 'weekly',
+    cardTitle: 'Top Songs',
+    cardSub: 'Global',
+    iconText: 'Weekly Music Charts'
+  },
+  {
+    id: 'top-songs-malawi',
+    title: 'Top Songs Malawi',
+    subtitle: 'Your weekly update of the most played tracks right now - Malawi.',
+    style: 'from-orange-850 to-red-950',
+    type: 'weekly',
+    cardTitle: 'Top Songs',
+    cardSub: 'Malawi',
+    iconText: 'Weekly Music Charts'
+  },
+  {
+    id: 'top-50-global',
+    title: 'Top 50 - Global',
+    subtitle: 'Your daily update of the most played tracks right now - Global.',
+    style: 'from-teal-800 to-cyan-950',
+    type: 'daily',
+    cardTitle: 'Top 50',
+    cardSub: 'GLOBAL',
+    iconText: 'Daily Music Charts'
+  },
+  {
+    id: 'top-50-malawi',
+    title: 'Top 50 - Malawi',
+    subtitle: 'Your daily update of the most played tracks right now - Malawi.',
+    style: 'from-pink-800 to-rose-950',
+    type: 'daily',
+    cardTitle: 'Top 50',
+    cardSub: 'MALAŴI',
+    iconText: 'Daily Music Charts'
+  }
+];
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
@@ -353,7 +396,7 @@ const Home: React.FC = () => {
               <h1 className="text-[28px] md:text-[44px] font-studio font-extrabold tracking-tight leading-[1.1] mb-2 text-white line-clamp-2 uppercase">
                  {featured.title}
               </h1>
-              <p className="text-[13px] md:text-[14px] font-display text-text-muted mb-6 md:mb-8 line-clamp-1 uppercase tracking-wider">{featured.artist_name}</p>
+              <p className="text-[13px] md:text-[14px] font-display text-text-muted mb-6 md:mb-8 line-clamp-1 uppercase tracking-wider">{(featured as any).featured_artist ? `${featured.artist_name} ft. ${(featured as any).featured_artist}` : featured.artist_name}</p>
               
               <div className="flex">
                  <button className="px-5 md:px-6 py-2.5 md:py-3 bg-white text-black text-[11px] md:text-[12px] font-display font-bold uppercase tracking-widest rounded-full hover:bg-white/90 transition-all flex items-center gap-2">
@@ -499,6 +542,47 @@ const Home: React.FC = () => {
             )) : (
               <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No featured artists yet</div>
             )}
+         </div>
+      </HomeSection>
+
+      {/* Featured Charts Section */}
+      <HomeSection title="Featured Charts" subtitle="Your daily and weekly update of the most played local and global hits.">
+         <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            {FEATURED_CHARTS.map((chart) => (
+               <div 
+                  key={chart.id}
+                  onClick={() => navigate(`/playlist/${chart.id}`)}
+                  className={`min-w-[145px] max-w-[145px] md:min-w-[180px] md:max-w-[180px] aspect-square rounded-2xl bg-gradient-to-br ${chart.style} shadow-lg relative p-4 flex flex-col justify-between cursor-pointer border border-white/10 group hover:scale-[1.03] transition-all shrink-0 snap-start`}
+               >
+                  <div className="flex justify-between items-start">
+                     <div className="w-6 h-6 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center">
+                        <Headphones size={11} className="text-smash-cyan animate-pulse" />
+                     </div>
+                     <span className="text-[8px] font-display font-black tracking-widest text-white/40 uppercase">
+                        {chart.type}
+                     </span>
+                  </div>
+                  
+                  <div>
+                     <h3 className="text-lg md:text-xl font-studio font-black italic tracking-tighter leading-none mb-0.5 text-white">
+                        {chart.cardTitle}
+                     </h3>
+                     <h4 className="text-xs font-display font-black tracking-widest text-[#1db954] uppercase leading-none">
+                        {chart.cardSub}
+                     </h4>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-1">
+                     <div className="flex items-center gap-1">
+                        <TrendingUp size={10} className="text-white/60" />
+                        <span className="text-[8px] font-sans font-black tracking-widest uppercase text-white/50">
+                           {chart.iconText}
+                        </span>
+                     </div>
+                     <ArrowUpRight size={14} className="text-white/40 opacity-0 group-hover:opacity-100 group-hover:text-white transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+               </div>
+            ))}
          </div>
       </HomeSection>
 

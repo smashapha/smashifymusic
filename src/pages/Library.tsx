@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,7 @@ import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const limits = getListenerLimits(userProfile);
   const isPremium = getListenerTier(userProfile) !== 'free';
   const [activeTab, setActiveTab] = useState<'purchased' | 'likes' | 'downloads' | 'playlists'>('purchased');
@@ -20,6 +22,26 @@ const Library: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+
+  const handlePlaylistClick = async (pl: any) => {
+    try {
+      // Find if this playlist actually corresponds to a saved album
+      const { data: albumData, error } = await supabase
+        .from('albums')
+        .select('id')
+        .eq('title', pl.name)
+        .maybeSingle();
+
+      if (!error && albumData) {
+        navigate(`/album/${albumData.id}`);
+      } else {
+        navigate(`/playlist/${pl.id}`);
+      }
+    } catch (err) {
+      console.error('Error identifying playlist/album:', err);
+      navigate(`/playlist/${pl.id}`);
+    }
+  };
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -258,14 +280,19 @@ const Library: React.FC = () => {
                  <motion.div 
                    key={pl.id}
                    whileHover={{ y: -5 }}
+                   onClick={() => handlePlaylistClick(pl)}
                    className="flex flex-col gap-2 md:gap-3 group cursor-pointer"
                  >
                     <div className="aspect-square bg-smash-dark rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/5 relative shadow-lg md:shadow-xl">
-                       <div className="grid grid-cols-2 h-full w-full opacity-40">
+                       {pl.cover_url ? (
+                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} />
+                       ) : (
+                          <div className="grid grid-cols-2 h-full w-full opacity-40">
                           {pl.playlist_songs?.slice(0, 4).map((ps: any, i: number) => (
                              <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" />
                           ))}
                        </div>
+                       )}
                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                        <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 p-2 bg-white/10 backdrop-blur-md rounded-lg">
                           <Music2 size={14} className="md:w-4 md:h-4" />

@@ -41,8 +41,15 @@ const ArtistProfile: React.FC = () => {
      topSupporters: any[]
      recentTips: any[]
      recentComments: any[]
-   }>({ topSupporters: [], recentTips: [], recentComments: [] })
-   const [communityLoading, setCommunityLoading] = useState(false)
+   }>({ topSupporters: [], recentTips: [], recentComments: [] });
+   const [communityLoading, setCommunityLoading] = useState(false);
+
+   const [discoFilter, setDiscoFilter] = useState<'popular' | 'albums' | 'singles'>('popular');
+   const [discoLimit, setDiscoLimit] = useState(5);
+   
+   const [fansAlsoLike, setFansAlsoLike] = useState<UserProfile[]>([]);
+   const [appearsOn, setAppearsOn] = useState<Song[]>([]);
+
 
    const handleSubscribe = async () => {
       if (!userProfile) {
@@ -234,6 +241,36 @@ const ArtistProfile: React.FC = () => {
             
             const enriched = await musicService.enrichSongsWithPurchases(formattedSongs as any, userProfile?.id);
             setSongs(enriched);
+
+            // Fetch fans also like (other users who are artists)
+            const { data: otherArtists } = await supabase
+               .from('profiles')
+               .select('*')
+               .neq('id', id)
+               .eq('is_artist', true)
+               .limit(5);
+            if (otherArtists) setFansAlsoLike(otherArtists);
+
+            // Fetch appears on (songs from other artists)
+            const searchName = artistData.stage_name || artistData.full_name || '';
+            const { data: otherSongs } = await supabase
+               .from('songs')
+               .select('*, profiles!artist_id(*)')
+               .neq('artist_id', id)
+               .ilike('featured_artist', `%${searchName}%`)
+               .eq('approved', true)
+               .lte('release_date', today)
+               .limit(5);
+            if (otherSongs) {
+               const formattedOther = otherSongs.map((s: any) => ({
+                  ...s,
+                  artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+                  cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+                  url: s.audio_url,
+               }));
+               setAppearsOn(await musicService.enrichSongsWithPurchases(formattedOther as any, userProfile?.id));
+            }
+
 
          } catch (err) {
             console.error('Error fetching artist:', err);
@@ -463,35 +500,121 @@ const ArtistProfile: React.FC = () => {
               </section>
             )}
 
-            {/* Collection grid */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-black uppercase tracking-widest text-white/50">Collection</h2>
+            {/* Discography */}
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-4 mt-8">
+                <h2 className="text-xl md:text-2xl font-bold text-white">Discography</h2>
                 <button
-                  onClick={() => playQueue(songs, 0)}
-                  className="text-xs text-smash-orange font-black uppercase tracking-widest hover:underline"
+                  onClick={() => setDiscoLimit(0)}
+                  className="text-xs text-white/50 font-bold uppercase hover:underline"
                 >
-                  Play All
+                  Show all
                 </button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {songs.map((song, i) => (
-                  <SongCard key={`col-${song.id}`} song={song} queue={songs} layout="grid" />
-                ))}
+              
+              <div className="flex gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
+                <button onClick={() => { setDiscoFilter('popular'); setDiscoLimit(5); }} className={`px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${discoFilter === 'popular' ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>Popular releases</button>
+                <button onClick={() => { setDiscoFilter('albums'); setDiscoLimit(5); }} className={`px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${discoFilter === 'albums' ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>Albums</button>
+                <button onClick={() => { setDiscoFilter('singles'); setDiscoLimit(5); }} className={`px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${discoFilter === 'singles' ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>Singles and EPs</button>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
+                {(() => {
+                  let items: any[] = [];
+                  if (discoFilter === 'albums') {
+                    items = albums.map(a => ({ type: 'album', data: a }));
+                  } else if (discoFilter === 'singles') {
+                    items = songs.filter(s => !s.album_id).map(s => ({ type: 'single', data: s }));
+                  } else {
+                    items = [
+                      ...albums.map(a => ({ type: 'album', data: a })),
+                      ...songs.filter(s => !s.album_id).map(s => ({ type: 'single', data: s }))
+                    ];
+                  }
+                  return (discoLimit ? items.slice(0, discoLimit) : items).map((item, i) => {
+                    if (item.type === 'single') {
+                       return (
+                         <div key={`s-${item.data.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0">
+                           <SongCard song={item.data} queue={songs} layout="grid" className="!p-0 hover:bg-transparent" />
+                         </div>
+                       );
+                    } else {
+                       return (
+                         <div key={`a-${item.data.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer" onClick={() => navigate(`/album/${item.data.id}`)}>
+                            <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
+                               <img src={item.data.cover_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                 <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
+                                   <Play size={18} fill="white" className="text-white ml-0.5" />
+                                 </div>
+                               </div>
+                            </div>
+                            <p className="text-white text-sm font-bold truncate">{item.data.title}</p>
+                            <p className="text-white/40 text-xs mt-0.5">{item.data.release_year} · Album</p>
+                         </div>
+                       );
+                    }
+                  });
+                })()}
               </div>
             </section>
 
-            {/* About — shown inline at bottom of music tab */}
-            {artist.bio && (
-              <section className="pt-4 border-t border-white/5">
-                <h2 className="text-sm font-black uppercase tracking-widest text-white/50 mb-3">About</h2>
-                <p className="text-white/60 text-sm leading-relaxed max-w-2xl">{artist.bio}</p>
-                <div className="flex gap-3 mt-4 flex-wrap">
-                  {artist.instagram && <SocialLink href={artist.instagram} icon={<Instagram size={14} />} label="Instagram" />}
-                  {artist.twitter && <SocialLink href={artist.twitter} icon={<Twitter size={14} />} label="X" />}
-                </div>
-              </section>
+            {/* Appears On */}
+            {appearsOn.length > 0 && (
+               <section className="mb-8 pt-4">
+                 <div className="flex items-center justify-between mb-4">
+                   <h2 className="text-xl md:text-2xl font-bold text-white">Appears On</h2>
+                   <button className="text-xs text-white/50 font-bold uppercase hover:underline">Show all</button>
+                 </div>
+                 <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
+                   {appearsOn.map(song => (
+                     <div key={`appear-${song.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0">
+                       <SongCard song={song} queue={appearsOn} layout="grid" className="!p-0 hover:bg-transparent" />
+                     </div>
+                   ))}
+                 </div>
+               </section>
             )}
+
+            {/* Fans also like */}
+            {fansAlsoLike.length > 0 && (
+               <section className="mb-8 pt-4">
+                 <div className="flex items-center justify-between mb-4">
+                   <h2 className="text-xl md:text-2xl font-bold text-white">Fans also like</h2>
+                   <button className="text-xs text-white/50 font-bold uppercase hover:underline">Show all</button>
+                 </div>
+                 <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
+                   {fansAlsoLike.map(fanArtist => (
+                     <div key={`fan-${fanArtist.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer text-center" onClick={() => navigate(`/artist/${fanArtist.id}`)}>
+                       <div className="aspect-[1/1] w-full rounded-full overflow-hidden mb-3 relative shadow-lg mx-auto">
+                          <img src={fanArtist.avatar_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                       </div>
+                       <p className="text-white text-sm font-bold truncate">{fanArtist.stage_name || fanArtist.full_name}</p>
+                       <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mt-1">Artist</p>
+                     </div>
+                   ))}
+                 </div>
+               </section>
+            )}
+
+            {/* About Spotify style */}
+            <section className="mb-8 pt-4">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-4">About</h2>
+              <div className="relative aspect-[4/3] md:aspect-[2/1] rounded-3xl overflow-hidden group cursor-pointer">
+                 <img src={artist.banner_url || artist.avatar_url || 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="About" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                 <div className="absolute bottom-0 left-0 p-6 w-full">
+                    <p className="text-white font-bold text-lg mb-2">{(artist.followers_count || 0).toLocaleString()} followers</p>
+                    {artist.bio && (
+                      <p className="text-white/80 text-sm md:text-base line-clamp-3 mb-4 max-w-2xl">{artist.bio}</p>
+                    )}
+                    <div className="flex gap-3 flex-wrap">
+                      {artist.instagram && <SocialLink href={artist.instagram} icon={<Instagram size={14} />} label="Instagram" />}
+                      {artist.twitter && <SocialLink href={artist.twitter} icon={<Twitter size={14} />} label="X" />}
+                    </div>
+                 </div>
+              </div>
+            </section>
           </motion.div>
         )}
 

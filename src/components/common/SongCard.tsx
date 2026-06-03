@@ -241,7 +241,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                {song.title || "Unknown Title"}
              </h3>
              <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
-               {song.artist_name || "Unknown Artist"}
+               {song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}
              </p>
            </div>
            {/* Like button */}
@@ -292,7 +292,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
             {song.title || "Unknown Title"}
           </h4>
           <div className="flex items-center gap-2">
-            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.artist_name || "Unknown Artist"}</p>
+            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}</p>
             {song.plays != null && (
               <span className="text-[11px] text-text-secondary font-sans font-medium flex items-center gap-1">
                 <Play size={10} fill="currentColor" /> {Number(song.plays || 0).toLocaleString()}
@@ -349,9 +349,10 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist }: any) => {
   const { addToQueue, purchasedIds } = usePlayer();
   
   const handleShare = async () => {
+    const displayArtist = song.featured_artist ? `${song.artist_name} ft. ${song.featured_artist}` : song.artist_name;
     const shareData = {
       title: song.title,
-      text: `Listen to ${song.title} by ${song.artist_name} on Smashify!`,
+      text: `Listen to ${song.title} by ${displayArtist} on Smashify!`,
       url: window.location.origin + `/artist/${song.artist_id}`
     };
 
