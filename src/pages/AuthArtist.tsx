@@ -301,18 +301,7 @@ const AuthArtist: React.FC = () => {
   };
 
   const handleOAuth = async (provider: 'google') => {
-    try {
-      localStorage.setItem('smashify_auth_intent', 'artist');
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/artist-hub`
-        }
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    toast.error('Google sign-in is coming soon!');
   };
 
   const handleForgotPassword = async () => {

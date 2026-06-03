@@ -169,18 +169,7 @@ const AuthListener: React.FC = () => {
   };
 
   const handleOAuth = async (provider: 'google') => {
-    try {
-      localStorage.setItem('smashify_auth_intent', 'listener');
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    toast.error('Google sign-in is coming soon!');
   };
 
   const handleForgotPassword = async () => {
@@ -276,8 +265,8 @@ const AuthListener: React.FC = () => {
                     <div className="flex-grow border-t border-white/10"></div>
                  </div>
 
-                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/10 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] hover:bg-white/5 transition-colors">
-                    <Chrome size={18} /> Continue with Google
+                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-white/40 bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors">
+                    <Chrome size={18} className="text-white/30" /> Continue with Google (Coming Soon)
                  </button>
               </motion.form>
            ) : (
@@ -320,8 +309,8 @@ const AuthListener: React.FC = () => {
                     {loadingState ? 'Sending...' : 'REGISTER'}
                  </button>
 
-                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/10 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] hover:bg-white/5 transition-colors mt-4">
-                    <Chrome size={18} /> Join with Google
+                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[14px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-white/40 bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors mt-4">
+                    <Chrome size={18} className="text-white/30" /> Join with Google (Coming Soon)
                  </button>
               </motion.form>
            )}
