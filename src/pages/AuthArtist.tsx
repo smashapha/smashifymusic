@@ -119,7 +119,7 @@ const AuthArtist: React.FC = () => {
       if (existingStage) {
         toast.error(
           `"${stageTrimmed}" is already registered on Smashify. ` +
-          'If you are the real artist, contact support@smashify.mw'
+            'If you are the real artist, contact smashfymusic@gmail.com'
         );
         setLoadingState(false);
         return;
@@ -135,7 +135,7 @@ const AuthArtist: React.FC = () => {
       if (pendingApp) {
         toast.error(
           `"${stageTrimmed}" already has a pending application. ` +
-          'Contact support@smashify.mw if this is your name.'
+            'Contact smashfymusic@gmail.com if this is your name.'
         );
         setLoadingState(false);
         return;
@@ -808,9 +808,9 @@ const AuthArtist: React.FC = () => {
                              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-smash-orange text-white text-[9px] font-semibold px-2 py-[2px] rounded-b-[4px] uppercase tracking-widest">Popular</div>
                              <div className="flex justify-between items-center mb-1 mt-2">
                                 <h4 className="font-sans font-semibold text-[14px] text-smash-orange">Standard</h4>
-                                <span className="font-sans font-semibold text-[13px] text-white">MK 25,000 / 6mo</span>
+                                <span className="font-sans font-semibold text-[13px] text-white">MK 13,000 / 6mo</span>
                              </div>
-                             <p className="text-[12px] text-text-muted">Unlimited uploads, 7% fee, advanced analytics.</p>
+                             <p className="text-[12px] text-text-muted">30 uploads per year, 7% fee, advanced analytics.</p>
                           </div>
                        </motion.div>
                     )}

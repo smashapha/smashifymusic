@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 
-const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo', annualText }: any) => (
+const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo' }: any) => (
   <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5'}`}>
     {badge && (
       <div className="absolute top-4 md:top-6 right-0 bg-smash-orange text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
@@ -28,7 +28,6 @@ const PricingCard = ({ title, price, features, badge, isArtist = false, onAction
         </li>
       ))}
     </ul>
-    {annualText && <p className="text-center text-xs text-smash-gray mt-2 mb-4 font-bold">Or MK {annualText} per year — save 12%</p>}
     <button 
       onClick={onAction}
       className={`w-full py-4 md:py-5 rounded-[20px] md:rounded-[24px] font-black text-xs md:text-sm uppercase tracking-widest transition-all ${badge ? 'bg-smash-orange text-white hover:bg-smash-orange/80 shadow-xl mt-auto' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white shadow-xl mt-auto'}`}
@@ -216,11 +215,10 @@ const Pricing = () => {
                 title="Rising Star" 
                 price="8,000" 
                 period="6 MO"
-                annualText="14,000"
                 subtitle="Build your fanbase"
                 onAction={() => handleAction('RisingStar')}
                 features={[
-                  "15 uploads per year",
+                  "10 uploads per year",
                   "Sell tracks to fans",
                   "Accept fan subscriptions",
                   "10% fee on tips & sales",
@@ -235,12 +233,11 @@ const Pricing = () => {
                 title="Standard" 
                 price="13,000" 
                 period="6 MO"
-                annualText="23,000"
                 badge="POPULAR" 
                 subtitle="For full-time artists"
                 onAction={() => handleAction('Standard')}
                 features={[
-                  "Unlimited uploads",
+                  "30 uploads per year",
                   "Sell tracks to fans",
                   "Accept fan subscriptions",
                   "7% fee on tips & sales",
@@ -253,14 +250,12 @@ const Pricing = () => {
              />
              <PricingCard 
                 isArtist={true}
-                title="Elite / Label" 
+                title="Elite" 
                 price="24,000" 
                 period="6 MO"
-                annualText="42,000"
                 subtitle="For Serious Artists"
                 onAction={() => handleAction('Elite')}
                 features={[
-                  "Manage up to 10 artist profiles",
                   "Unlimited uploads",
                   "5% fee on tips & sales",
                   "3 free featured placements/month",

@@ -81,6 +81,16 @@ const Terms = () => {
             <li>We reserve the right to suspend or terminate accounts that violate these Terms or harm the integrity of the ecosystem.</li>
           </ul>
         </section>
+
+        <section>
+          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">7. Contact Information</h2>
+          <p className="text-smash-gray">If you have any questions about these Terms, please contact us at:</p>
+          <div className="mt-4 space-y-2 text-white">
+            <p><strong>Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="hover:text-smash-orange transition-colors">smashfymusic@gmail.com</a></p>
+            <p><strong>Phone / WhatsApp:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">+265 88 372 88 68</a></p>
+            <p><strong>Address:</strong> Smashify Ltd., Malawi</p>
+          </div>
+        </section>
       </div>
     </motion.div>
   );

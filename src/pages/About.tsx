@@ -126,8 +126,9 @@ const About = () => {
       <div className="bg-white/5 p-8 md:p-12 rounded-3xl border border-white/5 text-center">
         <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-6">Contact Us</h2>
         <div className="flex flex-col items-center gap-4 text-smash-gray font-medium">
-          <p className="flex items-center justify-center gap-2 flex-wrap"><strong className="text-white">Email:</strong> hello@smashify.mw | support@smashify.mw</p>
-          <p className="flex items-center justify-center gap-2 flex-wrap"><strong className="text-white">Address:</strong> Smashify Ltd., Livingstone Towers, Blantyre, Malawi</p>
+          <p className="flex items-center justify-center gap-2 flex-wrap"><strong className="text-white">Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="hover:text-white transition-colors">smashfymusic@gmail.com</a></p>
+          <p className="flex items-center justify-center gap-2 flex-wrap"><strong className="text-white">WhatsApp & Call:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">+265 88 372 88 68</a></p>
+          <p className="flex items-center justify-center gap-2 flex-wrap text-center"><strong className="text-white">Address:</strong> Smashify Ltd.<br/>Malawi</p>
         </div>
       </div>
     </motion.div>

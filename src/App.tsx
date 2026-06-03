@@ -23,6 +23,7 @@ const Home = lazy(() => import('./pages/Home'));
 const ArtistHub = lazy(() => import('./pages/ArtistHub'));
 const MotoFeed = lazy(() => import('./pages/MotoFeed'));
 const About = lazy(() => import('./pages/About'));
+const Help = lazy(() => import('./pages/Help'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -371,6 +372,7 @@ function AppContent() {
           <Route path="search" element={<Discover />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="about" element={<About />} />
+          <Route path="help" element={<Help />} />
           <Route path="terms" element={<Terms />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="contact" element={<Contact />} />

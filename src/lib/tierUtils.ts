@@ -90,21 +90,21 @@ export const getTierLimits = (artist: any) => {
         maxWithdrawal: Infinity,
         payoutSpeed: 'Instant',
         freeFeaturements: 3,
-        maxManagedArtists: 10,
+        maxManagedArtists: 1,
       };
 
     case 'standard':
       return {
-        maxUploads: Infinity,
-        yearlyUploads: Infinity,
+        maxUploads: 30,
+        yearlyUploads: 30,
         canWithdraw: true,
         platformFee: 0.07,
         subscriptionFee: 0.10,
         analytics: 'advanced',
         hasFullAnalytics: true,
         canCreateAlbums: true,
-        songLimit: Infinity,
-        monthlyLimit: Infinity,
+        songLimit: 30,
+        monthlyLimit: 30,
         canPostSnippets: true,
         canSellSongs: true,
         canReceiveSubs: true,
@@ -121,16 +121,16 @@ export const getTierLimits = (artist: any) => {
     case 'risingstar':
     case 'rising_star':
       return {
-        maxUploads: 30,
-        yearlyUploads: 15,
+        maxUploads: 10,
+        yearlyUploads: 10,
         canWithdraw: true,
         platformFee: 0.10,
         subscriptionFee: 0.15,
         analytics: 'standard',
         hasFullAnalytics: false,
         canCreateAlbums: true,
-        songLimit: 30,
-        monthlyLimit: 30,
+        songLimit: 10,
+        monthlyLimit: 10,
         canPostSnippets: true,
         canSellSongs: true,
         canReceiveSubs: true,

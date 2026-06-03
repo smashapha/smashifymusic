@@ -344,6 +344,7 @@ serve(async (req) => {
           .update({
             subscription_tier: artistTierName,
             artist_tier: artistTierName,
+            subscription_started_at: new Date().toISOString(),
             subscription_ends: artistTierEnds.toISOString(),
             approved: true,
           })

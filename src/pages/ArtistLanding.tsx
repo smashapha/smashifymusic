@@ -46,11 +46,41 @@ const Nav = () => {
 const ArtistLanding: React.FC = () => {
   const navigate = useNavigate();
   const [topEarners, setTopEarners] = useState<any[]>([]);
+  const [platformStats, setPlatformStats] = useState({
+    artists: 0,
+    totalPaid: 0,
+    songs: 0
+  });
 
   useEffect(() => {
     const fetchEarners = async () => {
        const { data } = await supabase.from('profiles').select('id, stage_name, full_name, avatar_url, genre').eq('approved', true).limit(5);
        setTopEarners(data || []);
+
+       const [
+        { count: artistCount },
+        { count: songCount },
+        { data: payoutData }
+       ] = await Promise.all([
+        supabase.from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('approved', true),
+        supabase.from('songs')
+          .select('*', { count: 'exact', head: true })
+          .eq('approved', true),
+        supabase.from('payout_requests')
+          .select('amount')
+          .eq('status', 'paid')
+       ]);
+       
+       const totalPaid = (payoutData || [])
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+        
+       setPlatformStats({
+        artists: artistCount || 0,
+        totalPaid,
+        songs: songCount || 0
+       });
     };
     fetchEarners();
   }, []);
@@ -87,7 +117,7 @@ const ArtistLanding: React.FC = () => {
                transition={{ duration: 0.6, delay: 0.3 }}
                className="text-[18px] md:text-[20px] font-sans text-white/50 max-w-xl leading-relaxed mb-12 mx-auto lg:mx-0 font-medium"
              >
-               Smashify Studio is the direct platform that lets you distribute music, sell individual songs, and receive fan donations directly via Mobile Money.
+               Sell your music. Accept tips. Get paid today. Smashify gives your fans a direct way to support you — via Airtel Money and TNM Mpamba. No middleman. No waiting for stream counts.
              </motion.p>
 
              <motion.div
@@ -102,16 +132,22 @@ const ArtistLanding: React.FC = () => {
                 >
                    Get Started for Free
                 </button>
-                <button className="h-[56px] px-10 bg-transparent border-2 border-white/10 text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:border-smash-purple/50 transition-all">
+                <button 
+                  onClick={() => {
+                    document.getElementById('pricing-section')
+                      ?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="h-[56px] px-10 bg-transparent border-2 border-white/10 text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:border-smash-purple/50 transition-all"
+                >
                    View Pricing
                 </button>
              </motion.div>
 
              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 border-t border-white/5 pt-12">
                 {[
-                  { label: 'Artist Share', val: '90%' },
-                  { label: 'Min. Withdrawal', val: 'MK 500' },
-                  { label: 'Settlement', val: 'Instant' }
+                  { label: 'Artist Keep', val: 'Up to 95%' },
+                  { label: 'Min. Withdrawal', val: 'MK 2,000' },
+                  { label: 'Paid Via', val: 'Airtel / TNM' }
                 ].map((stat, i) => (
                   <div key={i} className="flex flex-col items-center lg:items-start">
                      <span className="text-[24px] font-studio font-bold text-white mb-1">{stat.val}</span>
@@ -144,14 +180,27 @@ const ArtistLanding: React.FC = () => {
                    </div>
                 </div>
                 <div className="p-4 bg-white/5 rounded-[12px] border border-white/5 space-y-3">
-                   <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-white/40 uppercase font-black uppercase tracking-widest">Earnings</span>
-                      <span className="text-[13px] font-studio font-bold text-smash-green">+MK 125,000</span>
+                   <span className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">This Month's Earnings</span>
+                   
+                   <div className="flex justify-between items-center text-[13px] font-sans">
+                     <span className="text-white/60">💰 Track Sales</span>
+                     <span className="text-white font-medium">+MK 45,000</span>
                    </div>
-                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div className="w-[75%] h-full bg-smash-green" />
+                   <div className="flex justify-between items-center text-[13px] font-sans">
+                     <span className="text-white/60">💸 Tips Received</span>
+                     <span className="text-white font-medium">+MK 18,500</span>
                    </div>
-                   <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Streaming Revenue - Sep 2024</p>
+                   <div className="flex justify-between items-center text-[13px] font-sans">
+                     <span className="text-white/60">❤️ Fan Subs</span>
+                     <span className="text-white font-medium">+MK 12,000</span>
+                   </div>
+                   
+                   <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                     <span className="text-[11px] uppercase tracking-widest text-white/40 font-bold">Total</span>
+                     <span className="text-[16px] font-studio font-bold text-smash-green">MK 75,500</span>
+                   </div>
+
+                   <p className="text-[9px] text-center text-white/30 uppercase font-bold tracking-widest mt-2">Direct fan payments — no streams needed</p>
                 </div>
              </motion.div>
           </div>
@@ -166,62 +215,132 @@ const ArtistLanding: React.FC = () => {
                <h2 className="text-3xl font-studio font-black italic uppercase tracking-tighter">Earnings <span className="text-smash-purple underline underline-offset-8">Report</span></h2>
             </div>
             <div className="flex -space-x-4">
-               {topEarners.map((earner, i) => (
-                 <div key={earner.id} className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated overflow-hidden hover:z-10 hover:-translate-y-2 transition-all cursor-pointer">
-                    <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} />
-                 </div>
-               ))}
+               {topEarners.length > 0 ? (
+                 topEarners.map((earner, i) => (
+                   <div key={earner.id} className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated overflow-hidden hover:z-10 hover:-translate-y-2 transition-all cursor-pointer">
+                      <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} />
+                   </div>
+                 ))
+               ) : (
+                 <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated" />
+               )}
                <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated flex items-center justify-center text-[12px] font-black italic uppercase tracking-widest text-text-muted">
-                  +100
+                  +{platformStats.artists > 5 ? platformStats.artists - 5 : 0}
                </div>
             </div>
             <div className="md:text-right">
-               <p className="text-[24px] font-studio font-bold text-white">MK 25M+</p>
-               <p className="text-[10px] font-display text-white/40 uppercase tracking-widest">Total Payouts to African Artists</p>
+               <p className="text-[24px] font-studio font-bold text-white">
+                 {platformStats.totalPaid > 0
+                   ? `MK ${(platformStats.totalPaid/1000).toFixed(0)}K+`
+                   : 'Growing Daily'}
+               </p>
+               <p className="text-[10px] font-display text-white/40 uppercase tracking-widest">Total Paid to Artists</p>
             </div>
          </div>
       </section>
 
-      {/* Features Section */}
+      {/* How Artists Earn Section */}
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-20 items-center mb-32">
-             <div>
-                <h2 className="text-4xl md:text-6xl font-studio font-black italic uppercase leading-tight mb-8">Built for the <span className="text-smash-purple">African</span> landscape.</h2>
-                <div className="space-y-6">
-                   {[
-                     { title: 'Airtel Money & Mpamba', desc: 'No bank account? No problem. Withdraw your earnings directly to your mobile wallet instantly.' },
-                     { title: 'Fair Share Model', desc: 'You keep up to 95% of every sale, every donation, and every stream. We only take a small cut to keep things running.' },
-                     { title: 'Direct MP3 Sales', desc: 'Allow your fans to buy your songs as high-quality downloads. Set your own price per track.' }
-                   ].map((f, i) => (
-                     <div key={i} className="flex gap-5">
-                        <div className="w-6 h-6 rounded-full bg-smash-purple/20 flex items-center justify-center shrink-0 mt-1">
-                           <CircleCheck size={14} className="text-smash-purple" />
-                        </div>
-                        <div>
-                           <h4 className="text-[16px] font-display font-bold uppercase italic text-white mb-1">{f.title}</h4>
-                           <p className="text-[14px] text-white/50 leading-relaxed font-sans">{f.desc}</p>
-                        </div>
-                     </div>
-                   ))}
+          <div className="text-center mb-20">
+            <p className="text-[10px] font-display font-black text-smash-purple uppercase tracking-[0.4em] mb-4">
+              Your Money Your Way
+            </p>
+            <h2 className="text-4xl md:text-6xl font-studio font-black italic uppercase leading-tight">
+              4 ways to earn on <span className="text-smash-purple">Smashify</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
+            {[
+              {
+                emoji: '💿',
+                title: 'Sell Your Tracks',
+                desc: 'Set your own price per song. Fans pay to download or unlock. You keep up to 95% of every sale.',
+                example: 'MK 500/track × 100 fans = MK 50,000',
+                color: 'border-smash-orange/30 hover:border-smash-orange/60',
+                tag: 'Rising Star+',
+              },
+              {
+                emoji: '💸',
+                title: 'Accept Tips',
+                desc: 'Fans can tip you directly from your profile page or while watching your MotoFeed. Any amount, any time.',
+                example: 'MK 1,000 tip × 50 fans = MK 50,000',
+                color: 'border-smash-cyan/30 hover:border-smash-cyan/60',
+                tag: 'All Tiers',
+              },
+              {
+                emoji: '❤️',
+                title: 'Fan Subscriptions',
+                desc: 'Fans pay a monthly amount to support you and access exclusive content. Predictable monthly income.',
+                example: 'MK 500/mo × 200 fans = MK 100,000/mo',
+                color: 'border-smash-purple/30 hover:border-smash-purple/60',
+                tag: 'Rising Star+',
+              },
+              {
+                emoji: '🔒',
+                title: 'Exclusive Content',
+                desc: 'Lock your best tracks, remixes, or early releases behind a one-time payment. Fans pay once, access forever.',
+                example: 'MK 1,000 × 80 fans = MK 80,000',
+                color: 'border-smash-green/30 hover:border-smash-green/60',
+                tag: 'Rising Star+',
+              }
+            ].map((item, i) => (
+              <div key={i} className={`p-8 bg-white/[0.02] rounded-[24px] border ${item.color} transition-all group`}>
+                <div className="flex items-start justify-between mb-6">
+                  <span className="text-4xl">{item.emoji}</span>
+                  <span className="text-[10px] font-black px-3 py-1 bg-white/5 rounded-full text-white/40 uppercase tracking-widest">
+                    {item.tag}
+                  </span>
                 </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { icon: LayoutDashboard, title: 'Deep Analytics', val: 'Listeners, Plays, Heatmaps', color: 'text-smash-purple' },
-                  { icon: TrendingUp, title: 'Trending Charts', val: 'Rise to the top 10', color: 'text-smash-orange' },
-                  { icon: StarIcon, title: 'Fan Benefits', val: 'Supporter badges & Perks', color: 'text-smash-cyan' },
-                  { icon: Smartphone, title: 'Smart Distribution', val: 'Viral feed integration', color: 'text-smash-green' }
-                ].map((c, i) => (
-                  <div key={i} className="bg-bg-surface border border-border-subtle rounded-[24px] p-8 hover:border-smash-purple/30 transition-all group">
-                     <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-8 ${c.color}`}>
-                        <c.icon size={24} />
-                     </div>
-                     <h3 className="text-xl font-studio font-bold uppercase italic text-white mb-2">{c.title}</h3>
-                     <p className="text-[13px] text-white/50 font-display font-medium uppercase tracking-widest">{c.val}</p>
-                  </div>
-                ))}
-             </div>
+                <h3 className="text-xl font-studio font-bold uppercase italic text-white mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-[14px] text-white/50 leading-relaxed font-sans mb-6">
+                  {item.desc}
+                </p>
+                <div className="p-3 bg-smash-green/5 rounded-xl border border-smash-green/10">
+                  <p className="text-[11px] text-smash-green font-bold">
+                    📊 {item.example}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Comparison vs Spotify */}
+          <div className="max-w-3xl mx-auto">
+            <h3 className="text-center text-2xl font-studio font-black italic uppercase mb-8">
+              Why <span className="text-smash-purple">Smashify</span> beats waiting for streams
+            </h3>
+            <div className="overflow-x-auto rounded-[20px] border border-white/10">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="text-left p-4 text-xs text-white/40 font-display uppercase tracking-widest"></th>
+                    <th className="p-4 text-center text-xs text-white/40 font-display uppercase tracking-widest">Spotify</th>
+                    <th className="p-4 text-center text-xs text-smash-purple font-black font-display uppercase tracking-widest">Smashify</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Earn MK 50,000', 'Need ~1.5M streams', '100 fans × MK 500 sale'],
+                    ['Get paid', '3-6 months delay', 'Same day to wallet'],
+                    ['Payment method', 'Bank transfer (USD)', 'Airtel Money / TNM'],
+                    ['Artist keeps', '~18-25%', 'Up to 95%'],
+                    ['Available in Malawi', '❌ Limited', '✅ 100% local'],
+                  ].map(([feature, spotify, smashify], i) => (
+                    <tr key={i} className="border-b border-white/5 last:border-0 bg-white/[0.01]">
+                      <td className="p-4 text-sm text-white/60 font-medium">{feature}</td>
+                      <td className="p-4 text-center text-xs text-white/30">{spotify}</td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs text-smash-green font-bold">{smashify}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -238,7 +357,7 @@ const ArtistLanding: React.FC = () => {
               {[
                 { step: '01', title: 'Join Studio', desc: 'Create your artist account and complete your profile. We review every artist to ensure quality for our listeners.' },
                 { step: '02', title: 'Upload & Distribute', desc: 'Upload your high-quality tracks or albums. Set your price, add lyrics, and choose your release date.' },
-                { step: '03', title: 'Get Paid', desc: 'Fans stream, buy, and donate. Withdraw your accumulated earnings daily to your mobile money account.' }
+                { step: '03', title: 'Get Paid', desc: 'Fans buy your music, send tips, and subscribe monthly. Your earnings go straight to your Smashify wallet. Withdraw to Airtel Money or TNM anytime — minimum MK 2,000.' }
               ].map((s, i) => (
                 <div key={i} className={`flex flex-col md:flex-row items-center gap-12 relative z-10 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                    <div className="flex-1 md:text-right">
@@ -258,34 +377,72 @@ const ArtistLanding: React.FC = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-32 px-6 md:px-12">
+      <section id="pricing-section" className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
              <h3 className="text-5xl md:text-8xl font-studio font-black italic uppercase tracking-tighter leading-none mb-4">STUDIO <span className="text-smash-purple">ACCESS</span></h3>
              <p className="text-white/50 text-xl font-medium tracking-tight">Simple 6-month plans with zero hidden fees.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
+             <div className="bg-bg-surface border border-white/10 rounded-[24px] p-10 flex flex-col">
+                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-white/60">Free Studio</h3>
+                <div className="flex items-baseline gap-2 mb-8">
+                  <span className="text-4xl font-studio font-bold text-white">0</span>
+                  <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">
+                    MWK / Forever
+                  </span>
+                </div>
+                <ul className="space-y-4 flex-1">
+                  {[
+                    "5 uploads (lifetime)",
+                    "Free streaming only",
+                    "15% fee on tips",
+                    "Basic analytics",
+                    "MK 50,000 max withdrawal",
+                    "Must be verified to withdraw"
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-[14px] text-white/40 font-medium font-sans">
+                      <CircleCheck size={16} className="text-white/20 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => navigate('/auth/artist?mode=signup')}
+                  className="w-full h-[54px] bg-white/5 border border-white/10 text-white/60 rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-white/10 transition-all mt-8"
+                >
+                  START FREE
+                </button>
+             </div>
+
              <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
                 <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Rising Star</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                   <span className="text-4xl font-studio font-bold text-white">15,000</span>
+                   <span className="text-4xl font-studio font-bold text-white">8,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
-                   {["15 uploads per year", "Mobile analytics", "Standard payouts", "Supporter badges"].map((f, i) => (
+                   {[
+                     "10 uploads per year",
+                     "Sell tracks to fans",
+                     "Accept fan subscriptions",
+                     "10% fee on tips & sales",
+                     "Standard analytics",
+                     "MK 200,000 max withdrawal",
+                     "3 day payout speed"
+                   ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
                         <CircleCheck size={16} className="text-smash-purple shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
-                <p className="text-center text-xs text-white/50 mt-6 mb-4">Or MK 26,000 per year — save 12%</p>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto"
+                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
-                   GET STARTED
+                   GET RISING STAR
                 </button>
              </div>
 
@@ -293,49 +450,117 @@ const ArtistLanding: React.FC = () => {
                 <div className="absolute top-6 right-0 bg-smash-purple text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest">MOST POPULAR</div>
                 <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-smash-purple">Standard</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                   <span className="text-4xl font-studio font-bold text-white">25,000</span>
+                   <span className="text-4xl font-studio font-bold text-white">13,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
-                   {["UNLIMITED uploads", "Full dashboard", "Priority payouts", "Verified profile", "Advanced promotion"].map((f, i) => (
+                   {[
+                     "30 uploads per year",
+                     "Sell tracks + fan subscriptions",
+                     "7% fee on tips & sales",
+                     "1 free featured placement/month",
+                     "Advanced analytics",
+                     "Verified badge on profile",
+                     "MK 500,000 max withdrawal",
+                     "24 hour payout speed"
+                   ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white font-medium font-sans">
                         <CircleCheck size={16} className="text-smash-purple shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
-                <p className="text-center text-xs text-white/50 mt-6 mb-4">Or MK 44,000 per year — save 12%</p>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-smash-purple text-white rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl mt-auto"
+                   className="w-full h-[54px] bg-smash-purple text-white rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl mt-auto md:mt-8"
                 >
                    JOIN STANDARD
                 </button>
              </div>
 
              <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
-                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Elite / Label</h3>
+                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Elite</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                   <span className="text-4xl font-studio font-bold text-white">45,000</span>
+                   <span className="text-4xl font-studio font-bold text-white">24,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
-                   {["Manage 10 artists", "Shared dashboards", "Dedicated manager", "Revenue splitting", "Custom contracts"].map((f, i) => (
+                   {[
+                     "Unlimited uploads",
+                     "All Standard features included",
+                     "5% fee on tips & sales",
+                     "3 free featured placements/month",
+                     "Full analytics with CSV export",
+                     "Gold verified badge",
+                     "Instant payouts",
+                     "Unlimited withdrawals"
+                   ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
                         <CircleCheck size={16} className="text-smash-purple shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
-                <p className="text-center text-xs text-white/50 mt-6 mb-4">Or MK 80,000 per year — save 12%</p>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto"
+                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
-                   CONTACT SALES
+                   JOIN ELITE
                 </button>
              </div>
           </div>
+        </div>
+      </section>
+
+      {/* Agent Section */}
+      <section className="py-24 px-6 md:px-12 bg-white/[0.02]">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-smash-green/10 border border-smash-green/20 rounded-full mb-6">
+            <span className="text-smash-green text-xs font-black uppercase tracking-widest">
+              💼 Earn With Smashify
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-6xl font-studio font-black uppercase italic mb-4">
+            Become a <span className="text-smash-green">Smashify Agent</span>
+          </h2>
+          <p className="text-white/50 text-base mb-10 max-w-2xl mx-auto">
+            Know artists? Refer them and earn 5% of their first subscription. Artists succeed, you get paid — directly to your mobile money.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+            {[
+              { e: '🤝', t: 'Refer an Artist', 
+                d: 'Share your agent code with musicians who need to monetize their music' },
+              { e: '💰', t: 'They Subscribe', 
+                d: 'When they pay Rising Star, Standard or Elite — you earn 5%' },
+              { e: '📱', t: 'You Get Paid', 
+                d: 'Commission sent straight to your Airtel Money or TNM Mpamba' }
+            ].map((item, i) => (
+              <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10 text-left">
+                <div className="text-3xl mb-4">{item.e}</div>
+                <h3 className="font-bold text-sm mb-2">
+                  {item.t}
+                </h3>
+                <p className="text-white/40 text-xs leading-relaxed">{item.d}</p>
+              </div>
+            ))}
+          </div>
+          <div className="p-5 bg-smash-green/10 border border-smash-green/20 rounded-2xl inline-block mb-8">
+            <p className="text-smash-green font-bold text-sm">
+              Refer 10 artists on Rising Star = 
+              <span className="text-xl font-black ml-2">
+                MK 4,000 commission
+              </span>
+            </p>
+          </div>
+          <br />
+          <a
+            href="https://wa.me/265883728868?text=I%20want%20to%20become%20a%20Smashify%20Agent"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 h-14 px-10 bg-smash-green text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all"
+          >
+            Apply via WhatsApp →
+          </a>
         </div>
       </section>
 
@@ -344,7 +569,9 @@ const ArtistLanding: React.FC = () => {
          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/music.png')]" />
          <div className="max-w-4xl mx-auto text-center relative z-10">
             <h2 className="text-5xl md:text-8xl font-studio font-black italic uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
-            <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">Join the movement and start distributing your music today. The industry is changing, don't get left behind.</p>
+            <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">
+              Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week.
+            </p>
             <button 
                onClick={() => navigate('/auth/artist?mode=signup')}
                className="h-[64px] px-12 bg-white text-smash-purple font-display font-bold text-lg uppercase tracking-widest rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
@@ -358,7 +585,10 @@ const ArtistLanding: React.FC = () => {
       <footer className="py-16 px-6 md:px-12 border-t border-white/5 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
            <Logo size="md" />
-           <p className="text-[14px] text-white/30 font-medium order-last md:order-none">© {new Date().getFullYear()} Smashify Studio. All rights reserved.</p>
+           <div className="text-center md:text-left order-last md:order-none">
+              <p className="text-[14px] text-white/30 font-medium mb-2">© {new Date().getFullYear()} Smashify Studio. All rights reserved.</p>
+              <p className="text-[12px] text-white/20 font-medium">Contact: <a href="mailto:smashfymusic@gmail.com" className="hover:text-white/40">smashfymusic@gmail.com</a> | +265 88 372 88 68</p>
+           </div>
            <div className="flex gap-10">
               {['About', 'Help', 'Terms', 'Privacy'].map(l => (
                 <Link key={l} to={`/${l.toLowerCase()}`} className="text-[12px] font-bold text-white/40 uppercase tracking-widest hover:text-white transition-colors">{l}</Link>
