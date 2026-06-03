@@ -9,86 +9,107 @@ const Terms = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-8 md:p-12 pb-32 max-w-4xl mx-auto"
+      className="p-8 md:p-12 pb-32 max-w-4xl mx-auto text-white select-none"
     >
       <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
-         <Link to="/" className="hover:text-white transition-colors">Home</Link>
+         <Link to="/" className="hover:text-white transition-colors animate-pulse">Home</Link>
          <ChevronRight size={14} />
-         <span className="text-smash-orange">Terms of Service</span>
+         <span className="text-smash-orange font-black">Terms of Service</span>
       </div>
 
       <div className="flex items-center gap-4 mb-4">
-        <Shield size={32} className="text-smash-orange" />
-        <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter">Terms of Service</h1>
+        <Shield size={32} className="text-smash-orange animate-bounce" />
+        <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter text-white">Terms of Service</h1>
       </div>
-      <p className="text-smash-gray font-medium mb-12">Last Updated: May 25, 2026</p>
+      <p className="text-smash-gray font-black uppercase tracking-widest text-xs mb-10">Effective Date: June 3, 2026</p>
 
-      <div className="space-y-12 text-zinc-300 font-medium leading-relaxed bg-zinc-900/30 p-8 md:p-12 rounded-3xl border border-white/5">
-        <p className="text-lg text-white">
-          Welcome to Smashify! These Terms of Service ("Terms") govern your access to and use of the Smashify website, mobile applications, and streaming services (collectively, the "Platform"). By creating an account or using the Platform, you agree to be bound by these Terms.
+      <div className="space-y-10 text-zinc-300 font-medium leading-relaxed bg-zinc-950/40 p-8 md:p-12 rounded-[32px] border border-white/5 shadow-2xl">
+        <p className="text-lg text-white font-semibold italic border-l-4 border-smash-orange pl-4 bg-white/5 py-4 rounded-r-xl">
+          Welcome to Smashify! By accessing or using our platform, website, and services, you agree to comply with and be bound by these Terms of Service. Please read them carefully.
         </p>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">1. Description of Service</h2>
-          <p className="mb-4">Smashify is a direct-to-fan music streaming and creator management platform.</p>
-          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>Listeners can access, stream, and subscribe to music tiers, and directly support independent artists.</li>
-            <li>Artists/Creators can distribute music, manage content via the Artist Dashboard, and receive direct payments, tips, or subscription revenues.</li>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">1. Acceptance of Terms</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            Smashify is a digital music platform that connects musical artists with listeners. By creating an account, uploading music, or streaming content, you enter into a legally binding agreement with Smashify. If you do not agree to these terms, you may not use the platform.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">2. User Accounts</h2>
+          <div className="space-y-3 text-smash-gray text-sm md:text-base">
+            <p>
+              <strong className="text-white">Eligibility:</strong> You must be at least 18 years old, or have the consent of a parent or legal guardian, to create an account.
+            </p>
+            <p>
+              <strong className="text-white">Account Security:</strong> You are responsible for maintaining the confidentiality of your account credentials (passwords) and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">3. Artist Uploads and Intellectual Property</h2>
+          <div className="space-y-3 text-smash-gray text-sm md:text-base">
+            <p>
+              <strong className="text-white">Ownership:</strong> Artists retain 100% ownership of the copyright to the musical works, lyrics, and audio files they upload to Smashify.
+            </p>
+            <p>
+              <strong className="text-white">Licensing to Smashify:</strong> By uploading content, you grant Smashify a non-exclusive, worldwide, royalty-free license to stream, host, store, and distribute your music to users on the platform.
+            </p>
+            <p>
+              <strong className="text-white">Content Guarantees:</strong> You guarantee that you own or control all rights to the music you upload, and that your content does not infringe upon the intellectual property rights, copyrights, or privacy of any third party.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">4. Monetization and Subscriptions</h2>
+          <div className="space-y-3 text-smash-gray text-sm md:text-base">
+            <p>
+              <strong className="text-white">Subscription Tiers:</strong> Smashify offers tiered subscription plans for listeners and varied upload plans for artists (e.g., Upcoming, Standard, and Pro tiers). By subscribing to a plan, you agree to pay the specified recurring fees.
+            </p>
+            <p>
+              <strong className="text-white">Payments:</strong> All financial transactions, subscription fees, and payouts are processed securely through our integrated local payment gateways (such as PayChangu or Flutterwave). Smashify does not directly store your mobile money or card details.
+            </p>
+            <p>
+              <strong className="text-white">Payouts:</strong> Artist earnings from fan support or streams will be distributed according to the specific terms of the artist's selected upload tier, subject to standard processing fees.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">5. Prohibited Conduct</h2>
+          <p className="text-smash-gray text-sm md:text-base">You agree not to:</p>
+          <ul className="list-disc pl-6 space-y-2 text-smash-gray text-sm md:text-base">
+            <li>Upload, share, or stream any content that is unlawful, harmful, defamatory, or infringes on copyrights.</li>
+            <li>Attempt to reverse-engineer, hack, or disrupt the security and functionality of the Smashify platform.</li>
+            <li>Use automated bots or scripts to artificially inflate stream counts or manipulate platform data.</li>
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">2. Eligibility and Account Registration</h2>
-          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>You must be at least 13 years old to use this Platform (or the minimum legal age in your country).</li>
-            <li>You agree to provide accurate, current, and complete information during registration.</li>
-            <li>You are solely responsible for safeguarding your account credentials and for any activity under your account.</li>
-          </ul>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">6. Limitation of Liability</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            Smashify is provided "as is" without warranties of any kind. We do not guarantee uninterrupted or error-free service. Smashify shall not be liable for any indirect, incidental, or consequential damages resulting from your use or inability to use the platform.
+          </p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">3. Artist Content and Intellectual Property</h2>
-          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
-            <li><strong className="text-white">Ownership:</strong> Artists retain full ownership of the intellectual property rights in the music, lyrics, artwork, and other content they upload ("User Content").</li>
-            <li><strong className="text-white">License to Smashify:</strong> By uploading User Content, you grant Smashify a non-exclusive, worldwide, royalty-free license to stream, host, store, reproduce, and distribute your content solely for the purpose of operating and promoting the Platform.</li>
-            <li><strong className="text-white">Copyright Infringement:</strong> Smashify respects intellectual property. If you believe your work has been infringed, please submit a formal DMCA/Takedown notice to our designated agent.</li>
-          </ul>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">7. Governing Law</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            These Terms of Service are governed by and construed in accordance with the laws of the Republic of Malawi. Any disputes arising under these terms shall be subject to the exclusive jurisdiction of the courts of Malawi.
+          </p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">4. Monetization, Payments, and Tipping</h2>
-          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
-            <li><strong className="text-white">Revenue Splits:</strong> Smashify facilitates direct-to-fan payments, including subscriptions and digital tipping. Platform fees and processing costs will be deducted as detailed in the Artist Dashboard.</li>
-            <li><strong className="text-white">Local Payment Gateways:</strong> Smashify integrates with regional and mobile payment systems. Users agree to abide by the terms of our third-party payment processors.</li>
-            <li><strong className="text-white">Refunds:</strong> All listener subscriptions, purchases, and tips are final and non-refundable unless required by local consumer law.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">5. Prohibited Conduct</h2>
-          <p className="mb-4">You agree not to:</p>
-          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>Upload content that is illegal, defamatory, hateful, or infringes on third-party intellectual property.</li>
-            <li>Artificially inflate stream counts or manipulate platform algorithms using bots, scripts, or automated tools.</li>
-            <li>Reverse engineer, decompile, or attempt to extract the source code of the Platform.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">6. Limitation of Liability and Termination</h2>
-          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>Smashify is provided "as is" without warranties of any kind. We do not guarantee uninterrupted service.</li>
-            <li>We reserve the right to suspend or terminate accounts that violate these Terms or harm the integrity of the ecosystem.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">7. Contact Information</h2>
-          <p className="text-smash-gray">If you have any questions about these Terms, please contact us at:</p>
-          <div className="mt-4 space-y-2 text-white">
-            <p><strong>Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="hover:text-smash-orange transition-colors">smashfymusic@gmail.com</a></p>
-            <p><strong>Phone / WhatsApp:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">+265 88 372 88 68</a></p>
-            <p><strong>Address:</strong> Smashify Ltd., Malawi</p>
+        <section className="pt-8 border-t border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-smash-gray text-xs font-black uppercase tracking-widest mb-2">Have questions?</p>
+            <p className="text-smash-gray text-sm">Please reach out to the Smashify support team.</p>
+          </div>
+          <div className="space-y-1.5 text-zinc-400 text-sm">
+            <p><strong>Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="text-smash-orange hover:text-white transition-colors">smashfymusic@gmail.com</a></p>
+            <p><strong>WA / Call:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="text-smash-orange hover:text-white transition-colors">+265 88 372 88 68</a></p>
+            <p><strong>Location:</strong> Smashify Ltd., Blantyre, Malawi</p>
           </div>
         </section>
       </div>

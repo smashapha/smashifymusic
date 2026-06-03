@@ -9,72 +9,93 @@ const Privacy = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-8 md:p-12 pb-32 max-w-4xl mx-auto"
+      className="p-8 md:p-12 pb-32 max-w-4xl mx-auto text-white select-none"
     >
       <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
-         <Link to="/" className="hover:text-white transition-colors">Home</Link>
+         <Link to="/" className="hover:text-white transition-colors animate-pulse">Home</Link>
          <ChevronRight size={14} />
-         <span className="text-smash-orange">Privacy Policy</span>
+         <span className="text-smash-orange font-black">Privacy Policy</span>
       </div>
 
       <div className="flex items-center gap-4 mb-4">
-        <AppLockIcon size={32} className="text-smash-orange" />
-        <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter">Privacy Policy</h1>
+        <AppLockIcon size={32} className="text-smash-orange animate-bounce" />
+        <h1 className="text-4xl md:text-5xl font-black font-display uppercase italic tracking-tighter text-white">Privacy Policy</h1>
       </div>
-      <p className="text-smash-gray font-medium mb-12">Last Updated: May 25, 2026</p>
+      <p className="text-smash-gray font-black uppercase tracking-widest text-xs mb-10">Effective Date: June 3, 2026</p>
 
-      <div className="space-y-12 text-zinc-300 font-medium leading-relaxed bg-zinc-900/30 p-8 md:p-12 rounded-3xl border border-white/5">
-        <p className="text-lg text-white">
-          At Smashify, we value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and secure your information.
+      <div className="space-y-10 text-zinc-300 font-medium leading-relaxed bg-zinc-950/40 p-8 md:p-12 rounded-[32px] border border-white/5 shadow-2xl">
+        <p className="text-lg text-white font-semibold italic border-l-4 border-smash-orange pl-4 bg-white/5 py-4 rounded-r-xl">
+          At Smashify, we value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.
         </p>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">1. Information We Collect</h2>
-          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
-            <li><strong className="text-white">Account Information:</strong> Name, email address, username, and profile details provided during registration.</li>
-            <li><strong className="text-white">Financial and Payout Data:</strong> For artists and paying subscribers, we collect necessary billing details, mobile money numbers, or bank routing information. This data is securely processed via encrypted third-party integrations.</li>
-            <li><strong className="text-white">Usage Data:</strong> IP addresses, device identifiers, browser types, and streaming history (e.g., songs played, artists followed, duration).</li>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">1. Information We Collect</h2>
+          <div className="space-y-3 text-smash-gray text-sm md:text-base">
+            <p>
+              <strong className="text-white">Account Information:</strong> When you register, we collect basic details such as your name, email address, phone number, and account password.
+            </p>
+            <p>
+              <strong className="text-white">Content and Usage Data:</strong> For artists, we collect the profile assets, track data, and audio files you upload. For listeners, we collect data regarding your streaming history, playlists, and platform preferences.
+            </p>
+            <p>
+              <strong className="text-white">Payment Information:</strong> When you subscribe or make payments, transaction processing is handled entirely by our secure third-party payment gateways. Smashify does not collect or store your full credit card numbers or mobile money PINs.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">2. How We Use Your Information</h2>
+          <p className="text-smash-gray mb-2">We use the collected information to:</p>
+          <ul className="list-disc pl-6 space-y-2 text-smash-gray text-sm md:text-base">
+            <li>Provide, maintain, and optimize the Smashify streaming service.</li>
+            <li>Manage user accounts, verify artist profiles, and process subscription payments.</li>
+            <li>Communicate important platform updates, security alerts, and support responses.</li>
+            <li>Prevent fraudulent activity, unauthorized uploads, and security breaches.</li>
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">2. How We Use Your Information</h2>
-          <p className="mb-4">We use the collected data to:</p>
-          <ul className="list-disc pl-8 space-y-2 text-smash-gray">
-            <li>Provide, maintain, and optimize the Smashify streaming experience and CI/CD operations.</li>
-            <li>Process payments, subscriptions, and distribute artist payouts.</li>
-            <li>Deliver tailored content recommendations and analytics to artists regarding listener demographics.</li>
-            <li>Comply with legal obligations and prevent fraud or platform abuse.</li>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">3. Data Sharing and Third Parties</h2>
+          <p className="text-smash-gray mb-2">
+            We do not sell your personal data to third parties. We only share information with trusted third-party services necessary to operate the platform, including:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-smash-gray text-sm md:text-base">
+            <li><strong className="text-white">Authentication Providers:</strong> To manage secure logins and account verification.</li>
+            <li><strong className="text-white">Payment Gateways:</strong> To securely process local mobile money and card transactions.</li>
+            <li><strong className="text-white">Database and Cloud Hosting:</strong> To securely store application data and audio files (e.g., via Supabase and Vercel infrastructure).</li>
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">3. Data Sharing and Disclosure</h2>
-          <p className="mb-4 font-bold text-white">We do not sell your personal data. We share information only in the following scenarios:</p>
-          <ul className="list-disc pl-8 space-y-3 text-smash-gray">
-            <li><strong className="text-white">With Artists:</strong> Listeners who subscribe to or tip an artist may have basic, non-sensitive data (like username) shared with that artist for community building.</li>
-            <li><strong className="text-white">Service Providers:</strong> With trusted third-party vendors handling cloud storage, database management, and mobile payment processing.</li>
-            <li><strong className="text-white">Legal Requirements:</strong> If required by law, regulation, or a valid legal process.</li>
-          </ul>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">4. Data Security</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            We implement strict industry-standard security measures to protect your personal data against unauthorized access, alteration, or disclosure. This includes using encrypted HTTPS connections for all data transmission. However, please remember that no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
+          </p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">4. Data Security</h2>
-          <p>We implement strict administrative and technical security measures to safeguard your information against unauthorized access, loss, or alteration. Financial transactions are encrypted via secure socket layer technology (SSL).</p>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">5. Your Rights</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            You have the right to access, update, or correct your personal profile information at any time through your account settings. If you wish to permanently delete your Smashify account and delete your data from our systems, you may contact our support team.
+          </p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">5. Your Rights and Choices</h2>
-          <p className="mb-4">Depending on your location, you may have the right to access, correct, or delete your personal data. You can manage your profile settings, notification preferences, or request account deletion directly through your dashboard settings.</p>
+        <section className="space-y-3">
+          <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">6. Changes to This Policy</h2>
+          <p className="text-smash-gray text-sm md:text-base">
+            We may update our Privacy Policy from time to time. We will notify you of any significant changes by posting the new policy on this page and updating the effective date.
+          </p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-black font-display uppercase tracking-tighter text-white mb-4">6. Contact Us</h2>
-          <p className="text-smash-gray">If you have any questions or concerns about this Privacy Policy, please contact our Data Protection Officer at:</p>
-          <div className="mt-4 space-y-2 text-white">
-            <p><strong>Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="hover:text-smash-orange transition-colors">smashfymusic@gmail.com</a></p>
-            <p><strong>Phone / WhatsApp:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">+265 88 372 88 68</a></p>
-            <p><strong>Address:</strong> Smashify Ltd., Malawi</p>
+        <section className="pt-8 border-t border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-smash-gray text-xs font-black uppercase tracking-widest mb-2">Privacy or Data Queries?</p>
+            <p className="text-smash-gray text-sm">Our Data Protection team is ready to assist you.</p>
+          </div>
+          <div className="space-y-1.5 text-zinc-400 text-sm">
+            <p><strong>Email:</strong> <a href="mailto:smashfymusic@gmail.com" className="text-smash-orange hover:text-white transition-colors">smashfymusic@gmail.com</a></p>
+            <p><strong>WA / Call:</strong> <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="text-smash-orange hover:text-white transition-colors">+265 88 372 88 68</a></p>
+            <p><strong>Company:</strong> Smashify Ltd., Blantyre, Malawi</p>
           </div>
         </section>
       </div>

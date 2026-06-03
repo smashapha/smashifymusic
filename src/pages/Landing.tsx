@@ -783,8 +783,13 @@ const Landing: React.FC = () => {
 
           <div className="flex flex-col gap-6">
              <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Company</h4>
-             {['About Us', 'Contact', 'Privacy Policy', 'Terms'].map(link => (
-               <Link key={link} to={`/${link.toLowerCase().replace(' ', '')}`} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
+             {[
+               { name: 'About Us', path: '/about' },
+               { name: 'Contact', path: '/contact' },
+               { name: 'Privacy Policy', path: '/privacy' },
+               { name: 'Terms', path: '/terms' }
+             ].map(link => (
+               <Link key={link.name} to={link.path} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link.name}</Link>
              ))}
           </div>
         </div>

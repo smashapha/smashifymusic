@@ -374,9 +374,13 @@ function AppContent() {
           <Route path="search" element={<Discover />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="about" element={<About />} />
+          <Route path="aboutus" element={<Navigate to="/about" replace />} />
+          <Route path="about-us" element={<Navigate to="/about" replace />} />
           <Route path="help" element={<Help />} />
           <Route path="terms" element={<Terms />} />
           <Route path="privacy" element={<Privacy />} />
+          <Route path="privacypolicy" element={<Navigate to="/privacy" replace />} />
+          <Route path="privacy-policy" element={<Navigate to="/privacy" replace />} />
           <Route path="contact" element={<Contact />} />
           <Route path="admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
