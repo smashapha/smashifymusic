@@ -92,7 +92,16 @@ const AuthArtist: React.FC = () => {
   };
 
    const submitApplication = async () => {
+    setLoadingState(true);
+    
+    const emailCheck = await import('../lib/emailValidation').then(m => m.validateEmailStrict(email));
+    if (!emailCheck.valid) {
+      setLoadingState(false);
+      return toast.error(emailCheck.message || 'Invalid email');
+    }
+
     if (password.length < 8) {
+      setLoadingState(false);
       toast.error('Password must be at least 8 characters');
       return;
     }
@@ -141,7 +150,6 @@ const AuthArtist: React.FC = () => {
       // Non-fatal — continue with signup
     }
 
-    setLoadingState(true);
     setError(null);
 
     try {

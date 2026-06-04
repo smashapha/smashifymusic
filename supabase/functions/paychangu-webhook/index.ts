@@ -68,8 +68,21 @@ serve(async (req) => {
     if (!signature) {
       return new Response("Missing signature", { status: 401 });
     }
-    const expectedSig = await computeHmac(PAYCHANGU_WEBHOOK_SECRET, bodyText);
-    if (signature !== expectedSig) {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const signatureBytes = hexToBytes(signature);
+    const isValid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      signatureBytes,
+      new TextEncoder().encode(bodyText)
+    );
+    if (!isValid) {
       console.error("Invalid webhook signature");
       return new Response("Invalid signature", { status: 401 });
     }

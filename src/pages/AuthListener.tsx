@@ -119,6 +119,13 @@ const AuthListener: React.FC = () => {
     if (!fullName) return toast.error('Full name is required');
     if (!phone) return toast.error('Phone is required');
     
+    setLoadingState(true);
+    const emailCheck = await import('../lib/emailValidation').then(m => m.validateEmailStrict(email));
+    if (!emailCheck.valid) {
+      setLoadingState(false);
+      return toast.error(emailCheck.message || 'Invalid email');
+    }
+    
     // Bypass OTP for now
     await handleSignupAndSubscribe('Free');
     return;

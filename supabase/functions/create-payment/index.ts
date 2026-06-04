@@ -1,14 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = ['https://play-smashify.vercel.app', 'http://localhost:5173']
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 Deno.serve(async (req) => {
   console.log("Payment Function: Request received", req.method)
+  const corsHeaders = getCorsHeaders(req)
 
   if (req.method === 'OPTIONS') {
+    const origin = req.headers.get('Origin') || ''
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+      return new Response('Forbidden', { status: 403 })
+    }
     return new Response('ok', { headers: corsHeaders })
   }
 
@@ -34,6 +44,29 @@ Deno.serve(async (req) => {
     };
     const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
     const finalAmount = canonicalAmount ?? Number(amount);
+
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid payment amount' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    if (type === 'tip') {
+      if (finalAmount < 100 || finalAmount > 50000) {
+        return new Response(JSON.stringify({ error: 'Tip amount must be between 100 and 50,000 MWK' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+    } else if (type === 'track_purchase') {
+      if (finalAmount < 50 || finalAmount > 10000) {
+        return new Response(JSON.stringify({ error: 'Track purchase amount must be between 50 and 10,000 MWK' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+    }
     console.log("Payment Function: Initiating:", { type, tx_ref, amount: finalAmount })
 
     // 1. Verify Authentication

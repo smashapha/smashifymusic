@@ -55,6 +55,25 @@ async function startServer() {
     });
   });
 
+  // Verify Email Domain MX Record
+  app.post('/api/check-email-mx', (req, res) => {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    const domain = email.split('@')[1];
+    import('dns').then(dns => {
+      dns.resolveMx(domain, (err, addresses) => {
+        if (err || !addresses || addresses.length === 0) {
+          return res.json({ valid: false });
+        }
+        return res.json({ valid: true });
+      });
+    }).catch(() => {
+      return res.json({ valid: true }); // Fallback true if dns import fails
+    });
+  });
+
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
   // Fallbacks for 15-character truncation limit in some panels
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPA_ADMIN_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
@@ -69,27 +88,21 @@ async function startServer() {
       SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPABASE_SERVICE_ROLE_KEY' ||
       SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPA_ADMIN_KEY') {
     console.error('CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set.');
-    console.error('Server cannot perform admin operations safely.');
-    console.error('Set SUPA_ADMIN_KEY in your environment variables.');
+    console.error('Server cannot perform admin operations safely. Admin endpoints will fail.');
+    console.error('Set SUPABASE_SERVICE_ROLE_KEY within the container environment state.');
+  } else {
+    const adminKey = SUPABASE_SERVICE_ROLE_KEY;
+    if (SUPABASE_URL && adminKey) {
+      try {
+        supabaseAdmin = createClient(SUPABASE_URL, adminKey);
+        console.log('[Server] Service role key loaded successfully.');
+      } catch (err) {
+        console.error('Failed to initialize Supabase Admin:', err);
+      }
+    }
   }
-  const adminKey = SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
   console.log('[DEBUG] PAYCHANGU_SECRET_KEY present:', !!PAYCHANGU_SECRET_KEY);
-
-  if (SUPABASE_URL && adminKey) {
-    try {
-      supabaseAdmin = createClient(SUPABASE_URL, adminKey);
-      if (SUPABASE_SERVICE_ROLE_KEY) {
-        console.log('[Server] Service role key loaded successfully.');
-      } else {
-        console.log('[Server] No service role key, loaded anon key fallback for token verification.');
-      }
-    } catch (err) {
-      console.error('Failed to initialize Supabase Admin:', err);
-    }
-  } else {
-    console.warn('Supabase credentials missing. Admin operations will fail.');
-  }
 
   // Helper to verify user
   const verifyUser = async (req: express.Request) => {

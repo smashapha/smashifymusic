@@ -34,9 +34,10 @@ ALTER TABLE fan_purchases ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "fp_read" ON fan_purchases;
 DROP POLICY IF EXISTS "fp_insert" ON fan_purchases;
 DROP POLICY IF EXISTS "fan_purchases_select" ON fan_purchases;
-CREATE POLICY "fp_read" ON fan_purchases FOR SELECT USING (true);
-CREATE POLICY "fp_insert" ON fan_purchases FOR INSERT WITH CHECK (true);
-CREATE POLICY "fp_upsert" ON fan_purchases FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "fp_upsert" ON fan_purchases;
+CREATE POLICY "fp_read" ON fan_purchases FOR SELECT USING (fan_id = auth.uid() OR EXISTS (SELECT 1 FROM songs WHERE id = song_id AND artist_id = auth.uid()));
+CREATE POLICY "fp_insert" ON fan_purchases FOR INSERT WITH CHECK (fan_id = auth.uid());
+CREATE POLICY "fp_upsert" ON fan_purchases FOR UPDATE USING (false);
 
 -- ==============================================================================
 -- Smashify Hardened Supabase Schema & RLS Policies

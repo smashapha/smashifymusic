@@ -542,13 +542,7 @@ const Admin = () => {
     try {
       const { error: profileError } = await supabase.from('profiles').update({
         approved: true,
-        verified: true,
-        is_verified: true,
         artist_tier: 'Free',
-        nrc_number: application.national_id_number || application.nrc_number,
-        id_document_url: application.id_document_url,
-        selfie_url: application.selfie_url,
-        id_type: application.id_type,
         email: application.email,
         agent_reference: application.agent_reference || application.referral_code || null
       }).eq('id', application.profile_id);
