@@ -511,7 +511,7 @@ const Admin = () => {
   const fetchArtists = async () => {
     const { data: artistsData, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, artist_applications(agent_reference, referral_code)')
       .eq('user_type', 'artist')
       .eq('approved', true)
       .order('created_at', { ascending: false });
@@ -2076,7 +2076,7 @@ const Admin = () => {
                       <h4 className="font-bold text-sm text-white mb-2 mt-8">KYC Information</h4>
                       <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Name</span><span className="font-semibold text-white">{selectedArtist.full_name || selectedArtist.name || 'N/A'}</span></div>
                       <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">ID Number</span><span className="font-medium text-white font-mono">{selectedArtist.nrc_number || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedArtist.agent_reference ? 'text-[#00d68f]' : 'text-white'}`}>{selectedArtist.agent_reference || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedArtist.agent_reference || selectedArtist.referral_code || selectedArtist.artist_applications?.[0]?.referral_code || selectedArtist.artist_applications?.[0]?.agent_reference ? 'text-[#00d68f]' : 'text-white'}`}>{selectedArtist.agent_reference || selectedArtist.referral_code || selectedArtist.artist_applications?.[0]?.referral_code || selectedArtist.artist_applications?.[0]?.agent_reference || 'N/A'}</span></div>
 
                       <div className="grid grid-cols-2 gap-4 mt-4 mb-4">
                          <div>

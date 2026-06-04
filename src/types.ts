@@ -90,6 +90,7 @@ export interface UserProfile {
   phone_verified?: boolean;
   family_plan_id?: string;
   approved?: boolean;
+  agent_reference?: string;
 }
 
 export interface Transaction {

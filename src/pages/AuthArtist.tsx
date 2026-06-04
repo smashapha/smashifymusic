@@ -189,6 +189,8 @@ const AuthArtist: React.FC = () => {
           selfie_url: selfieUrl,
           id_document_url: idUrl,
           status: 'pending',
+          referral_code: referralCode || null,
+          agent_reference: referralCode || null,
         });
 
       if (appError) {
@@ -206,12 +208,6 @@ const AuthArtist: React.FC = () => {
         throw new Error(`Application could not be saved: ${appError.message}`);
       }
 
-      if (referralCode) {
-        await supabase.from('artist_applications').update({
-          referral_code: referralCode
-        }).eq('profile_id', userId);
-      }
-
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -225,6 +221,7 @@ const AuthArtist: React.FC = () => {
           approved: false,
           user_type: 'artist',
           artist_tier: 'Free',
+          agent_reference: referralCode || null,
         });
 
       if (profileError) {
