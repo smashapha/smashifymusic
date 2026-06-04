@@ -18,7 +18,7 @@ import { BottomNav } from '../components/common/MainLayout';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 
-type TabType = 'dashboard' | 'music' | 'promotion' | 'profile' | 'subscription' | 'notifications';
+type TabType = 'dashboard' | 'music' | 'promotion' | 'profile' | 'subscription' | 'notifications' | 'transactions' | 'withdraw';
 
 const NotificationsTab = ({ userProfile }: any) => {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -82,6 +82,7 @@ const NotificationsTab = ({ userProfile }: any) => {
 };
 
 import { TransactionsTab } from '../components/artist/TransactionsTab';
+import { WithdrawTab } from '../components/artist/WithdrawTab';
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
@@ -181,6 +182,7 @@ export default function ArtistHub() {
         { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
         { id: 'music', label: 'Music', icon: Music2 },
         { id: 'upload', label: 'Upload', icon: UploadCloud },
+        { id: 'withdraw', label: 'Withdrawal', icon: Wallet },
         { id: 'promotion', label: 'Promote', icon: Flame },
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'transactions', label: 'History', icon: Receipt },
@@ -387,6 +389,7 @@ export default function ArtistHub() {
                   transition={{ duration: 0.2 }}
                 >
                   {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'withdraw' && <WithdrawTab setActiveTab={setActiveTab} />}
                   {activeTab === 'music' && (
                     <div className="space-y-12">
                       <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} />
@@ -481,18 +484,20 @@ const MotoAnalytics = ({ limits }: { limits: any }) => {
                 <p className="text-red-400/80 text-[13px] font-sans leading-relaxed">Your tracks have a skip rate of {skipRate}%. Try uploading snippets with stronger intros or engaging captions to capture listeners in the first 5 seconds.</p>
              </div>
           </div>
-       )}
-    </div>
+           )}
+     </div>
   );
 };
 
 const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   const [history, setHistory] = useState<any[]>([]);
-  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
-  const [requesting, setRequesting] = useState(false);
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<'Airtel' | 'TNM'>('Airtel');
-  const [phone, setPhone] = useState(userProfile?.phone || '');
+  const [phone] = useState(userProfile?.phone || '');
+  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
+  const [requesting] = useState(false);
+  const handleWithdraw = () => {};
+  const handleInitiateWithdraw = () => {};
   const limits = getTierLimits(userProfile);
 
   useEffect(() => {
@@ -507,64 +512,6 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
     };
     fetchHist();
   }, [userProfile]);
-
-  const handleInitiateWithdraw = () => {
-    if (!limits.canWithdraw) {
-      toast.error('Free tier cannot withdraw. Upgrade to Rising Star or higher to unlock withdrawals.');
-      return;
-    }
-    if (balance <= 0) return toast.error('No funds to withdraw.');
-    if (withdrawalAmount < 2000) return toast.error('Minimum withdrawal is MK 2,000.');
-    if (withdrawalAmount > balance) return toast.error('Amount exceeds available balance.');
-    setShowWithdrawForm(true);
-  };
-
-  const handleWithdraw = async () => {
-    if (!withdrawalAmount || withdrawalAmount < 2000) {
-      return toast.error('Minimum withdrawal is MK 2,000');
-    }
-    const currentBalance = Number(userProfile?.wallet_balance || 0);
-    if (withdrawalAmount > currentBalance) {
-      return toast.error('Amount exceeds your available balance');
-    }
-    if (!phone) {
-      return toast.error('Phone number is required for withdrawal');
-    }
-    if (!selectedNetwork) {
-      return toast.error('Please select Airtel or TNM');
-    }
-
-    setRequesting(true);
-    try {
-      const session = (await supabase.auth.getSession()).data.session;
-      const response = await supabase.functions.invoke('process-payout', {
-        body: {
-          amount: withdrawalAmount,
-          phone,
-          network: selectedNetwork
-        }
-      });
-
-      if (response.error) {
-        console.error("Payout Frontend Invoke Error:", response.error);
-        throw new Error(response.error.message || 'Withdrawal request failed');
-      }
-
-      const data = response.data;
-
-      toast.success(
-        data?.message || 'Withdrawal requested! We will send your money within 24 hours.'
-      );
-      setWithdrawalAmount(0);
-      setShowWithdrawForm(false);
-      setTimeout(() => window.location.reload(), 2000);
-    } catch (err: any) {
-      console.error('Withdrawal error:', err);
-      toast.error(err.message || 'Withdrawal request failed');
-    } finally {
-      setRequesting(false);
-    }
-  };
 
   return (
     <div className="space-y-10 max-w-6xl">
@@ -637,16 +584,21 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-8 md:p-10 relative overflow-hidden group shadow-sm min-h-[300px]">
                {stats.revenue === 0 ? (
                   <div className="relative z-10 flex flex-col items-center justify-center text-center h-full space-y-4 py-8">
-                    <div className="w-16 h-16 bg-[#0EA5E9]/10 rounded-full flex items-center justify-center mb-2">
-                       <DollarSign className="w-8 h-8 text-[#0EA5E9]" />
+                    <div className="w-16 h-16 bg-smash-purple/10 rounded-full flex items-center justify-center mb-2">
+                       <DollarSign className="w-8 h-8 text-smash-purple" />
                     </div>
                     <h3 className="text-2xl font-bold text-text-primary">No earnings yet</h3>
                     <p className="text-text-secondary max-w-sm mx-auto">
                       Start promoting your tracks and engage with your fans to earn from tips, purchases, and subscriptions. Your withdrawable balance will appear here.
                     </p>
-                    <button onClick={() => setActiveTab('promotion')} className="mt-4 px-6 py-3 bg-smash-purple text-white font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-colors">
-                       Promote Your Music
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4 justify-center">
+                       <button onClick={() => setActiveTab('promotion')} className="px-6 py-3 bg-smash-purple text-white font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-colors">
+                          Promote Your Music
+                       </button>
+                       <button onClick={() => setActiveTab('withdraw')} className="px-6 py-3 bg-bg-elevated border border-border-default text-text-primary font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-border-default transition-colors">
+                          View Wallet Tab &rarr;
+                       </button>
+                    </div>
                   </div>
                ) : (
                  <>
@@ -662,8 +614,23 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                             <div className="px-3 py-1 bg-bg-elevated text-text-muted border border-border-default rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">3% Network Fee</div>
                          </div>
                       </div>
-                       <div className="w-full md:w-[300px]">
-                         {showWithdrawForm ? (
+                       <div className="w-full md:w-auto flex flex-col gap-3 min-w-[220px]">
+                         <button 
+                             onClick={() => setActiveTab('withdraw')} 
+                             className="w-full h-[46px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-all shadow-md flex items-center justify-center gap-1.5"
+                          >
+                             <Wallet size={14} /> Open Withdrawal Tab
+                          </button>
+                          
+                          {!userProfile?.is_verified && (
+                             <button 
+                                onClick={() => setActiveTab('withdraw')} 
+                                className="w-full text-[10px] font-display font-bold text-smash-orange hover:underline text-center uppercase tracking-widest block"
+                             >
+                                Submit ID Verification &rarr;
+                             </button>
+                          )}
+                          {false && showWithdrawForm ? (
                            <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
                               <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block text-left">Select Network</label>
                               <div className="grid grid-cols-2 gap-3 mb-4">
@@ -2307,12 +2274,23 @@ const ProfileTab = ({ userProfile }: any) => {
         twitter: fd.get('twitter'),
         avatar_url: avatarUrl,
         banner_url: bannerUrl,
-        ...(userProfile?.phone ? {} : { phone: fd.get('phone') })
       };
       
       if (!userProfile?.is_verified) {
         if (fd.get('id_type')) updateData.id_type = fd.get('id_type');
-        if (fd.get('nrc_number')) updateData.nrc_number = fd.get('nrc_number');
+        
+        const nrcVal = fd.get('nrc_number') as string;
+        if (nrcVal) {
+          if (!nrcVal.trim()) throw new Error('ID Document Number is required.');
+          updateData.nrc_number = nrcVal.trim();
+        }
+
+        const phoneVal = fd.get('phone') as string;
+        if (phoneVal) {
+          if (!phoneVal.trim()) throw new Error('ID Registered Phone Number is required.');
+          updateData.phone = phoneVal.trim();
+        }
+        
         if (idUrl) updateData.id_document_url = idUrl;
       }
 
@@ -2388,11 +2366,11 @@ const ProfileTab = ({ userProfile }: any) => {
                </label>
                <div className="relative group">
                  <input 
-                   name="phone" 
+                   name={userProfile?.is_verified ? "phone" : "phone_disabled"}
                    defaultValue={userProfile?.phone} 
-                   disabled={!!userProfile?.phone}
-                   placeholder="+265..."
-                   title={userProfile?.phone ? "Locked for withdrawal security" : ""}
+                   disabled={true}
+                   placeholder={userProfile?.is_verified ? "+265..." : "See Identity Verification below"}
+                   title={userProfile?.is_verified ? "Locked for withdrawal security" : "Please register your phone number below under Identity Verification"}
                    className={`w-full h-[44px] bg-bg-elevated border px-4 pr-10 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary ${userProfile?.phone ? 'border-dashed border-border-default opacity-60 cursor-not-allowed' : 'border-border-default'}`} 
                  />
                  {userProfile?.phone && (
@@ -2438,7 +2416,12 @@ const ProfileTab = ({ userProfile }: any) => {
                  </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 bg-zinc-950/40 border border-white/5 rounded-lg text-[11px] text-text-muted leading-relaxed">
+                 <span className="text-smash-orange font-bold uppercase tracking-wider block mb-1">Privacy Note</span>
+                 Your ID number is collected strictly to verify ownership for financial payouts and prevent fraud. Smashify encrypts this data securely and will never share it with third parties.
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Document Type</label>
                     <select name="id_type" defaultValue={userProfile?.id_type || "National ID"} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary">
@@ -2450,6 +2433,10 @@ const ProfileTab = ({ userProfile }: any) => {
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Document Number</label>
                     <input name="nrc_number" defaultValue={userProfile?.nrc_number} type="text" placeholder="e.g. A1234567" className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-50" />
+                 </div>
+                 <div>
+                    <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Registered Phone Number</label>
+                    <input name="phone" defaultValue={userProfile?.phone} type="text" placeholder="e.g. +26599..." className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-50" />
                  </div>
               </div>
 

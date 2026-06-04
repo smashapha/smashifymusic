@@ -91,13 +91,9 @@ const AuthArtist: React.FC = () => {
     }
   };
 
-  const submitApplication = async () => {
+   const submitApplication = async () => {
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters');
-      return;
-    }
-    if (!idDocFile) {
-      toast.error('Please upload a photo of your ID document');
       return;
     }
 
@@ -167,55 +163,7 @@ const AuthArtist: React.FC = () => {
       const userId = data.user.id;
 
       let idUrl: string | null = null;
-      try {
-        const fileExt = idPhoto.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const fileName = `${userId}/id-document.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('artist-verifications')
-          .upload(fileName, idPhoto, {
-            upsert: true,
-            contentType: idPhoto.type,
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: signedData, error: signedErr } =
-          await supabase.storage
-            .from('artist-verifications')
-            .createSignedUrl(fileName, 60 * 60 * 24 * 365);
-
-        if (!signedErr && signedData) {
-          idUrl = signedData.signedUrl;
-        }
-
-      } catch (uploadErr: any) {
-        console.error('ID upload error:', uploadErr.message);
-        toast(
-          'ID photo upload failed. Application saved without it. Contact support to re-upload.',
-          { icon: '⚠️', duration: 5000 }
-        );
-      }
-
-      // Upload selfie
       let selfieUrl: string | null = null;
-      if (selfieFile) {
-        try {
-          const selfieExt = selfieFile.name.split('.').pop() || 'jpg';
-          const selfiePath = `${userId}/selfie-with-id.${selfieExt}`;
-          const { error: selfieUploadErr } = await supabase
-            .storage.from('artist-verifications')
-            .upload(selfiePath, selfieFile, { upsert: true });
-          if (!selfieUploadErr) {
-            const { data: selfieData } = await supabase.storage
-              .from('artist-verifications')
-              .createSignedUrl(selfiePath, 60 * 60 * 24 * 365);
-            selfieUrl = selfieData?.signedUrl || null;
-          }
-        } catch (e) {
-          console.warn('Selfie upload failed:', e);
-        }
-      }
 
       const { error: appError } = await supabase
         .from('artist_applications')
@@ -228,8 +176,8 @@ const AuthArtist: React.FC = () => {
           genre: genre,
           city: city,
           phone: phone,
-          nrc_number: nrcNumber,
-          id_type: verificationMethod,
+          nrc_number: null,
+          id_type: null,
           selfie_url: selfieUrl,
           id_document_url: idUrl,
           status: 'pending',
@@ -365,12 +313,6 @@ const AuthArtist: React.FC = () => {
       if (!genre) return toast.error('Please select your genre');
       if (!phone) return toast.error('Phone number is required');
       if (!city) return toast.error('City is required');
-      if (!idDocFile) return toast.error('Please upload a photo of your ID document');
-      if (!selfieFile) return toast.error('Please take a selfie holding your ID');
-      if (!nrcFormatValid && verificationMethod === 'national_id') {
-        return toast.error('Please enter a valid ID number (at least 5 characters)');
-      }
-      if (!nrcNumber) return toast.error('Please enter your ID number');
     }
     setArtistStep(prev => (prev + 1) as ArtistStep);
   };
@@ -494,7 +436,34 @@ const AuthArtist: React.FC = () => {
                     )}
                     {artistStep === 2 && (
                        <motion.div key="as2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                          <AuthInput icon={Disc} type="text" placeholder="Primary Genre" value={genre} onChange={setGenre} />
+                          <div>
+                             <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-1">
+                               Primary Genre
+                             </label>
+                             <div className="relative group">
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-smash-orange transition-colors pointer-events-none">
+                                   <Disc size={18} strokeWidth={1.5} />
+                                </div>
+                                <select
+                                   value={genre}
+                                   onChange={(e) => setGenre(e.target.value)}
+                                   className="w-full h-[52px] pl-4 pr-12 bg-white/5 border border-white/10 rounded-[14px] text-[14px] font-sans text-text-primary focus:outline-none focus:border-smash-orange/60 focus:ring-[3px] focus:ring-smash-orange/12 transition-all appearance-none cursor-pointer"
+                                >
+                                   <option value="" disabled className="bg-[#141418] text-text-muted">Select Primary Genre</option>
+                                   <option value="Afropop" className="bg-[#141418] text-text-primary">Afropop</option>
+                                   <option value="Gospel" className="bg-[#141418] text-text-primary">Gospel</option>
+                                   <option value="Hip Hop" className="bg-[#141418] text-text-primary">Hip Hop</option>
+                                   <option value="R&B" className="bg-[#141418] text-text-primary">R&B</option>
+                                   <option value="Amapiano" className="bg-[#141418] text-text-primary">Amapiano</option>
+                                   <option value="Reggae/Dancehall" className="bg-[#141418] text-text-primary">Reggae/Dancehall</option>
+                                   <option value="Afrobeat" className="bg-[#141418] text-text-primary">Afrobeat</option>
+                                   <option value="Traditional/Folk" className="bg-[#141418] text-text-primary">Traditional/Folk</option>
+                                   <option value="Jazz" className="bg-[#141418] text-text-primary">Jazz</option>
+                                   <option value="Electronic" className="bg-[#141418] text-text-primary">Electronic</option>
+                                   <option value="Other" className="bg-[#141418] text-text-primary">Other</option>
+                                </select>
+                             </div>
+                           </div>
                           <AuthInput icon={Phone} type="text" placeholder="Phone" value={phone} onChange={setPhone} />
                           
                           {/* Phone verification */}
@@ -546,189 +515,7 @@ const AuthArtist: React.FC = () => {
                           )}
 
                           <AuthInput icon={MapPin} type="text" placeholder="City" value={city} onChange={setCity} />
-                          
-                          {/* Verification Method Selector */}
-                          <div>
-                            <p className="text-[11px] font-black text-text-muted uppercase tracking-widest mb-3">
-                              Identity Verification
-                            </p>
-                            <div className="grid grid-cols-3 gap-2 mb-4">
-                              {[
-                                { id: 'national_id', label: 'National ID', emoji: '🪪' },
-                                { id: 'passport', label: 'Passport', emoji: '📗' },
-                                { id: 'drivers', label: "Driver's Licence", emoji: '🚗' }
-                              ].map((method) => (
-                                <button
-                                  key={method.id}
-                                  type="button"
-                                  onClick={() => setVerificationMethod(method.id as any)}
-                                  className={`p-3 rounded-[12px] border text-center transition-all text-xs font-bold
-                                    ${verificationMethod === method.id
-                                      ? 'border-smash-orange bg-smash-orange/10 text-smash-orange'
-                                      : 'border-white/10 bg-white/5 text-text-muted'
-                                    }`}
-                                >
-                                  <div className="text-xl mb-1">{method.emoji}</div>
-                                  {method.label}
-                                </button>
-                              ))}
-                            </div>
 
-                            {/* National ID Number Input */}
-                            {verificationMethod === 'national_id' && (
-                              <div className="mb-4">
-                                <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                  ID Number
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    value={nrcNumber}
-                                    onChange={(e) => {
-                                      const val = e.target.value.toUpperCase().replace(/[^0-9A-Z/_-]/g, '');
-                                      setNrcNumber(val);
-                                      setNrcFormatValid(val.length >= 5);
-                                    }}
-                                    placeholder="e.g. 12345678"
-                                    className={`w-full h-14 bg-white/5 border rounded-[12px] px-4 text-white font-mono text-lg tracking-widest outline-none transition-all ${nrcFormatValid
-                                        ? 'border-smash-green text-smash-green'
-                                        : nrcNumber.length > 0
-                                        ? 'border-smash-orange/50'
-                                        : 'border-white/10'
-                                      }`}
-                                  />
-                                  {nrcFormatValid && (
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-smash-green">
-                                      ✓
-                                    </div>
-                                  )}
-                                </div>
-                                {nrcNumber.length > 0 && !nrcFormatValid && (
-                                  <p className="text-[11px] text-smash-orange mt-1">
-                                    At least 5 characters required
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Passport/Drivers input */}
-                            {verificationMethod !== 'national_id' && (
-                              <div className="mb-4">
-                                <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                  {verificationMethod === 'passport' 
-                                    ? 'Passport Number' 
-                                    : 'Licence Number'}
-                                </label>
-                                <input
-                                  type="text"
-                                  value={nrcNumber}
-                                  onChange={(e) => {
-                                    setNrcNumber(e.target.value.toUpperCase());
-                                    setNrcFormatValid(e.target.value.length >= 5);
-                                  }}
-                                  placeholder={verificationMethod === 'passport' 
-                                    ? 'e.g. MW1234567' 
-                                    : 'e.g. DL123456'}
-                                  className="w-full h-14 bg-white/5 border border-white/10 rounded-[12px] px-4 text-white font-mono text-base outline-none focus:border-smash-orange/50"
-                                />
-                              </div>
-                            )}
-
-                            {/* ID Document Photo Upload */}
-                            <div className="mb-4">
-                              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Photo of Your {verificationMethod === 'national_id' 
-                                  ? 'National ID' 
-                                  : verificationMethod === 'passport' 
-                                  ? 'Passport' 
-                                  : "Driver's Licence"}
-                                <span className="text-smash-orange ml-1">*</span>
-                              </label>
-                              <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-[16px] cursor-pointer transition-all ${idDocFile
-                                  ? 'border-smash-green bg-smash-green/5'
-                                  : 'border-white/20 bg-white/5 hover:border-smash-orange/50'
-                                }`}>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      setIdDocFile(file);
-                                      setIdPhoto(file); // keep backward compat
-                                    }
-                                  }}
-                                />
-                                {idDocFile ? (
-                                  <div className="text-center">
-                                    <p className="text-smash-green font-bold text-sm">
-                                      ✓ {idDocFile.name}
-                                    </p>
-                                    <p className="text-[11px] text-text-muted mt-1">
-                                      Tap to replace
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <div className="text-center px-4">
-                                    <p className="text-2xl mb-2">📷</p>
-                                    <p className="text-sm font-bold text-white/60">
-                                      Take a photo or upload your ID
-                                    </p>
-                                    <p className="text-[11px] text-text-muted mt-1">
-                                      Make sure all text is clearly visible
-                                    </p>
-                                  </div>
-                                )}
-                              </label>
-                            </div>
-
-                            {/* Selfie Upload */}
-                            <div>
-                              <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Selfie Holding Your ID
-                                <span className="text-smash-orange ml-1">*</span>
-                                <span className="text-[10px] font-normal normal-case text-text-muted ml-2">
-                                  (Helps prevent fake accounts)
-                                </span>
-                              </label>
-                              <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-[16px] cursor-pointer transition-all ${selfieFile
-                                  ? 'border-smash-green bg-smash-green/5'
-                                  : 'border-white/20 bg-white/5 hover:border-smash-orange/50'
-                                }`}>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  capture="user"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) setSelfieFile(file);
-                                  }}
-                                />
-                                {selfieFile ? (
-                                  <div className="text-center">
-                                    <p className="text-smash-green font-bold text-sm">
-                                      ✓ Selfie captured
-                                    </p>
-                                    <p className="text-[11px] text-text-muted mt-1">
-                                      Tap to retake
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <div className="text-center px-4">
-                                    <p className="text-2xl mb-2">🤳</p>
-                                    <p className="text-sm font-bold text-white/60">
-                                      Take a selfie holding your ID
-                                    </p>
-                                    <p className="text-[11px] text-text-muted mt-1">
-                                      Face and ID must both be visible
-                                    </p>
-                                  </div>
-                                )}
-                              </label>
-                            </div>
-                          </div>
                           <div className="flex gap-2 pt-2">
                              <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
                              <button onClick={nextArtistStep} className="flex-1 h-[52px] bg-bg-elevated text-text-primary rounded-[14px] font-display font-bold text-[13px] uppercase tracking-wide hover:bg-white/10 transition-all">Review</button>
@@ -774,7 +561,7 @@ const AuthArtist: React.FC = () => {
                              </label>
                              <div className="flex gap-2">
                                <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
-                               <button onClick={submitApplication} disabled={loadingState || !agreedToTerms || !idDocFile} className="flex-1 h-[52px] text-white rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide transition-all shadow-sm hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
+                               <button onClick={submitApplication} disabled={loadingState || !agreedToTerms} className="flex-1 h-[52px] text-white rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide transition-all shadow-sm hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
                                   {loadingState ? 'Submitting...' : 'Submit Application'}
                                </button>
                              </div>
