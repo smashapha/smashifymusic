@@ -135,7 +135,7 @@ async function startServer() {
   // --- API ROUTES (Functions) ---
   
   // CORS Preflight for all functions
-  app.options(['/api/functions/v1/create-payment', '/api/functions/create-payment', '/api/functions/v1/process-payout', '/api/functions/process-payout', '/api/functions/v1/verify-payment', '/api/functions/verify-payment'], (req, res) => {
+  app.options(['/api/functions/v1/create-payment', '/api/functions/create-payment', '/api/functions/v1/process-payout', '/api/functions/process-payout'], (req, res) => {
     res.sendStatus(204);
   });
 
@@ -324,79 +324,6 @@ async function startServer() {
 
   app.post('/api/functions/v1/process-payout', handleProcessPayout);
   app.post('/api/functions/process-payout', handleProcessPayout);
-
-  const handleVerifyPayment = async (req: express.Request, res: express.Response) => {
-    try {
-      if (!PAYCHANGU_SECRET_KEY || PAYCHANGU_SECRET_KEY === 'YOUR_PAYCHANGU_SECRET_KEY') {
-        throw new Error('PAYCHANGU_SECRET_KEY missing');
-      }
-      
-      let tx_ref = req.query.tx_ref as string;
-      if (req.method === "POST" && req.body?.tx_ref) {
-        tx_ref = req.body.tx_ref;
-      }
-
-      if (!tx_ref) {
-        return res.status(400).json({ error: "Missing tx_ref" });
-      }
-
-      console.log(`[API] Verifying payment for: ${tx_ref}`);
-
-      const { data: dbTx, error: dbError } = await supabaseAdmin
-        .from("transactions")
-        .select("*")
-        .eq("paychangu_ref", tx_ref)
-        .single();
-
-      if (dbError || !dbTx) {
-        return res.status(404).json({ error: "Transaction not found in our database" });
-      }
-
-      if (dbTx.status === "completed" || dbTx.status === "failed") {
-        return res.status(200).json({ status: dbTx.status, transaction: dbTx });
-      }
-
-      const response = await fetch(
-        `https://api.paychangu.com/verify-payment/${tx_ref}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${PAYCHANGU_SECRET_KEY.trim()}`,
-            Accept: "application/json",
-          },
-        }
-      );
-
-      const payload = await response.json();
-      console.log("[API] PayChangu verification response:", payload);
-
-      if (response.ok && payload.status === "success" && payload.data) {
-        const pcStatus = payload.data.status;
-        if (pcStatus === "successful" || pcStatus === "success") {
-            return res.status(200).json({ status: 'completed', transaction: dbTx, wait_for_webhook: true });
-        } else if (pcStatus === "failed") {
-          const { data: failedTxs } = await supabaseAdmin
-            .from("transactions")
-            .update({ status: "failed" })
-            .eq("id", dbTx.id)
-            .eq("status", "pending")
-            .select();
-  
-          dbTx.status = "failed";
-        }
-      }
-      
-      return res.status(200).json({ status: dbTx.status, transaction: dbTx });
-    } catch (error: any) {
-      console.error("[API] Verification error:", error);
-      return res.status(500).json({ error: error.message });
-    }
-  };
-
-  app.post('/api/functions/v1/verify-payment', handleVerifyPayment);
-  app.post('/api/functions/verify-payment', handleVerifyPayment);
-  app.get('/api/functions/v1/verify-payment', handleVerifyPayment);
-  app.get('/api/functions/verify-payment', handleVerifyPayment);
 
   // New endpoint for admin to manually update payout status
   app.post('/api/admin/payouts/:id/status', async (req, res) => {
