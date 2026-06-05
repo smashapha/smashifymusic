@@ -73,14 +73,14 @@ serve(async (req) => {
       new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      ["verify"],
     );
     const signatureBytes = hexToBytes(signature);
     const isValid = await crypto.subtle.verify(
       "HMAC",
       key,
       signatureBytes,
-      new TextEncoder().encode(bodyText)
+      new TextEncoder().encode(bodyText),
     );
     if (!isValid) {
       console.error("Invalid webhook signature");
@@ -329,7 +329,7 @@ serve(async (req) => {
             {
               id: listenerId,
               subscription_tier: subTierName,
-              subscription_expires_at: subEnds.toISOString(),
+              subscription_ends: subEnds.toISOString(),
             },
             { onConflict: "id" },
           );
@@ -357,7 +357,6 @@ serve(async (req) => {
           .update({
             subscription_tier: artistTierName,
             artist_tier: artistTierName,
-            subscription_started_at: new Date().toISOString(),
             subscription_ends: artistTierEnds.toISOString(),
             approved: true,
           })
@@ -380,7 +379,7 @@ serve(async (req) => {
               {
                 id: userId,
                 subscription_tier: "Premium",
-                subscription_expires_at: artistTierEnds.toISOString(),
+                subscription_ends: artistTierEnds.toISOString(),
               },
               { onConflict: "id" },
             );
