@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const ALLOWED_ORIGINS = ['https://play-smashify.vercel.app', 'http://localhost:5173']
 
-export function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '*';
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || ''
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
 }
@@ -17,7 +18,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
   if (req.method === "OPTIONS") {
-    const origin = req.headers.get('Origin') || '*';
+    const origin = req.headers.get('Origin') || ''
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+      return new Response('Forbidden', { status: 403 })
+    }
     return new Response("ok", { headers: corsHeaders });
   }
 
@@ -91,9 +95,7 @@ serve(async (req) => {
         try {
           const eventData = payload.data;
           const { amount } = eventData;
-          const metaType = dbTx?.metadata?.payment_type;
-          const regexType = (tx_ref?.match(/^SMASH-([A-Z0-9]+(?:_[A-Z0-9]+)*)-/)?.[1] || "").toUpperCase();
-          const type = (metaType ? metaType.toUpperCase() : null) || regexType;
+          const type = (dbTx.metadata?.payment_type || "").toUpperCase();
           const { artistId, songId, plan, tier, plays, anonymous } =
             dbTx.metadata || {};
           const userId = dbTx.metadata?.userId || dbTx.fan_id;

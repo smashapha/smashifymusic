@@ -513,7 +513,6 @@ const Admin = () => {
       .from('profiles')
       .select('*')
       .eq('user_type', 'artist')
-      .eq('approved', true)
       .order('created_at', { ascending: false });
     
     if (error) {

@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+const ALLOWED_ORIGINS = ['https://play-smashify.vercel.app', 'http://localhost:5173']
 
-export function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '*';
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || ''
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
 }
@@ -14,7 +15,10 @@ Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
   
   if (req.method === 'OPTIONS') {
-    const origin = req.headers.get('Origin') || '*';
+    const origin = req.headers.get('Origin') || ''
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+      return new Response('Forbidden', { status: 403 })
+    }
     return new Response('ok', { headers: corsHeaders })
   }
 
