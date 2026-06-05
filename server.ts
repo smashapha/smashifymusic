@@ -171,11 +171,29 @@ async function startServer() {
         'featured_placement': `Featured placement on Smashify`,
       };
 
+      let mappedType = 'other';
+      if (type.includes('subscription') || type.includes('listener_') || type.includes('artist_')) {
+        if (type === 'artist_ad_campaign' || type === 'featured_placement') {
+          mappedType = 'campaign';
+        } else {
+          mappedType = 'subscription';
+        }
+      } else if (type === 'tip') {
+        mappedType = 'donation';
+      } else if (type === 'track_purchase') {
+        mappedType = 'sale';
+      }
+
+      let txArtistId = meta.artistId || null;
+      if (!txArtistId && type.includes('artist_')) {
+         txArtistId = meta.userId || user.id; // Attribute to artist 
+      }
+
       // Create Pending Transaction
       const { error: txError } = await supabaseAdmin.from('transactions').insert({
-        artist_id: meta.artistId || null,
+        artist_id: txArtistId,
         fan_id: meta.userId || user.id,
-        type: type.includes('subscription') ? 'subscription' : (type === 'tip' ? 'donation' : (type === 'track_purchase' ? 'sale' : 'other')),
+        type: mappedType,
         gross_amount: amount,
         net_amount: amount * 0.85,
         status: 'pending',
