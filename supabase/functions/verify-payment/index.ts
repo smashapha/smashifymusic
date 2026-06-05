@@ -91,7 +91,9 @@ serve(async (req) => {
         try {
           const eventData = payload.data;
           const { amount } = eventData;
-          const type = (dbTx.metadata?.payment_type || "").toUpperCase();
+          const metaType = dbTx?.metadata?.payment_type;
+          const regexType = (tx_ref?.match(/^SMASH-([A-Z0-9]+(?:_[A-Z0-9]+)*)-/)?.[1] || "").toUpperCase();
+          const type = (metaType ? metaType.toUpperCase() : null) || regexType;
           const { artistId, songId, plan, tier, plays, anonymous } =
             dbTx.metadata || {};
           const userId = dbTx.metadata?.userId || dbTx.fan_id;

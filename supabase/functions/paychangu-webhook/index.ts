@@ -105,13 +105,7 @@ serve(async (req) => {
       .eq("paychangu_ref", tx_ref)
       .single();
 
-    const { data: existingTx } = await supabase
-      .from("transactions")
-      .select("status")
-      .eq("paychangu_ref", tx_ref)
-      .single();
-
-    if (existingTx?.status === "completed") {
+    if (transaction?.status === "completed") {
       console.log(
         `Duplicate webhook received for ${tx_ref} — already processed, skipping`,
       );
@@ -121,11 +115,8 @@ serve(async (req) => {
     // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
     // Convert it to uppercase for switch matching. If not in metadata, use regex fallback immune to UUID hyphens.
     const metaType = transaction?.metadata?.payment_type;
-    const type = metaType
-      ? metaType.toUpperCase()
-      : (
-          tx_ref.match(/^SMASH-([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)-/)?.[1] || ""
-        ).toUpperCase();
+    const regexType = (tx_ref?.match(/^SMASH-([A-Z0-9]+(?:_[A-Z0-9]+)*)-/)?.[1] || "").toUpperCase();
+    const type = (metaType ? metaType.toUpperCase() : null) || regexType;
 
     console.log("Resolved type:", type);
     console.log("Meta payment_type:", metaType);
