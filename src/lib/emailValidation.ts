@@ -31,21 +31,28 @@ export async function validateEmailStrict(email: string): Promise<{ valid: boole
     return { valid: false, message: 'Temporary/Disposable emails are not allowed on Smashify. Please use a permanent email account.' };
   }
 
-  // Layer 3: MX Record Check via Backend
-  try {
-    const res = await fetch('/api/check-email-mx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (!data.valid) {
-        return { valid: false, message: 'This email domain does not appear to exist. Please verify your spelling.' };
+  // Layer 3: MX Record Check via Backend (only in local or Express-supported environments)
+  const isLocalEnv = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' || 
+    window.location.hostname.endsWith('.run.app');
+
+  if (isLocalEnv) {
+    try {
+      const res = await fetch('/api/check-email-mx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.valid) {
+          return { valid: false, message: 'This email domain does not appear to exist. Please verify your spelling.' };
+        }
       }
+    } catch (err) {
+      console.warn('MX check failed, skipping', err);
     }
-  } catch (err) {
-    console.warn('MX check failed, skipping', err);
   }
 
   return { valid: true };
