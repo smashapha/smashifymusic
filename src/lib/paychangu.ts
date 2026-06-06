@@ -94,15 +94,28 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       throw new Error('Failed to get checkout URL from response');
     }
 
-    toast.dismiss(toastId)
-    // Open checkout in iframe modal — never leave the page
-    if ((window as any).__smashifyShowPayment) {
-      (window as any).__smashifyShowPayment(data.checkout_url, tx_ref)
-    } else {
-      // Fallback if modal not ready
-      window.location.href = data.checkout_url
-    }
-    return { checkout_url: data.checkout_url, tx_ref }
+    toast.dismiss(toastId);
+    toast.success('Redirecting you to secure PayChangu payment checkout...', { duration: 3000 });
+    
+    // Direct browser redirect or open new tab. PayChangu prevents iframe embeddings via X-Frame-Options/CSP.
+    setTimeout(() => {
+      try {
+        if (window.self !== window.top) {
+          // Inside an iframe (like standard AI Studio play sandbox), open search in new tab
+          const opened = window.open(data.checkout_url, '_blank');
+          if (!opened) {
+            window.location.href = data.checkout_url;
+          }
+        } else {
+          // Deployed/Direct browser access: Redirect the same tab
+          window.location.href = data.checkout_url;
+        }
+      } catch (e) {
+        window.location.href = data.checkout_url;
+      }
+    }, 1000);
+
+    return { checkout_url: data.checkout_url, tx_ref };
   } catch (err: any) {
     console.error('Payment error:', err);
     toast.error(err.message || 'Payment initialization failed', { id: toastId });
