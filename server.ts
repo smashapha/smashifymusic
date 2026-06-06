@@ -273,8 +273,39 @@ async function startServer() {
         throw txError;
       }
 
+      // Resolve return_url with robust fallback to prevent PayChangu validation errors if frontend passed undefined or invalid format
+      let resolvedReturnUrl = return_url;
+      if (!resolvedReturnUrl || typeof resolvedReturnUrl !== 'string' || !resolvedReturnUrl.startsWith('http')) {
+        console.warn(`[API] Invalid or missing return_url received: ${return_url}. Constructing fallback.`);
+        const songId = meta?.songId || 'unknown';
+        const artistId = meta?.artistId || 'unknown';
+        const plan = meta?.plan || 'Premium';
+        const tier = meta?.tier || 'RisingStar';
+
+        if (type === 'track_purchase') {
+          resolvedReturnUrl = `${APP_URL}/purchase-success?song_id=${songId}&tx_ref=`;
+        } else if (type === 'tip') {
+          resolvedReturnUrl = `${APP_URL}/tip-success?artist_id=${artistId}&tx_ref=`;
+        } else if (type === 'fan_subscription') {
+          resolvedReturnUrl = `${APP_URL}/subscribe-success?artist_id=${artistId}&tx_ref=`;
+        } else if (type.includes('listener_')) {
+          resolvedReturnUrl = `${APP_URL}/upgrade-success?plan=${plan}&tx_ref=`;
+        } else if (type.includes('artist_') && type !== 'artist_ad_campaign') {
+          resolvedReturnUrl = `${APP_URL}/tier-success?tier=${tier}&tx_ref=`;
+        } else if (type === 'artist_ad_campaign') {
+          resolvedReturnUrl = `${APP_URL}/ad-success?tx_ref=`;
+        } else {
+          resolvedReturnUrl = `${APP_URL}/purchase-success?tx_ref=`;
+        }
+      }
+
+      let finalReturnUrl = resolvedReturnUrl;
+      if (!finalReturnUrl.endsWith(tx_ref)) {
+        finalReturnUrl = `${finalReturnUrl}${tx_ref}`;
+      }
+
       // Initialize PayChangu
-      console.log('[API] Calling PayChangu /payment init...');
+      console.log('[API] Calling PayChangu /payment init with return_url:', finalReturnUrl);
       const response = await fetch('https://api.paychangu.com/payment', {
         method: 'POST',
         headers: {
@@ -290,7 +321,7 @@ async function startServer() {
           last_name,
           tx_ref,
           callback_url: callback_url || `${APP_URL}/api/paychangu-webhook`,
-          return_url: `${return_url}${tx_ref}`,
+          return_url: finalReturnUrl,
           customization: {
             title: 'Smashify',
             description: descriptions[type] || 'Smashify Payment',
@@ -311,7 +342,23 @@ async function startServer() {
       if (!response.ok) {
         console.error('[API] PayChangu Failed:', payload);
         await supabaseAdmin.from('transactions').delete().eq('paychangu_ref', tx_ref);
-        throw new Error(payload.message || 'PayChangu initialization failed');
+        
+        let errorMsg = 'PayChangu initialization failed';
+        if (payload?.message) {
+          if (typeof payload.message === 'string') {
+            errorMsg = payload.message;
+          } else if (typeof payload.message === 'object') {
+            errorMsg = Object.entries(payload.message)
+              .map(([key, value]) => {
+                const formattedVal = Array.isArray(value) ? value.join(', ') : String(value);
+                return `${key}: ${formattedVal}`;
+              })
+              .join('; ');
+          }
+        } else if (payload?.error) {
+          errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
+        }
+        throw new Error(errorMsg);
       }
 
       if (!payload.data?.checkout_url) {
