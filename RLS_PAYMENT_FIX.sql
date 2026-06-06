@@ -19,10 +19,8 @@ CREATE TABLE IF NOT EXISTS public.transactions (
   completed_at TIMESTAMPTZ
 );
 
--- 1. Ensure transactions type constraint is broad enough
+-- 1. Drop transactions type constraint to allow all transaction types
 ALTER TABLE public.transactions DROP CONSTRAINT IF EXISTS transactions_type_check;
-ALTER TABLE public.transactions ADD CONSTRAINT transactions_type_check 
-CHECK (type IN ('sale', 'donation', 'subscription', 'withdrawal', 'promotion', 'other'));
 
 -- 2. Allow ANON inserts to transactions
 DROP POLICY IF EXISTS "transactions_anon_insert" ON transactions;
