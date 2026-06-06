@@ -178,7 +178,10 @@ async function startServer() {
     '/api/functions/v1/process-payout', 
     '/api/functions/process-payout',
     '/api/functions/v1/verify-payment',
-    '/api/functions/verify-payment'
+    '/api/functions/verify-payment',
+    '/api/pay/create-payment',
+    '/api/pay/process-payout',
+    '/api/pay/verify-payment'
   ], (req, res) => {
     res.sendStatus(204);
   });
@@ -325,6 +328,7 @@ async function startServer() {
 
   app.post('/api/functions/v1/create-payment', handleCreatePayment);
   app.post('/api/functions/create-payment', handleCreatePayment);
+  app.post('/api/pay/create-payment', handleCreatePayment);
 
   // 3. Verify Payment
   const handleVerifyPayment = async (req: express.Request, res: express.Response) => {
@@ -605,6 +609,7 @@ async function startServer() {
 
   app.post('/api/functions/v1/verify-payment', handleVerifyPayment);
   app.post('/api/functions/verify-payment', handleVerifyPayment);
+  app.post('/api/pay/verify-payment', handleVerifyPayment);
 
   // 2. Process Payout
   const handleProcessPayout = async (req: express.Request, res: express.Response) => {
@@ -685,6 +690,7 @@ async function startServer() {
 
   app.post('/api/functions/v1/process-payout', handleProcessPayout);
   app.post('/api/functions/process-payout', handleProcessPayout);
+  app.post('/api/pay/process-payout', handleProcessPayout);
 
   // New endpoint for admin to manually update payout status
   app.post('/api/admin/payouts/:id/status', async (req, res) => {
