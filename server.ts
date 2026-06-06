@@ -85,20 +85,23 @@ async function startServer() {
   }
 
   let supabaseAdmin: any = null;
-  if (!SUPABASE_SERVICE_ROLE_KEY || 
-      SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPABASE_SERVICE_ROLE_KEY' ||
-      SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPA_ADMIN_KEY') {
-    console.error('CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set.');
-    console.error('Server cannot perform admin operations safely. Admin endpoints will fail.');
-    console.error('Set SUPABASE_SERVICE_ROLE_KEY within the container environment state.');
-  } else {
-    const adminKey = SUPABASE_SERVICE_ROLE_KEY;
-    if (SUPABASE_URL && adminKey) {
+  if (SUPABASE_URL) {
+    const adminKey = (!SUPABASE_SERVICE_ROLE_KEY || 
+        SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPABASE_SERVICE_ROLE_KEY' ||
+        SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPA_ADMIN_KEY') 
+        ? process.env.VITE_SUPABASE_ANON_KEY 
+        : SUPABASE_SERVICE_ROLE_KEY;
+
+    if (adminKey) {
       try {
         supabaseAdmin = createClient(SUPABASE_URL, adminKey);
-        console.log('[Server] Service role key loaded successfully.');
+        if (adminKey === process.env.VITE_SUPABASE_ANON_KEY) {
+          console.warn('[Server] WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Falling back to VITE_SUPABASE_ANON_KEY. Admin bypass will be restricted.');
+        } else {
+          console.log('[Server] Supabase client initialized successfully.');
+        }
       } catch (err) {
-        console.error('Failed to initialize Supabase Admin:', err);
+        console.error('Failed to initialize Supabase client:', err);
       }
     }
   }
