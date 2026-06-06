@@ -46,7 +46,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
+      `/api/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
@@ -253,7 +253,7 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
+      `/api/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
@@ -295,7 +295,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/verify-payment`,
+      `/api/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
@@ -307,11 +307,19 @@ export async function verifyPayment(tx_ref: string) {
       }
     );
     
+    const resText = await response.text();
+    let resData;
+    try {
+      resData = JSON.parse(resText);
+    } catch (e) {
+      console.error('Verify Payment JSON Parse Error', resText);
+    }
+
     if (!response.ok) {
-      throw new Error('Failed to verify payment');
+      throw new Error(resData?.error || 'Failed to verify payment');
     }
     
-    return await response.json();
+    return resData;
   } catch (err: any) {
     console.error('Verify payment error:', err);
     throw err;
