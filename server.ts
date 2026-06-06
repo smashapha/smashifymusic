@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
+import crypto from 'crypto';
 
 console.log('--- SERVER.TS BOOTING ---');
 
@@ -33,7 +34,11 @@ async function startServer() {
     origin: true,
     credentials: true
   }));
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    }
+  }));
 
   // Log all API requests
   app.use('/api', (req, res, next) => {
@@ -126,6 +131,39 @@ async function startServer() {
       return null;
     }
     return user;
+  };
+
+  // Helper to verify PayChangu Webhook Signatures
+  const verifyPayChanguSignature = (req: express.Request): boolean => {
+    const signature = req.headers['x-paychangu-signature'] as string;
+    if (!signature) {
+      console.error('[SIGNATURE] Missing x-paychangu-signature header');
+      return false;
+    }
+    
+    const webhookSecret = process.env.PAYCHANGU_WEBHOOK_SECRET || PAYCHANGU_SECRET_KEY;
+    if (!webhookSecret) {
+      console.error('[SIGNATURE] Webhook secret not configured');
+      return false;
+    }
+
+    const rawBody = (req as any).rawBody;
+    if (!rawBody) {
+      console.error('[SIGNATURE] Raw body is missing - cannot verify signature');
+      return false;
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('hex');
+
+      return expectedSignature === signature;
+    } catch (e) {
+      console.error('[SIGNATURE] Error computing signature HMAC:', e);
+      return false;
+    }
   };
 
   // --- API ROUTES (Functions) ---
@@ -441,6 +479,12 @@ async function startServer() {
   app.post('/api/functions/payout-webhook', async (req, res) => {
     try {
       if (!supabaseAdmin) throw new Error('Supabase Admin not initialized');
+
+      if (!verifyPayChanguSignature(req)) {
+        console.error('[PAYOUT WEBHOOK] Invalid PayChangu payout signature');
+        return res.status(401).send('Invalid signature');
+      }
+
       const { reference, status, amount } = req.body;
 
       const { data: payout, error: payoutError } = await supabaseAdmin
@@ -504,6 +548,11 @@ async function startServer() {
   // 4. Send SMS
   app.post('/api/functions/send-sms', async (req, res) => {
     try {
+      const user = await verifyUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized route access' });
+      }
+
       const { to, message } = req.body;
       if (!to || !message) throw new Error("Missing recipient or message");
 
@@ -532,6 +581,12 @@ async function startServer() {
   app.post('/api/paychangu-webhook', async (req, res) => {
     try {
       if (!supabaseAdmin) throw new Error('Supabase Admin not initialized');
+
+      if (!verifyPayChanguSignature(req)) {
+        console.error('[WEBHOOK] Invalid PayChangu payment signature');
+        return res.status(401).send('Invalid signature');
+      }
+
       const payload = req.body;
       const tx_ref = payload.tx_ref || payload.transaction_reference || payload.reference;
       const status = payload.status;

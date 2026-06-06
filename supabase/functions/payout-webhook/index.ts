@@ -1,13 +1,49 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts"
 
+const PAYCHANGU_WEBHOOK_SECRET = Deno.env.get("PAYCHANGU_WEBHOOK_SECRET") || Deno.env.get("PAYCHANGU_SECRET_KEY")
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
 serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
-    const body = await req.json()
+    const bodyText = await req.text()
+
+    // 1. Verify Webhook Signature
+    if (!PAYCHANGU_WEBHOOK_SECRET) {
+      console.error("WEBHOOK_SECRET is not configured — rejecting request")
+      return new Response("Webhook secret not configured", { status: 500 })
+    }
+
+    const signature = req.headers.get("x-paychangu-signature")
+    if (!signature) {
+      console.error("Payout Webhook: Missing signature header")
+      return new Response("Unauthorized - Missing Signature", { status: 401 })
+    }
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    )
+    const signatureBytes = hexToBytes(signature)
+    const isValid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      signatureBytes,
+      new TextEncoder().encode(bodyText),
+    )
+
+    if (!isValid) {
+      console.error("Payout Webhook: Invalid signature")
+      return new Response("Invalid signature", { status: 401 })
+    }
+
+    const body = JSON.parse(bodyText)
     console.log("Payout Webhook received:", body)
     
     // Handle both direct and nested data patterns
@@ -89,3 +125,11 @@ serve(async (req) => {
     return new Response('Ok', { status: 200 })
   }
 })
+
+function hexToBytes(hex: string) {
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16)
+  }
+  return bytes
+}

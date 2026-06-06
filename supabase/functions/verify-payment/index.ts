@@ -26,6 +26,26 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    
+    // Auth Check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const url = new URL(req.url);
     let tx_ref = url.searchParams.get("tx_ref");
     if (req.method === "POST") {
@@ -44,7 +64,7 @@ serve(async (req) => {
 
     console.log(`Verifying payment for: ${tx_ref}`);
 
-    // 1. Check DB First
+    // Check DB First
     const { data: dbTx, error: dbError } = await supabase
       .from("transactions")
       .select("*")
@@ -59,6 +79,33 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
+    }
+
+    // Role Ownership check: Only user, artist, or system admin can trigger this
+    if (dbTx.fan_id !== user.id && dbTx.artist_id !== user.id) {
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const { data: adminUserProfile } = await supabase
+        .from("user_profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const isAdmin = adminProfile?.is_admin === true || adminUserProfile?.is_admin === true;
+
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized access to verify this transaction" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     if (dbTx.status === "completed" || dbTx.status === "failed") {
