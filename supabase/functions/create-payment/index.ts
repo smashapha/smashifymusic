@@ -211,9 +211,28 @@ Deno.serve(async (req) => {
     const platformFee = Math.round(finalAmount * platformFeeRate);
     const netAmount = finalAmount - platformFee;
 
+    // Ensure the fan_id exists in user_profiles to satisfy foreign key constraints (since artists might not have a user_profile record)
+    const txFanId = meta.userId || user.id;
+    const { data: existingFan } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("id", txFanId)
+      .maybeSingle();
+
+    if (!existingFan) {
+      console.log(`Payer ${txFanId} not found in user_profiles. Creating shadow user_profile for transactions support.`);
+      await supabase.from("user_profiles").upsert({
+        id: txFanId,
+        full_name: first_name || last_name ? `${first_name} ${last_name}`.trim() : "Smashify Artist",
+        email: email || user.email || "",
+        user_type: "listener",
+        subscription_tier: "free"
+      });
+    }
+
     const { error: txError } = await supabase.from("transactions").insert({
       artist_id: meta.artistId || null,
-      fan_id: meta.userId || user.id,
+      fan_id: txFanId,
       type: dbType,
       gross_amount: finalAmount,
       status: "pending",

@@ -223,10 +223,29 @@ async function startServer() {
          txArtistId = meta.userId || user.id; // Attribute to artist 
       }
 
+      // Ensure the fan_id exists in user_profiles to satisfy foreign key constraints (since artists might not have a user_profile record)
+      const txFanId = meta.userId || user.id;
+      const { data: existingFan } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id')
+        .eq('id', txFanId)
+        .maybeSingle();
+
+      if (!existingFan) {
+        console.log(`Payer ${txFanId} not found in user_profiles. Creating shadow user_profile for transactions support.`);
+        await supabaseAdmin.from('user_profiles').upsert({
+          id: txFanId,
+          full_name: first_name || last_name ? `${first_name} ${last_name}`.trim() : "Smashify Artist",
+          email: email || user.email || "",
+          user_type: 'listener',
+          subscription_tier: 'free'
+        });
+      }
+
       // Create Pending Transaction
       const { error: txError } = await supabaseAdmin.from('transactions').insert({
         artist_id: txArtistId,
-        fan_id: meta.userId || user.id,
+        fan_id: txFanId,
         type: dbType,
         gross_amount: amount,
         net_amount: amount * 0.85,
