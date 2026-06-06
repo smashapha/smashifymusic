@@ -15,7 +15,8 @@ const PaymentSuccess = () => {
   const [status, setStatus] = useState<'loading' | 'confirmed' | 'pending'>('loading');
   const [details, setDetails] = useState<any>(null);
 
-  const tx_ref = searchParams.get('tx_ref');
+  const raw_tx_ref = searchParams.get('tx_ref');
+  const tx_ref = raw_tx_ref ? raw_tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '') : null;
   const type = tx_ref?.split('-')[1];
   const urlStatus = searchParams.get('status');
 

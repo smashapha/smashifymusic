@@ -55,6 +55,10 @@ serve(async (req) => {
       } catch (_) {}
     }
 
+    if (tx_ref && typeof tx_ref === "string") {
+      tx_ref = tx_ref.trim().replace(/\/$/, "").replace(/^["']|["']$/g, "");
+    }
+
     if (!tx_ref) {
       return new Response(JSON.stringify({ error: "Missing tx_ref" }), {
         status: 400,

@@ -389,9 +389,13 @@ async function startServer() {
         return res.status(401).json({ error: 'Unauthorized route access' });
       }
 
-      const tx_ref = req.body.tx_ref || req.query.tx_ref;
+      let tx_ref = req.body.tx_ref || req.query.tx_ref;
       if (!tx_ref) {
         return res.status(400).json({ error: 'Missing tx_ref' });
+      }
+
+      if (typeof tx_ref === 'string') {
+        tx_ref = tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
       }
 
       console.log(`[API] Verifying payment for ref: ${tx_ref}`);

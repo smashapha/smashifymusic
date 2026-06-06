@@ -100,22 +100,36 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     // Direct browser redirect or open new tab. PayChangu prevents iframe embeddings via X-Frame-Options/CSP.
     setTimeout(() => {
       try {
+        const sanitizedRef = tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
         if (window.self !== window.top) {
-          // Inside an iframe (like standard AI Studio play sandbox), open search in new tab
+          // Inside an iframe (like standard AI Studio play sandbox), open search in a new tab
+          const opened = window.open(data.checkout_url, '_blank');
+          if (!opened) {
+            // Popup blocker blocked it. Launch fallback modal inside the app!
+            if ((window as any).__smashifyShowPayment) {
+              (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
+            } else {
+              window.location.href = data.checkout_url;
+            }
+          }
+        } else {
+          // Deployed/Direct browser access: open in a new tab for elegant flow 
+          // and display local companion overlay so the backing page checks background status on fallback/polling
           const opened = window.open(data.checkout_url, '_blank');
           if (!opened) {
             window.location.href = data.checkout_url;
+          } else {
+            if ((window as any).__smashifyShowPayment) {
+              (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
+            }
           }
-        } else {
-          // Deployed/Direct browser access: Redirect the same tab
-          window.location.href = data.checkout_url;
         }
       } catch (e) {
         window.location.href = data.checkout_url;
       }
     }, 1000);
 
-    return { checkout_url: data.checkout_url, tx_ref };
+    return { checkout_url: data.checkout_url, tx_ref: tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '') };
   } catch (err: any) {
     console.error('Payment error:', err);
     toast.error(err.message || 'Payment initialization failed', { id: toastId });
@@ -318,6 +332,7 @@ export async function requestPayout({
  */
 export async function verifyPayment(tx_ref: string) {
   try {
+    const sanitizedRef = (tx_ref || '').trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
       getApiUrl(`/api/pay/verify-payment`),
@@ -328,7 +343,7 @@ export async function verifyPayment(tx_ref: string) {
           'Authorization': `Bearer ${session?.access_token || ''}`,
           'apikey': SUPABASE_ANON_KEY
         },
-        body: JSON.stringify({ tx_ref })
+        body: JSON.stringify({ tx_ref: sanitizedRef })
       }
     );
     
