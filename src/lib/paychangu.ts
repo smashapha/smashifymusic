@@ -43,18 +43,38 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       .join('')
     const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${randomHex}-${Date.now()}`;
     
-    const { data, error } = await supabase.functions.invoke('create-payment', {
-      body: {
-        ...params,
-        tx_ref,
-        currency: 'MWK',
-        cancel_url: `${APP_URL}/payment-failed?type=${params.type.toUpperCase()}&tx_ref=${tx_ref}`
-      }
-    });
+    const session = (await supabase.auth.getSession()).data.session;
 
-    if (error) {
-       console.error("Payment Function Error:", error);
-       throw new Error(error.message || 'Failed to initialize payment');
+    const response = await fetch(
+      `/api/pay/create-payment`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          ...params,
+          tx_ref,
+          currency: 'MWK',
+          cancel_url: `${APP_URL}/payment-failed?type=${params.type.toUpperCase()}&tx_ref=${tx_ref}`
+        })
+      }
+    );
+
+    const textToLog = await response.text();
+    let data;
+    try {
+      data = JSON.parse(textToLog);
+    } catch (e) {
+      console.error("Failed to parse response JSON. Raw text:", textToLog);
+      throw new Error(`Server returned invalid response format. Status: ${response.status}`);
+    }
+
+    if (!response.ok) {
+       console.error("Payment Function Error:", data);
+       throw new Error(data.error || data.message || 'Failed to initialize payment');
     }
     
     if (!data?.checkout_url) {
@@ -230,13 +250,33 @@ export async function requestPayout({
   const toastId = toast.loading('Processing withdrawal...');
   
   try {
-    const { data, error } = await supabase.functions.invoke('process-payout', {
-      body: { amount, phone, network }
-    });
+    const session = (await supabase.auth.getSession()).data.session;
+    
+    const response = await fetch(
+      `/api/pay/process-payout`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ amount, phone, network })
+      }
+    );
+    
+    const textToLog = await response.text();
+    let data: any;
+    try {
+      data = JSON.parse(textToLog);
+    } catch (e) {
+      console.error("Payout JSON Parse Error. Raw text:", textToLog);
+      throw new Error(`Server returned invalid payout response. Status: ${response.status}`);
+    }
 
-    if (error) {
-      console.error("Payout Function Error:", error);
-      throw new Error(error.message || 'Withdrawal failed on server');
+    if (!response.ok) {
+      console.error("Payout Function Error:", data);
+      throw new Error(data.error || data.message || 'Withdrawal failed on server');
     }
     
     toast.success(data.message || 'Withdrawal request submitted! Please wait for a moment while we verify your payout.', { id: toastId, duration: 6000 });
@@ -253,15 +293,33 @@ export async function requestPayout({
  */
 export async function verifyPayment(tx_ref: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('verify-payment', {
-      body: { tx_ref }
-    });
+    const session = (await supabase.auth.getSession()).data.session;
+    const response = await fetch(
+      `/api/pay/verify-payment`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ tx_ref })
+      }
+    );
+    
+    const resText = await response.text();
+    let resData;
+    try {
+      resData = JSON.parse(resText);
+    } catch (e) {
+      console.error('Verify Payment JSON Parse Error', resText);
+    }
 
-    if (error) {
-      throw new Error(error.message || 'Failed to verify payment');
+    if (!response.ok) {
+      throw new Error(resData?.error || 'Failed to verify payment');
     }
     
-    return data;
+    return resData;
   } catch (err: any) {
     console.error('Verify payment error:', err);
     throw err;
