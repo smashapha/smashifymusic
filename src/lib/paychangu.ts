@@ -44,9 +44,8 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${randomHex}-${Date.now()}`;
     
     const session = (await supabase.auth.getSession()).data.session;
-
     const response = await fetch(
-      `/api/pay/create-payment`,
+      `${SUPABASE_URL}/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
@@ -62,19 +61,19 @@ export async function initiatePayment(params: InitiatePaymentParams) {
         })
       }
     );
-
+    
     const textToLog = await response.text();
-    let data;
+    let data: any;
     try {
       data = JSON.parse(textToLog);
-    } catch (e) {
-      console.error("Failed to parse response JSON. Raw text:", textToLog);
-      throw new Error(`Server returned invalid response format. Status: ${response.status}`);
+    } catch(e) {
+      console.error("Failed to parse edge function response:", textToLog);
+      throw new Error(`Edge Function returned non-JSON. Status: ${response.status}`);
     }
 
     if (!response.ok) {
-       console.error("Payment Function Error:", data);
-       throw new Error(data.error || data.message || 'Failed to initialize payment');
+       console.error("Payment Edge Function Error:", data);
+       throw new Error(data.error || data.message || `Payment initialization failed: ${response.status}`);
     }
     
     if (!data?.checkout_url) {
@@ -253,7 +252,7 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `/api/pay/process-payout`,
+      `${SUPABASE_URL}/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
@@ -271,12 +270,12 @@ export async function requestPayout({
       data = JSON.parse(textToLog);
     } catch (e) {
       console.error("Payout JSON Parse Error. Raw text:", textToLog);
-      throw new Error(`Server returned invalid payout response. Status: ${response.status}`);
+      throw new Error(`Edge Function returned non-JSON. Status: ${response.status}`);
     }
 
     if (!response.ok) {
       console.error("Payout Function Error:", data);
-      throw new Error(data.error || data.message || 'Withdrawal failed on server');
+      throw new Error(data.error || data.message || `Withdrawal failed: ${response.status}`);
     }
     
     toast.success(data.message || 'Withdrawal request submitted! Please wait for a moment while we verify your payout.', { id: toastId, duration: 6000 });
@@ -295,7 +294,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `/api/pay/verify-payment`,
+      `${SUPABASE_URL}/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
@@ -316,7 +315,7 @@ export async function verifyPayment(tx_ref: string) {
     }
 
     if (!response.ok) {
-      throw new Error(resData?.error || 'Failed to verify payment');
+      throw new Error(resData?.error || resData?.message || `Failed to verify payment: ${response.status}`);
     }
     
     return resData;
