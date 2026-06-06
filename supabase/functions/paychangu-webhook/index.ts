@@ -329,7 +329,7 @@ serve(async (req) => {
             {
               id: listenerId,
               subscription_tier: subTierName,
-              subscription_ends: subEnds.toISOString(),
+              subscription_expires_at: subEnds.toISOString(),
             },
             { onConflict: "id" },
           );
@@ -379,7 +379,7 @@ serve(async (req) => {
               {
                 id: userId,
                 subscription_tier: "Premium",
-                subscription_ends: artistTierEnds.toISOString(),
+                subscription_expires_at: artistTierEnds.toISOString(),
               },
               { onConflict: "id" },
             );

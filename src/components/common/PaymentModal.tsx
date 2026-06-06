@@ -35,12 +35,18 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
         console.log('[PaymentModal] Checkout successfully opened in a new tab.')
       } else {
         console.warn('[PaymentModal] Popup was blocked. User must click manually.')
+        if ((window as any).__smashifyShowPayment) {
+          (window as any).__smashifyShowPayment(checkoutUrl, cleanRef)
+        } else {
+          window.location.href = checkoutUrl
+        }
       }
     }
   }, [checkoutUrl, redirectAttempted])
 
   // Real-time Database Status Tracker (Polling)
   useEffect(() => {
+    console.log('[PaymentModal] Polling for paychangu_ref:', cleanRef);
     const checkPaymentStatus = async () => {
       try {
         const { data: tx, error } = await supabase
@@ -63,8 +69,8 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
     // Run immediately on mount
     checkPaymentStatus()
 
-    // Poll every 2.5 seconds (gentle check rate)
-    const pollInterval = setInterval(checkPaymentStatus, 2500)
+    // Poll every 3 seconds (gentle check rate)
+    const pollInterval = setInterval(checkPaymentStatus, 3000)
 
     return () => clearInterval(pollInterval)
   }, [cleanRef, onSuccess])

@@ -31,19 +31,6 @@ const APP_URL = (envAppUrl && envAppUrl !== 'YOUR_APP_URL') ? envAppUrl : window
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const isLocalEnv = 
-  window.location.hostname === 'localhost' || 
-  window.location.hostname === '127.0.0.1' || 
-  window.location.hostname.endsWith('.run.app');
-
-const getApiUrl = (path: string) => {
-  if (isLocalEnv) {
-    return path;
-  }
-  const functionName = path.replace('/api/pay/', '');
-  return `${SUPABASE_URL}/functions/v1/${functionName}`;
-};
-
 /**
  * Common function to initiate payment via Supabase Edge Functions
  */
@@ -58,7 +45,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      getApiUrl(`/api/pay/create-payment`),
+      `${SUPABASE_URL}/functions/v1/create-payment`,
       {
         method: 'POST',
         headers: {
@@ -292,7 +279,7 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      getApiUrl(`/api/pay/process-payout`),
+      `${SUPABASE_URL}/functions/v1/process-payout`,
       {
         method: 'POST',
         headers: {
@@ -335,7 +322,7 @@ export async function verifyPayment(tx_ref: string) {
     const sanitizedRef = (tx_ref || '').trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      getApiUrl(`/api/pay/verify-payment`),
+      `${SUPABASE_URL}/functions/v1/verify-payment`,
       {
         method: 'POST',
         headers: {
