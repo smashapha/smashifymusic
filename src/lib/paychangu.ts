@@ -46,12 +46,12 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const session = (await supabase.auth.getSession()).data.session;
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
+      `/api/pay/create-payment`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.access_token || ''}`,
           'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
@@ -253,12 +253,12 @@ export async function requestPayout({
     const session = (await supabase.auth.getSession()).data.session;
     
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
+      `/api/pay/process-payout`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.access_token || ''}`,
           'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({ amount, phone, network })
@@ -295,7 +295,7 @@ export async function verifyPayment(tx_ref: string) {
   try {
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/verify-payment`,
+      `/api/pay/verify-payment`,
       {
         method: 'POST',
         headers: {
