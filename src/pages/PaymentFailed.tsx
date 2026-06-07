@@ -6,7 +6,7 @@ import { XCircle, RefreshCw, MessageCircle, ArrowLeft } from 'lucide-react';
 const PaymentFailed = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const tx_ref = searchParams.get('tx_ref');
+  const tx_ref = searchParams.get('app_ref') || searchParams.get('tx_ref') || searchParams.get('reference');
 
   const type = searchParams.get('type') || ''
   const getRetryPath = () => {

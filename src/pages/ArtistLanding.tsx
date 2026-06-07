@@ -424,7 +424,7 @@ const ArtistLanding: React.FC = () => {
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
-                     "10 uploads per year",
+                     "10 uploads per 6 months",
                      "Sell tracks to fans",
                      "Accept fan subscriptions",
                      "10% fee on tips & sales",
@@ -450,12 +450,12 @@ const ArtistLanding: React.FC = () => {
                 <div className="absolute top-6 right-0 bg-smash-purple text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest">MOST POPULAR</div>
                 <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-smash-purple">Standard</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                   <span className="text-4xl font-studio font-bold text-white">13,000</span>
+                   <span className="text-4xl font-studio font-bold text-white">16,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
-                     "30 uploads per year",
+                     "15 uploads per 6 months",
                      "Sell tracks + fan subscriptions",
                      "7% fee on tips & sales",
                      "1 free featured placement/month",
@@ -481,12 +481,12 @@ const ArtistLanding: React.FC = () => {
              <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
                 <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Elite</h3>
                 <div className="flex items-baseline gap-2 mb-8">
-                   <span className="text-4xl font-studio font-bold text-white">24,000</span>
+                   <span className="text-4xl font-studio font-bold text-white">27,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
-                     "Unlimited uploads",
+                     "25 uploads per 6 months",
                      "All Standard features included",
                      "5% fee on tips & sales",
                      "3 free featured placements/month",

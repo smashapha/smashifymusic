@@ -315,13 +315,27 @@ serve(async (req) => {
         break;
       }
 
+      case "LISTENER_DAILY_PASS":
+      case "LISTENER_WEEKLY_PASS":
       case "LISTENER_PREMIUM":
-      case "LISTENER_FAMILY":
+      case "LISTENER_FAMILY": {
+        const planDurations: Record<string, number> = {
+          LISTENER_DAILY_PASS:  1,
+          LISTENER_WEEKLY_PASS: 7,
+          LISTENER_PREMIUM:     30,
+          LISTENER_FAMILY:      30,
+        };
+        const tierNameMap: Record<string, string> = {
+          LISTENER_DAILY_PASS:  "DailyPass",
+          LISTENER_WEEKLY_PASS: "WeeklyPass",
+          LISTENER_PREMIUM:     "Premium",
+          LISTENER_FAMILY:      "Family",
+        };
+        const days = planDurations[type] || 30;
+        const subTierName = tierNameMap[type] || "Premium";
         const subEnds = new Date();
-        subEnds.setDate(subEnds.getDate() + 30);
-        const subTierName = type === "LISTENER_PREMIUM" ? "Premium" : "Family";
+        subEnds.setDate(subEnds.getDate() + days);
         const listenerId = userId || meta.fan_id || meta.userId;
-        console.log("Upgrading listener:", listenerId, "to tier:", subTierName);
 
         const { error: listenerTierError } = await supabase
           .from("user_profiles")
@@ -337,9 +351,10 @@ serve(async (req) => {
         if (listenerTierError) {
           console.error("Listener tier update error:", listenerTierError);
         } else {
-          console.log("Listener tier updated successfully");
+          console.log("Listener upgraded to", subTierName, "for", days, "days");
         }
         break;
+      }
 
       case "ARTIST_RISING_STAR":
       case "ARTIST_STANDARD":

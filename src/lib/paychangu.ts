@@ -3,6 +3,8 @@ import { Song, UserProfile } from '../types';
 import toast from 'react-hot-toast';
 
 export type PaymentType = 
+  | 'listener_daily_pass'
+  | 'listener_weekly_pass'
   | 'listener_premium' 
   | 'listener_family' 
   | 'artist_rising_star' 
@@ -134,7 +136,7 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
     first_name: user.full_name?.split(' ')[0] || 'Fan',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'track_purchase',
-    return_url: `${APP_URL}/purchase-success?song_id=${song.id}&tx_ref=`,
+    return_url: `${APP_URL}/purchase-success?song_id=${song.id}`,
     meta: {
       userId: user.id,
       songId: song.id,
@@ -158,7 +160,7 @@ export async function sendTip({ artist, fan, amount, anonymous = false }: { arti
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'tip',
-    return_url: `${APP_URL}/tip-success?artist_id=${artist.id}&tx_ref=`,
+    return_url: `${APP_URL}/tip-success?artist_id=${artist.id}`,
     meta: {
       userId: fan.id,
       artistId: artist.id,
@@ -179,7 +181,7 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'fan_subscription',
-    return_url: `${APP_URL}/subscribe-success?artist_id=${artist.id}&tx_ref=`,
+    return_url: `${APP_URL}/subscribe-success?artist_id=${artist.id}`,
     meta: {
       userId: fan.id,
       artistId: artist.id
@@ -191,9 +193,24 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
  * Upgrade listener account to Premium or Family
  */
 export async function upgradeListenerPlan({ user, plan }: { user: any; plan: string }) {
-  const normalizedPlan = plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
-  const amount = normalizedPlan === 'Premium' ? 750 : 3500;
-  const type = normalizedPlan === 'Premium' ? 'listener_premium' : 'listener_family';
+  const normalizedPlan = plan;
+  
+  const planAmounts: Record<string, number> = {
+    'DailyPass': 150,
+    'WeeklyPass': 700,
+    'Premium': 2000,
+    'Family': 5000,
+  };
+  const amount = planAmounts[normalizedPlan];
+  if (!amount) throw new Error(`Unknown listener plan: ${normalizedPlan}`);
+
+  const typeMap: Record<string, PaymentType> = {
+    'DailyPass': 'listener_daily_pass',
+    'WeeklyPass': 'listener_weekly_pass',
+    'Premium': 'listener_premium',
+    'Family': 'listener_family'
+  };
+  const type = typeMap[normalizedPlan] || 'listener_premium';
 
   return initiatePayment({
     amount,
@@ -201,7 +218,7 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
     first_name: user.full_name?.split(' ')[0] || 'Listener',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/upgrade-success?plan=${normalizedPlan}&tx_ref=`,
+    return_url: `${APP_URL}/upgrade-success?plan=${normalizedPlan}`,
     meta: {
       userId: user.id,
       plan: normalizedPlan,
@@ -216,8 +233,8 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
 export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile; tier: 'RisingStar' | 'Standard' | 'Elite' }) {
   const tierPricing: Record<string, number> = {
     'RisingStar': 8000,
-    'Standard': 13000,
-    'Elite': 24000
+    'Standard': 16000,
+    'Elite': 27000
   };
   
   const amount = tierPricing[tier];
@@ -234,7 +251,7 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/tier-success?tier=${tier}&tx_ref=`,
+    return_url: `${APP_URL}/tier-success?tier=${tier}`,
     meta: {
       userId: artist.id,
       tier,
@@ -253,7 +270,7 @@ export async function payForAdCampaign({ artist, plays, amount }: { artist: User
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'artist_ad_campaign',
-    return_url: `${APP_URL}/ad-success?tx_ref=`,
+    return_url: `${APP_URL}/ad-success`,
     meta: {
       userId: artist.id,
       plays

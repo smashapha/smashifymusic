@@ -76,8 +76,9 @@ serve(async (req) => {
       .single();
 
     if (dbError || !dbTx) {
+      console.error("verify-payment DB Error: ", dbError, "tx_ref:", tx_ref);
       return new Response(
-        JSON.stringify({ error: "Transaction not found in our database" }),
+        JSON.stringify({ error: "Transaction not found in our database", details: dbError }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -259,21 +260,46 @@ serve(async (req) => {
               });
               break;
             }
+            case "LISTENER_DAILY_PASS":
+            case "LISTENER_WEEKLY_PASS":
             case "LISTENER_PREMIUM":
-            case "LISTENER_FAMILY":
+            case "LISTENER_FAMILY": {
+              const planDurations: Record<string, number> = {
+                LISTENER_DAILY_PASS:  1,
+                LISTENER_WEEKLY_PASS: 7,
+                LISTENER_PREMIUM:     30,
+                LISTENER_FAMILY:      30,
+              };
+              const tierNameMap: Record<string, string> = {
+                LISTENER_DAILY_PASS:  "DailyPass",
+                LISTENER_WEEKLY_PASS: "WeeklyPass",
+                LISTENER_PREMIUM:     "Premium",
+                LISTENER_FAMILY:      "Family",
+              };
+              const days = planDurations[type] || 30;
+              const subTierName = tierNameMap[type] || "Premium";
               const subEnds = new Date();
-              subEnds.setDate(subEnds.getDate() + 30);
-              const subTierName =
-                type === "LISTENER_PREMIUM" ? "Premium" : "Family";
-              await supabase.from("user_profiles").upsert(
-                {
-                  id: userId,
-                  subscription_tier: subTierName,
-                  subscription_expires_at: subEnds.toISOString(),
-                },
-                { onConflict: "id" },
-              );
+              subEnds.setDate(subEnds.getDate() + days);
+              const listenerId = userId || meta.fan_id || meta.userId;
+
+              const { error: listenerTierError } = await supabase
+                .from("user_profiles")
+                .upsert(
+                  {
+                    id: listenerId,
+                    subscription_tier: subTierName,
+                    subscription_expires_at: subEnds.toISOString(),
+                  },
+                  { onConflict: "id" },
+                );
+
+              if (listenerTierError) {
+                console.error("Listener tier update error:", listenerTierError);
+              } else {
+                console.log("Listener upgraded to", subTierName, "for", days, "days");
+              }
               break;
+            }
             case "ARTIST_RISING_STAR":
             case "ARTIST_STANDARD":
             case "ARTIST_ELITE":

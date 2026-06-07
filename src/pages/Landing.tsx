@@ -675,7 +675,7 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-smash-orange/8 border-t border-b border-smash-orange/15 py-24 px-6 rounded-[40px] mb-20 text-center">
              <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-studio font-black uppercase text-white leading-tight mb-4">Stream free forever.</h2>
-             <p className="text-[18px] font-sans text-white/60 mb-10 max-w-xl mx-auto">Or go Premium for MK 750/month to unlock the full potential of Smahify.</p>
+             <p className="text-[18px] font-sans text-white/60 mb-10 max-w-xl mx-auto">Or go Premium for MK 2,000/month to unlock the full potential of Smahify.</p>
              <div className="flex flex-wrap items-center justify-center gap-4">
                 <button className="h-[52px] px-10 bg-smash-orange text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest shadow-xl shadow-smash-orange/20">Upgrade Now</button>
                 <button className="h-[52px] px-10 bg-transparent border-2 border-white text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest hover:bg-white hover:text-black transition-colors">Compare Plans</button>
@@ -697,7 +697,7 @@ const Landing: React.FC = () => {
              />
              <PricingCard 
                 title="Premium" 
-                price="750" 
+                price="2,000" 
                 badge="MOST POPULAR"
                 onAction={() => navigate('/auth/listener?mode=signup')}
                 features={[
@@ -711,7 +711,7 @@ const Landing: React.FC = () => {
              />
              <PricingCard 
                 title="Family" 
-                price="3,500" 
+                price="5,000" 
                 onAction={() => navigate('/auth/listener?mode=signup')}
                 features={[
                   "5 Premium accounts included", 

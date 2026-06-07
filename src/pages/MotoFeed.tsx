@@ -828,7 +828,7 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
           >
              <div className="text-left">
                 <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Skip ads forever</p>
-                <p className="text-sm font-black italic text-white uppercase tracking-tight">Premium MK 750/month</p>
+                <p className="text-sm font-black italic text-white uppercase tracking-tight">Premium MK 2,000/month</p>
              </div>
              <button 
                onClick={() => navigate('/pricing')} 

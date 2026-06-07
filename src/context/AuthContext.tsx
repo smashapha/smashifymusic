@@ -273,6 +273,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: existing } = await supabase.from('user_profiles').select('id').eq('id', userId).maybeSingle();
           if (existing) return;
 
+          // Do not create a listener profile if this user is already an artist
+          const { data: existingArtistCheck } = await supabase.from('profiles').select('id, user_type').eq('id', userId).maybeSingle();
+          if (existingArtistCheck && (existingArtistCheck.user_type === 'artist' || existingArtistCheck.user_type === 'pending')) return;
+
           const { data: existingArtist } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
           let listenerTier = 'free';
           let listenerEnds: string | null = null;

@@ -1389,16 +1389,16 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const limits = getTierLimits(userProfile);
 
   const isFree = getArtistTier(userProfile) === 'free';
-  const startOfYear = new Date();
-  startOfYear.setMonth(0, 1);
-  startOfYear.setHours(0, 0, 0, 0);
-  const songsUploadedThisYear = songs.filter((s: any) => {
+  const startOfPeriod = new Date();
+  startOfPeriod.setMonth(startOfPeriod.getMonth() - 6);
+  startOfPeriod.setHours(0, 0, 0, 0);
+  const songsUploadedThisPeriod = songs.filter((s: any) => {
     const createdDate = new Date(s.created_at);
-    return createdDate >= startOfYear;
+    return createdDate >= startOfPeriod;
   }).length;
   const totalSongsUploaded = songs.length;
-  // Enforce yearly uploads strictly
-  const canUploadMore = (limits as any).yearlyUploads === Infinity ? true : songsUploadedThisYear < (limits as any).yearlyUploads;
+  // Enforce 6 month uploads strictly
+  const canUploadMore = (limits as any).yearlyUploads === Infinity ? true : songsUploadedThisPeriod < (limits as any).yearlyUploads;
 
   // ── Image compression utility ─────────────────────────────
   const compressCoverImage = (file: File): Promise<Blob> => {
@@ -2510,7 +2510,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 10 uploads per year</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 10 uploads per 6 months</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Sell tracks to fans</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Accept fan subscriptions</li>
             </ul>
@@ -2528,11 +2528,11 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             {currentTier === 'standard' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
             <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Star className="text-smash-orange" size={20} /> Standard</h4>
             <div className="flex items-baseline gap-1 mb-8">
-               <span className="text-[32px] font-studio font-bold text-text-primary">13,000</span>
+               <span className="text-[32px] font-studio font-bold text-text-primary">16,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 30 uploads per year</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 15 uploads per 6 months</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 1 free featured placement/mo</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Advanced analytics suite</li>
             </ul>
@@ -2549,11 +2549,11 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             {currentTier === 'elite' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
             <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><ShieldCheck className="text-smash-purple" size={20} /> Elite</h4>
             <div className="flex items-baseline gap-1 mb-8">
-               <span className="text-[32px] font-studio font-bold text-text-primary">24,000</span>
+               <span className="text-[32px] font-studio font-bold text-text-primary">27,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Unlimited uploads</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 25 uploads per 6 months</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 3 free featured placements/mo</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Full analytics with CSV export</li>
             </ul>

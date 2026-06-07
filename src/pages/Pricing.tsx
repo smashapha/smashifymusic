@@ -141,22 +141,36 @@ const Pricing = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12 md:mb-16 max-w-7xl mx-auto">
              <PricingCard 
-                title="Free" 
-                price="0" 
-                onAction={() => handleAction()}
+                title="Daily Pass" 
+                price="150" 
+                period="24 HRS"
+                onAction={() => handleAction('DailyPass')}
                 features={[
-                  "Ad-supported streaming", 
-                  "6 skips per hour", 
-                  "Buy tracks & send tips",
-                  "Fan subscriptions",
-                  "Limited queue management"
+                  "Ad-free for 24 hours", 
+                  "High quality audio", 
+                  "Offline saves (10 songs)",
+                  "Unlimited skips",
+                  "Cancel anytime"
                 ]} 
              />
              <PricingCard 
-                title="Premium" 
-                price="750" 
+                title="Weekly Pass" 
+                price="700" 
+                period="7 DAYS"
+                onAction={() => handleAction('WeeklyPass')}
+                features={[
+                  "Ad-free for 7 days", 
+                  "High quality audio", 
+                  "Offline saves (30 songs)",
+                  "Unlimited skips",
+                  "Cancel anytime"
+                ]} 
+             />
+             <PricingCard 
+                title="Premium Monthly" 
+                price="2,000" 
                 badge="POPULAR"
                 onAction={() => handleAction('Premium')}
                 features={[
@@ -169,8 +183,8 @@ const Pricing = () => {
                 ]} 
              />
              <PricingCard 
-                title="Family" 
-                price="3,500" 
+                title="Family Monthly" 
+                price="5,000" 
                 onAction={() => handleAction('Family')}
                 features={[
                   "5 Premium accounts", 
@@ -215,10 +229,10 @@ const Pricing = () => {
                 title="Rising Star" 
                 price="8,000" 
                 period="6 MO"
-                subtitle="Build your fanbase"
+                subtitle="MK 1,500/mo | MK 15,000 for 12 months"
                 onAction={() => handleAction('RisingStar')}
                 features={[
-                  "10 uploads per year",
+                  "10 uploads per 6 months",
                   "Sell tracks to fans",
                   "Accept fan subscriptions",
                   "10% fee on tips & sales",
@@ -231,13 +245,13 @@ const Pricing = () => {
              <PricingCard 
                 isArtist={true}
                 title="Standard" 
-                price="13,000" 
+                price="16,000" 
                 period="6 MO"
                 badge="POPULAR" 
-                subtitle="For full-time artists"
+                subtitle="MK 3,000/mo | MK 30,000 for 12 months"
                 onAction={() => handleAction('Standard')}
                 features={[
-                  "30 uploads per year",
+                  "15 uploads per 6 months",
                   "Sell tracks to fans",
                   "Accept fan subscriptions",
                   "7% fee on tips & sales",
@@ -251,12 +265,12 @@ const Pricing = () => {
              <PricingCard 
                 isArtist={true}
                 title="Elite" 
-                price="24,000" 
+                price="27,000" 
                 period="6 MO"
-                subtitle="For Serious Artists"
+                subtitle="MK 5,000/mo | MK 50,000 for 12 months"
                 onAction={() => handleAction('Elite')}
                 features={[
-                  "Unlimited uploads",
+                  "25 uploads per 6 months",
                   "5% fee on tips & sales",
                   "3 free featured placements/month",
                   "Full analytics with CSV export",
@@ -266,6 +280,9 @@ const Pricing = () => {
                 ]} 
              />
           </div>
+          <p className="text-center text-smash-gray font-bold text-[10px] md:text-sm uppercase tracking-widest mb-16">
+            Slot Booster Pack available for Elite users: +MK 1,500/month per +10 extra track slots
+          </p>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-10 mb-20">
             <h3 className="text-xl md:text-3xl font-black font-display italic uppercase mb-8 flex items-center gap-4">

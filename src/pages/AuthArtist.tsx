@@ -582,16 +582,16 @@ const AuthArtist: React.FC = () => {
                                 <h4 className="font-sans font-semibold text-[14px]">Free Studio</h4>
                                 <span className="text-[12px] text-text-muted">MK 0</span>
                              </div>
-                             <p className="text-[12px] text-text-muted">5 Uploads, 15% fee, basic analytics.</p>
+                             <p className="text-[12px] text-text-muted">3 Uploads, 15% fee, basic analytics.</p>
                           </div>
 
                           <div onClick={() => handlePlanSelection('Standard')} className="p-4 rounded-[16px] border-[2px] border-smash-orange bg-smash-orange/10 hover:bg-smash-orange/15 transition-all cursor-pointer relative overflow-hidden">
                              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-smash-orange text-white text-[9px] font-semibold px-2 py-[2px] rounded-b-[4px] uppercase tracking-widest">Popular</div>
                              <div className="flex justify-between items-center mb-1 mt-2">
                                 <h4 className="font-sans font-semibold text-[14px] text-smash-orange">Standard</h4>
-                                <span className="font-sans font-semibold text-[13px] text-white">MK 13,000 / 6mo</span>
+                                <span className="font-sans font-semibold text-[13px] text-white">MK 16,000 / 6mo</span>
                              </div>
-                             <p className="text-[12px] text-text-muted">30 uploads per year, 7% fee, advanced analytics.</p>
+                             <p className="text-[12px] text-text-muted">15 uploads per 6 months, 7% fee, advanced analytics.</p>
                           </div>
                        </motion.div>
                     )}

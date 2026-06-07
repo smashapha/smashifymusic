@@ -3,7 +3,14 @@ export type ListenerTier = 'Free' | 'Premium' | 'Family' | 'free' | 'premium' | 
 
 export const getListenerTier = (user: any): ListenerTier => {
   if (!user) return 'Free';
-  return user.subscription_tier || 'Free';
+  const tier = user.subscription_tier || 'Free';
+  if (tier.toLowerCase() !== 'free') {
+     const expiresAt = user.subscription_expires_at || user.subscription_ends;
+     if (expiresAt && new Date(expiresAt) < new Date()) {
+         return 'Free';
+     }
+  }
+  return tier as ListenerTier;
 };
 
 export const getListenerLimits = (user: any) => {
@@ -59,27 +66,75 @@ export const getListenerLimits = (user: any) => {
 
 export const getArtistTier = (artist: any): ArtistTier => {
   if (!artist) return 'free';
-  return artist.subscription_tier || artist.artist_tier || 'free';
+  const tier = artist.subscription_tier || artist.artist_tier || 'free';
+  if (tier.toLowerCase() !== 'free') {
+     const expiresAt = artist.subscription_expires_at || artist.tier_expires_at || artist.subscription_ends;
+     if (expiresAt && new Date(expiresAt) < new Date()) {
+         return 'free';
+     }
+  }
+  return tier;
+};
+
+export const getTrackLimit = (tier: string): number => {
+  const trackLimits: Record<string, number> = {
+    free: 3,
+    Free: 3,
+    RisingStar: 10,
+    risingstar: 10,
+    rising_star: 10,
+    Standard: 15,
+    standard: 15,
+    Elite: 25,
+    elite: 25,
+    Label: 150,
+    label: 150,
+  };
+  return trackLimits[tier] || 3;
 };
 
 export const getTierLimits = (artist: any) => {
-  const tier = (getArtistTier(artist) || 'free')
-    .toLowerCase()
-    .replace('-', '_');
+  const tier = (getArtistTier(artist) || 'free');
+  const normalizedTier = tier.toLowerCase().replace('-', '_');
+  const maxTracks = getTrackLimit(tier);
 
-  switch (tier) {
-    case 'elite':
+  switch (normalizedTier) {
+    case 'label':
       return {
-        maxUploads: Infinity,
-        yearlyUploads: Infinity,
+        maxUploads: maxTracks,
+        yearlyUploads: maxTracks,
         canWithdraw: true,
         platformFee: 0.05,
-        subscriptionFee: 0.08,
+        subscriptionFee: 0.05,
         analytics: 'full',
         hasFullAnalytics: true,
         canCreateAlbums: true,
-        songLimit: Infinity,
-        monthlyLimit: Infinity,
+        songLimit: maxTracks,
+        monthlyLimit: maxTracks,
+        canPostSnippets: true,
+        canSellSongs: true,
+        canReceiveSubs: true,
+        hasFanMessaging: true,
+        hasVerifiedBadge: true,
+        hasGoldBadge: true,
+        hasCustomUrl: true,
+        maxWithdrawal: Infinity,
+        payoutSpeed: 'Instant',
+        freeFeaturements: 5,
+        maxManagedArtists: 3,
+      };
+    case 'elite':
+      return {
+        maxUploads: maxTracks,
+        yearlyUploads: maxTracks,
+        canWithdraw: true,
+        platformFee: 0.05,
+        subscriptionFee: 0.05,
+        analytics: 'full',
+        hasFullAnalytics: true,
+        canCreateAlbums: true,
+        songLimit: maxTracks,
+        monthlyLimit: maxTracks,
         canPostSnippets: true,
         canSellSongs: true,
         canReceiveSubs: true,
@@ -95,16 +150,16 @@ export const getTierLimits = (artist: any) => {
 
     case 'standard':
       return {
-        maxUploads: 30,
-        yearlyUploads: 30,
+        maxUploads: maxTracks,
+        yearlyUploads: maxTracks,
         canWithdraw: true,
         platformFee: 0.07,
-        subscriptionFee: 0.10,
+        subscriptionFee: 0.07,
         analytics: 'advanced',
         hasFullAnalytics: true,
         canCreateAlbums: true,
-        songLimit: 30,
-        monthlyLimit: 30,
+        songLimit: maxTracks,
+        monthlyLimit: maxTracks,
         canPostSnippets: true,
         canSellSongs: true,
         canReceiveSubs: true,
@@ -121,16 +176,16 @@ export const getTierLimits = (artist: any) => {
     case 'risingstar':
     case 'rising_star':
       return {
-        maxUploads: 10,
-        yearlyUploads: 10,
+        maxUploads: maxTracks,
+        yearlyUploads: maxTracks,
         canWithdraw: true,
         platformFee: 0.10,
-        subscriptionFee: 0.15,
+        subscriptionFee: 0.10,
         analytics: 'standard',
         hasFullAnalytics: false,
         canCreateAlbums: true,
-        songLimit: 10,
-        monthlyLimit: 10,
+        songLimit: maxTracks,
+        monthlyLimit: maxTracks,
         canPostSnippets: true,
         canSellSongs: true,
         canReceiveSubs: true,
@@ -147,16 +202,16 @@ export const getTierLimits = (artist: any) => {
     case 'free':
     default:
       return {
-        maxUploads: 5,
-        yearlyUploads: 5,
+        maxUploads: maxTracks,
+        yearlyUploads: maxTracks,
         canWithdraw: false,
         platformFee: 0.15,
-        subscriptionFee: 0.20,
+        subscriptionFee: 0.15,
         analytics: 'basic',
         hasFullAnalytics: false,
         canCreateAlbums: false,
-        songLimit: 5,
-        monthlyLimit: 5,
+        songLimit: maxTracks,
+        monthlyLimit: maxTracks,
         canPostSnippets: false,
         canSellSongs: false,
         canReceiveSubs: false,

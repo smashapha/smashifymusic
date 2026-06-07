@@ -47,11 +47,13 @@ Deno.serve(async (req) => {
       currency,
     } = body;
     const CANONICAL_PRICES: Record<string, number> = {
-      LISTENER_PREMIUM: 750,
-      LISTENER_FAMILY: 3500,
+      LISTENER_DAILY_PASS: 150,
+      LISTENER_WEEKLY_PASS: 700,
+      LISTENER_PREMIUM: 2000,
+      LISTENER_FAMILY: 5000,
       ARTIST_RISING_STAR: 8000,
-      ARTIST_STANDARD: 13000,
-      ARTIST_ELITE: 24000,
+      ARTIST_STANDARD: 16000,
+      ARTIST_ELITE: 27000,
     };
     const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
     const finalAmount = canonicalAmount ?? Number(amount);
@@ -148,6 +150,8 @@ Deno.serve(async (req) => {
       track_purchase: `Purchase of music track on Smashify`,
       tip: `Tip to artist on Smashify`,
       fan_subscription: `Monthly fan subscription on Smashify`,
+      listener_daily_pass: `Smashify Premium Daily Pass`,
+      listener_weekly_pass: `Smashify Premium Weekly Pass`,
       listener_premium: `Smashify Premium Subscription`,
       listener_family: `Smashify Family Subscription`,
       artist_rising_star: `Smashify Rising Star Studio Tier`,
@@ -174,6 +178,8 @@ Deno.serve(async (req) => {
     // Fetch artist tier to calculate correct fee
     let platformFeeRate = 0.15; // Default for Free tier
     const platformPures = [
+      "LISTENER_DAILY_PASS",
+      "LISTENER_WEEKLY_PASS",
       "LISTENER_PREMIUM",
       "LISTENER_FAMILY",
       "ARTIST_RISING_STAR",
@@ -194,12 +200,15 @@ Deno.serve(async (req) => {
 
       const tierFees: Record<string, number> = {
         Free: 0.15,
-        RisingStar: 0.1,
-        rising_star: 0.1,
+        free: 0.15,
+        RisingStar: 0.10,
+        risingstar: 0.10,
         Standard: 0.07,
         standard: 0.07,
         Elite: 0.05,
         elite: 0.05,
+        Label: 0.05,
+        label: 0.05,
       };
       platformFeeRate = tierFees[artistProfile?.artist_tier || "Free"] || 0.15;
     }
@@ -243,7 +252,9 @@ Deno.serve(async (req) => {
         last_name,
         tx_ref,
         callback_url: `${SUPABASE_URL}/functions/v1/paychangu-webhook`,
-        return_url: `${return_url}${tx_ref}`,
+        return_url: return_url.includes("?") 
+            ? `${return_url}&tx_ref=${tx_ref}`
+            : `${return_url}?tx_ref=${tx_ref}`,
         customization: {
           title: "Smashify",
           description: descriptions[type] || "Smashify Payment",
