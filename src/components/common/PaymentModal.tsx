@@ -12,7 +12,6 @@ interface PaymentModalProps {
 
 export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }: PaymentModalProps) {
   const [isCompleted, setIsCompleted] = useState(false)
-  const [redirectAttempted, setRedirectAttempted] = useState(false)
   const [dotCount, setDotCount] = useState(0)
 
   // Clean the reference in case it has slashes or quotes
@@ -26,14 +25,13 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
     return () => clearInterval(dotsInterval)
   }, [])
 
-  // We no longer auto-redirect to a new tab, but wait for the iframe inline
-  // If the user desires, they can click "Open in new tab"
   useEffect(() => {
-    // Just marking as attempted to avoid unnecessary hooks warnings if we rely on it later
-    if (!redirectAttempted) {
-      setRedirectAttempted(true)
+    const opened = window.open(checkoutUrl, '_blank');
+    if (!opened) {
+      // Popup blocked — fallback to current tab
+      window.location.href = checkoutUrl;
     }
-  }, [redirectAttempted])
+  }, []); // Only run once on mount
 
   // Real-time Database Status Tracker (Polling)
   useEffect(() => {
@@ -117,32 +115,33 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
           {/* Content States */}
           <div className="flex flex-col items-center text-center w-full h-full max-h-[80vh]">
             {!isCompleted ? (
-              <div className="w-full flex flex-col items-center h-full">
+              <div className="w-full flex flex-col items-center">
                 <h4 className="text-xl font-bold font-display italic uppercase text-white mb-2">
-                  Complete Payment{getDots()}
+                  Complete Your Payment
                 </h4>
-                
-                {/* Embed PayChangu Checkout inline */}
-                <div className="w-full h-[60vh] min-h-[400px] mt-4 rounded-xl overflow-hidden bg-white">
-                  <iframe 
-                    src={checkoutUrl}
-                    className="w-full h-full border-0"
-                    title="PayChangu Secure Checkout"
-                    allow="payment"
-                  />
+                <p className="text-xs text-smash-gray font-bold leading-relaxed max-w-xs text-center mb-6">
+                  Your secure payment window has opened in a new tab. Complete the payment there — this screen will automatically update once confirmed.
+                </p>
+
+                <div className="w-20 h-20 bg-smash-orange/10 border border-smash-orange/20 rounded-full flex items-center justify-center mb-6">
+                  <Sparkles size={36} className="text-smash-orange animate-pulse" />
                 </div>
-                
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <button
-                    onClick={handleManualOpen}
-                    className="py-2 px-6 bg-transparent border border-smash-orange text-smash-orange hover:bg-smash-orange hover:text-white rounded-full font-black text-[10px] uppercase tracking-widest transition-all"
-                  >
-                    Open in new tab <ExternalLink size={12} className="inline ml-1" />
-                  </button>
-                  <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4">
-                    If the checkout above does not load, click the button to open it in a new secure window.
-                  </p>
-                </div>
+
+                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest mb-6">
+                  Waiting for payment confirmation{getDots()}
+                </p>
+
+                <button
+                  onClick={handleManualOpen}
+                  className="py-3 px-8 bg-smash-orange text-white rounded-full font-black text-[11px] uppercase tracking-widest transition-all hover:bg-smash-orange/80 flex items-center gap-2"
+                >
+                  <ExternalLink size={14} />
+                  Reopen Payment Window
+                </button>
+
+                <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4 mt-4">
+                  Do not close this screen. It will automatically confirm once your payment is received.
+                </p>
               </div>
             ) : (
               <motion.div

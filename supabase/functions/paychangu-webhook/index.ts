@@ -33,13 +33,21 @@ serve(async (req) => {
           redirectPath = `/tip-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
         } else if (type === "FAN_SUBSCRIPTION") {
           redirectPath = `/subscribe-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
-        } else if (type === "LISTENER_PREMIUM" || type === "LISTENER_FAMILY" || type === "LISTENER_DAILY_PASS" || type === "LISTENER_WEEKLY_PASS") {
-          redirectPath = `/upgrade-success?plan=${transaction?.metadata?.plan || "Premium"}&tx_ref=${tx_ref}`;
         } else if (
-          type?.startsWith("ARTIST_") &&
-          type !== "ARTIST_AD_CAMPAIGN"
+          type === "LISTENER_DAILY_PASS" ||
+          type === "LISTENER_WEEKLY_PASS" ||
+          type === "LISTENER_PREMIUM" ||
+          type === "LISTENER_FAMILY"
         ) {
-          redirectPath = `/tier-success?tier=${type.split("_")[1]}&tx_ref=${tx_ref}`;
+          redirectPath = `/upgrade-success?plan=${transaction?.metadata?.plan || "Premium"}&tx_ref=${tx_ref}`;
+        } else if (type?.startsWith("ARTIST_") && type !== "ARTIST_AD_CAMPAIGN") {
+          const tierNameMap: Record<string, string> = {
+            ARTIST_RISING_STAR: "RisingStar",
+            ARTIST_STANDARD: "Standard",
+            ARTIST_ELITE: "Elite",
+          };
+          const tierName = tierNameMap[type] || "RisingStar";
+          redirectPath = `/tier-success?tier=${tierName}&tx_ref=${tx_ref}`;
         } else if (type === "ARTIST_AD_CAMPAIGN") {
           redirectPath = `/ad-success?tx_ref=${tx_ref}`;
         } else {
