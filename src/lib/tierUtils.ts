@@ -1,5 +1,16 @@
-export type ArtistTier = 'Free' | 'RisingStar' | 'Standard' | 'Elite' | 'free' | 'rising_star' | 'standard' | 'elite';
-export type ListenerTier = 'Free' | 'Premium' | 'Family' | 'free' | 'premium' | 'family';
+export type ArtistTier =
+  | 'Free' | 'free'
+  | 'RisingStar' | 'risingstar' | 'rising_star'
+  | 'Standard' | 'standard'
+  | 'Elite' | 'elite'
+  | 'Label' | 'label';
+
+export type ListenerTier =
+  | 'Free' | 'free'
+  | 'DailyPass' | 'dailypass'
+  | 'WeeklyPass' | 'weeklypass'
+  | 'Premium' | 'premium'
+  | 'Family' | 'family';
 
 export const getListenerTier = (user: any): ListenerTier => {
   if (!user) return 'Free';
@@ -16,64 +27,101 @@ export const getListenerTier = (user: any): ListenerTier => {
 export const getListenerLimits = (user: any) => {
   const tier = (getListenerTier(user) || 'free').toLowerCase();
   const artistTier = (user?.artist_tier || '').toLowerCase();
-  const hasPaidArtistTier = ['risingstar', 'rising_star', 'standard', 'elite'].includes(artistTier);
+  const hasPaidArtistTier = ['risingstar', 'rising_star', 'standard', 'elite', 'label'].includes(artistTier);
   const effectiveTier = hasPaidArtistTier ? 'premium' : tier;
 
-  if (effectiveTier === 'family') {
-    return {
-      hdAudio: true,
-      hasAds: false,
-      canDownload: true,
-      maxOfflineSongs: 50,
-      maxPlaylists: Infinity,
-      canAccessSnippets: true,
-      unlimitedSkips: true,
-      hasLyrics: true,
-      hasStats: true,
-      accountCount: 5,
-    };
-  }
+  switch (effectiveTier) {
+    case 'family':
+      return {
+        hdAudio: true,
+        hasAds: false,
+        canDownload: true,
+        maxOfflineSongs: Infinity,
+        maxSkipsPerHour: Infinity,
+        maxPlaylists: Infinity,
+        canAccessSnippets: true,
+        unlimitedSkips: true,
+        hasLyrics: true,
+        hasStats: true,
+        accountCount: 5,
+      };
 
-  if (effectiveTier === 'premium') {
-    return {
-      hdAudio: true,
-      hasAds: false,
-      canDownload: true,
-      maxOfflineSongs: 50,
-      maxPlaylists: Infinity,
-      canAccessSnippets: true,
-      unlimitedSkips: true,
-      hasLyrics: true,
-      hasStats: true,
-      accountCount: 1,
-    };
-  }
+    case 'premium':
+      return {
+        hdAudio: true,
+        hasAds: false,
+        canDownload: true,
+        maxOfflineSongs: 50,
+        maxSkipsPerHour: Infinity,
+        maxPlaylists: Infinity,
+        canAccessSnippets: true,
+        unlimitedSkips: true,
+        hasLyrics: true,
+        hasStats: true,
+        accountCount: 1,
+      };
 
-  // Free tier
-  return {
-    hdAudio: false,
-    hasAds: true,
-    canDownload: false,
-    maxOfflineSongs: 0,
-    maxPlaylists: 3,
-    canAccessSnippets: false,
-    unlimitedSkips: false,
-    hasLyrics: false,
-    hasStats: false,
-    accountCount: 1,
-  };
+    case 'weeklypass':
+      return {
+        hdAudio: true,
+        hasAds: false,
+        canDownload: true,
+        maxOfflineSongs: 15,
+        maxSkipsPerHour: Infinity,
+        maxPlaylists: Infinity,
+        canAccessSnippets: true,
+        unlimitedSkips: true,
+        hasLyrics: true,
+        hasStats: false,
+        accountCount: 1,
+      };
+
+    case 'dailypass':
+      return {
+        hdAudio: true,
+        hasAds: false,
+        canDownload: false,
+        maxOfflineSongs: 0,
+        maxSkipsPerHour: Infinity,
+        maxPlaylists: Infinity,
+        canAccessSnippets: true,
+        unlimitedSkips: true,
+        hasLyrics: true,
+        hasStats: false,
+        accountCount: 1,
+      };
+
+    case 'free':
+    default:
+      return {
+        hdAudio: false,
+        hasAds: true,
+        canDownload: false,
+        maxOfflineSongs: 0,
+        maxSkipsPerHour: 6,
+        maxPlaylists: 3,
+        canAccessSnippets: false,
+        unlimitedSkips: false,
+        hasLyrics: false,
+        hasStats: false,
+        accountCount: 1,
+      };
+  }
 };
 
 export const getArtistTier = (artist: any): ArtistTier => {
   if (!artist) return 'free';
   const tier = artist.subscription_tier || artist.artist_tier || 'free';
   if (tier.toLowerCase() !== 'free') {
-     const expiresAt = artist.subscription_expires_at || artist.tier_expires_at || artist.subscription_ends;
-     if (expiresAt && new Date(expiresAt) < new Date()) {
-         return 'free';
-     }
+    const expiresAt =
+      artist.subscription_ends ||
+      artist.subscription_expires_at ||
+      artist.tier_expires_at;
+    if (expiresAt && new Date(expiresAt) < new Date()) {
+      return 'free';
+    }
   }
-  return tier;
+  return tier as ArtistTier;
 };
 
 export const getTrackLimit = (tier: string): number => {

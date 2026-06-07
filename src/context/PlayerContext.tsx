@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { musicService } from '../services/musicService';
 import { getRadioNextSong } from '../services/aiService';
 import { getListenerLimits } from '../lib/tierUtils';
+import toast from 'react-hot-toast';
 
 interface PlayerContextType {
   currentSong: Song | null;
@@ -51,6 +52,8 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [skipsThisHour, setSkipsThisHour] = useState(0);
+  const [skipHourStart, setSkipHourStart] = useState(Date.now());
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
@@ -810,6 +813,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const nextTrack = () => {
+    const limits = getListenerLimits(userProfile);
+    if (!limits.unlimitedSkips) {
+      const now = Date.now();
+      const elapsed = now - skipHourStart;
+      if (elapsed > 3600000) {
+        // Reset counter every hour
+        setSkipsThisHour(1);
+        setSkipHourStart(now);
+      } else if (skipsThisHour >= limits.maxSkipsPerHour) {
+        toast.error("You've used your 6 free skips this hour. Upgrade to Premium for unlimited skips.");
+        return;
+      } else {
+        setSkipsThisHour(prev => prev + 1);
+      }
+    }
     const activeQueue = isShuffle && shuffledQueue.length > 0 ? shuffledQueue : queue;
     if (activeQueue.length === 0 || !currentSong) return;
     

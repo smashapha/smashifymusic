@@ -218,7 +218,13 @@ const Library: React.FC = () => {
                 <Heart size={16} className="md:w-[18px] md:h-[18px]" /> Liked
               </button>
               <button 
-                onClick={() => setActiveTab('downloads')}
+                onClick={() => {
+                  if (!limits.canDownload) {
+                    toast.error('Offline saves require Weekly Pass or higher. Upgrade in your profile.');
+                    return;
+                  }
+                  setActiveTab('downloads');
+                }}
                 className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'downloads' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
               >
                 <Download size={16} className="md:w-[18px] md:h-[18px]" /> Offline
