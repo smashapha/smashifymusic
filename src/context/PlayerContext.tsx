@@ -87,6 +87,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const sleepTimerRef = useRef<NodeJS.Timeout | null>(null);
   const previewLimitReached = useRef(false);
   const [songsPlayed, setSongsPlayed] = useState(0);
+  const [adCycleIndex, setAdCycleIndex] = useState(0);
   const [adPlaying, setAdPlaying] = useState(false);
   const [adSkipAvailable, setAdSkipAvailable] = useState(false);
   const [currentAd, setCurrentAd] = useState<any>(null);
@@ -548,9 +549,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       if (limits.hasAds && !adPlaying) {
+        const AD_CYCLE = [3, 4, 2];
+        const threshold = AD_CYCLE[adCycleIndex % AD_CYCLE.length];
         const nextCount = songsPlayed + 1;
-        if (nextCount >= 3) {
+
+        if (nextCount >= threshold) {
           setSongsPlayed(0);
+          setAdCycleIndex(prev => prev + 1);
           playAd();
         } else {
           setSongsPlayed(nextCount);
