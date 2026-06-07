@@ -270,7 +270,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                      href="/pricing"
                      className={`inline-block px-8 py-4 bg-gradient-to-r ${accentColor.replace('text-', 'from-')} to-red-500 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest shadow-xl hover:scale-105 transition-transform`}
                    >
-                     Remove ads — Premium MK 750/month
+                     Remove ads — Premium MK 2,000/month
                    </a>
                  </div>
               )}
