@@ -99,6 +99,14 @@ export default function ArtistHub() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const expiresAt = userProfile?.subscription_ends || userProfile?.subscription_expires_at || userProfile?.tier_expires_at;
+  const expiresDate = expiresAt ? new Date(expiresAt) : null;
+  const daysRemaining = expiresDate ? Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+  const isExpiringSoon = expiresDate && 
+    (userProfile?.subscription_tier || userProfile?.artist_tier || 'free').toLowerCase() !== 'free' &&
+    daysRemaining > 0 && 
+    daysRemaining <= 7;
+
   useEffect(() => {
     if (userProfile?.id) fetchData();
   }, [userProfile]);
@@ -378,6 +386,26 @@ export default function ArtistHub() {
                     You can upload up to {songLimit} songs while you wait. [{Math.min(songs.length, songLimit)}/{songLimit} slots used] — Once approved, upgrade your plan to increase your upload limits.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {isExpiringSoon && (
+              <div className="mb-6 p-4 bg-smash-orange/15 border border-smash-orange/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-smash-orange animate-pulse">
+                <div className="flex items-start gap-4 flex-1">
+                  <AlertTriangle className="shrink-0 mt-0.5" size={20} />
+                  <div>
+                    <p className="font-bold font-display uppercase tracking-wider text-[14px]">Plan Expiration Notice</p>
+                    <p className="text-sm opacity-90 mt-1 font-sans">
+                      Your premium artist plan is expiring in {daysRemaining} day{daysRemaining > 1 ? 's' : ''} on {new Date(expiresAt).toLocaleDateString()}. Renew or upgrade your tier to keep your verification status, exclusive analytical insights, and expanded track inventory slots active.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('subscription')}
+                  className="px-5 py-2.5 bg-smash-orange text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] hover:bg-smash-orange/90 transition-all font-bold shrink-0 self-end md:self-center"
+                >
+                  Renew Subscription
+                </button>
               </div>
             )}
             <AnimatePresence mode="wait">
@@ -825,6 +853,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [useFreePlacement, setUseFreePlacement] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -834,8 +863,19 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
   const [targetGenre, setTargetGenre] = useState('');
   const [playsPurchased, setPlaysPurchased] = useState(1000);
 
+  const limits = getTierLimits(userProfile);
+  const freeLimit = limits?.freeFeaturements || 0;
+
+  const currentMonthCampaigns = ads.filter(ad => {
+    if (!ad.created_at) return false;
+    const d = new Date(ad.created_at);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const remainingFreePlacements = Math.max(0, freeLimit - currentMonthCampaigns.length);
+
   const pricePerPlay = 5; // 1000 plays = 5000 MK
-  const totalCost = playsPurchased * pricePerPlay;
+  const totalCost = useFreePlacement ? 0 : playsPurchased * pricePerPlay;
 
   useEffect(() => {
     fetchAds();
@@ -873,10 +913,37 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
         .from('audio-ads')
         .getPublicUrl(fileName);
 
-      // 2. Clear toast before redirecting
+      // 2. Clear toast before redirecting or saving
       toast.dismiss(toastId);
 
-      // 3. Initiate PayChangu Payment
+      // 3. Initiate PayChangu Payment or Save directly if Free Placement
+      if (useFreePlacement) {
+        const { error: insertError } = await supabase
+          .from('audio_ads')
+          .insert({
+            artist_id: userProfile.id,
+            type: 'promo',
+            title: title,
+            advertiser_name: advertiserName,
+            audio_url: publicUrl,
+            plays_purchased: 1000,
+            plays_used: 0,
+            active: false,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          });
+
+        if (insertError) throw insertError;
+
+        toast.success('Campaign launched using your free placement slot! Pending admin review.');
+        setShowForm(false);
+        setAudioFile(null);
+        setTitle('');
+        setUseFreePlacement(false);
+        fetchAds();
+        setUploading(false);
+        return;
+      }
+
       await payForAdCampaign({
         artist: userProfile,
         plays: playsPurchased,
@@ -900,7 +967,15 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
         </div>
         {!showForm && (
           <button 
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              const artistTier = (userProfile?.artist_tier || 'Free').toLowerCase();
+              if (artistTier === 'free') {
+                toast.error('Ad campaigns and promotion features require a paid subscription. Please upgrade on the subscription tab.');
+                return;
+              }
+              setUseFreePlacement(false);
+              setShowForm(true);
+            }}
             className="h-[44px] px-6 bg-smash-orange text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-smash-orange/90 transition-all"
           >
             <Plus size={18} /> New Campaign
@@ -994,6 +1069,27 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
              <div className="space-y-6">
                 <div className="bg-bg-elevated border border-smash-purple/20 rounded-[14px] p-6 shadow-sm">
                    <h4 className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple mb-4">Campaign Budget</h4>
+                    
+                    {remainingFreePlacements > 0 && (
+                      <div className="mt-4 mb-6 flex items-center gap-3 p-3 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px]">
+                        <input
+                          type="checkbox"
+                          id="use-free-placement"
+                          checked={useFreePlacement}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setUseFreePlacement(checked);
+                            if (checked) {
+                              setPlaysPurchased(1000);
+                            }
+                          }}
+                          className="w-4 h-4 accent-smash-purple rounded cursor-pointer"
+                        />
+                        <label htmlFor="use-free-placement" className="text-[12px] font-display font-semibold text-white cursor-pointer select-none">
+                          🎁 Use Free Monthly Slot ({remainingFreePlacements} remaining)
+                        </label>
+                      </div>
+                    )}
                    
                    <div className="space-y-6">
                       <div className="flex justify-between items-end">
@@ -1005,7 +1101,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                         </div>
                         <div className="text-right flex flex-col gap-1">
                           <p className="text-[28px] font-studio font-bold text-smash-green">
-                            MK {totalCost.toLocaleString()}
+                            {totalCost === 0 ? "FREE" : `MK ${totalCost.toLocaleString()}`}
                           </p>
                           <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">Total Cost</p>
                         </div>
@@ -1018,7 +1114,8 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                         step="500"
                         value={playsPurchased}
                         onChange={e => setPlaysPurchased(Number(e.target.value))}
-                        className="w-full accent-smash-purple bg-border-default h-2 rounded-full appearance-none slider-custom-thumb"
+                        disabled={useFreePlacement}
+                        className="w-full accent-smash-purple bg-border-default h-2 rounded-full appearance-none slider-custom-thumb disabled:opacity-50"
                       />
                       
                       <div className="flex justify-between text-[10px] font-display font-medium text-text-muted uppercase tracking-wider">
@@ -2059,7 +2156,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                   <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
                                   <button type="button" onClick={() => {
                                     if (!limits.canSellSongs) {
-                                      toast.error('Upgrade to Rising Star to sell tracks to fans');
+                                      toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.');
                                       return;
                                     }
                                     setIsForSale(true);
@@ -2067,7 +2164,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                </div>
                                {(isForSale && (mode !== 'album' || albumPricingMode === 'album')) && (
                                  <div className="relative">
-                                    <input type="number" required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
+                                    <input type="number" disabled={!limits.canSellSongs} onClick={() => { if (!limits.canSellSongs) { toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.'); } }} required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
                                  </div>
                                )}
@@ -2094,7 +2191,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          <div className="space-y-3">
                                            {isForSale && albumPricingMode === 'individual' && (
                                               <div className="relative">
-                                                <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
+                                                <input type="number" disabled={!limits.canSellSongs} onClick={() => { if (!limits.canSellSongs) { toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.'); } }} required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
                                               </div>
                                            )}

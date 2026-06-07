@@ -124,21 +124,29 @@ export const getArtistTier = (artist: any): ArtistTier => {
   return tier as ArtistTier;
 };
 
-export const getTrackLimit = (tier: string): number => {
-  const trackLimits: Record<string, number> = {
-    free: 3,
-    Free: 3,
-    RisingStar: 10,
-    risingstar: 10,
-    rising_star: 10,
-    Standard: 15,
-    standard: 15,
-    Elite: 25,
-    elite: 25,
-    Label: 150,
-    label: 150,
+export const getTrackLimit = (tierOrArtist: string | any): number => {
+  const tier = typeof tierOrArtist === 'string'
+    ? tierOrArtist
+    : (tierOrArtist?.artist_tier || tierOrArtist?.subscription_tier || 'Free');
+  const extraSlots = typeof tierOrArtist === 'object'
+    ? Number(tierOrArtist?.extra_track_slots || 0)
+    : 0;
+
+  const baseLimits: Record<string, number> = {
+    free: 3, Free: 3,
+    RisingStar: 10, risingstar: 10, rising_star: 10,
+    Standard: 15, standard: 15,
+    Elite: 25, elite: 25,
+    Label: 150, label: 150,
   };
-  return trackLimits[tier] || 3;
+  const base = baseLimits[tier] || 3;
+
+  // Booster packs only available for Elite and Label
+  const tierLower = tier.toLowerCase();
+  if ((tierLower === 'elite' || tierLower === 'label') && extraSlots > 0) {
+    return base + (extraSlots * 10);
+  }
+  return base;
 };
 
 export const getTierLimits = (artist: any) => {
@@ -284,16 +292,16 @@ export const getSongsUploadedThisMonth = async (userProfile: any, supabaseClient
 
 export const canUploadTrack = async (artist: any, supabaseClient: any): Promise<boolean> => {
   if (!artist || !artist.id) return false;
-  const tier: ArtistTier = artist.artist_tier || artist.subscription_tier || 'Free';
   const limits = getTierLimits(artist);
 
   const { count, error } = await supabaseClient
     .from('songs')
     .select('*', { count: 'exact', head: true })
-    .eq('artist_id', artist.id);
+    .eq('artist_id', artist.id)
+    .eq('is_active', true);
 
   if (error) {
-    console.error("Error checking upload limits:", error);
+    console.error('Error checking upload limits:', error);
     return false;
   }
 

@@ -28,6 +28,32 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [artistData, setArtistData] = useState<UserProfile | null>(null);
+  const [artistTier, setArtistTier] = useState<string | null>(() => {
+    return (song as any).artist_tier || (song as any).profiles?.artist_tier || (song as any).profiles?.subscription_tier || null;
+  });
+
+  useEffect(() => {
+    if (song.is_for_sale && song.price > 0 && !artistTier) {
+      const fetchArtistTier = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('artist_tier, subscription_tier')
+            .eq('id', song.artist_id)
+            .maybeSingle();
+          if (data) {
+            setArtistTier(data.artist_tier || data.subscription_tier || 'Free');
+          }
+        } catch (err) {
+          console.error('Error fetching artist tier for safety check:', err);
+        }
+      };
+      fetchArtistTier();
+    }
+  }, [song.id, song.is_for_sale, song.price, song.artist_id, artistTier]);
+
+  const isArtistFree = artistTier?.toLowerCase() === 'free';
+
   const [isLiked, setIsLiked] = useState(() => {
     try {
       const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
@@ -208,7 +234,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && (
              <button
                onClick={handleBuy}
-               className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-smash-orange text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg"
+               className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-smash-orange text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg ${isArtistFree ? 'hidden' : ''}`}
              >
                <ShoppingBag size={10} /> MK {song.price}
              </button>
@@ -304,7 +330,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && (
              <button 
                onClick={handleBuy}
-               className="flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white"
+               className={`flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white ${isArtistFree ? 'hidden' : ''}`}
                title={`Buy track for MK ${song.price}`}
              >
                <ShoppingBag size={14} />
@@ -332,7 +358,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                  <MoreVertical size={16} />
               </button>
               <AnimatePresence>
-                {showMenu && <SongMenu song={song} onClose={() => setShowMenu(false)} onBuy={handleBuy} onAddToPlaylist={() => setShowPlaylistModal(true)} />}
+                {showMenu && <SongMenu song={song} onClose={() => setShowMenu(false)} onBuy={handleBuy} onAddToPlaylist={() => setShowPlaylistModal(true)} isArtistFree={isArtistFree} />}
               </AnimatePresence>
            </div>
         </div>
@@ -344,9 +370,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   );
 };
 
-const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist }: any) => {
+const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist, isArtistFree }: any) => {
   const navigate = useNavigate();
   const { addToQueue, purchasedIds } = usePlayer();
+  const actualIsArtistFree = isArtistFree !== undefined ? isArtistFree : (song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || 'Free').toLowerCase() === 'free';
   
   const handleShare = async () => {
     const displayArtist = song.featured_artist ? `${song.artist_name} ft. ${song.featured_artist}` : song.artist_name;
@@ -410,7 +437,7 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist }: any) => {
             <div className="h-px w-full bg-border-default my-1" />
             <button 
               onClick={onBuy}
-              className="w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors uppercase tracking-widest"
+              className={`w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors uppercase tracking-widest ${actualIsArtistFree ? 'hidden' : ''}`}
             >
               <ShoppingBag size={14} /> Buy MK {song.price}
             </button>

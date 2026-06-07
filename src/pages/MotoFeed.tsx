@@ -602,7 +602,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                </div>
             )}
 
-            {song.is_for_sale && !song.is_unreleased && !song.is_purchased && !purchasedIds.has(song.id) && (
+            {song.is_for_sale && !song.is_unreleased && !song.is_purchased && !purchasedIds.has(song.id) && ((song.profiles as any)?.subscription_tier || (song.profiles as any)?.artist_tier || 'Free').toLowerCase() !== 'free' && (
                <div className="flex flex-col items-center gap-2">
                   <button 
                     onClick={handleBuy}
