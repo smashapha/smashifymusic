@@ -26,23 +26,14 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
     return () => clearInterval(dotsInterval)
   }, [])
 
-  // Auto-redirect to payment page on mount
+  // We no longer auto-redirect to a new tab, but wait for the iframe inline
+  // If the user desires, they can click "Open in new tab"
   useEffect(() => {
+    // Just marking as attempted to avoid unnecessary hooks warnings if we rely on it later
     if (!redirectAttempted) {
       setRedirectAttempted(true)
-      const opened = window.open(checkoutUrl, '_blank')
-      if (opened) {
-        console.log('[PaymentModal] Checkout successfully opened in a new tab.')
-      } else {
-        console.warn('[PaymentModal] Popup was blocked. User must click manually.')
-        if ((window as any).__smashifyShowPayment) {
-          (window as any).__smashifyShowPayment(checkoutUrl, cleanRef)
-        } else {
-          window.location.href = checkoutUrl
-        }
-      }
     }
-  }, [checkoutUrl, redirectAttempted])
+  }, [redirectAttempted])
 
   // Real-time Database Status Tracker (Polling)
   useEffect(() => {
@@ -124,35 +115,35 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
           </div>
 
           {/* Content States */}
-          <div className="flex flex-col items-center text-center px-2">
+          <div className="flex flex-col items-center text-center w-full h-full max-h-[80vh]">
             {!isCompleted ? (
-              <>
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center relative mb-6">
-                  <div className="absolute inset-0 border-2 border-smash-orange/30 border-t-smash-orange rounded-full animate-spin" />
-                  <Sparkles size={28} className="text-smash-orange animate-pulse" />
-                </div>
-
+              <div className="w-full flex flex-col items-center h-full">
                 <h4 className="text-xl font-bold font-display italic uppercase text-white mb-2">
-                  Waiting for secure payment{getDots()}
+                  Complete Payment{getDots()}
                 </h4>
-
-                <p className="text-xs text-smash-gray font-bold leading-relaxed mb-8 max-w-sm">
-                  We opened the secure PayChangu checkout page in a new window/tab for you.
-                  Once you complete the payment there, <span className="text-white">this page will automatically unlock</span>.
-                </p>
-
-                {/* Main manual checkout triggers */}
-                <button
-                  onClick={handleManualOpen}
-                  className="w-full py-4 bg-smash-orange text-white hover:bg-smash-orange/80 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg mb-3"
-                >
-                  See Payment Tab <ExternalLink size={14} />
-                </button>
-
-                <p className="text-[10px] text-smash-gray font-bold leading-relaxed">
-                  Popup blocked? Click the button above to proceed safely to checkout.
-                </p>
-              </>
+                
+                {/* Embed PayChangu Checkout inline */}
+                <div className="w-full h-[60vh] min-h-[400px] mt-4 rounded-xl overflow-hidden bg-white">
+                  <iframe 
+                    src={checkoutUrl}
+                    className="w-full h-full border-0"
+                    title="PayChangu Secure Checkout"
+                    allow="payment"
+                  />
+                </div>
+                
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <button
+                    onClick={handleManualOpen}
+                    className="py-2 px-6 bg-transparent border border-smash-orange text-smash-orange hover:bg-smash-orange hover:text-white rounded-full font-black text-[10px] uppercase tracking-widest transition-all"
+                  >
+                    Open in new tab <ExternalLink size={12} className="inline ml-1" />
+                  </button>
+                  <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4">
+                    If the checkout above does not load, click the button to open it in a new secure window.
+                  </p>
+                </div>
+              </div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}

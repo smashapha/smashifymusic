@@ -43,7 +43,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(6)))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
-    const tx_ref = `SMASH-${params.type.toUpperCase()}-${params.meta.userId || 'anon'}-${randomHex}-${Date.now()}`;
+    const tx_ref = `SMA-${randomHex}-${Date.now()}`;
     
     const session = (await supabase.auth.getSession()).data.session;
     const response = await fetch(
@@ -75,7 +75,8 @@ export async function initiatePayment(params: InitiatePaymentParams) {
 
     if (!response.ok) {
        console.error("Payment API Error:", data);
-       throw new Error(data.error || data.message || `Payment initialization failed: ${response.status}`);
+       const errMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : data.error || data.message || `Payment initialization failed: ${response.status}`;
+       throw new Error(errMsg);
     }
     
     if (!data?.checkout_url) {
@@ -84,44 +85,27 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     }
 
     toast.dismiss(toastId);
-    toast.success('Redirecting you to secure PayChangu payment checkout...', { duration: 3000 });
+    toast.success('Opening secure payment checkout...', { duration: 3000 });
     
-    // Direct browser redirect or open new tab. PayChangu prevents iframe embeddings via X-Frame-Options/CSP.
+    // Always use the inline modal flow when available
     setTimeout(() => {
       try {
         const sanitizedRef = tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
-        if (window.self !== window.top) {
-          // Inside an iframe (like standard AI Studio play sandbox), open search in a new tab
-          const opened = window.open(data.checkout_url, '_blank');
-          if (!opened) {
-            // Popup blocker blocked it. Launch fallback modal inside the app!
-            if ((window as any).__smashifyShowPayment) {
-              (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
-            } else {
-              window.location.href = data.checkout_url;
-            }
-          }
+        if ((window as any).__smashifyShowPayment) {
+          (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
         } else {
-          // Deployed/Direct browser access: open in a new tab for elegant flow 
-          // and display local companion overlay so the backing page checks background status on fallback/polling
-          const opened = window.open(data.checkout_url, '_blank');
-          if (!opened) {
-            window.location.href = data.checkout_url;
-          } else {
-            if ((window as any).__smashifyShowPayment) {
-              (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
-            }
-          }
+          // Fallback if modal is somehow not registered
+          window.location.href = data.checkout_url;
         }
       } catch (e) {
         window.location.href = data.checkout_url;
       }
-    }, 1000);
+    }, 500);
 
     return { checkout_url: data.checkout_url, tx_ref: tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '') };
   } catch (err: any) {
-    console.error('Payment error:', err);
-    toast.error(err.message || 'Payment initialization failed', { id: toastId });
+    console.error('Payment error detail:', err?.message || String(err), err);
+    toast.error(err?.message || 'Payment initialization failed', { id: toastId });
     throw err;
   }
 }

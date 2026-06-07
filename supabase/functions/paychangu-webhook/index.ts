@@ -24,7 +24,7 @@ serve(async (req) => {
           .eq("paychangu_ref", tx_ref)
           .single();
 
-        const type = tx_ref.split("-")[1]; // e.g. SMASH-TRACK_PURCHASE-123
+        const type = (transaction?.metadata?.payment_type || tx_ref.split("-")[1] || "").toUpperCase();
         let redirectPath = "/";
 
         if (type === "TRACK_PURCHASE") {
@@ -33,7 +33,7 @@ serve(async (req) => {
           redirectPath = `/tip-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
         } else if (type === "FAN_SUBSCRIPTION") {
           redirectPath = `/subscribe-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
-        } else if (type === "LISTENER_PREMIUM" || type === "LISTENER_FAMILY") {
+        } else if (type === "LISTENER_PREMIUM" || type === "LISTENER_FAMILY" || type === "LISTENER_DAILY_PASS" || type === "LISTENER_WEEKLY_PASS") {
           redirectPath = `/upgrade-success?plan=${transaction?.metadata?.plan || "Premium"}&tx_ref=${tx_ref}`;
         } else if (
           type?.startsWith("ARTIST_") &&
