@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Receipt, Music2, Heart, Sparkles, DollarSign } from 'lucide-react';
+import { verifyPayment } from '../../lib/paychangu';
+import { Loader2, Receipt, Music2, Heart, Sparkles, DollarSign, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const TransactionsTab = ({ userProfile }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -55,6 +57,30 @@ export const TransactionsTab = ({ userProfile }: any) => {
 
     fetchTransactions();
   }, [userProfile?.id]);
+
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  const handleVerify = async (tx: any) => {
+    if (!tx.paychangu_ref) {
+      toast.error('Missing payment reference for verification');
+      return;
+    }
+    try {
+      setVerifyingId(tx.id);
+      await verifyPayment(tx.paychangu_ref);
+      toast.success('Payment verified successfully!');
+      
+      // Update local state
+      setTransactions(prev => prev.map(t => 
+        t.id === tx.id ? { ...t, status: 'completed' } : t
+      ));
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Verification failed. Payment may still be pending.');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -141,19 +167,31 @@ export const TransactionsTab = ({ userProfile }: any) => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-text-primary">
-                      +MK {Number(tx.net_amount || tx.gross_amount).toFixed(2)}
+                  <div className="text-right flex items-center space-x-4">
+                    <div className="flex flex-col items-end">
+                      <div className="text-lg font-bold text-text-primary">
+                        +MK {Number(tx.net_amount || tx.gross_amount).toFixed(2)}
+                      </div>
+                      <div className={`text-xs capitalize font-medium ${
+                        tx.status === 'completed' || tx.status === 'success' 
+                          ? 'text-green-500' 
+                          : tx.status === 'pending'
+                            ? 'text-yellow-500'
+                            : 'text-red-500'
+                      }`}>
+                        {tx.status}
+                      </div>
                     </div>
-                    <div className={`text-xs capitalize font-medium ${
-                      tx.status === 'completed' || tx.status === 'success' 
-                        ? 'text-green-500' 
-                        : tx.status === 'pending'
-                          ? 'text-yellow-500'
-                          : 'text-red-500'
-                    }`}>
-                      {tx.status}
-                    </div>
+                    {tx.status === 'pending' && (
+                      <button
+                        onClick={() => handleVerify(tx)}
+                        disabled={verifyingId === tx.id}
+                        className="p-2 ml-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-lg transition-colors cursor-pointer"
+                        title="Verify Payment Status manually"
+                      >
+                        <RefreshCw size={16} className={verifyingId === tx.id ? 'animate-spin' : ''} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
