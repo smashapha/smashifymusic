@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -17,8 +17,8 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
   const [requesting, setRequesting] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<'Airtel' | 'TNM'>('Airtel');
-  const [phone, setPhone] = useState(userProfile?.phone || '');
-  const [verificationPhone, setVerificationPhone] = useState(userProfile?.phone || '');
+  const [phone, setPhone] = useState(() => userProfile?.phone || '');
+  const [verificationPhone, setVerificationPhone] = useState(() => userProfile?.phone || '');
   const [loadingHistory, setLoadingHistory] = useState(true);
   
   // Verification states (fallback if user is unverified)
@@ -28,7 +28,12 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
   const [idFile, setIdFile] = useState<File | null>(null);
 
   const balance = Number(userProfile?.wallet_balance || 0);
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
   const isVerified = !!userProfile?.is_verified;
   const isPendingVerification = !isVerified && !!userProfile?.nrc_number;
 

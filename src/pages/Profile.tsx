@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { 
   User, CreditCard, ShoppingBag, Settings, LogOut, 
@@ -18,9 +18,16 @@ const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const tier = getListenerTier(userProfile)
-  const limits = getListenerLimits(userProfile)
-  const [phone, setPhone] = useState(userProfile?.phone_number || '')
+  const tier = useMemo(() => getListenerTier(userProfile), [
+    userProfile?.subscription_tier,
+    userProfile?.subscription_expires_at,
+  ]);
+  const limits = useMemo(() => getListenerLimits(userProfile), [
+    userProfile?.subscription_tier,
+    userProfile?.subscription_expires_at,
+    userProfile?.artist_tier,
+  ]);
+  const [phone, setPhone] = useState(() => userProfile?.phone_number || '')
   const [savingPhone, setSavingPhone] = useState(false)
 
   const handleUpdatePhone = async () => {
@@ -278,14 +285,23 @@ const Profile: React.FC = () => {
                   <Crown size={20} className={tier === 'free' ? 'text-white/30' : 'text-smash-orange'} />
                   <div>
                     <p className="text-white font-black uppercase text-sm tracking-widest">
-                      {tier === 'free' ? 'Free Plan' : tier === 'premium' ? 'Premium' : 'Family Plan'}
+                      {(() => {
+                        const tierLabels: Record<string, string> = {
+                          free:       'Free Plan',
+                          dailypass:  'Daily Pass',
+                          weeklypass: 'Weekly Pass',
+                          premium:    'Premium Monthly',
+                          family:     'Family Plan',
+                        };
+                        return tierLabels[tier?.toLowerCase()] || 'Free Plan';
+                      })()}
                     </p>
                     <p className="text-white/40 text-xs font-bold mt-0.5">
-                      {tier === 'free'
+                      {(!tier || tier === 'free')
                         ? 'Upgrade to remove ads and unlock HD audio'
-                        : `Active · Renews ${userProfile?.subscription_expires_at
-                            ? new Date(userProfile.subscription_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                            : 'soon'}`
+                        : userProfile?.subscription_expires_at
+                          ? `Active · Renews ${new Date(userProfile.subscription_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                          : 'Active'
                       }
                     </p>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, 
@@ -29,6 +29,11 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     purchasedIds
   } = usePlayer();
   const { role, userProfile } = useAuth();
+  const playerLimits = useMemo(() => getListenerLimits(userProfile), [
+    userProfile?.subscription_tier,
+    userProfile?.subscription_expires_at,
+    userProfile?.artist_tier,
+  ]);
   const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
   const displayDuration = adPlaying ? Math.min(30, duration || 30) : duration;
   const [showQueue, setShowQueue] = useState(false);
@@ -423,16 +428,16 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                  
                  <button 
                    onClick={() => {
-                     const limits = getListenerLimits(userProfile);
+                     const limits = playerLimits;
                      if (!limits.canDownload) {
                        toast.error("Downloads are for Premium and Family plans only.");
                        return;
                      }
                      handleDownload();
                    }} 
-                   className={`flex items-center gap-2 uppercase transition-colors px-2 py-1.5 rounded-md hover:bg-bg-elevated ${!getListenerLimits(userProfile).canDownload ? 'text-red-400/80' : 'text-text-secondary hover:text-text-primary'}`}
+                   className={`flex items-center gap-2 uppercase transition-colors px-2 py-1.5 rounded-md hover:bg-bg-elevated ${!playerLimits.canDownload ? 'text-red-400/80' : 'text-text-secondary hover:text-text-primary'}`}
                  >
-                   {!getListenerLimits(userProfile).canDownload ? <AppLockIcon size={15} className="mr-1" /> : <Download size={18} />} Download
+                   {!playerLimits.canDownload ? <AppLockIcon size={15} className="mr-1" /> : <Download size={18} />} Download
                  </button>
               </div>
           </div>

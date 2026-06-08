@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon } from 'lucide-react';
@@ -13,8 +13,15 @@ import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const limits = getListenerLimits(userProfile);
-  const isPremium = getListenerTier(userProfile) !== 'free';
+  const limits = useMemo(() => getListenerLimits(userProfile), [
+    userProfile?.subscription_tier,
+    userProfile?.subscription_expires_at,
+    userProfile?.artist_tier,
+  ]);
+  const isPremium = useMemo(() => getListenerTier(userProfile) !== 'free', [
+    userProfile?.subscription_tier,
+    userProfile?.subscription_expires_at,
+  ]);
   const [activeTab, setActiveTab] = useState<'purchased' | 'likes' | 'downloads' | 'playlists'>('purchased');
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart3, Music2, Upload, Wallet, UserCircle, Settings, 
@@ -86,6 +86,17 @@ import { WithdrawTab } from '../components/artist/WithdrawTab';
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
+  const artistTier = useMemo(() => getArtistTier(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+  ]);
+  const artistLimits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -260,7 +271,7 @@ export default function ArtistHub() {
               <div className="overflow-hidden">
                 <p className="text-sm font-bold truncate">{userProfile?.stage_name || userProfile?.full_name || 'Artist'}</p>
                 <p className="text-[10px] text-smash-purple uppercase tracking-widest font-bold">{getTierLabel(userProfile?.subscription_tier)}</p>
-                {getArtistTier(userProfile) !== 'elite' && (
+                {artistTier !== 'elite' && (
                   <button
                     onClick={() => { setActiveTab('subscription'); setSidebarOpen(false); }}
                     className="mt-1 w-full text-[9px] font-black uppercase tracking-widest text-smash-purple hover:text-white transition-colors text-left"
@@ -526,7 +537,12 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   const [requesting] = useState(false);
   const handleWithdraw = () => {};
   const handleInitiateWithdraw = () => {};
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
 
   useEffect(() => {
     const fetchHist = async () => {
@@ -863,7 +879,12 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
   const [targetGenre, setTargetGenre] = useState('');
   const [playsPurchased, setPlaysPurchased] = useState(1000);
 
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
   const freeLimit = limits?.freeFeaturements || 0;
 
   const currentMonthCampaigns = ads.filter(ad => {
@@ -1405,7 +1426,12 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
 };
 
 const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any) => {
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
 
   return (
     <div className="space-y-8">
@@ -1483,9 +1509,18 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [isForSale, setIsForSale] = useState(false);
 
   const { userProfile } = useAuth();
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
 
-  const isFree = getArtistTier(userProfile) === 'free';
+  const isFree = useMemo(() => getArtistTier(userProfile) === 'free', [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+  ]);
   const startOfPeriod = new Date();
   startOfPeriod.setMonth(startOfPeriod.getMonth() - 6);
   startOfPeriod.setHours(0, 0, 0, 0);
@@ -2316,7 +2351,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 };
 
 const ProfileTab = ({ userProfile }: any) => {
-  const limits = getTierLimits(userProfile);
+  const limits = useMemo(() => getTierLimits(userProfile), [
+    userProfile?.artist_tier,
+    userProfile?.subscription_tier,
+    userProfile?.subscription_ends,
+    userProfile?.extra_track_slots,
+  ]);
   const { refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File|null>(null);
