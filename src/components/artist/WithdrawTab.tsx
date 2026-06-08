@@ -16,7 +16,6 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
   const [history, setHistory] = useState<any[]>([]);
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
   const [requesting, setRequesting] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<'Airtel' | 'TNM'>('Airtel');
   const [phone, setPhone] = useState(() => userProfile?.phone || '');
   const [verificationPhone, setVerificationPhone] = useState(() => userProfile?.phone || '');
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -26,6 +25,17 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
   const [idType, setIdType] = useState('National ID');
   const [nrcNumber, setNrcNumber] = useState('');
   const [idFile, setIdFile] = useState<File | null>(null);
+
+  const detectedNetwork = (() => {
+    const cleaned = phone?.replace(/\D/g, '') || '';
+    const prefix = cleaned.startsWith('265') ? cleaned.slice(3, 6) : cleaned.slice(0, 3);
+    const tnmPrefixes = ['088', '088', '885', '886', '887', '888', '889'];
+    const airtelPrefixes = ['099', '098', '097', '096', '091', '990', '991', '992', '993', '994', '995', '996', '997', '998', '999'];
+    if (tnmPrefixes.some(p => prefix.startsWith(p.slice(0,3)))) return 'TNM';
+    if (airtelPrefixes.some(p => prefix.startsWith(p.slice(0,3)))) return 'AIRTEL';
+    // Fallback: 088 = TNM, 099 = Airtel
+    return cleaned.startsWith('088') || cleaned.startsWith('088') ? 'TNM' : 'AIRTEL';
+  })();
 
   const balance = Number(userProfile?.wallet_balance || 0);
   const limits = useMemo(() => getTierLimits(userProfile), [
@@ -155,7 +165,7 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
         body: {
           amount: withdrawalAmount,
           phone,
-          network: selectedNetwork
+          network: detectedNetwork.toUpperCase()
         }
       });
 
@@ -338,22 +348,17 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
               </h4>
 
               {/* NETWORK SELECTOR */}
-              <div>
-                <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-3">Select Network Network</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => setSelectedNetwork('Airtel')} 
-                    className={`py-3.5 rounded-[10px] border flex flex-col items-center justify-center gap-1 transition-all ${selectedNetwork === 'Airtel' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}
-                  >
-                    <span className="font-display font-black text-[13px] tracking-wide">AIRTEL</span>
-                  </button>
-                  <button 
-                    onClick={() => setSelectedNetwork('TNM')} 
-                    className={`py-3.5 rounded-[10px] border flex flex-col items-center justify-center gap-1 transition-all ${selectedNetwork === 'TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}
-                  >
-                    <span className="font-display font-black text-[13px] tracking-wide">TNM (Mpamba)</span>
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                  Network Detected:
+                </span>
+                <span className={`text-xs font-black px-3 py-1 rounded-full ${
+                  detectedNetwork === 'TNM'
+                    ? 'bg-smash-green/10 text-smash-green border border-smash-green/30'
+                    : 'bg-red-500/10 text-red-500 border border-red-500/30'
+                }`}>
+                  {detectedNetwork === 'TNM' ? 'TNM (Mpamba)' : 'Airtel Money'}
+                </span>
               </div>
 
               {/* PHONE IN */}
