@@ -15,6 +15,7 @@ import { Song, Album } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { BottomNav } from '../components/common/MainLayout';
+import { useUploadGuard } from '../hooks/useUploadGuard';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 
@@ -1509,6 +1510,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [isForSale, setIsForSale] = useState(false);
 
   const { userProfile } = useAuth();
+  const { guardResult, checking, checkUpload } = useUploadGuard();
+
+  useEffect(() => {
+    if (userProfile?.id) {
+      checkUpload(userProfile.id);
+    }
+  }, [userProfile?.id, checkUpload]);
+
   const limits = useMemo(() => getTierLimits(userProfile), [
     userProfile?.artist_tier,
     userProfile?.subscription_tier,
@@ -1687,6 +1696,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const handleUploadSingle = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
+    if (guardResult?.allowed === false) return toast.error(guardResult.message);
     if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
     
     setUploading(true);
@@ -1753,6 +1763,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const handleUploadAlbum = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
+    if (guardResult?.allowed === false) return toast.error(guardResult.message);
     if (albumTracks.length === 0 || !coverFile || !title) return toast.error('Check files and fields');
     
     setUploading(true);
@@ -1921,6 +1932,26 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                if (mode === 'album') handleUploadAlbum(e, isDrafting);
                else handleUploadSingle(e, isDrafting);
              }}>
+                
+                {guardResult && (
+                  <div className={`mx-6 md:mx-12 mt-6 p-4 rounded-xl border font-sans text-[13px] ${
+                    guardResult.allowed 
+                      ? (guardResult.daysRemaining !== null && guardResult.daysRemaining <= 7)
+                        ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                        : 'bg-smash-green/10 border-smash-green/20 text-smash-green'
+                      : 'bg-red-500/10 border-red-500/20 text-red-500'
+                  }`}>
+                    {guardResult.allowed ? (
+                      (guardResult.daysRemaining !== null && guardResult.daysRemaining <= 7) 
+                        ? `⚠️ Expiring in ${guardResult.daysRemaining} days — renew to keep all tracks live`
+                        : `🟢 ${guardResult.slotsUsed} of ${guardResult.slotsMax} slots used${guardResult.subscriptionEnds ? ` · Subscription active until ${new Date(guardResult.subscriptionEnds).toLocaleDateString()}` : ''}`
+                    ) : (
+                      guardResult.daysRemaining === 0 
+                        ? `🔴 Subscription expired — your tracks beyond top 3 are hidden. Renew to restore.`
+                        : `🔴 ${guardResult.message}`
+                    )}
+                  </div>
+                )}
                 
                 {currentStep === 1 && (
                   <div className={`p-6 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-smash-orange bg-smash-orange/5' : ''}`}>
@@ -2331,7 +2362,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                You have reached your upload limit. Upgrade your plan to upload more songs.
                              </div>
                            )}
-                           <button type="submit" disabled={!canUploadMore} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={!canUploadMore || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
                            </button>
                            <button type="submit" onClick={() => setIsDrafting(true)} className="w-full h-16 bg-white/5 border border-white/10 text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center">
