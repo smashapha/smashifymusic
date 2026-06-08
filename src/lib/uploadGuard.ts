@@ -17,7 +17,7 @@ const TIER_LIMITS: Record<string, number> = {
   elite: 25,
 };
 
-export async function checkCanUpload(artistId: string): Promise<UploadGuardResult> {
+export async function checkCanUpload(artistId: string, fileSize?: number): Promise<UploadGuardResult> {
   try {
     // 1. Fetch artist profile
     const { data: profile, error } = await supabase
@@ -33,6 +33,10 @@ export async function checkCanUpload(artistId: string): Promise<UploadGuardResul
     const currentTier = (profile.artist_tier || 'Free').toLowerCase();
     const isFree = currentTier === 'free';
     
+    if (fileSize && isFree && fileSize > 8 * 1024 * 1024) {
+      return { allowed: false, message: 'Free tier supports files up to 8MB. Upgrade to Rising Star for up to 50MB uploads.' };
+    }
+    
     // 2. Check if subscription_ends has passed
     let daysRemaining: number | null = null;
     let isExpired = false;
@@ -46,12 +50,13 @@ export async function checkCanUpload(artistId: string): Promise<UploadGuardResul
       }
     }
 
-    // 3. Count active songs
+    // 3. Count active songs that are NOT archived
     const { count, error: countError } = await supabase
       .from('songs')
       .select('*', { count: 'exact', head: true })
       .eq('artist_id', artistId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .neq('slot_mode', 'archive');
 
     if (countError) {
       return { allowed: false, message: "Could not count current active tracks." };
@@ -163,12 +168,13 @@ export async function checkCanPlaySong(songId: string): Promise<{
 export async function renewArtistSubscription(
   artistId: string,
   newTier: 'RisingStar' | 'Standard' | 'Elite',
-  billingMonths: 6 | 12
+  billingCycle: 'monthly' | '6month' = '6month'
 ): Promise<{ success: boolean; newExpiry: string; restoredTracks: number }> {
   try {
     const now = new Date();
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + billingMonths);
+    const monthsToAdd = billingCycle === 'monthly' ? 1 : 6;
+    expiry.setMonth(expiry.getMonth() + monthsToAdd);
     
     // Update profile
     const { error: profileError } = await supabase
@@ -194,12 +200,13 @@ export async function renewArtistSubscription(
     const extraSlots = (profile?.extra_track_slots || 0) * 10;
     const maxSlots = tierLimit + extraSlots;
 
-    // First, count currently active
+    // First, count currently active songs that are NOT archived
     const { count: activeCount } = await supabase
       .from('songs')
       .select('*', { count: 'exact', head: true })
       .eq('artist_id', artistId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .neq('slot_mode', 'archive');
       
     const currentActiveCount = activeCount || 0;
     let restoredTracks = 0;

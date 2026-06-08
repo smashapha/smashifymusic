@@ -5,10 +5,10 @@ export function useUploadGuard() {
   const [guardResult, setGuardResult] = useState<UploadGuardResult | null>(null);
   const [checking, setChecking] = useState(false);
 
-  const checkUpload = useCallback(async (artistId: string) => {
+  const checkUpload = useCallback(async (artistId: string, fileSize?: number) => {
     setChecking(true);
     try {
-      const result = await checkCanUpload(artistId);
+      const result = await checkCanUpload(artistId, fileSize);
       setGuardResult(result);
       return result;
     } catch (err) {

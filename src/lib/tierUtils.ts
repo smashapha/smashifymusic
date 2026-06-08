@@ -294,11 +294,12 @@ export const canUploadTrack = async (artist: any, supabaseClient: any): Promise<
   if (!artist || !artist.id) return false;
   const limits = getTierLimits(artist);
 
-  const { count, error } = await supabaseClient
-    .from('songs')
-    .select('*', { count: 'exact', head: true })
-    .eq('artist_id', artist.id)
-    .eq('is_active', true);
+    const { count, error } = await supabaseClient
+      .from('songs')
+      .select('*', { count: 'exact', head: true })
+      .eq('artist_id', artist.id)
+      .eq('is_active', true)
+      .neq('slot_mode', 'archive');
 
   if (error) {
     console.error('Error checking upload limits:', error);

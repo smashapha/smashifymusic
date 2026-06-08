@@ -1696,8 +1696,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const handleUploadSingle = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
-    if (guardResult?.allowed === false) return toast.error(guardResult.message);
     if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
+    if (userProfile?.id) {
+       const guardCheck = await checkUpload(userProfile.id, songFile.size);
+       if (!guardCheck.allowed) return toast.error(guardCheck.message);
+    }
     
     setUploading(true);
     setUploadProgress(10);
@@ -1763,8 +1766,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const handleUploadAlbum = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
-    if (guardResult?.allowed === false) return toast.error(guardResult.message);
     if (albumTracks.length === 0 || !coverFile || !title) return toast.error('Check files and fields');
+    if (userProfile?.id) {
+       const maxTrackSize = Math.max(...albumTracks.map(t => t.file.size));
+       const guardCheck = await checkUpload(userProfile.id, maxTrackSize);
+       if (!guardCheck.allowed) return toast.error(guardCheck.message);
+    }
     
     setUploading(true);
     setUploadProgress(5);
