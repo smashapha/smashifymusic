@@ -432,7 +432,7 @@ export default function ArtistHub() {
                   {activeTab === 'withdraw' && <WithdrawTab setActiveTab={setActiveTab} />}
                   {activeTab === 'music' && (
                     <div className="space-y-12">
-                      <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} />
+                      <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />
                       <div className="h-px w-full bg-white/5 my-8" />
                       <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />
                     </div>
@@ -1241,9 +1241,23 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
   );
 };
 
-const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
+const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
   const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale' | 'draft'>('all');
-  
+  const [catalogStats, setCatalogStats] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (userProfile?.id) {
+       (async () => {
+         const { data } = await supabase
+           .from('songs')
+           .select('slot_mode, plays_this_month')
+           .eq('artist_id', userProfile.id)
+           .eq('is_active', true);
+         setCatalogStats(data || []);
+       })();
+    }
+  }, [userProfile?.id]);
+
   const extractStoragePath = (url: string, bucket: string) => {
     if(!url) return null;
     try {
@@ -1285,6 +1299,13 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
     return count.toString();
   };
 
+  const hotCount      = catalogStats?.filter(s => s.slot_mode === 'hot').length || 0;
+  const activeCount   = catalogStats?.filter(s => s.slot_mode === 'active').length || 0;
+  const coldCount     = catalogStats?.filter(s => s.slot_mode === 'cold').length || 0;
+  const archiveCount  = catalogStats?.filter(s => s.slot_mode === 'archive').length || 0;
+  const totalSlotted  = hotCount + activeCount + coldCount;
+  const efficiencyPct = totalSlotted > 0 ? Math.round(((hotCount + activeCount) / totalSlotted) * 100) : 0;
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -1296,6 +1317,33 @@ const SongsTab = ({ songs, onRefresh, setActiveTab }: any) => {
           <Plus size={18} /> New Release
         </button>
       </div>
+
+      {catalogStats && totalSlotted > 0 && (
+        <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-[11px] font-black uppercase tracking-widest text-text-muted">Catalog Efficiency</span>
+            <span className={`text-2xl font-studio font-black ${
+              efficiencyPct >= 60 ? 'text-smash-green' :
+              efficiencyPct >= 30 ? 'text-yellow-400' : 'text-red-400'
+            }`}>
+              {efficiencyPct}%
+            </span>
+          </div>
+          <div className="flex gap-4 text-[11px] font-display font-semibold uppercase tracking-widest mb-4">
+             <span className="text-orange-400">🔥 {hotCount} Hot</span>
+             <span className="text-smash-green">✅ {activeCount} Active</span>
+             <span className="text-blue-400">🧊 {coldCount} Cold</span>
+             <span className="text-text-muted">📦 {archiveCount} Archive ( free )</span>
+          </div>
+          {efficiencyPct < 30 && totalSlotted >= 10 && (
+            <div className="bg-text-muted/10 px-4 py-3 rounded-xl border border-text-muted/20">
+              <p className="text-[12px] text-text-secondary font-sans leading-relaxed">
+                💡 Most of your slots have low activity. Consider a lower tier at renewal to save on costs.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-bg-surface border border-border-default rounded-[14px] overflow-hidden shadow-sm">
         <div className="p-4 md:p-6 border-b border-border-default flex gap-2 overflow-x-auto no-scrollbar">

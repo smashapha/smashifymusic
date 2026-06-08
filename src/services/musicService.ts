@@ -102,6 +102,9 @@ export const musicService = {
    */
   async incrementPlays(songId: string) {
     try {
+      // Record play for current month
+      await supabase.rpc('increment_plays_this_month', { song_id: songId });
+
       // First try using the RPC function if it exists
       const { error: rpcError } = await supabase.rpc('increment_song_plays', { song_id: songId });
       

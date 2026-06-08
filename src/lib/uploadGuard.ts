@@ -176,6 +176,11 @@ export async function renewArtistSubscription(
     const monthsToAdd = billingCycle === 'monthly' ? 1 : 6;
     expiry.setMonth(expiry.getMonth() + monthsToAdd);
     
+    // Set renewal lock first
+    await supabase.from('profiles')
+      .update({ renewal_in_progress: true })
+      .eq('id', artistId);
+
     // Update profile
     const { error: profileError } = await supabase
       .from('profiles')
@@ -184,6 +189,7 @@ export async function renewArtistSubscription(
         subscription_ends: expiry.toISOString(),
         artist_tier: newTier,
         is_paused: false,
+        renewal_in_progress: false, // Clear lock at end of update
       })
       .eq('id', artistId);
 
@@ -275,7 +281,112 @@ export async function renewArtistSubscription(
       restoredTracks
     };
   } catch (err) {
+    // Always clear the lock even on failure
+    await supabase.from('profiles')
+      .update({ renewal_in_progress: false })
+      .eq('id', artistId);
+      
     console.error(err);
     return { success: false, newExpiry: '', restoredTracks: 0 };
+  }
+}
+
+export async function handleViralSongPromotion(
+  artistId: string,
+  viralSongId: string
+): Promise<{ swapped: boolean; retiredSongTitle?: string }> {
+  try {
+    // Check if artist is at slot limit
+    const guard = await checkCanUpload(artistId);
+    if (guard.slotsRemaining && guard.slotsRemaining > 0) {
+      // Slot available — just promote the song
+      await supabase.from('songs').update({ slot_mode: 'hot', is_active: true }).eq('id', viralSongId);
+      return { swapped: false };
+    }
+
+    // No slots — find lowest cold song and retire it
+    const { data: coldSong } = await supabase
+      .from('songs')
+      .select('id, title, plays_this_month')
+      .eq('artist_id', artistId)
+      .eq('slot_mode', 'cold')
+      .eq('is_active', true)
+      .order('plays_this_month', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (!coldSong) return { swapped: false };
+
+    // Retire the cold song to archive
+    await supabase.from('songs')
+      .update({ slot_mode: 'archive' })
+      .eq('id', coldSong.id);
+
+    // Promote the viral song
+    const { data: viralSong } = await supabase
+      .from('songs').select('title').eq('id', viralSongId).single();
+
+    await supabase.from('songs')
+      .update({ slot_mode: 'hot', is_active: true })
+      .eq('id', viralSongId);
+
+    // Notify artist
+    await supabase.from('notifications').insert({
+      profile_id: artistId,
+      user_type: 'artist',
+      type: 'auto_slot_swap',
+      message: `"${viralSong?.title}" is trending! It has been promoted to your active slots. "${coldSong.title}" moved to Archive to make room.`,
+      link: '/artist-hub#songs',
+    });
+
+    return { swapped: true, retiredSongTitle: coldSong.title };
+  } catch {
+    return { swapped: false };
+  }
+}
+
+export async function checkAndSendRenewalWarnings(): Promise<void> {
+  try {
+    const { data: artists } = await supabase
+      .from('profiles')
+      .select('id, stage_name, subscription_ends, artist_tier')
+      .neq('artist_tier', 'Free')
+      .not('subscription_ends', 'is', null);
+
+    if (!artists) return;
+
+    for (const artist of artists) {
+      const endsDate = new Date(artist.subscription_ends);
+      const now = new Date();
+      const daysLeft = Math.ceil((endsDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysLeft === 30) {
+        await supabase.from('notifications').insert({
+          profile_id: artist.id,
+          user_type: 'artist',
+          type: 'renewal_warning',
+          message: `Your ${artist.artist_tier} plan expires in 30 days. Renew before ${endsDate.toLocaleDateString()} to keep all your tracks live.`,
+          link: '/artist-hub#billing',
+        });
+      } else if (daysLeft === 7) {
+        await supabase.from('notifications').insert({
+          profile_id: artist.id,
+          user_type: 'artist',
+          type: 'renewal_warning',
+          message: `⚠️ 7 days left on your ${artist.artist_tier} plan. Renew now to avoid your tracks being hidden.`,
+          link: '/artist-hub#billing',
+        });
+      } else if (daysLeft === 1) {
+        await supabase.from('notifications').insert({
+          profile_id: artist.id,
+          user_type: 'artist',
+          type: 'renewal_urgent',
+          message: `🚨 Your ${artist.artist_tier} plan expires TOMORROW. Renew immediately or your tracks will enter the 7-day grace period.`,
+          link: '/artist-hub#billing',
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Renewal warning check failed:', err);
   }
 }
