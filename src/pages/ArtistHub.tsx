@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  BarChart3, Music2, Upload, Wallet, UserCircle, Settings, 
+  BarChart3, BarChart2, Music2, Upload, Wallet, UserCircle, Settings, 
   TrendingUp, Users, Play, DollarSign, Plus, Trash2, 
   Edit3, CircleCheck, AlertCircle, AlertTriangle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
@@ -13,13 +13,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Song, Album } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
 import { BottomNav } from '../components/common/MainLayout';
 import { useUploadGuard } from '../hooks/useUploadGuard';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 
-type TabType = 'dashboard' | 'music' | 'promotion' | 'profile' | 'subscription' | 'notifications' | 'transactions' | 'withdraw';
+type TabType = 'dashboard' | 'music' | 'upload' | 'promotion' | 'profile' | 'subscription' | 'notifications' | 'transactions' | 'withdraw' | 'analytics' | 'fans';
 
 const NotificationsTab = ({ userProfile }: any) => {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -201,6 +202,8 @@ export default function ArtistHub() {
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
         { id: 'music', label: 'Music', icon: Music2 },
+        { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+        { id: 'fans', label: 'Fans', icon: Users },
         { id: 'upload', label: 'Upload', icon: UploadCloud },
         { id: 'withdraw', label: 'Withdrawal', icon: Wallet },
         { id: 'promotion', label: 'Promote', icon: Flame },
@@ -429,6 +432,8 @@ export default function ArtistHub() {
                   transition={{ duration: 0.2 }}
                 >
                   {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'analytics' && <AnalyticsTab userProfile={userProfile} />}
+                  {activeTab === 'fans' && <FansTab userProfile={userProfile} />}
                   {activeTab === 'withdraw' && <WithdrawTab setActiveTab={setActiveTab} />}
                   {activeTab === 'music' && (
                     <div className="space-y-12">
@@ -531,13 +536,6 @@ const MotoAnalytics = ({ limits }: { limits: any }) => {
 
 const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
   const [history, setHistory] = useState<any[]>([]);
-  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<'Airtel' | 'TNM'>('Airtel');
-  const [phone] = useState(userProfile?.phone || '');
-  const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
-  const [requesting] = useState(false);
-  const handleWithdraw = () => {};
-  const handleInitiateWithdraw = () => {};
   const limits = useMemo(() => getTierLimits(userProfile), [
     userProfile?.artist_tier,
     userProfile?.subscription_tier,
@@ -623,6 +621,11 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
          />
       </div>
 
+      <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 shadow-sm">
+        <h3 className="font-bold text-white mb-4">Catalog Health</h3>
+        <CatalogHealthWidget artistId={userProfile?.id} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          {/* Wallet Control */}
          <div className="lg:col-span-2 space-y-8">
@@ -648,118 +651,22 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                ) : (
                  <>
                    <div className="absolute top-0 right-0 w-64 h-64 bg-smash-purple/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
-                   <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                      <div className="flex-1 text-center md:text-left">
-                         <p className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple mb-4">Withdrawable Profit</p>
-                         <h3 className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-text-primary leading-none">
-                            MK {balance.toLocaleString()}
-                         </h3>
-                         <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
-                            <div className="px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">Payout Valid</div>
-                            <div className="px-3 py-1 bg-bg-elevated text-text-muted border border-border-default rounded-full text-[10px] font-display font-semibold uppercase tracking-wider">3% Network Fee</div>
-                         </div>
-                      </div>
-                       <div className="w-full md:w-auto flex flex-col gap-3 min-w-[220px]">
-                         <button 
-                             onClick={() => setActiveTab('withdraw')} 
-                             className="w-full h-[46px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-all shadow-md flex items-center justify-center gap-1.5"
-                          >
-                             <Wallet size={14} /> Open Withdrawal Tab
-                          </button>
-                          
-                          {!userProfile?.is_verified && (
-                             <button 
-                                onClick={() => setActiveTab('withdraw')} 
-                                className="w-full text-[10px] font-display font-bold text-smash-orange hover:underline text-center uppercase tracking-widest block"
-                             >
-                                Submit ID Verification &rarr;
-                             </button>
-                          )}
-                          {false && showWithdrawForm ? (
-                           <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
-                              <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block text-left">Select Network</label>
-                              <div className="grid grid-cols-2 gap-3 mb-4">
-                                <button onClick={()=>setSelectedNetwork('Airtel')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='Airtel' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
-                                   <div className="font-display font-bold text-[14px]">AIRTEL</div>
-                                </button>
-                                <button onClick={()=>setSelectedNetwork('TNM')} className={`p-4 rounded-[10px] border flex flex-col items-center gap-2 transition-all ${selectedNetwork==='TNM' ? 'bg-smash-green/10 border-smash-green text-smash-green' : 'bg-bg-elevated border-border-default text-text-secondary hover:border-text-muted'}`}>
-                                   <div className="font-display font-bold text-[14px]">TNM</div>
-                                </button>
-                              </div>
-                              <div className="text-left">
-                                <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Verified Phone Number</label>
-                                <input 
-                                  value={phone}
-                                  readOnly
-                                  placeholder="099..."
-                                  className="w-full h-[44px] bg-bg-elevated/50 border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-muted outline-none cursor-not-allowed"
-                                />
-                                <p className="text-[9px] text-text-muted mt-1 italic">To change your payout number, please update your profile.</p>
-                              </div>
-
-                              <div className="p-4 bg-bg-elevated border border-border-subtle rounded-[14px] space-y-2">
-                                 <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
-                                    <span>Requested:</span>
-                                    <span>MK {withdrawalAmount.toLocaleString()}</span>
-                                 </div>
-                                 <div className="flex justify-between text-[11px] uppercase tracking-widest text-text-muted font-bold">
-                                    <span>Fee (3%):</span>
-                                    <span>-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
-                                 </div>
-                                 <div className="flex justify-between text-[12px] uppercase tracking-widest text-smash-green font-black pt-2 border-t border-border-subtle">
-                                    <span>Receive:</span>
-                                    <span>MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
-                                 </div>
-                              </div>
-
-                              <div className="flex gap-3 pt-2">
-                                 <button onClick={()=>setShowWithdrawForm(false)} className="flex-1 h-[44px] bg-bg-elevated border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-border-default transition-colors">Cancel</button>
-                                 <button onClick={handleWithdraw} disabled={requesting} className="flex-1 h-[44px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-colors">{requesting?'Processing...':'Confirm'}</button>
-                              </div>
-                           </div>
-                         ) : (
-                            <div className="space-y-4 animate-in slide-in-from-bottom-4 fade-in duration-300">
-                                 <div className="relative">
-                                    <input 
-                                       type="number" 
-                                       value={withdrawalAmount || ''} 
-                                       onChange={e => setWithdrawalAmount(Number(e.target.value))}
-                                       placeholder="0"
-                                       className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-6 py-4 font-studio font-bold text-[32px] outline-none focus:border-smash-purple focus:border-b-smash-purple focus:bg-bg-elevated transition-all text-text-primary placeholder:text-text-muted text-center"
-                                    />
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MK</div>
-                                 </div>
-
-                                 {withdrawalAmount >= 2000 && (
-                                    <div className="p-4 bg-bg-elevated/50 border border-border-subtle rounded-[14px] space-y-2 animate-in fade-in zoom-in-95 duration-300">
-                                       <div className="flex justify-between items-center text-[11px] font-display font-medium uppercase tracking-wider text-text-muted">
-                                          <span>Platform Fee (3%)</span>
-                                          <span>MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
-                                       </div>
-                                       <div className="pt-2 border-t border-border-subtle flex justify-between items-center">
-                                          <span className="text-[11px] font-display font-bold uppercase tracking-widest text-text-primary">Net Receive</span>
-                                          <span className="text-[18px] font-studio font-bold text-smash-green">MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
-                                       </div>
-                                    </div>
-                                 )}
-                                 {userProfile?.is_verified ? (
-                                   <button 
-                                      onClick={handleInitiateWithdraw} 
-                                      disabled={!limits.canWithdraw || requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
-                                      className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
-                                   >
-                                      REQUEST WITHDRAWAL
-                                   </button>
-                                 ) : (
-                                   <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-[10px] p-3 text-left">
-                                      <p className="text-smash-orange font-bold text-xs uppercase tracking-widest mb-1"><AlertCircle className="inline" size={14} /> Verification Required</p>
-                                      <p className="text-smash-orange/80 text-[11px] font-sans">You must verify your identity before withdrawing funds.</p>
-                                      <button onClick={() => setActiveTab('profile')} className="mt-2 text-smash-purple text-[10px] font-bold uppercase tracking-widest hover:underline">Verify Identity →</button>
-                                   </div>
-                                 )}
-                            </div>
-                         )}
-                      </div>
+                   <div className="relative z-10 flex flex-col items-center justify-center gap-4 py-4">
+                     <div className="text-center">
+                       <p className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-smash-green leading-none">
+                         MK {balance.toLocaleString()}
+                       </p>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-2">
+                         Available Balance
+                       </p>
+                     </div>
+                     <button
+                       onClick={() => setActiveTab('withdraw')}
+                       disabled={balance < 2000}
+                       className="w-full max-w-sm h-12 bg-smash-green text-white rounded-2xl font-black text-sm uppercase tracking-widest disabled:opacity-40 hover:brightness-110 transition-all shadow-lg shadow-smash-green/20 mt-4"
+                     >
+                       {balance < 2000 ? `Min MK 2,000 required` : `Withdraw Earnings`}
+                     </button>
                    </div>
                  </>
                )}
@@ -2495,6 +2402,10 @@ const ProfileTab = ({ userProfile }: any) => {
         bio: fd.get('bio'),
         instagram: fd.get('instagram'),
         twitter: fd.get('twitter'),
+        instagram_url: fd.get('instagram_url'),
+        tiktok_url: fd.get('tiktok_url'),
+        facebook_url: fd.get('facebook_url'),
+        youtube_url: fd.get('youtube_url'),
         avatar_url: avatarUrl,
         banner_url: bannerUrl,
       };
@@ -2627,6 +2538,31 @@ const ProfileTab = ({ userProfile }: any) => {
                <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">X / Twitter Handle</label>
                <input name="twitter" defaultValue={userProfile?.twitter} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all placeholder:opacity-50 text-text-primary" placeholder="@handle" />
             </div>
+         </div>
+
+         <div className="space-y-4 pt-4 border-t border-white/10">
+           <p className="text-[11px] font-display font-bold uppercase tracking-widest text-text-muted">Social Links (Optional)</p>
+           <div className="grid grid-cols-1 gap-4">
+             {[
+               { key: 'instagram_url', label: 'Instagram', placeholder: 'https://instagram.com/yourhandle' },
+               { key: 'tiktok_url', label: 'TikTok', placeholder: 'https://tiktok.com/@yourhandle' },
+               { key: 'facebook_url', label: 'Facebook', placeholder: 'https://facebook.com/yourpage' },
+               { key: 'youtube_url', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel' },
+             ].map(field => (
+               <div key={field.key}>
+                 <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-1">
+                   {field.label}
+                 </label>
+                 <input
+                   name={field.key}
+                   type="url"
+                   defaultValue={userProfile?.[field.key]}
+                   placeholder={field.placeholder}
+                   className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] text-text-primary placeholder:opacity-50 outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all"
+                 />
+               </div>
+             ))}
+           </div>
          </div>
          
          {!userProfile?.is_verified && (
@@ -2793,3 +2729,310 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
   );
 };
 
+const AnalyticsTab = ({ userProfile }: any) => {
+  const [songStats, setSongStats] = useState<any[]>([]);
+  const [monthlyEarnings, setMonthlyEarnings] = useState<any[]>([]);
+  const [tipHistory, setTipHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const limits = useMemo(() => getTierLimits(userProfile), [userProfile?.artist_tier]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!userProfile?.id) return;
+      setLoading(true);
+
+      // Per-song performance
+      const { data: songs } = await supabase
+        .from('songs')
+        .select('id, title, plays, sales, cover_url, slot_mode, plays_this_month')
+        .eq('artist_id', userProfile.id)
+        .eq('is_active', true)
+        .order('plays', { ascending: false })
+        .limit(10);
+      setSongStats(songs || []);
+
+      // Monthly earnings from transactions
+      const { data: txns } = await supabase
+        .from('transactions')
+        .select('net_amount, type, created_at')
+        .eq('artist_id', userProfile.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: true });
+
+      // Group by month
+      const grouped: Record<string, number> = {};
+      (txns || []).forEach(tx => {
+        const month = new Date(tx.created_at).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        grouped[month] = (grouped[month] || 0) + Number(tx.net_amount || 0);
+      });
+      setMonthlyEarnings(Object.entries(grouped).map(([month, amount]) => ({ month, amount })));
+
+      // Tip/donation history
+      const { data: tips } = await supabase
+        .from('transactions')
+        .select('gross_amount, net_amount, created_at, metadata')
+        .eq('artist_id', userProfile.id)
+        .eq('type', 'donation')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setTipHistory(tips || []);
+
+      setLoading(false);
+    };
+    fetch();
+  }, [userProfile?.id]);
+
+  if (loading) return <div className="py-20 text-center text-smash-gray">Loading analytics...</div>;
+
+  return (
+    <div className="space-y-8 max-w-5xl">
+      <div>
+        <h2 className="text-[28px] font-studio font-bold uppercase text-text-primary flex items-center gap-3">
+          <BarChart2 className="text-smash-purple" /> Analytics
+        </h2>
+        <p className="text-text-secondary text-sm mt-1">Track your performance across all your music</p>
+      </div>
+
+      {/* Monthly Earnings Chart */}
+      <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+        <h3 className="font-bold text-white mb-1">Monthly Earnings</h3>
+        <p className="text-xs text-smash-gray mb-6">Net earnings after platform fee</p>
+        {monthlyEarnings.length > 0 ? (
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyEarnings}>
+                <defs>
+                  <linearGradient id="earningsGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `MK${v/1000}k`} />
+                <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100,116,139,0.3)', borderRadius: '8px' }} formatter={(v: any) => [`MK ${Number(v).toLocaleString()}`, 'Earnings']} />
+                <Area type="monotone" dataKey="amount" stroke="#a855f7" fillOpacity={1} fill="url(#earningsGrad)" isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-center text-smash-gray py-8 text-sm">No earnings data yet. Start promoting your music!</p>
+        )}
+      </div>
+
+      {/* Top Songs by Performance */}
+      <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+        <h3 className="font-bold text-white mb-6">Top Songs Performance</h3>
+        <div className="space-y-4">
+          {songStats.length === 0 ? (
+            <p className="text-center text-smash-gray py-8 text-sm">No songs uploaded yet.</p>
+          ) : songStats.map((song, i) => {
+            const maxPlays = songStats[0]?.plays || 1;
+            const pct = Math.round((song.plays / maxPlays) * 100);
+            return (
+              <div key={song.id} className="flex items-center gap-4">
+                <span className="text-[10px] font-black text-smash-gray w-4 shrink-0">#{i + 1}</span>
+                <img src={song.cover_url || ''} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold text-white truncate">{song.title}</p>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <span className="text-[10px] font-black text-smash-gray">{song.plays?.toLocaleString()} plays</span>
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
+                        song.slot_mode === 'hot' ? 'bg-orange-500/20 text-orange-400' :
+                        song.slot_mode === 'active' ? 'bg-green-500/20 text-green-400' :
+                        song.slot_mode === 'cold' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-white/10 text-smash-gray'
+                      }`}>
+                        {song.slot_mode || 'active'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-smash-purple rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recent Tips */}
+      {tipHistory.length > 0 && (
+        <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+          <h3 className="font-bold text-white mb-6">Recent Tips Received 💸</h3>
+          <div className="space-y-3">
+            {tipHistory.map((tip, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div>
+                  <p className="text-sm font-bold text-white">MK {Number(tip.gross_amount).toLocaleString()}</p>
+                  <p className="text-[10px] text-smash-gray">{new Date(tip.created_at).toLocaleDateString('en-GB')}</p>
+                </div>
+                <p className="text-xs text-smash-green font-bold">Net: MK {Number(tip.net_amount).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FansTab = ({ userProfile }: any) => {
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [topTippers, setTopTippers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!userProfile?.id) return;
+
+      // Fan subscriptions
+      const { data: subs } = await supabase
+        .from('fan_subscriptions')
+        .select('*, user_profiles!fan_id(full_name, avatar_url)')
+        .eq('artist_id', userProfile.id)
+        .eq('status', 'active')
+        .order('started_at', { ascending: false });
+      setSubscribers(subs || []);
+
+      // Top tippers from transactions
+      const { data: tips } = await supabase
+        .from('transactions')
+        .select('fan_id, gross_amount, user_profiles!fan_id(full_name, avatar_url)')
+        .eq('artist_id', userProfile.id)
+        .eq('type', 'donation')
+        .eq('status', 'completed')
+        .order('gross_amount', { ascending: false })
+        .limit(10);
+      setTopTippers(tips || []);
+
+      setLoading(false);
+    };
+    fetch();
+  }, [userProfile?.id]);
+
+  if (loading) return <div className="py-20 text-center text-smash-gray">Loading fans...</div>;
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div>
+        <h2 className="text-[28px] font-studio font-bold uppercase text-text-primary flex items-center gap-3">
+          <Users className="text-smash-purple" /> Fan Base
+        </h2>
+        <p className="text-text-secondary text-sm mt-1">Your active subscribers and top supporters</p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-bg-surface border border-border-default rounded-2xl p-5 text-center">
+          <p className="text-3xl font-black text-smash-purple">{subscribers.length}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Active Subscribers</p>
+          <p className="text-xs text-smash-gray mt-1">MK {(subscribers.length * 150).toLocaleString()} monthly</p>
+        </div>
+        <div className="bg-bg-surface border border-border-default rounded-2xl p-5 text-center">
+          <p className="text-3xl font-black text-smash-green">{topTippers.length}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Tip Supporters</p>
+          <p className="text-xs text-smash-gray mt-1">Total tips received</p>
+        </div>
+      </div>
+
+      {/* Active Subscribers List */}
+      <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+        <h3 className="font-bold text-white mb-6">
+          Active Subscribers ({subscribers.length})
+        </h3>
+        {subscribers.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-4xl mb-3">🎯</p>
+            <p className="text-smash-gray text-sm">No subscribers yet.</p>
+            <p className="text-smash-gray text-xs mt-1">Promote your profile to attract monthly fans.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {subscribers.map((sub, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center text-smash-purple font-black text-sm">
+                    {sub.user_profiles?.full_name?.[0] || '?'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{sub.user_profiles?.full_name || 'Anonymous Fan'}</p>
+                    <p className="text-[10px] text-smash-gray">Since {new Date(sub.started_at).toLocaleDateString('en-GB')}</p>
+                  </div>
+                </div>
+                <span className="text-xs font-black text-smash-green px-2 py-1 bg-smash-green/10 rounded-full">
+                  Active
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Top Tippers */}
+      {topTippers.length > 0 && (
+        <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+          <h3 className="font-bold text-white mb-6">Top Supporters 💸</h3>
+          <div className="space-y-3">
+            {topTippers.map((tip, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-smash-gray w-5">#{i + 1}</span>
+                  <div className="w-8 h-8 rounded-full bg-smash-orange/20 flex items-center justify-center text-smash-orange font-black text-sm">
+                    {tip.user_profiles?.full_name?.[0] || '?'}
+                  </div>
+                  <p className="text-sm font-bold text-white">{tip.user_profiles?.full_name || 'Anonymous'}</p>
+                </div>
+                <p className="text-sm font-black text-smash-orange">MK {Number(tip.gross_amount).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CatalogHealthWidget = ({ artistId }: { artistId: string }) => {
+  const [data, setData] = useState({ hot: 0, active: 0, cold: 0, archive: 0 });
+
+  useEffect(() => {
+    if (!artistId) return;
+    supabase.from('songs').select('slot_mode').eq('artist_id', artistId).eq('is_active', true)
+      .then(({ data: songs }) => {
+        if (!songs) return;
+        setData({
+          hot:     songs.filter(s => s.slot_mode === 'hot').length,
+          active:  songs.filter(s => s.slot_mode === 'active').length,
+          cold:    songs.filter(s => s.slot_mode === 'cold').length,
+          archive: songs.filter(s => s.slot_mode === 'archive').length,
+        });
+      });
+  }, [artistId]);
+
+  const total = data.hot + data.active + data.cold;
+  return (
+    <div className="flex gap-4 flex-wrap">
+      {[
+        { label: '🔥 Hot', count: data.hot, color: 'text-orange-400' },
+        { label: '✅ Active', count: data.active, color: 'text-green-400' },
+        { label: '🧊 Cold', count: data.cold, color: 'text-blue-400' },
+        { label: '📦 Archive (free)', count: data.archive, color: 'text-smash-gray' },
+      ].map(item => (
+        <div key={item.label} className="flex items-center gap-2">
+          <span className={`text-sm font-black ${item.color}`}>{item.count}</span>
+          <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{item.label}</span>
+        </div>
+      ))}
+      {total > 0 && (
+        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden flex mt-2">
+          <div className="h-full bg-orange-400" style={{ width: `${(data.hot / total) * 100}%` }} />
+          <div className="h-full bg-green-400" style={{ width: `${(data.active / total) * 100}%` }} />
+          <div className="h-full bg-blue-400" style={{ width: `${(data.cold / total) * 100}%` }} />
+        </div>
+      )}
+    </div>
+  );
+};
