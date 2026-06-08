@@ -281,12 +281,13 @@ const Admin = () => {
     }
   };
 
-  const markAsPaid = async (
-    payoutId: string,
-    note: string
-  ) => {
+  const markAsPaid = async (payoutId: string, note: string) => {
     setProcessingId(payoutId);
     try {
+      const payout = payoutRequests.find(p => p.id === payoutId);
+      if (!payout) return toast.error('Payout not found');
+
+      // 1. Update payout request status
       const { error } = await supabase
         .from('payout_requests')
         .update({
@@ -298,8 +299,26 @@ const Admin = () => {
         .eq('id', payoutId);
 
       if (error) throw error;
+
+      // 2. Update the matching transaction to completed
+      await supabase
+        .from('transactions')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('paychangu_ref', payout.reference)
+        .eq('type', 'withdrawal');
+
+      // 3. Notify the artist
+      const netAmount = Number(payout.net_amount || payout.requested_amount);
+      await supabase.from('notifications').insert({
+        profile_id: payout.artist_id,
+        user_type: 'artist',
+        type: 'payout_paid',
+        message: `✅ Your withdrawal of MK ${Number(payout.requested_amount).toLocaleString()} has been paid! MK ${netAmount.toLocaleString()} sent to ${payout.network} ${payout.phone}.`,
+        link: '/artist-hub#wallet'
+      });
+
       toast.success('Marked as paid! Artist has been notified.');
-      fetchPayoutRequests(); // Call the existing fetch
+      fetchPayoutRequests();
     } catch (err: any) {
       toast.error('Failed: ' + err.message);
     } finally {
