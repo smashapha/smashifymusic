@@ -13,14 +13,14 @@ import { useAuth } from '../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'maintenance' | 'notifications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'maintenance' | 'notifications' | 'expiry-monitor'>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab') as any;
-    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'maintenance', 'notifications'].includes(tab)) {
+    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'maintenance', 'notifications', 'expiry-monitor'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -31,6 +31,10 @@ const Admin = () => {
   const [pendingSongs, setPendingSongs] = useState<any[]>([]); 
   const [pendingSnippets, setPendingSnippets] = useState<any[]>([]); 
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [expiringArtists, setExpiringArtists] = useState<any[]>([]);
+  const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [maintenance, setMaintenance] = useState({ active: false, message: '', estimatedTime: '' });
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
@@ -76,8 +80,29 @@ const Admin = () => {
     }
     if (isAdmin) {
       fetchAllData();
+
+      // Auto-refresh urgent counts every 60 seconds
+      const refreshInterval = setInterval(() => {
+        fetchPayoutRequests();
+        fetchApplications();
+        fetchPendingSongs();
+      }, 60000);
+      
+      return () => clearInterval(refreshInterval);
     }
   }, [userProfile, navigate]);
+
+  const fetchExpiringArtists = async () => {
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, stage_name, artist_tier, subscription_ends, wallet_balance, email')
+      .neq('artist_tier', 'Free')
+      .not('subscription_ends', 'is', null)
+      .lte('subscription_ends', thirtyDaysFromNow)
+      .order('subscription_ends', { ascending: true });
+    setExpiringArtists(data || []);
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -91,7 +116,8 @@ const Admin = () => {
       fetchAds(),
       fetchPayoutRequests(),
       fetchPlatformStats(),
-      fetchMaintenance()
+      fetchMaintenance(),
+      fetchExpiringArtists()
     ]);
     setLoading(false);
   };
@@ -133,6 +159,19 @@ const Admin = () => {
       toast.error('Failed to save config: ' + e.message);
     } finally {
       setMaintenanceLoading(false);
+    }
+  };
+
+  const bulkApproveSongs = async () => {
+    if (selectedSongs.length === 0) return;
+    const { error } = await supabase
+      .from('songs')
+      .update({ approved: true })
+      .in('id', selectedSongs);
+    if (!error) {
+      toast.success(`${selectedSongs.length} songs approved`);
+      setSelectedSongs([]);
+      fetchPendingSongs();
     }
   };
 
@@ -792,6 +831,18 @@ const Admin = () => {
             <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="notifications" label="Notifications" icon={Bell} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem 
+              id="expiry-monitor" 
+              label="Expiry Monitor" 
+              icon={Clock} 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              collapsed={sidebarCollapsed} 
+              count={expiringArtists?.filter(a => {
+                const days = Math.ceil((new Date(a.subscription_ends).getTime() - Date.now()) / 86400000);
+                return days <= 7 && days > 0;
+              }).length} 
+            />
          </nav>
 
          <div className="p-4 border-t border-white/5">
@@ -889,6 +940,18 @@ const Admin = () => {
                   <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="notifications" label="Notifications" icon={Bell} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem 
+                    id="expiry-monitor" 
+                    label="Expiry Monitor" 
+                    icon={Clock} 
+                    activeTab={activeTab} 
+                    setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} 
+                    collapsed={false} 
+                    count={expiringArtists?.filter(a => {
+                      const days = Math.ceil((new Date(a.subscription_ends).getTime() - Date.now()) / 86400000);
+                      return days <= 7 && days > 0;
+                    }).length} 
+                  />
                 </nav>
               </motion.div>
             </motion.div>
@@ -953,6 +1016,63 @@ const Admin = () => {
                   <div key={activeTab}>
                     {activeTab === 'overview' && (
                 <div className="space-y-6">
+                  {/* Quick Actions */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    {[
+                      {
+                        label: 'Pending Payouts',
+                        count: payoutRequests.filter(p => p.status === 'pending').length,
+                        color: 'yellow',
+                        tab: 'payouts',
+                        icon: '💸'
+                      },
+                      {
+                        label: 'Artist Applications',
+                        count: applications.length,
+                        color: 'purple',
+                        tab: 'applications',
+                        icon: '🎤'
+                      },
+                      {
+                        label: 'Songs to Review',
+                        count: pendingSongs.length,
+                        color: 'orange',
+                        tab: 'song-reviews',
+                        icon: '🎵'
+                      },
+                      {
+                        label: 'Feed Pending',
+                        count: pendingSnippets.length,
+                        color: 'blue',
+                        tab: 'snippet-reviews',
+                        icon: '📱'
+                      }
+                    ].map(action => (
+                      <button
+                        key={action.tab}
+                        onClick={() => setActiveTab(action.tab as any)}
+                        className="p-4 bg-white/5 border border-white/10 rounded-2xl text-left hover:border-smash-purple/30 transition-all group"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-lg">{action.icon}</span>
+                          {action.count > 0 && (
+                            <span className="text-xs font-black bg-smash-orange text-white px-2 py-0.5 rounded-full animate-pulse">
+                              {action.count}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-widest text-smash-gray group-hover:text-white transition-colors">
+                          {action.label}
+                        </p>
+                        {action.count === 0 ? (
+                          <p className="text-[10px] text-smash-gray/50 mt-1">All clear</p>
+                        ) : (
+                          <p className="text-[10px] text-smash-orange mt-1">Needs attention →</p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/30 transition-all">
@@ -1377,14 +1497,44 @@ const Admin = () => {
                     </button>
                     <button
                       onClick={() => {
-                        const reason = prompt('Rejection reason (required):');
-                        if (reason) rejectPayout(payout.id, reason);
+                        setRejectingId(payout.id);
+                        setRejectReason('');
                       }}
                       className="flex-1 h-11 bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl font-bold text-sm hover:bg-red-500/30 transition-all"
                     >
                       ✗ Reject
                     </button>
                   </div>
+
+                  {rejectingId === payout.id && (
+                    <div className="mt-3 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-3">
+                      <p className="text-xs font-black text-red-400 uppercase tracking-widest">
+                        Rejection Reason
+                      </p>
+                      <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Explain why this payout is being rejected..."
+                        rows={3}
+                        className="w-full bg-white/5 border border-red-500/20 rounded-xl p-3 text-sm text-white placeholder-smash-gray outline-none focus:border-red-500/50 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { rejectPayout(payout.id, rejectReason); setRejectingId(null); }}
+                          disabled={!rejectReason.trim()}
+                          className="flex-1 h-10 bg-red-500 text-white rounded-xl font-bold text-sm disabled:opacity-40"
+                        >
+                          Confirm Rejection
+                        </button>
+                        <button
+                          onClick={() => setRejectingId(null)}
+                          className="px-4 h-10 bg-white/5 text-smash-gray rounded-xl font-bold text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1530,6 +1680,25 @@ const Admin = () => {
                      <h3 className="font-studio font-black italic uppercase text-lg">Content Compliance</h3>
                      <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Song Review & Approval Node</p>
                   </div>
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm text-smash-gray cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedSongs.length === pendingSongs.length && pendingSongs.length > 0}
+                        onChange={(e) => setSelectedSongs(e.target.checked ? pendingSongs.map(s => s.id) : [])}
+                        className="w-4 h-4 rounded"
+                      />
+                      Select All ({pendingSongs.length})
+                    </label>
+                    {selectedSongs.length > 0 && (
+                      <button
+                        onClick={bulkApproveSongs}
+                        className="px-4 py-2 bg-smash-green text-white rounded-xl font-bold text-xs uppercase tracking-widest"
+                      >
+                        ✅ Approve {selectedSongs.length} Selected
+                      </button>
+                    )}
+                  </div>
                   <div className="overflow-x-auto">
                     {pendingSongs.filter(s => s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.profiles?.stage_name?.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
                       <table className="w-full text-left text-sm">
@@ -1546,6 +1715,14 @@ const Admin = () => {
                             <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
                               <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
+                                   <input
+                                      type="checkbox"
+                                      checked={selectedSongs.includes(song.id)}
+                                      onChange={(e) => setSelectedSongs(prev =>
+                                        e.target.checked ? [...prev, song.id] : prev.filter(id => id !== song.id)
+                                      )}
+                                      className="w-4 h-4 text-smash-purple bg-white/5 border-white/10 rounded cursor-pointer"
+                                    />
                                    <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-smash-purple group-hover:scale-105 transition-transform">
                                       <Music2 size={18} />
                                    </div>
@@ -1870,6 +2047,54 @@ const Admin = () => {
                         </div>
                      </div>
                    </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <p className="font-black text-white text-sm">Manual Vault Job</p>
+                           <p className="text-xs text-smash-gray mt-1">
+                             Vault tracks for expired subscriptions. Runs automatically at 2am daily.
+                           </p>
+                         </div>
+                         <button
+                           onClick={async () => {
+                             toast.loading('Running vault job...');
+                             const { error } = await supabase.rpc('vault_expired_artist_tracks');
+                             toast.dismiss();
+                             if (error) toast.error('Vault job failed: ' + error.message);
+                             else toast.success('Vault job completed successfully.');
+                           }}
+                           className="px-4 py-2 bg-smash-orange/20 text-smash-orange border border-smash-orange/20 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-smash-orange/30 transition-all whitespace-nowrap"
+                         >
+                           Run Now
+                         </button>
+                       </div>
+                     </div>
+
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <p className="font-black text-white text-sm">Slot Reclassification</p>
+                           <p className="text-xs text-smash-gray mt-1">
+                             Reclassifies songs based on monthly plays. Runs automatically at 3am daily.
+                           </p>
+                         </div>
+                         <button
+                           onClick={async () => {
+                             toast.loading('Running slot reclassification...');
+                             const { error } = await supabase.rpc('reclassify_song_slots');
+                             toast.dismiss();
+                             if (error) toast.error('Reclassification failed: ' + error.message);
+                             else toast.success('Slot reclassification completed successfully.');
+                           }}
+                           className="px-4 py-2 bg-smash-green/20 text-smash-green border border-smash-green/20 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-smash-green/30 transition-all whitespace-nowrap"
+                         >
+                           Run Now
+                         </button>
+                       </div>
+                     </div>
+                   </div>
                 </motion.div>
               )}
 
@@ -1989,6 +2214,67 @@ const Admin = () => {
                      </form>
                    </div>
                 </motion.div>
+              )}
+
+              {activeTab === 'expiry-monitor' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-black font-display uppercase italic text-white">
+                        Subscription Expiry Monitor
+                      </h2>
+                      <p className="text-xs text-smash-gray mt-1">
+                        Artists expiring within 30 days — {expiringArtists.length} found
+                      </p>
+                    </div>
+                  </div>
+
+                  {expiringArtists.length === 0 ? (
+                    <div className="text-center py-16 text-smash-gray">
+                      <p className="text-4xl mb-4">✅</p>
+                      <p className="font-bold">No artists expiring in the next 30 days</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {expiringArtists.map(artist => {
+                        const daysLeft = Math.ceil(
+                          (new Date(artist.subscription_ends).getTime() - Date.now()) / 86400000
+                        );
+                        const isExpired = daysLeft <= 0;
+                        const isUrgent = daysLeft <= 7 && daysLeft > 0;
+
+                        return (
+                          <div key={artist.id} className={`p-4 rounded-2xl border ${
+                            isExpired ? 'bg-red-500/5 border-red-500/20' :
+                            isUrgent  ? 'bg-yellow-500/5 border-yellow-500/20' :
+                                        'bg-white/5 border-white/10'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-black text-white">{artist.stage_name}</p>
+                                <p className="text-xs text-smash-gray mt-0.5">
+                                  {artist.artist_tier} · Wallet: MK {Number(artist.wallet_balance || 0).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-xs font-black px-3 py-1 rounded-full ${
+                                  isExpired ? 'bg-red-500/20 text-red-400' :
+                                  isUrgent  ? 'bg-yellow-500/20 text-yellow-400' :
+                                              'bg-white/10 text-white'
+                                }`}>
+                                  {isExpired ? 'EXPIRED' : `${daysLeft} days left`}
+                                </span>
+                                <p className="text-[10px] text-smash-gray mt-1">
+                                  {new Date(artist.subscription_ends).toLocaleDateString('en-GB')}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
 
                 </div>
