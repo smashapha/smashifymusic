@@ -72,31 +72,35 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     };
     window.addEventListener('smash_likes_updated', handleLikesUpdate);
 
-    // Initial DB check
-    const checkLikeStatus = async () => {
-      if (!userProfile) return;
+    // Debounce DB check to prevent simultaneous queries when many cards mount
+    const timer = setTimeout(async () => {
+      if (!userProfile?.id || !song?.id) return;
       try {
         const { data } = await supabase
           .from('likes')
-          .select('*')
+          .select('id')
           .eq('user_id', userProfile.id)
           .eq('song_id', song.id)
           .maybeSingle();
-        
+
         if (data) {
           setIsLiked(true);
-          const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
-          if (Array.isArray(liked) && !liked.includes(song.id)) {
-             localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, song.id]));
-          }
+          try {
+            const liked = JSON.parse(localStorage.getItem('smash_liked_songs') || '[]');
+            if (Array.isArray(liked) && !liked.includes(song.id)) {
+              localStorage.setItem('smash_liked_songs', JSON.stringify([...liked, song.id]));
+            }
+          } catch (_) {}
         }
       } catch (err) {
         console.error('Error fetching like status:', err);
       }
-    };
-    checkLikeStatus();
+    }, Math.random() * 800 + 200); // Random 200-1000ms stagger to spread DB load
 
-    return () => window.removeEventListener('smash_likes_updated', handleLikesUpdate);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('smash_likes_updated', handleLikesUpdate);
+    };
   }, [song.id, userProfile?.id]);
 
   const isCurrent = currentSong?.id === song.id;
@@ -206,9 +210,9 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
          {/* Cover art */}
          <div className="relative aspect-square w-full rounded-[8px] overflow-hidden shadow-sm">
            <img
-             src={optimizeImage(song.cover_url, 200, 200)}
+             src={optimizeImage(song.cover_url || null, 200, 200)}
              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-             alt={song.title}
+             alt={song.title || 'Unknown Title'}
            />
            {/* Play overlay */}
            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -291,7 +295,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     <div className={`group flex items-center gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-smash-orange shadow-sm border-smash-orange/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
-            <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+            <img src={optimizeImage(song.cover_url || null, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
           ) : (
             <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
                <Music2 size={24} className="text-text-muted/30" />
@@ -376,7 +380,9 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist, isArtistFree }: any) 
   const actualIsArtistFree = isArtistFree !== undefined ? isArtistFree : (song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || 'Free').toLowerCase() === 'free';
   
   const handleShare = async () => {
-    const displayArtist = song.featured_artist ? `${song.artist_name} ft. ${song.featured_artist}` : song.artist_name;
+    const displayArtist = song.featured_artist
+      ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}`
+      : (song.artist_name || 'Unknown Artist');
     const shareData = {
       title: song.title,
       text: `Listen to ${song.title} by ${displayArtist} on Smashify!`,

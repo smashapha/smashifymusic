@@ -35,7 +35,7 @@ const Trending: React.FC = () => {
    const fetchTrending = async () => {
       setLoading(true);
       try {
-         const limits = getListenerLimits(userProfile);
+         const limits = getListenerLimits(userProfile || null);
          
          const today = new Date().toISOString().split('T')[0];
          const { data, error } = await supabase
@@ -124,9 +124,9 @@ const Trending: React.FC = () => {
                      {songs.map((song, index) => (
                         <motion.div 
                           key={`trending-song-${song.id}-${index}`}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.2 }}
                           className="group"
                         >
                            <SongCard song={song} queue={songs} />
