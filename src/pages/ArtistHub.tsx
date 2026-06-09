@@ -7,7 +7,7 @@ import {
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
   ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
-  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt
+  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt, BookOpen
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -329,6 +329,14 @@ export default function ArtistHub() {
                 <ShieldCheck size={18} /> Admin Dashboard
               </Link>
             )}
+
+            <a 
+              href="/artist-guide"
+              target="_blank"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold text-smash-orange hover:text-white hover:bg-smash-orange/10 transition-all"
+            >
+              <BookOpen size={16} /> Creator Guide & Tips
+            </a>
 
             <Link 
               to={`/artist/${userProfile?.id}`}
@@ -1173,6 +1181,32 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
     } catch(e) { return null; }
   };
 
+  const toggleSongArchive = async (songId: string, currentMode: string) => {
+    const isArchived = currentMode === 'archive';
+    const newMode = isArchived ? 'cold' : 'archive';
+    const confirmMsg = isArchived
+      ? 'Restore this song to your active slots? It will count toward your slot limit again.'
+      : 'Move this song to Archive? It will no longer consume a slot. Fans can still find and play it. You can restore it anytime.';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    const { error } = await supabase
+      .from('songs')
+      .update({
+        slot_mode: newMode,
+        vaulted_at: isArchived ? null : new Date().toISOString(),
+        vaulted_reason: isArchived ? null : 'manual_archive'
+      })
+      .eq('id', songId);
+
+    if (error) {
+      toast.error('Failed to update song. Please try again.');
+    } else {
+      toast.success(isArchived ? 'Song restored to active slots.' : 'Song archived. Slot freed up.');
+      onRefresh();
+    }
+  };
+
   const handleDelete = async (song: any) => {
     if(!confirm('Are you sure you want to delete this track?')) return;
     try {
@@ -1323,15 +1357,36 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                        <span className={`inline-flex items-center px-2 py-1 rounded-[6px] text-[10px] font-display font-bold uppercase tracking-wider border ${song.is_for_sale ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 'bg-bg-surface text-text-secondary border-border-default'}`}>
                          {song.is_for_sale ? `MK ${song.price?.toLocaleString()}` : 'Free Feed'}
                        </span>
+                       {song.slot_mode === 'archive' && (
+                         <span className="text-[9px] text-text-muted block mt-1 font-display uppercase tracking-widest">
+                           Free slot · Playable
+                         </span>
+                       )}
+                       {song.slot_mode === 'cold' && (
+                         <span className="text-[9px] text-text-muted block mt-1 font-display uppercase tracking-widest">
+                           Auto-archives soon
+                         </span>
+                       )}
                     </td>
                     <td className="px-4 py-3">
                        <span className="text-[14px] font-display font-semibold text-text-primary">
                          {song.is_for_sale ? 'Processing' : '—'}
                        </span>
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2 last:pr-6">
-                       <button className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all" onClick={() => toast('Edit feature coming soon')}><Edit3 size={14} /></button>
-                       <button onClick={() => handleDelete(song)} className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
+                    <td className="px-4 py-3 text-right space-x-2 last:pr-6 cursor-default whitespace-nowrap">
+                       <button
+                         onClick={(e) => { e.stopPropagation(); toggleSongArchive(song.id, song.slot_mode); }}
+                         title={song.slot_mode === 'archive' ? 'Restore from Archive' : 'Move to Archive'}
+                         className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 ${
+                           song.slot_mode === 'archive'
+                             ? 'bg-smash-green/10 text-smash-green hover:bg-smash-green/20 border-smash-green/20'
+                             : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
+                         }`}
+                       >
+                         {song.slot_mode === 'archive' ? '↑ Restore' : '📦 Archive'}
+                       </button>
+                       <button onClick={(e) => { e.stopPropagation(); toast('Edit feature coming soon'); }} className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
                     </td>
                   </tr>
                 ))}
@@ -1364,7 +1419,18 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                       </span>
                    </div>
                    <div className="flex items-center gap-1">
-                      <button onClick={() => handleDelete(song)} className="w-6 h-6 inline-flex items-center justify-center bg-red-500/10 text-red-400 rounded disabled:opacity-50 transition-colors"><Trash2 size={12} /></button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSongArchive(song.id, song.slot_mode); }}
+                        title={song.slot_mode === 'archive' ? 'Restore' : 'Archive'}
+                        className={`w-6 h-6 inline-flex items-center justify-center rounded transition-colors ${
+                          song.slot_mode === 'archive'
+                            ? 'bg-smash-green/10 text-smash-green'
+                            : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
+                        }`}
+                      >
+                        {song.slot_mode === 'archive' ? '↑' : '📦'}
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-6 h-6 inline-flex items-center justify-center bg-red-500/10 text-red-400 rounded disabled:opacity-50 transition-colors"><Trash2 size={12} /></button>
                    </div>
                 </div>
               </div>
