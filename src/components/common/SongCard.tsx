@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Music2, ListMusic, Info, Gift } from 'lucide-react';
+import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Music2, ListMusic, Info, Gift, Download, Loader2 } from 'lucide-react';
 import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { purchaseTrack } from '../../lib/paychangu';
+import { downloadPurchasedSong } from '../../lib/downloads';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
@@ -31,6 +32,24 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   const [artistTier, setArtistTier] = useState<string | null>(() => {
     return (song as any).artist_tier || (song as any).profiles?.artist_tier || (song as any).profiles?.subscription_tier || null;
   });
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!userProfile?.id) {
+      toast.error('Please log in to download your purchased songs.');
+      return;
+    }
+    setIsDownloading(true);
+    try {
+      await downloadPurchasedSong(song.id, userProfile.id);
+      toast.success('Download started!');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (song.is_for_sale && song.price > 0 && !artistTier) {
@@ -243,6 +262,20 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                <ShoppingBag size={10} /> MK {song.price}
              </button>
            )}
+           {(song.is_purchased || purchasedIds?.has(song.id)) && (
+             <button
+               onClick={handleDownload}
+               disabled={isDownloading}
+               title="Download purchased track"
+               className="absolute top-2 left-2 flex items-center justify-center p-2 rounded-xl bg-smash-green text-white shadow-lg disabled:opacity-50 transition-all z-10"
+             >
+               {isDownloading ? (
+                 <Loader2 size={12} className="animate-spin" />
+               ) : (
+                 <Download size={12} />
+               )}
+             </button>
+           )}
            {/* Menu button - top right */}
            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
              <button
@@ -339,6 +372,20 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
              >
                <ShoppingBag size={14} />
                <span className="hidden sm:inline">MK {song.price}</span>
+             </button>
+           )}
+           {(song.is_purchased || purchasedIds?.has(song.id)) && (
+             <button
+               onClick={handleDownload}
+               disabled={isDownloading}
+               title="Download purchased track"
+               className="p-2 rounded-xl bg-smash-green/10 border border-smash-green/20 text-smash-green hover:bg-smash-green/20 transition-all disabled:opacity-50"
+             >
+               {isDownloading ? (
+                 <Loader2 size={14} className="animate-spin" />
+               ) : (
+                 <Download size={14} />
+               )}
              </button>
            )}
            <button 

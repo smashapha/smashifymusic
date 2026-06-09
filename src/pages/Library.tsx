@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon } from 'lucide-react';
+import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
+import { downloadPurchasedSong } from '../lib/downloads';
 
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 
@@ -29,6 +30,22 @@ const Library: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [purchasedSongs, setPurchasedSongs] = useState<any[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPurchased = async () => {
+      if (!userProfile?.id) return;
+      const { data } = await supabase
+        .from('fan_purchases')
+        .select('song_id, purchased_at, songs(id, title, artist_name, cover_url, audio_url, duration_seconds)')
+        .eq('fan_id', userProfile.id)
+        .eq('status', 'completed')
+        .order('purchased_at', { ascending: false });
+      setPurchasedSongs(data?.map(p => ({ ...(p.songs as any), purchasedAt: p.purchased_at })) || []);
+    };
+    fetchPurchased();
+  }, [userProfile?.id]);
 
   const handlePlaylistClick = async (pl: any) => {
     try {
@@ -226,8 +243,8 @@ const Library: React.FC = () => {
               </button>
               <button 
                 onClick={() => {
-                  if (!limits.canDownload) {
-                    toast.error('Offline saves require Weekly Pass or higher. Upgrade in your profile.');
+                  if (!limits.canDownload && purchasedSongs.length === 0) {
+                    toast.error('Offline saves require Weekly Pass or higher. Buy tracks to access your purchases here.');
                     return;
                   }
                   setActiveTab('downloads');
@@ -342,6 +359,106 @@ const Library: React.FC = () => {
               </div>
             )}
           </div>
+        ) : activeTab === 'downloads' ? (
+           <div className="space-y-8">
+             {/* Purchased Songs — always visible, no subscription required */}
+             <div className="mb-8">
+               <div className="flex items-center gap-2 mb-4">
+                 <ShoppingBag size={16} className="text-smash-orange" />
+                 <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                   Purchased Songs
+                 </h3>
+                 <span className="text-[10px] font-black text-smash-gray bg-white/5 px-2 py-0.5 rounded-full">
+                   {purchasedSongs.length}
+                 </span>
+               </div>
+
+               {purchasedSongs.length === 0 ? (
+                 <div className="text-center py-8 bg-white/5 rounded-2xl border border-white/10">
+                   <p className="text-3xl mb-3">🛒</p>
+                   <p className="text-sm font-bold text-white">No purchased songs yet</p>
+                   <p className="text-xs text-smash-gray mt-1">
+                     Buy tracks from artists to own them forever and download anytime.
+                   </p>
+                 </div>
+               ) : (
+                 <div className="space-y-2">
+                   {purchasedSongs.map(song => (
+                     <div key={song.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
+                       <img
+                         src={song.cover_url || ''}
+                         className="w-12 h-12 rounded-xl object-cover shrink-0"
+                         alt={song.title}
+                       />
+                       <div className="flex-1 min-w-0">
+                         <p className="text-sm font-bold text-white truncate">{song.title}</p>
+                         <p className="text-[11px] text-smash-gray truncate">{song.artist_name}</p>
+                         <p className="text-[9px] text-smash-gray/60 mt-0.5">
+                           Purchased {new Date(song.purchasedAt).toLocaleDateString('en-GB')}
+                         </p>
+                       </div>
+                       <button
+                         onClick={async () => {
+                           setDownloadingId(song.id);
+                           try {
+                             await downloadPurchasedSong(song.id, userProfile.id);
+                             toast.success('Download started!');
+                           } catch (err: any) {
+                             toast.error(err.message);
+                           } finally {
+                             setDownloadingId(null);
+                           }
+                         }}
+                         disabled={downloadingId === song.id}
+                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-smash-green/10 border border-smash-green/20 text-smash-green rounded-xl font-bold text-xs hover:bg-smash-green/20 transition-all disabled:opacity-50"
+                       >
+                         {downloadingId === song.id ? (
+                           <Loader2 size={12} className="animate-spin" />
+                         ) : (
+                           <Download size={12} />
+                         )}
+                         {downloadingId === song.id ? 'Downloading...' : 'Download'}
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+
+             {!limits.canDownload && (
+               <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
+                 <p className="text-sm font-bold text-white">Offline Saves</p>
+                 <p className="text-xs text-smash-gray mt-1">
+                   Save songs for offline listening with Weekly Pass or higher.
+                 </p>
+                 <button
+                   onClick={() => navigate('/profile#billing')}
+                   className="mt-3 px-4 py-2 bg-smash-orange text-white rounded-xl font-bold text-xs"
+                 >
+                   Upgrade Plan
+                 </button>
+               </div>
+             )}
+
+             {limits.canDownload && (
+                filteredSongs.length > 0 ? (
+                   <div className="space-y-3 md:space-y-4">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">Saved Offline</h3>
+                      {filteredSongs.map((song, i) => (
+                         <SongCard key={`library-${song.id}-${i}`} song={song} queue={filteredSongs} />
+                      ))}
+                   </div>
+                ) : (
+                   <div className="text-center py-8">
+                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 border border-white/10">
+                        <Download size={24} className="text-smash-gray" />
+                     </div>
+                     <p className="text-sm font-bold text-white">No offline saved songs</p>
+                     <p className="text-xs text-smash-gray mt-1">Download songs to listen offline without data.</p>
+                   </div>
+                )
+             )}
+           </div>
         ) : filteredSongs.length > 0 ? (
            <div className="space-y-3 md:space-y-4">
               {filteredSongs.map((song, i) => (
