@@ -20,12 +20,24 @@ export async function downloadPurchasedSong(
     // 2. Get song details
     const { data: song, error: songError } = await supabase
       .from('songs')
-      .select('audio_url, title, artist_name')
+      .select('audio_url, title, artist_name, artist_id')
       .eq('id', songId)
       .single();
 
     if (songError || !song?.audio_url) {
       throw new Error('Song file not available for download.');
+    }
+
+    // Verify artist tier
+    const { data: artist } = await supabase
+      .from('profiles')
+      .select('artist_tier')
+      .eq('id', song.artist_id)
+      .single();
+
+    const eliteTiers = ['Elite', 'elite', 'Label', 'label'];
+    if (!artist || !eliteTiers.includes(artist.artist_tier)) {
+      throw new Error('This track is no longer available for download. The artist has changed their plan.');
     }
 
     // 3. Fetch the file as a blob to force browser download

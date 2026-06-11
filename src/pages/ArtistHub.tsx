@@ -88,6 +88,11 @@ import { WithdrawTab } from '../components/artist/WithdrawTab';
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
+  
+  const canSellTracks = ['Elite', 'elite', 'Label', 'label'].includes(
+    userProfile?.artist_tier || ''
+  );
+
   const artistTier = useMemo(() => getArtistTier(userProfile), [
     userProfile?.artist_tier,
     userProfile?.subscription_tier,
@@ -2249,18 +2254,29 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl mb-4">
                                   <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
                                   <button type="button" onClick={() => {
-                                    if (!limits.canSellSongs) {
-                                      toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.');
+                                    if (!canSellTracks) {
+                                      toast.error('Track sales are available on the Elite plan only. Upgrade in Artist Hub.');
                                       return;
                                     }
                                     setIsForSale(true);
-                                  }} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} ${!limits.canSellSongs ? 'opacity-50' : ''}`}>Paid Download</button>
+                                  }} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} ${!canSellTracks ? 'opacity-50' : ''}`}>Paid Download</button>
                                </div>
                                {(isForSale && (mode !== 'album' || albumPricingMode === 'album')) && (
-                                 <div className="relative">
-                                    <input type="number" disabled={!limits.canSellSongs} onClick={() => { if (!limits.canSellSongs) { toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.'); } }} required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
-                                 </div>
+                                 canSellTracks ? (
+                                   <div className="relative">
+                                      <input type="number" required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
+                                   </div>
+                                 ) : (
+                                   <div className="p-4 bg-white/5 border border-white/10 rounded-xl mt-4">
+                                     <p className="text-xs font-bold text-smash-gray">
+                                       🔒 Track sales & downloads are available on the <span className="text-smash-orange">Elite plan</span> only.
+                                     </p>
+                                     <p className="text-[10px] text-smash-gray mt-1">
+                                       Upgrade to Elite to sell your tracks and give buyers permanent download access.
+                                     </p>
+                                   </div>
+                                 )
                                )}
                              </div>
                            )}
@@ -2284,10 +2300,18 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          <input required placeholder="Track Title" value={track.title} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].title = e.target.value; setAlbumTracks(newTracks); }} className="w-full bg-transparent font-sans font-bold text-[14px] text-white mb-3 focus:outline-none border-b border-transparent focus:border-white/20 pb-1 px-1 transition-all" />
                                          <div className="space-y-3">
                                            {isForSale && albumPricingMode === 'individual' && (
-                                              <div className="relative">
-                                                <input type="number" disabled={!limits.canSellSongs} onClick={() => { if (!limits.canSellSongs) { toast.error('Track sales require Rising Star plan or higher. Upgrade in Artist Hub.'); } }} required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
-                                              </div>
+                                              canSellTracks ? (
+                                                <div className="relative">
+                                                  <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
+                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
+                                                </div>
+                                              ) : (
+                                                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                                                  <p className="text-xs font-bold text-smash-gray">
+                                                    🔒 Track sales & downloads are available on the <span className="text-smash-orange">Elite plan</span> only.
+                                                  </p>
+                                                </div>
+                                              )
                                            )}
                                            <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].featured_artist = e.target.value; setAlbumTracks(newTracks); }} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple" />
                                            <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].lyrics = e.target.value; setAlbumTracks(newTracks); }} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple resize-y max-h-[100px]" />
