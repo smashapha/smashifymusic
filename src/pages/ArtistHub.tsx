@@ -1622,6 +1622,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const { userProfile } = useAuth();
   const { guardResult, checking, checkUpload } = useUploadGuard();
 
+  const canSellTracks = ['Elite', 'elite', 'Label', 'label'].includes(
+    userProfile?.artist_tier || ''
+  );
+
   useEffect(() => {
     if (userProfile?.id) {
       checkUpload(userProfile.id);
