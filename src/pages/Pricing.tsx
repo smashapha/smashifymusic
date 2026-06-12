@@ -217,7 +217,7 @@ const Pricing = () => {
                 onAction={() => handleAction()}
                 features={[
                   "5 total uploads (lifetime)",
-                  "Streaming only — no track sales",
+                  "Streaming only — no track sales or downloads",
                   "15% fee on tips",
                   "Basic play analytics",
                   "MK 50,000 max withdrawal",
@@ -233,7 +233,7 @@ const Pricing = () => {
                 onAction={() => handleAction('RisingStar')}
                 features={[
                   "10 uploads per 6 months",
-                  "Sell tracks to fans",
+                  "Tips & fan subscriptions only (no track sales)",
                   "Accept fan subscriptions",
                   "10% fee on tips & sales",
                   "Fan messaging enabled",
@@ -252,7 +252,7 @@ const Pricing = () => {
                 onAction={() => handleAction('Standard')}
                 features={[
                   "15 uploads per 6 months",
-                  "Sell tracks to fans",
+                  "Tips & fan subscriptions only (no track sales)",
                   "Accept fan subscriptions",
                   "7% fee on tips & sales",
                   "1 free featured placement/month",
@@ -271,6 +271,8 @@ const Pricing = () => {
                 onAction={() => handleAction('Elite')}
                 features={[
                   "25 uploads per 6 months",
+                  "Sell tracks to fans — with fan download access",
+                  "Elite exclusive: track sales & downloads",
                   "5% fee on tips & sales",
                   "3 free featured placements/month",
                   "Full analytics with CSV export",

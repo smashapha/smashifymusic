@@ -59,7 +59,7 @@ export default function ArtistGuide() {
           <GuideSection idx={2} icon={DollarSign} title="How Your Earnings Work">
             <div className="bg-bg-elevated/50 border border-white/5 p-5 rounded-xl font-mono text-sm space-y-3 mb-6">
               <p>💰 Tips from fans → You earn 85-95% (based on tier)</p>
-              <p>🛒 Track sales → You earn 85-95% (based on tier)</p>
+              <p>🛒 Track sales → Elite & Label tier only — You earn 95%</p>
               <p>❤️ Fan subscriptions → You earn 85-95% (based on tier)</p>
               <p>🎙️ Studio subscriptions → 100% goes to platform (this pays for hosting)</p>
             </div>
@@ -70,6 +70,12 @@ export default function ArtistGuide() {
               <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Rising Star: 10% platform fee</li>
               <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-smash-purple" /> Standard: 7% platform fee</li>
               <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-smash-orange" /> Elite: 5% platform fee</li>
+              <li className="flex items-start gap-2 mt-4 p-3 bg-smash-orange/10 border border-smash-orange/20 rounded-xl">
+                <div className="w-1.5 h-1.5 rounded-full bg-smash-orange mt-2 shrink-0" />
+                <span className="text-smash-orange font-bold text-xs">
+                  Track sales & fan downloads are an Elite-exclusive feature. Free, Rising Star, and Standard artists earn through tips and fan subscriptions only.
+                </span>
+              </li>
             </ul>
           </GuideSection>
 
@@ -87,7 +93,7 @@ export default function ArtistGuide() {
               </li>
               <li className="flex items-start gap-3">
                 <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
-                <span className="text-white font-medium">Price tracks between MK 150-500 for maximum conversion</span>
+                <span className="text-white font-medium">On Elite plan: price tracks between MK 150-500 for maximum conversion — fans get permanent download access with every purchase</span>
               </li>
               <li className="flex items-start gap-3">
                 <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
@@ -104,6 +110,12 @@ export default function ArtistGuide() {
               <li className="flex items-start gap-3">
                 <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Keep your profile photo and bio updated — verified profiles get 3x more tips</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <ArrowRight className="text-smash-orange mt-1 shrink-0" size={14} />
+                <span className="text-white font-medium">
+                  <span className="text-smash-orange font-black">Elite plan exclusive:</span> Sell individual tracks directly to fans. Buyers get a permanent download — no subscription needed to keep their music.
+                </span>
               </li>
             </ul>
           </GuideSection>

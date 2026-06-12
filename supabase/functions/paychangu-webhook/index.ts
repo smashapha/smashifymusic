@@ -255,28 +255,34 @@ serve(async (req) => {
       }
 
       case "TIP": {
-        const { error: walletError } = await supabase.rpc("increment_wallet", {
+        const { error: walletErr } = await supabase.rpc("increment_wallet", {
           artist_id: artistId,
           amount: netAmount,
         });
-        if (walletError) console.error("increment_wallet error:", walletError);
-        else
-          console.log(
-            "Artist wallet credited:",
-            netAmount,
-            "for artist:",
-            artistId,
-          );
+        if (walletErr) console.error("increment_wallet error:", walletErr);
 
-        if (!anonymous) {
-          await supabase.from("notifications").insert({
-            profile_id: artistId,
-            user_type: "artist",
-            type: "tip_received",
-            message: `You received a MWK ${grossAmount.toLocaleString()} tip! (Net: MWK ${netAmount.toLocaleString()}) 💸`,
-            link: "/artist-hub#dashboard",
-          });
-        }
+        // Fetch fan name for notification
+        const { data: fanProfile } = await supabase
+          .from("user_profiles")
+          .select("full_name")
+          .eq("id", userId)
+          .maybeSingle();
+
+        const { data: artistFanProfile } = !fanProfile ? await supabase
+          .from("profiles")
+          .select("stage_name")
+          .eq("id", userId)
+          .maybeSingle() : { data: null };
+
+        const fanName = fanProfile?.full_name || artistFanProfile?.stage_name || "A fan";
+
+        await supabase.from("notifications").insert({
+          profile_id: artistId,
+          user_type: "artist",
+          type: "tip_received",
+          message: `${fanName} sent you a MWK ${grossAmount.toLocaleString()} tip! You earned MWK ${netAmount.toLocaleString()} after fees. 💸`,
+          link: "/artist-hub#dashboard",
+        });
         break;
       }
 
@@ -421,15 +427,32 @@ serve(async (req) => {
         }
         break;
 
-      case "ARTIST_AD_CAMPAIGN":
-        await supabase.from("audio_ads").insert({
-          artist_id: userId,
-          type: "promo",
+      case "ARTIST_AD_CAMPAIGN": {
+        const { error: adError } = await supabase.from("audio_ads").insert({
+          artist_id:       userId,
+          type:            "promo",
+          title:           meta.title || "Ad Campaign",
+          advertiser_name: meta.advertiser_name || null,
+          audio_url:       meta.audio_url || null,
+          target_city:     meta.target_city || null,
+          target_genre:    meta.target_genre || null,
           plays_purchased: plays,
-          active: false, // Needs admin review
+          plays_used:      0,
+          active:          false, // Admin must approve before going live
+          approved:        false,
+          expires_at:      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         });
-        // Notify admin (if admin email/id known, or just log)
+        if (adError) console.error("Audio ad insert error:", adError);
+        else console.log("Ad campaign created for artist:", userId);
+
+        await supabase.from("notifications").insert({
+          user_type: "admin",
+          type:      "ad_review",
+          message:   `New ad campaign submitted. Artist: ${userId}. Plays purchased: ${plays}. Needs approval before going live.`,
+          link:      "/admin#commercials",
+        });
         break;
+      }
     }
 
     return new Response("Success", { status: 200 });

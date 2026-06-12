@@ -120,7 +120,7 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
     first_name: user.full_name?.split(' ')[0] || 'Fan',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'track_purchase',
-    return_url: `${APP_URL}/purchase-success?song_id=${song.id}`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: user.id,
       songId: song.id,
@@ -144,7 +144,7 @@ export async function sendTip({ artist, fan, amount, anonymous = false }: { arti
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'tip',
-    return_url: `${APP_URL}/tip-success?artist_id=${artist.id}`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: fan.id,
       artistId: artist.id,
@@ -165,7 +165,7 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'fan_subscription',
-    return_url: `${APP_URL}/subscribe-success?artist_id=${artist.id}`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: fan.id,
       artistId: artist.id
@@ -202,7 +202,7 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
     first_name: user.full_name?.split(' ')[0] || 'Listener',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/upgrade-success?plan=${normalizedPlan}`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: user.id,
       plan: normalizedPlan,
@@ -235,7 +235,7 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/tier-success?tier=${tier}`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: artist.id,
       tier,
@@ -247,17 +247,34 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
 /**
  * Pay for an ad campaign
  */
-export async function payForAdCampaign({ artist, plays, amount }: { artist: UserProfile; plays: number; amount: number }) {
+export async function payForAdCampaign({
+  artist, plays, amount, audioUrl, title, advertiserName, targetCity, targetGenre
+}: {
+  artist: UserProfile;
+  plays: number;
+  amount: number;
+  audioUrl?: string;
+  title?: string;
+  advertiserName?: string;
+  targetCity?: string;
+  targetGenre?: string;
+}) {
   return initiatePayment({
     amount,
     email: artist.email,
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'artist_ad_campaign',
-    return_url: `${APP_URL}/ad-success`,
+    return_url: `${APP_URL}/?payment=complete`,
     meta: {
       userId: artist.id,
-      plays
+      plays,
+      audio_url: audioUrl,
+      title,
+      advertiser_name: advertiserName,
+      target_city: targetCity,
+      target_genre: targetGenre,
+      payment_type: 'artist_ad_campaign',
     }
   });
 }

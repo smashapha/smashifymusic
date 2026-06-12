@@ -5,7 +5,7 @@ import {
   Play, Share2, Instagram, Twitter, Music2, MapPin, Users, Check, 
   Trophy, Heart, CircleCheck, Disc, Sparkles, TrendingUp,
   Calendar, Info, Plus, UserPlus, Share, MessageSquare, Flame,
-  ShieldCheck, ArrowUpRight, Zap, MessageCircle
+  ShieldCheck, ArrowUpRight, Zap, MessageCircle, Crown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -34,6 +34,7 @@ const ArtistProfile: React.FC = () => {
    const [showSupportModal, setShowSupportModal] = useState(false);
    const [activeTab, setActiveTab] = useState<'tracks' | 'albums' | 'community' | 'about'>('tracks');
    const [isSubscribed, setIsSubscribed] = useState(false);
+   const [exclusiveContent, setExclusiveContent] = useState<any[]>([]);
    const [subscribing, setSubscribing] = useState(false);
    const [topSupporters, setTopSupporters] = useState<any[]>([]);
 
@@ -153,6 +154,17 @@ const ArtistProfile: React.FC = () => {
             .maybeSingle();
          if (data && data.status === 'active' && new Date(data.next_billing_at) > new Date()) {
             setIsSubscribed(true);
+         }
+
+         if (data && data.status === 'active' && new Date(data.next_billing_at) > new Date()) {
+            // Fetch songs marked as exclusive
+            const { data: exclusiveSongs } = await supabase
+               .from('songs')
+               .select('*')
+               .eq('artist_id', id)
+               .eq('is_exclusive', true)
+               .eq('is_active', true);
+            setExclusiveContent(exclusiveSongs || []);
          }
       };
       
@@ -499,6 +511,47 @@ const ArtistProfile: React.FC = () => {
                 </div>
               </section>
             )}
+
+            {/* Exclusive Content Section */}
+            <div className="mt-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Crown size={16} className="text-smash-orange" />
+                <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                  Exclusive Content
+                </h3>
+                {isSubscribed && (
+                  <span className="text-[9px] font-black bg-smash-orange/20 text-smash-orange px-2 py-0.5 rounded-full">
+                    SUBSCRIBER ACCESS
+                  </span>
+                )}
+              </div>
+
+              {!isSubscribed ? (
+                <div className="p-6 bg-white/5 border border-smash-orange/20 rounded-2xl text-center mb-8">
+                  <Crown size={32} className="text-smash-orange mx-auto mb-3" />
+                  <p className="text-sm font-bold text-white mb-1">Subscriber Only Content</p>
+                  <p className="text-xs text-smash-gray mb-4">
+                    Subscribe to {artist?.stage_name || artist?.full_name} for MK 150/month to unlock exclusive tracks, early releases, and behind-the-scenes content.
+                  </p>
+                  <button
+                    onClick={() => handleSubscribe()}
+                    className="px-6 py-2 bg-smash-orange text-white rounded-full font-black text-xs uppercase tracking-widest"
+                  >
+                    Subscribe · MK 150/mo
+                  </button>
+                </div>
+              ) : exclusiveContent.length === 0 ? (
+                <p className="text-xs text-smash-gray text-center py-4 mb-8">
+                  No exclusive content yet. Check back soon!
+                </p>
+              ) : (
+                <div className="space-y-2 mb-8">
+                  {exclusiveContent.map(song => (
+                    <SongCard key={song.id} song={song} />
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Discography */}
             <section className="mb-8">

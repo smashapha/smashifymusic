@@ -234,6 +234,15 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'complete') {
+      toast.success('Payment complete! Return to your previous tab to see your confirmation.', { duration: 6000 });
+      // Clean URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     const handleOffline = () => {
       toast.error('You are offline. Some features may not be available.', { duration: 5000 });
     };

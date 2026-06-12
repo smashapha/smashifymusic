@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,6 +59,8 @@ const FEATURED_CHARTS = [
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
   const { playSong, playQueue } = usePlayer();
+  const [featuredItems, setFeaturedItems] = useState<any[]>([]);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [newReleases, setNewReleases] = useState<Song[]>([]);
   const [forSaleSongs, setForSaleSongs] = useState<Song[]>([]);
@@ -72,6 +74,9 @@ const Home: React.FC = () => {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const showNotificationsRef = useRef(showNotifications);
+  useEffect(() => { showNotificationsRef.current = showNotifications; }, [showNotifications]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const [refreshing, setRefreshing] = useState(false);
@@ -121,7 +126,17 @@ const Home: React.FC = () => {
         filter: `listener_id=eq.${userProfile.id}`
       }, (payload) => {
         setNotifications(prev => prev.some(n => n.id === payload.new.id) ? prev : [payload.new, ...prev]);
-        toast.success(payload.new.message, { icon: '🔔' });
+        // If panel is open, mark as read immediately
+        if (showNotificationsRef.current) {
+          supabase
+            .from('listener_notifications')
+            .update({ read: true })
+            .eq('id', payload.new.id)
+            .then(() => {});
+        } else {
+          // Panel closed — show toast alert
+          toast(`🔔 ${payload.new.message}`, { duration: 4000 });
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -136,6 +151,14 @@ const Home: React.FC = () => {
       .eq('read', false);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
+
+  useEffect(() => {
+    if (featuredItems.length <= 1) return;
+    const timer = setInterval(() => {
+      setFeaturedIndex(prev => (prev + 1) % featuredItems.length);
+    }, 5000); // Rotate every 5 seconds
+    return () => clearInterval(timer);
+  }, [featuredItems.length]);
 
   // search removed
 
@@ -168,7 +191,51 @@ const Home: React.FC = () => {
       // Enrich with purchase status if user is logged in
       const enrichedSongs = await musicService.enrichSongsWithPurchases(formattedSongs as any, userProfile?.id);
 
-      setTrendingSongs(enrichedSongs.sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 10));
+      // Step 1: Get Elite artist IDs
+      const { data: eliteArtists } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('artist_tier', ['Elite', 'elite', 'Label', 'label'])
+        .eq('approved', true);
+
+      const eliteIds = (eliteArtists || []).map(a => a.id);
+
+      // Step 2: Get their top songs
+      const { data: eliteSongs } = eliteIds.length > 0
+        ? await supabase
+            .from('songs')
+            .select('*, profiles:artist_id(id, full_name, stage_name, avatar_url, artist_tier, verified)')
+            .eq('approved', true)
+            .eq('is_active', true)
+            .lte('release_date', today)
+            .in('artist_id', eliteIds)
+            .order('plays', { ascending: false })
+            .limit(8)
+        : { data: [] };
+
+      const carouselItems = (eliteSongs && eliteSongs.length > 0)
+        ? eliteSongs.map((s: any) => ({
+            ...s,
+            artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
+            cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+            url: s.audio_url
+          }))
+        : enrichedSongs.sort((a: any, b: any) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
+
+      setFeaturedItems(carouselItems);
+
+      // Weighted shuffle — popular songs more likely to appear but not always on top
+      const weightedShuffle = (songs: any[]) => {
+        const sorted = [...songs].sort((a, b) => (b.plays || 0) - (a.plays || 0));
+        const top = sorted.slice(0, 20); // Consider top 20 by plays
+        // Shuffle with weight: earlier songs have higher probability but not guaranteed
+        const shuffled = top
+          .map(song => ({ song, weight: Math.random() + (top.indexOf(song) < 5 ? 0.5 : 0) }))
+          .sort((a, b) => b.weight - a.weight)
+          .map(item => item.song);
+        return shuffled.slice(0, 10);
+      };
+      setTrendingSongs(weightedShuffle(enrichedSongs));
       setNewReleases(enrichedSongs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10));
       setForSaleSongs(enrichedSongs.filter(s => s.is_for_sale).slice(0, 10));
 
@@ -286,8 +353,6 @@ const Home: React.FC = () => {
      );
   }
 
-  const featured = trendingSongs[0];
-
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good Morning';
@@ -367,45 +432,80 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Featured Banner */}
-      {featured && (
-        <motion.section 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative h-[300px] bg-bg-surface rounded-[20px] overflow-hidden mb-12 group cursor-pointer border border-white/5 flex flex-col md:flex-row"
-          onClick={() => navigate(`/artist/${featured.artist_id}`)}
-        >
-           {/* Image on Right */}
-           <div className="absolute inset-0 md:left-1/2">
-              <img 
-                src={optimizeImage(featured.cover_url, 600, 600)} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[8s]" 
-                alt="" 
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-bg-surface via-bg-surface/80 to-transparent" />
-           </div>
-           
-           {/* Content on Left half */}
-           <div className="relative z-10 w-full md:w-1/2 h-full flex flex-col justify-center p-6 md:p-10">
-              <div className="flex items-center gap-2 mb-4">
-                 <div className="px-2.5 py-1 bg-smash-purple text-white text-[9px] font-display font-semibold rounded-sm uppercase tracking-widest shadow-sm">
+      {/* Featured Carousel */}
+      {featuredItems.length > 0 && (() => {
+        const featured = featuredItems[featuredIndex];
+        return (
+          <div className="relative mb-12">
+            <motion.section
+              key={featuredIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative h-[300px] bg-bg-surface rounded-[20px] overflow-hidden group cursor-pointer border border-white/5 flex flex-col md:flex-row"
+              onClick={() => navigate(`/artist/${featured.artist_id}`)}
+            >
+              {/* Image */}
+              <div className="absolute inset-0 md:left-1/2">
+                <img
+                  src={optimizeImage(featured.cover_url, 600, 600)}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[8s]"
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-bg-surface via-bg-surface/80 to-transparent" />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 w-full md:w-1/2 h-full flex flex-col justify-center p-6 md:p-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="px-2.5 py-1 bg-smash-purple text-white text-[9px] font-display font-semibold rounded-sm uppercase tracking-widest shadow-sm">
                     Featured
-                 </div>
-              </div>
-              <h1 className="text-[28px] md:text-[44px] font-studio font-extrabold tracking-tight leading-[1.1] mb-2 text-white line-clamp-2 uppercase">
-                 {featured.title}
-              </h1>
-              <p className="text-[13px] md:text-[14px] font-display text-text-muted mb-6 md:mb-8 line-clamp-1 uppercase tracking-wider">{(featured as any).featured_artist ? `${featured.artist_name} ft. ${(featured as any).featured_artist}` : featured.artist_name}</p>
-              
-              <div className="flex">
-                 <button className="px-5 md:px-6 py-2.5 md:py-3 bg-white text-black text-[11px] md:text-[12px] font-display font-bold uppercase tracking-widest rounded-full hover:bg-white/90 transition-all flex items-center gap-2">
+                  </div>
+                  {featured.profiles?.artist_tier === 'Elite' && (
+                    <div className="px-2.5 py-1 bg-smash-orange/20 text-smash-orange text-[9px] font-display font-semibold rounded-sm uppercase tracking-widest border border-smash-orange/30">
+                      Elite
+                    </div>
+                  )}
+                </div>
+                <h1 className="text-[28px] md:text-[44px] font-studio font-extrabold tracking-tight leading-[1.1] mb-2 text-white line-clamp-2 uppercase">
+                  {featured.title}
+                </h1>
+                <p className="text-[13px] md:text-[14px] font-display text-text-muted mb-6 md:mb-8 line-clamp-1 uppercase tracking-wider">
+                  {featured.featured_artist
+                    ? `${featured.artist_name} ft. ${featured.featured_artist}`
+                    : featured.artist_name}
+                </p>
+                <div className="flex">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); playSong(featured, featuredItems); }}
+                    className="px-5 md:px-6 py-2.5 md:py-3 bg-white text-black text-[11px] md:text-[12px] font-display font-bold uppercase tracking-widest rounded-full hover:bg-white/90 transition-all flex items-center gap-2"
+                  >
                     <Flame size={16} /> Play Now
-                 </button>
+                  </button>
+                </div>
               </div>
-           </div>
-        </motion.section>
-      )}
+            </motion.section>
+
+            {/* Carousel dots */}
+            {featuredItems.length > 1 && (
+              <div className="flex justify-center gap-2 mt-3">
+                {featuredItems.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setFeaturedIndex(i)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === featuredIndex
+                        ? 'w-6 bg-smash-purple'
+                        : 'w-1.5 bg-white/20 hover:bg-white/40'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
       
       {/* Quick Picks */}
       {trendingSongs.length > 0 && (

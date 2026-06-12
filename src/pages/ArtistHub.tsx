@@ -26,9 +26,42 @@ const NotificationsTab = ({ userProfile }: any) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const markAllRead = async () => {
+    if (!userProfile?.id) return;
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('profile_id', userProfile.id)
+      .eq('read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   useEffect(() => {
-    fetchNotifications();
-  }, [userProfile]);
+    fetchNotifications().then(() => {
+      // Mark all as read after fetching
+      markAllRead();
+    });
+  }, [userProfile?.id]);
+
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    const channel = supabase
+      .channel(`artist-notifs-${userProfile.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `profile_id=eq.${userProfile.id}`
+      }, (payload) => {
+        setNotifications(prev =>
+          prev.some(n => n.id === payload.new.id)
+            ? prev
+            : [payload.new, ...prev]
+        );
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userProfile?.id]);
 
   const fetchNotifications = async () => {
     if (!userProfile?.id) return;
@@ -117,6 +150,22 @@ export default function ArtistHub() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [artistNotifications, setArtistNotifications] = useState<any[]>([]);
+  const unreadNotifCount = artistNotifications.filter(n => !n.read).length;
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    if (tab === 'notifications') {
+      setArtistNotifications([]); // Clear badge count
+      supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('profile_id', userProfile?.id)
+        .eq('read', false)
+        .then(() => {});
+    }
+  };
+
   const expiresAt = userProfile?.subscription_ends || userProfile?.subscription_expires_at || userProfile?.tier_expires_at;
   const expiresDate = expiresAt ? new Date(expiresAt) : null;
   const daysRemaining = expiresDate ? Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
@@ -189,6 +238,13 @@ export default function ArtistHub() {
       
       const totalRevenue = totalSales?.reduce((acc, s) => acc + (s.amount || 0), 0) || 0;
 
+      const { data: notifData } = await supabase
+        .from('notifications')
+        .select('id, read')
+        .eq('profile_id', userProfile.id)
+        .eq('read', false);
+      setArtistNotifications(notifData || []);
+
       setStats({
         streams: totalStreams,
         revenue: totalRevenue,
@@ -202,6 +258,23 @@ export default function ArtistHub() {
     }
   };
 
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    const channel = supabase
+      .channel(`artist-hub-notifs-${userProfile.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `profile_id=eq.${userProfile.id}`
+      }, (payload) => {
+        setArtistNotifications(prev => [...prev, payload.new]);
+        toast(`🔔 ${payload.new.message}`, { duration: 4000 });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userProfile?.id]);
+
   const navGroups = [
     {
       items: [
@@ -212,7 +285,7 @@ export default function ArtistHub() {
         { id: 'upload', label: 'Upload', icon: UploadCloud },
         { id: 'withdraw', label: 'Withdrawal', icon: Wallet },
         { id: 'promotion', label: 'Promote', icon: Flame },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'notifications', label: 'Notifications', icon: Bell, count: unreadNotifCount },
         { id: 'transactions', label: 'History', icon: Receipt },
       ]
     },
@@ -310,7 +383,7 @@ export default function ArtistHub() {
                 {group.items.map(item => (
                   <button
                     key={item.id}
-                    onClick={() => { setActiveTab(item.id as TabType); setSidebarOpen(false); }}
+                    onClick={() => { handleTabChange(item.id as TabType); setSidebarOpen(false); }}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       activeTab === item.id 
                         ? 'bg-smash-purple/10 text-smash-purple shadow-sm' 
@@ -319,6 +392,11 @@ export default function ArtistHub() {
                   >
                     <item.icon size={18} className={activeTab === item.id ? 'text-smash-purple' : 'text-smash-gray'} />
                     {item.label}
+                    {(item as any).count > 0 && (
+                      <span className="ml-auto w-5 h-5 bg-smash-orange rounded-full text-[9px] font-black text-white flex items-center justify-center shrink-0">
+                        {(item as any).count > 9 ? '9+' : (item as any).count}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -444,19 +522,19 @@ export default function ArtistHub() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={setActiveTab} />}
+                  {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={handleTabChange} />}
                   {activeTab === 'analytics' && <AnalyticsTab userProfile={userProfile} />}
                   {activeTab === 'fans' && <FansTab userProfile={userProfile} />}
-                  {activeTab === 'withdraw' && <WithdrawTab setActiveTab={setActiveTab} />}
+                  {activeTab === 'withdraw' && <WithdrawTab setActiveTab={handleTabChange} />}
                   {activeTab === 'music' && (
                     <div className="space-y-12">
-                      <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />
+                      <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={handleTabChange} userProfile={userProfile} />
                       <div className="h-px w-full bg-white/5 my-8" />
-                      <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={setActiveTab} userProfile={userProfile} />
+                      <AlbumsTab albums={albums} songs={songs} onRefresh={fetchData} setActiveTab={handleTabChange} userProfile={userProfile} />
                     </div>
                   )}
                   {activeTab === 'upload' && (
-                    <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={setActiveTab} role={role} />
+                    <UploadTab onComplete={fetchData} albums={albums} songs={songs} setActiveTab={handleTabChange} role={role} />
                   )}
                   {activeTab === 'promotion' && <PromotionTab userProfile={userProfile} />}
                   {activeTab === 'profile' && <ProfileTab userProfile={userProfile} />}
@@ -889,7 +967,12 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
       await payForAdCampaign({
         artist: userProfile,
         plays: playsPurchased,
-        amount: totalCost
+        amount: totalCost,
+        audioUrl: publicUrl,
+        title: title,
+        advertiserName: advertiserName,
+        targetCity: targetCity,
+        targetGenre: targetGenre,
       });
 
     } catch (err: any) {
@@ -1534,6 +1617,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [lyrics, setLyrics] = useState('');
   const [price, setPrice] = useState(2500);
   const [isForSale, setIsForSale] = useState(false);
+  const [isExclusive, setIsExclusive] = useState(false);
 
   const { userProfile } = useAuth();
   const { guardResult, checking, checkUpload } = useUploadGuard();
@@ -1758,7 +1842,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
 
       setUploadProgress(70);
-      const { error: dbErr } = await supabase.from('songs').insert({
+      const { data: songData, error: dbErr } = await supabase.from('songs').insert({
         title,
         artist_id: userProfile?.id,
         audio_url: audioUrl,
@@ -1772,13 +1856,34 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         album_id: albumId || null,
         price: isForSale ? price : 0,
         is_for_sale: isForSale,
+        is_exclusive: isExclusive,
         approved: false,
         status: asDraft ? 'draft' : 'pending',
         type: mode === 'snippet' ? 'snippet' : 'single',
         plays: 0
-      });
+      }).select().single();
 
       if (dbErr) throw dbErr;
+      
+      // After successful songs insert, if mode is snippet also create moto_feed entry
+      if (mode === 'snippet' && songData?.id) {
+        const { error: motoError } = await supabase.from('moto_feed').insert({
+          song_id:    songData.id,
+          artist_id:  userProfile?.id,
+          title:      title,
+          caption:    title,
+          audio_url:  audioUrl,
+          cover_url:  coverUrl,
+          genre:      genre,
+          is_active:  false, // Pending admin review
+          approved:   false,
+          status:     'pending',
+          plays:      0,
+          likes:      0,
+        });
+        if (motoError) console.error('moto_feed insert error:', motoError);
+        else console.log('MotoFeed entry created for snippet:', songData.id);
+      }
       
       setUploadProgress(100);
       setIsSuccess(true);
@@ -1857,6 +1962,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           album_id: newAlbum.id,
           price: trackPrice,
           is_for_sale: isForSale,
+          is_exclusive: isExclusive,
           approved: false,
           status: asDraft ? 'draft' : 'pending',
           type: 'single',
@@ -2249,6 +2355,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            </div>}
 
                            {mode !== 'snippet' && (
+                             <>
                              <div className="pt-4 border-t border-white/5">
                                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-4 transition-colors">Distribution Mode</label>
                                <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl mb-4">
@@ -2279,6 +2386,24 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  )
                                )}
                              </div>
+                             
+                             {/* Exclusive content toggle */}
+                             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
+                               <div>
+                                 <p className="text-sm font-bold text-white">Subscriber Exclusive</p>
+                                 <p className="text-[10px] text-smash-gray mt-0.5">
+                                   Only fans who subscribe monthly can access this track
+                                 </p>
+                               </div>
+                               <button
+                                 type="button"
+                                 onClick={() => setIsExclusive(prev => !prev)}
+                                 className={`w-12 h-6 rounded-full transition-colors ${isExclusive ? 'bg-smash-orange' : 'bg-white/10'}`}
+                               >
+                                 <div className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${isExclusive ? 'translate-x-6' : 'translate-x-0'}`} />
+                               </button>
+                             </div>
+                             </>
                            )}
 
                            {mode === 'album' && (
@@ -2760,7 +2885,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 10 uploads per 6 months</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Sell tracks to fans</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Accept fan subscriptions</li>
             </ul>
             <button 
@@ -2782,6 +2907,7 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 15 uploads per 6 months</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 1 free featured placement/mo</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Advanced analytics suite</li>
             </ul>
@@ -2803,6 +2929,8 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 25 uploads per 6 months</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Sell tracks to fans — with fan download access</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Elite exclusive: track sales & downloads</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 3 free featured placements/mo</li>
                <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Full analytics with CSV export</li>
             </ul>

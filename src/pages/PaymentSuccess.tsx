@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CircleCheck, Music2, ArrowRight, Loader2, Heart, Sparkles, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { verifyPayment } from '../lib/paychangu';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 
@@ -21,82 +20,63 @@ const PaymentSuccess = () => {
   const urlStatus = searchParams.get('status');
 
   useEffect(() => {
-    if (!tx_ref) {
-      navigate('/');
-      return;
-    }
-
-    if (urlStatus === 'failed' || urlStatus === 'cancelled' || urlStatus === 'error') {
+    if (!tx_ref) { navigate('/'); return; }
+    if (urlStatus === 'failed' || urlStatus === 'cancelled') {
       navigate(`/payment-failed?tx_ref=${tx_ref}`);
       return;
     }
 
-    const pollStatus = async () => {
-      let attempts = 0;
-      const maxAttempts = 15; // 30 seconds total
+    let attempts = 0;
+    const maxAttempts = 30; // 60 seconds total at 2s intervals
 
-      // Trigger server-side verification immediately
-      verifyPayment(tx_ref).catch(err => {
-        console.error("Manual verification trigger failed:", err);
-      });
+    const check = async () => {
+      try {
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('status, type, gross_amount, metadata')
+          .eq('paychangu_ref', tx_ref)
+          .maybeSingle();
 
-      const check = async () => {
-        try {
-          const { data: txData, error } = await supabase
-            .from('transactions')
-            .select('status, type, gross_amount, metadata')
-            .eq('paychangu_ref', tx_ref)
-            .single()
-
-          if (error) {
-            console.error('Transaction check error:', error)
-            attempts++
-            if (attempts >= maxAttempts) {
-              setStatus('pending')
-              return true
+        if (txData?.status === 'completed') {
+          setDetails(txData);
+          setStatus('confirmed');
+          // Refresh profile so tier/purchase changes are visible
+          setTimeout(async () => {
+            if (typeof refreshProfile === 'function') await refreshProfile();
+            if (txData.type === 'sale' && typeof refreshPurchasedIds === 'function') {
+              await refreshPurchasedIds(user?.id);
             }
-            return false
-          }
-
-          if (txData?.status === 'completed') {
-            setDetails(txData)
-            setStatus('confirmed')
-            // Wait 4 seconds for webhook to finish processing
-            // before refreshing profile so tier changes are visible
-            await new Promise(resolve => setTimeout(resolve, 4000))
-            if (typeof refreshProfile === 'function') {
-              await refreshProfile()
-            }
-            if (txData.type === 'TRACK_PURCHASE' && typeof refreshPurchasedIds === 'function') {
-              await refreshPurchasedIds(user?.id)
-            }
-            return true
-          } else if (txData?.status === 'failed') {
-            navigate(`/payment-failed?tx_ref=${tx_ref}`)
-            return true
-          }
-        } catch (e) {
-          console.error('Verification error', e)
+          }, 1500);
+          return true;
         }
 
-        attempts++
-        if (attempts >= maxAttempts) {
-          setStatus('pending')
-          return true
+        if (txData?.status === 'failed') {
+          navigate(`/payment-failed?tx_ref=${tx_ref}`);
+          return true;
         }
-        return false
-      };
+      } catch (e) {
+        console.error('DB poll error:', e);
+      }
 
-      const interval = setInterval(async () => {
-        const done = await check();
-        if (done) clearInterval(interval);
-      }, 2000);
-
-      return () => clearInterval(interval);
+      attempts++;
+      if (attempts >= maxAttempts) {
+        setStatus('pending'); // Show "Almost there" — webhook may still be processing
+        return true;
+      }
+      return false;
     };
 
-    pollStatus();
-  }, [tx_ref, navigate, refreshProfile]);
+    // Poll DB every 2 seconds — webhook updates DB, we just read it
+    const interval = setInterval(async () => {
+      const done = await check();
+      if (done) clearInterval(interval);
+    }, 2000);
+
+    // Check immediately on mount
+    check();
+
+    return () => clearInterval(interval);
+  }, [tx_ref, navigate, urlStatus, refreshProfile, refreshPurchasedIds, user?.id]);
 
   const getSuccessContent = () => {
     switch (type) {
