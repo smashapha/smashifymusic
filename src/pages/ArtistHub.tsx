@@ -1247,6 +1247,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
   const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale' | 'draft'>('all');
   const [catalogStats, setCatalogStats] = useState<any[] | null>(null);
+  const { checkUpload, setGuardResult } = useUploadGuard();
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -1291,7 +1292,13 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
       toast.error('Failed to update song. Please try again.');
     } else {
       toast.success(isArchived ? 'Song restored to active slots.' : 'Song archived. Slot freed up.');
-      onRefresh();
+      onRefresh(); // Refresh song list
+      // Also refresh upload guard so slot count updates immediately
+      if (userProfile?.id) {
+        checkUpload(userProfile.id).then(result => {
+          if (setGuardResult) setGuardResult(result);
+        });
+      }
     }
   };
 
@@ -1611,13 +1618,65 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [genre, setGenre] = useState('');
   const [albumId, setAlbumId] = useState('');
   const [isExplicit, setIsExplicit] = useState(false);
-  const [featuredArtist, setFeaturedArtist] = useState('');
   const [language, setLanguage] = useState('Chichewa');
   const [title, setTitle] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [price, setPrice] = useState(2500);
   const [isForSale, setIsForSale] = useState(false);
   const [isExclusive, setIsExclusive] = useState(false);
+
+  const [featuredArtists, setFeaturedArtists] = useState<{
+    name: string;
+    profileId: string | null;
+    avatarUrl: string | null;
+  }[]>([]);
+  const [featuredInput, setFeaturedInput] = useState('');
+  const [featuredSuggestions, setFeaturedSuggestions] = useState<any[]>([]);
+  const [featuredSearching, setFeaturedSearching] = useState(false);
+
+  const searchFeaturedArtists = async (query: string) => {
+    setFeaturedInput(query);
+    if (query.trim().length < 2) {
+      setFeaturedSuggestions([]);
+      return;
+    }
+    setFeaturedSearching(true);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, stage_name, full_name, avatar_url, artist_tier, verified')
+        .or(`stage_name.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .eq('approved', true)
+        .neq('id', userProfile?.id) // exclude self
+        .limit(5);
+      setFeaturedSuggestions(data || []);
+    } catch {
+      setFeaturedSuggestions([]);
+    } finally {
+      setFeaturedSearching(false);
+    }
+  };
+
+  const addFeaturedArtist = (artist?: any) => {
+    const name = artist?.stage_name || artist?.full_name || featuredInput.trim();
+    if (!name) return;
+    if (featuredArtists.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+      toast.error(`${name} is already added`);
+      return;
+    }
+    setFeaturedArtists(prev => [...prev, {
+      name,
+      profileId: artist?.id || null,
+      avatarUrl: artist?.avatar_url || null,
+    }]);
+    setFeaturedInput('');
+    setFeaturedSuggestions([]);
+  };
+
+  const removeFeaturedArtist = (name: string) => {
+    setFeaturedArtists(prev => prev.filter(f => f.name !== name));
+  };
+
 
   const { userProfile } = useAuth();
   const { guardResult, checking, checkUpload } = useUploadGuard();
@@ -1853,7 +1912,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         cover_url: coverUrl,
         is_explicit: isExplicit,
         release_date: releaseDate,
-        featured_artist: featuredArtist,
+        featured_artist: featuredArtists.map(f => f.name).join(', '),
+        featured_artist_ids: featuredArtists
+          .filter(f => f.profileId)
+          .map(f => f.profileId),
         language: language,
         lyrics: lyrics,
         genre: genre,
@@ -2003,7 +2065,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
             {isDrafting ? 'Your music has been saved as a draft. You can publish it anytime from your inventory.' : 'Your music is headed to the Smashify review team. This usually takes 2-4 hours.'}
           </p>
           <div className="space-y-4">
-            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
+            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); setFeaturedArtists([]); setFeaturedInput(''); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
             <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-display font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
           </div>
         </motion.div>
@@ -2326,9 +2388,116 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            </div>
 
                            <div className="grid grid-cols-2 gap-4">
-                             <div className="group">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Featured Artist</label>
-                               <input value={featuredArtist} onChange={e=>setFeaturedArtist(e.target.value)} placeholder="e.g. Namadingo" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
+                             <div className="group col-span-2">
+                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">
+                                 Featured Artists
+                               </label>
+
+                               {/* Added featured artists chips */}
+                               {featuredArtists.length > 0 && (
+                                 <div className="flex flex-wrap gap-2 mb-3">
+                                   {featuredArtists.map(f => (
+                                     <div key={f.name} className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 border border-smash-purple/30 rounded-full">
+                                       {f.avatarUrl ? (
+                                         <img src={f.avatarUrl} className="w-5 h-5 rounded-full object-cover" alt="" />
+                                       ) : (
+                                         <div className="w-5 h-5 rounded-full bg-smash-purple/40 flex items-center justify-center text-[9px] font-black text-white">
+                                           {f.name[0]}
+                                         </div>
+                                       )}
+                                       <span className="text-xs font-bold text-white">{f.name}</span>
+                                       {f.profileId && (
+                                         <span className="text-[9px] font-black text-smash-purple bg-smash-purple/20 px-1.5 py-0.5 rounded-full">
+                                           ON SMASHIFY
+                                         </span>
+                                       )}
+                                       <button
+                                         type="button"
+                                         onClick={() => removeFeaturedArtist(f.name)}
+                                         className="text-white/40 hover:text-red-400 transition-colors ml-1"
+                                       >
+                                         <X size={12} />
+                                       </button>
+                                     </div>
+                                   ))}
+                                 </div>
+                               )}
+
+                               {/* Search input */}
+                               <div className="relative">
+                                 <div className="flex gap-2">
+                                   <input
+                                     value={featuredInput}
+                                     onChange={e => searchFeaturedArtists(e.target.value)}
+                                     onKeyDown={e => {
+                                       if (e.key === 'Enter') {
+                                         e.preventDefault();
+                                         addFeaturedArtist();
+                                       }
+                                     }}
+                                     placeholder="Search artist name or type to add..."
+                                     className="flex-1 h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20"
+                                   />
+                                   <button
+                                     type="button"
+                                     onClick={() => addFeaturedArtist()}
+                                     disabled={!featuredInput.trim()}
+                                     className="h-14 px-5 bg-smash-purple text-white rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-30 hover:bg-smash-purple/80 transition-all shrink-0"
+                                   >
+                                     + Add
+                                   </button>
+                                 </div>
+
+                                 {/* Suggestions dropdown */}
+                                 {(featuredSuggestions.length > 0 || featuredSearching) && (
+                                   <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f0f0f] border border-white/10 rounded-2xl overflow-hidden z-50 shadow-2xl">
+                                     {featuredSearching ? (
+                                       <div className="px-4 py-3 text-xs text-smash-gray">Searching...</div>
+                                     ) : featuredSuggestions.map(artist => (
+                                       <button
+                                         key={artist.id}
+                                         type="button"
+                                         onClick={() => addFeaturedArtist(artist)}
+                                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
+                                       >
+                                         {artist.avatar_url ? (
+                                           <img src={artist.avatar_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
+                                         ) : (
+                                           <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center font-black text-smash-purple shrink-0">
+                                             {(artist.stage_name || artist.full_name || '?')[0]}
+                                            </div>
+                                         )}
+                                         <div className="flex-1 min-w-0">
+                                           <p className="text-sm font-bold text-white truncate">
+                                             {artist.stage_name || artist.full_name}
+                                           </p>
+                                           <p className="text-[10px] text-smash-gray">
+                                             {artist.artist_tier} · On Smashify
+                                           </p>
+                                         </div>
+                                         {artist.verified && (
+                                           <span className="text-[9px] font-black text-smash-purple shrink-0">✓ VERIFIED</span>
+                                         )}
+                                       </button>
+                                     ))}
+                                     {featuredSuggestions.length === 0 && !featuredSearching && featuredInput.length >= 2 && (
+                                       <div className="px-4 py-3">
+                                         <p className="text-xs text-smash-gray">No Smashify artist found.</p>
+                                         <button
+                                           type="button"
+                                           onClick={() => addFeaturedArtist()}
+                                           className="text-xs text-smash-purple font-bold mt-1 hover:underline"
+                                         >
+                                           Add "{featuredInput}" as external artist
+                                         </button>
+                                       </div>
+                                     )}
+                                   </div>
+                                 )}
+                               </div>
+                               <p className="text-[9px] text-smash-gray mt-2">
+                                 Artists with Smashify accounts will be linked to their profile automatically.
+                               </p>
                              </div>
                              <div className="group">
                                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Release Date</label>
@@ -2518,8 +2687,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            </div>}
                            
                            {mode !== 'album' && <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              {featuredArtist ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <div className="w-5 text-center text-text-muted shrink-0">—</div>}
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Featured:</strong> {featuredArtist || 'None'}</div>
+                              {featuredArtists.length > 0 ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <div className="w-5 text-center text-text-muted shrink-0">—</div>}
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Featured:</strong> {featuredArtists.length > 0 ? featuredArtists.map(f => f.name).join(', ') : 'None'}</div>
                            </div>}
                         </div>
 

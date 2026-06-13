@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { syncExpiredSubscriptions, syncExpiredArtistTier } from '../lib/tierUtils';
 
 // Define separate profile types matching your actual tables
 export interface ArtistProfile {
@@ -53,6 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [artistProfile, setArtistProfile] = useState<ArtistProfile | null>(null);
   const [listenerProfile, setListenerProfile] = useState<ListenerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
@@ -236,6 +244,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         profileFound = await checkListener();
         if (!profileFound) profileFound = await checkArtist();
+      }
+
+      if (userId) {
+        // Run in background — don't block UI
+        syncExpiredSubscriptions(userId, supabase).catch(console.error);
+        syncExpiredArtistTier(userId, supabase).catch(console.error);
       }
 
       if (profileFound) return;

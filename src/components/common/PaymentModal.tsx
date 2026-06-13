@@ -25,14 +25,6 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
     return () => clearInterval(dotsInterval)
   }, [])
 
-  useEffect(() => {
-    const opened = window.open(checkoutUrl, '_blank');
-    if (!opened) {
-      // Popup blocked — fallback to current tab
-      window.location.href = checkoutUrl;
-    }
-  }, []); // Only run once on mount
-
   // Real-time Database Status Tracker (Polling)
   useEffect(() => {
     console.log('[PaymentModal] Polling for paychangu_ref:', cleanRef);
@@ -63,10 +55,6 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
 
     return () => clearInterval(pollInterval)
   }, [cleanRef, onSuccess])
-
-  const handleManualOpen = () => {
-    window.open(checkoutUrl, '_blank')
-  }
 
   const getDots = () => {
     return '.'.repeat(dotCount)
@@ -117,30 +105,37 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
             {!isCompleted ? (
               <div className="w-full flex flex-col items-center">
                 <h4 className="text-xl font-bold font-display italic uppercase text-white mb-2">
-                  Complete Your Payment
+                  Ready to Pay
                 </h4>
                 <p className="text-xs text-smash-gray font-bold leading-relaxed max-w-xs text-center mb-6">
-                  Your secure payment window has opened in a new tab. Complete the payment there — this screen will automatically update once confirmed.
+                  Tap the button below to open the secure PayChangu payment page. Come back to this screen after paying — it will confirm automatically.
                 </p>
 
                 <div className="w-20 h-20 bg-smash-orange/10 border border-smash-orange/20 rounded-full flex items-center justify-center mb-6">
-                  <Sparkles size={36} className="text-smash-orange animate-pulse" />
+                  <Shield size={36} className="text-smash-orange" />
                 </div>
 
-                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest mb-6">
-                  Waiting for payment confirmation{getDots()}
-                </p>
-
                 <button
-                  onClick={handleManualOpen}
-                  className="py-3 px-8 bg-smash-orange text-white rounded-full font-black text-[11px] uppercase tracking-widest transition-all hover:bg-smash-orange/80 flex items-center gap-2"
+                  onClick={() => {
+                    // Direct user gesture — browser will NOT block this
+                    const opened = window.open(checkoutUrl, '_blank');
+                    if (!opened) {
+                      // True last resort — only if popup is blocked even on direct tap
+                      window.location.href = checkoutUrl;
+                    }
+                  }}
+                  className="w-full py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all hover:bg-smash-orange/80 flex items-center justify-center gap-2 mb-4"
                 >
-                  <ExternalLink size={14} />
-                  Reopen Payment Window
+                  <ExternalLink size={16} />
+                  Open Payment Page
                 </button>
 
-                <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4 mt-4">
-                  Do not close this screen. It will automatically confirm once your payment is received.
+                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest mb-2">
+                  Waiting for confirmation{getDots()}
+                </p>
+
+                <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4">
+                  Do not close this screen. It will confirm automatically once your payment goes through.
                 </p>
               </div>
             ) : (

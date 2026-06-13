@@ -375,3 +375,59 @@ export const isFeatureAvailable = (feature: string, tier: string | undefined): b
   return allowedTiers.includes(currentTier);
 };
 
+export async function syncExpiredSubscriptions(userId: string, supabaseClient: any): Promise<void> {
+  try {
+    const { data: profile } = await supabaseClient
+      .from('user_profiles')
+      .select('subscription_tier, subscription_expires_at')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!profile) return;
+    if (!profile.subscription_tier || profile.subscription_tier.toLowerCase() === 'free') return;
+    if (!profile.subscription_expires_at) return;
+
+    const isExpired = new Date(profile.subscription_expires_at) < new Date();
+    if (isExpired) {
+      await supabaseClient
+        .from('user_profiles')
+        .update({
+          subscription_tier: 'Free',
+          subscription_expires_at: null,
+        })
+        .eq('id', userId);
+      console.log(`Subscription expired for user ${userId} — downgraded to Free`);
+    }
+  } catch (err) {
+    console.error('syncExpiredSubscriptions error:', err);
+  }
+}
+
+export async function syncExpiredArtistTier(artistId: string, supabaseClient: any): Promise<void> {
+  try {
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('artist_tier, subscription_ends')
+      .eq('id', artistId)
+      .maybeSingle();
+
+    if (!profile) return;
+    if (!profile.artist_tier || profile.artist_tier.toLowerCase() === 'free') return;
+    if (!profile.subscription_ends) return;
+
+    const isExpired = new Date(profile.subscription_ends) < new Date();
+    if (isExpired) {
+      await supabaseClient
+        .from('profiles')
+        .update({
+          artist_tier: 'Free',
+          is_paused: true,
+        })
+        .eq('id', artistId);
+      console.log(`Artist tier expired for ${artistId} — downgraded to Free`);
+    }
+  } catch (err) {
+    console.error('syncExpiredArtistTier error:', err);
+  }
+}
+

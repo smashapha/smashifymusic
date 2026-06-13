@@ -24,5 +24,5 @@ export function useUploadGuard() {
     return checkUpload(artistId);
   }, [checkUpload]);
 
-  return { guardResult, checking, checkUpload, refresh };
+  return { guardResult, setGuardResult, checking, checkUpload, refresh };
 }

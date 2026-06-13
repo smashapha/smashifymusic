@@ -236,9 +236,14 @@ function AppContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'complete') {
-      toast.success('Payment complete! Return to your previous tab to see your confirmation.', { duration: 6000 });
-      // Clean URL without reload
-      window.history.replaceState({}, '', window.location.pathname);
+      // Clean URL
+      window.history.replaceState({}, '', '/');
+      // Try to close this tab — works if opened by window.open
+      window.close();
+      // If window.close() is blocked, show a message
+      setTimeout(() => {
+        toast.success('Payment complete! You can close this tab and return to Smashify.');
+      }, 300);
     }
   }, []);
 
@@ -262,14 +267,21 @@ function AppContent() {
   useEffect(() => {
     // Initial fetch
     const fetchMaintenance = async () => {
+      const timeout = setTimeout(() => {
+        setMaintenance({ active: false });
+        setMaintenanceLoading(false);
+      }, 3000); // Safety net: always resolve within 3 seconds
+
       try {
         const { data } = await supabase
           .from('app_config')
           .select('value')
           .eq('key', 'maintenance')
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single — won't throw if no rows
+        clearTimeout(timeout);
         setMaintenance(data?.value || { active: false });
       } catch {
+        clearTimeout(timeout);
         setMaintenance({ active: false });
       } finally {
         setMaintenanceLoading(false);
