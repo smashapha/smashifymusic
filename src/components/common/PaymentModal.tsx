@@ -88,53 +88,40 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
           </button>
 
           {/* Header */}
-          <div className="flex flex-col items-center text-center mt-4 mb-8">
-            <div className="w-14 h-14 bg-smash-orange/10 border border-smash-orange/20 rounded-2xl flex items-center justify-center mb-4">
-              <Shield size={24} className="text-smash-orange" />
+          <div className="flex flex-col items-center text-center mt-2 mb-4">
+            <div className="w-10 h-10 bg-smash-orange/10 border border-smash-orange/20 rounded-2xl flex items-center justify-center mb-2">
+              <Shield size={16} className="text-smash-orange" />
             </div>
-            <h3 className="text-lg font-studio font-black italic uppercase tracking-wider text-white">
+            <h3 className="text-base font-studio font-black italic uppercase tracking-wider text-white">
               Secure Cashier Gateway
             </h3>
-            <p className="text-[10px] text-smash-gray font-bold tracking-widest uppercase mt-1">
+            <p className="text-[9px] text-smash-gray font-bold tracking-widest uppercase mt-1">
               Powered by PayChangu · SSL Encrypted
             </p>
           </div>
 
           {/* Content States */}
-          <div className="flex flex-col items-center text-center w-full h-full max-h-[80vh]">
+          <div className="flex flex-col items-center text-center w-full">
             {!isCompleted ? (
               <div className="w-full flex flex-col items-center">
-                <h4 className="text-xl font-bold font-display italic uppercase text-white mb-2">
-                  Ready to Pay
-                </h4>
-                <p className="text-xs text-smash-gray font-bold leading-relaxed max-w-xs text-center mb-6">
-                  Tap the button below to open the secure PayChangu payment page. Come back to this screen after paying — it will confirm automatically.
-                </p>
-
-                <div className="w-20 h-20 bg-smash-orange/10 border border-smash-orange/20 rounded-full flex items-center justify-center mb-6">
-                  <Shield size={36} className="text-smash-orange" />
+                <div className="w-full bg-white/5 rounded-2xl overflow-hidden border border-white/10 h-[380px] md:h-[450px] mb-4 relative">
+                  <div className="absolute inset-0 flex items-center justify-center -z-10">
+                    <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <iframe 
+                    src={checkoutUrl} 
+                    className="w-full h-full border-0 relative z-10 bg-white"
+                    title="Secure Payment"
+                    allow="payment"
+                  />
                 </div>
 
-                <button
-                  onClick={() => {
-                    // Direct user gesture — browser will NOT block this
-                    const opened = window.open(checkoutUrl, '_blank');
-                    if (!opened) {
-                      // True last resort — only if popup is blocked even on direct tap
-                      window.location.href = checkoutUrl;
-                    }
-                  }}
-                  className="w-full py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all hover:bg-smash-orange/80 flex items-center justify-center gap-2 mb-4"
-                >
-                  <ExternalLink size={16} />
-                  Open Payment Page
-                </button>
-
-                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest mb-2">
+                <p className="text-[10px] text-smash-gray font-bold uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                  <RefreshCw size={10} className="animate-spin text-smash-orange" />
                   Waiting for confirmation{getDots()}
                 </p>
 
-                <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-4">
+                <p className="text-[9px] text-smash-gray font-bold leading-relaxed max-w-sm text-center px-2">
                   Do not close this screen. It will confirm automatically once your payment goes through.
                 </p>
               </div>
