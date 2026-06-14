@@ -19,7 +19,18 @@ const PaymentSuccess = () => {
   const type = tx_ref?.split('-')[1];
   const urlStatus = searchParams.get('status');
 
+  const inIframe = window.parent !== window;
+
   useEffect(() => {
+    if (inIframe) {
+      if (tx_ref) {
+        window.parent.postMessage({ type: 'PAYMENT_RETURN', tx_ref }, '*');
+      } else {
+        window.parent.postMessage({ type: 'PAYMENT_RETURN_CLOSE' }, '*');
+      }
+      return;
+    }
+
     if (!tx_ref) { navigate('/'); return; }
     if (urlStatus === 'failed' || urlStatus === 'cancelled') {
       navigate(`/payment-failed?tx_ref=${tx_ref}`);
@@ -120,6 +131,10 @@ const PaymentSuccess = () => {
   };
 
   const content = getSuccessContent();
+
+  if (inIframe) {
+    return <div className="min-h-screen bg-smash-black" />; // fully black, or transparent if possible. Let's just return null or empty div.
+  }
 
   return (
     <div className="min-h-screen bg-smash-black flex flex-col items-center justify-center p-6 text-center">

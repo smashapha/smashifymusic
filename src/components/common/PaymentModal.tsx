@@ -16,6 +16,22 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
   // Clean the reference in case it has slashes or quotes
   const cleanRef = txRef.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '')
 
+  // Listen for message from the iframe when PayChangu redirects back to Smashify
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'PAYMENT_RETURN') {
+        if (!isCompleted) {
+          setIsCompleted(true)
+          onSuccess(e.data.tx_ref || cleanRef)
+        }
+      } else if (e.data?.type === 'PAYMENT_RETURN_CLOSE') {
+        onClose()
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [cleanRef, isCompleted, onSuccess, onClose])
+
   // Real-time Database Status Tracker (Polling)
   useEffect(() => {
     console.log('[PaymentModal] Polling for paychangu_ref:', cleanRef);

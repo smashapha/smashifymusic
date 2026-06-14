@@ -45,6 +45,7 @@ const Discover: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Song[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
+  const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"songs" | "artists">("songs");
 
   // Pagination state for all songs
@@ -87,6 +88,17 @@ const Discover: React.FC = () => {
     fetchTrending();
     fetchRecommendations();
     fetchAllSongs();
+
+    const fetchPublicPlaylists = async () => {
+      const { data } = await supabase
+        .from('playlists')
+        .select('id, name, cover_url, profile_id, playlist_songs(songs(cover_url)), profiles:profile_id(full_name, avatar_url)')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      setPublicPlaylists(data || []);
+    };
+    fetchPublicPlaylists();
   }, [userProfile]);
 
   const fetchAllSongs = async () => {
@@ -595,6 +607,38 @@ const Discover: React.FC = () => {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Community Playlists Section */}
+            {publicPlaylists.length > 0 && (
+              <section className="mb-12">
+                <h2 className="text-xl md:text-2xl font-studio font-black italic uppercase text-white mb-6">
+                  Community Playlists
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {publicPlaylists.map(pl => (
+                    <div
+                      key={pl.id}
+                      onClick={() => navigate(`/playlist/${pl.id}`)}
+                      className="cursor-pointer group"
+                    >
+                      <div className="aspect-square bg-smash-dark rounded-2xl overflow-hidden border border-white/5 relative mb-2">
+                        {pl.cover_url ? (
+                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={pl.name} />
+                        ) : (
+                          <div className="grid grid-cols-2 h-full w-full">
+                            {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
+                              <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" alt="" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-white truncate">{pl.name}</p>
+                      <p className="text-[10px] text-smash-gray truncate">By {pl.profiles?.full_name || 'Smashify User'}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* Browse Categories */}

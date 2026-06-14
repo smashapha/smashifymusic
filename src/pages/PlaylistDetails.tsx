@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle } from 'lucide-react';
+import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, Trash2, Shuffle, Pencil, Settings, ChevronUp, ChevronDown, Globe, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
@@ -72,7 +72,15 @@ const PlaylistDetails: React.FC = () => {
     style: string;
     cover_url?: string;
     isCustom?: boolean;
+    profile_id?: string;
+    is_public?: boolean;
   } | null>(null);
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPublic, setEditPublic] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const isOwner = customPlaylistInfo?.isCustom && customPlaylistInfo?.profile_id === userProfile?.id;
 
   const chartInfo = FEATURED_CHARTS.find(c => c.id === id) || FEATURED_CHARTS[0];
   const displayInfo = customPlaylistInfo || {
@@ -103,7 +111,7 @@ const PlaylistDetails: React.FC = () => {
         // Fetch custom playlist details
         const { data: customPlaylist, error: plError } = await supabase
           .from('playlists')
-          .select('*, playlist_songs(songs(*, profiles:artist_id(full_name, stage_name, avatar_url, verified)))')
+          .select('*, playlist_songs(id, position, songs(*, profiles:artist_id(full_name, stage_name, avatar_url, verified)))')
           .eq('id', id)
           .maybeSingle();
 
@@ -115,10 +123,16 @@ const PlaylistDetails: React.FC = () => {
             description: customPlaylist.description || 'A custom playlist created in your Library.',
             style: 'from-purple-900/40 to-[#0b0a0e]',
             cover_url: customPlaylist.cover_url,
-            isCustom: true
+            isCustom: true,
+            profile_id: customPlaylist.profile_id,
+            is_public: customPlaylist.is_public
           });
+          setEditName(customPlaylist.name);
+          setEditPublic(customPlaylist.is_public);
 
-          const playlistSongs = (customPlaylist.playlist_songs || []).map((ps: any) => ps.songs).filter(Boolean);
+          const sortedPlaylistSongs = (customPlaylist.playlist_songs || [])
+            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+          const playlistSongs = sortedPlaylistSongs.map((ps: any) => ps.songs ? ({ ...ps.songs, _playlistSongId: ps.id }) : null).filter(Boolean);
           const formatted = playlistSongs.map((s: any) => ({
             ...s,
             artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
@@ -237,6 +251,79 @@ const PlaylistDetails: React.FC = () => {
     const mins = Math.floor(val / 60);
     const secs = Math.floor(val % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleShufflePlay = () => {
+    if (songs.length === 0) return;
+    const shuffled = [...songs].sort(() => Math.random() - 0.5);
+    playQueue(shuffled, 0);
+  };
+
+  const handleRemoveSong = async (song: any) => {
+    if (!isOwner) return;
+    try {
+      await supabase
+        .from('playlist_songs')
+        .delete()
+        .eq('playlist_id', id)
+        .eq('song_id', song.id);
+      setSongs(prev => prev.filter(s => s.id !== song.id));
+      toast.success('Removed from playlist');
+    } catch (err: any) {
+      toast.error('Failed to remove: ' + err.message);
+    }
+  };
+
+  const moveSong = async (index: number, direction: 'up' | 'down') => {
+    if (!isOwner) return;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= songs.length) return;
+
+    const newSongs = [...songs];
+    [newSongs[index], newSongs[newIndex]] = [newSongs[newIndex], newSongs[index]];
+    setSongs(newSongs);
+
+    // Persist new positions
+    try {
+      await Promise.all(newSongs.map((s, i) =>
+        supabase
+          .from('playlist_songs')
+          .update({ position: i })
+          .eq('playlist_id', id)
+          .eq('song_id', s.id)
+      ));
+    } catch (err) {
+      console.error('Failed to save order:', err);
+    }
+  };
+
+  const handleSavePlaylistSettings = async () => {
+    if (!editName.trim()) {
+      toast.error('Playlist name cannot be empty');
+      return;
+    }
+    try {
+      await supabase
+        .from('playlists')
+        .update({ name: editName.trim(), is_public: editPublic })
+        .eq('id', id);
+      toast.success('Playlist updated');
+      setShowSettings(false);
+      fetchSongs(); // Refresh
+    } catch (err: any) {
+      toast.error('Failed to update: ' + err.message);
+    }
+  };
+
+  const handleDeletePlaylist = async () => {
+    if (!confirm('Delete this playlist permanently? This cannot be undone.')) return;
+    try {
+      await supabase.from('playlists').delete().eq('id', id);
+      toast.success('Playlist deleted');
+      navigate('/library');
+    } catch (err: any) {
+      toast.error('Failed to delete: ' + err.message);
+    }
   };
 
   const handlePlayAll = () => {
@@ -364,6 +451,14 @@ const PlaylistDetails: React.FC = () => {
             <Play fill="black" size={18} /> Play Playlist
           </button>
           
+          <button
+            onClick={handleShufflePlay}
+            disabled={songs.length === 0}
+            className="h-14 px-6 border border-white/10 rounded-full flex items-center justify-center gap-2 text-white/80 hover:border-white/30 hover:text-white transition-all active:scale-95 font-display font-black uppercase tracking-widest text-xs disabled:opacity-30"
+          >
+            <Shuffle size={16} /> Shuffle
+          </button>
+          
           <button 
             onClick={async () => {
               if (!userProfile?.id) {
@@ -447,6 +542,15 @@ const PlaylistDetails: React.FC = () => {
           >
             <Share2 size={19} />
           </button>
+
+          {isOwner && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center text-white/70 hover:border-white/30 hover:text-white transition-all active:scale-90"
+            >
+              <Settings size={19} />
+            </button>
+          )}
         </div>
 
         {/* Dynamic Songs Table in Spotify Grid Line-item layout */}
@@ -460,11 +564,19 @@ const PlaylistDetails: React.FC = () => {
           </div>
 
           {songs.length === 0 ? (
-            <div className="text-center py-20 bg-white/2 p-8 rounded-2xl border border-white/5">
-              <Music size={40} className="mx-auto text-white/10 mb-4 animate-bounce" />
-              <p className="text-sm font-semibold text-text-muted mb-1">No tracks found in database yet</p>
-              <p className="text-xs text-white/10">Keep uploading great local hits to populate charts!</p>
-            </div>
+            customPlaylistInfo?.isCustom ? (
+              <div className="text-center py-20 bg-white/2 p-8 rounded-2xl border border-white/5">
+                <Music size={40} className="mx-auto text-white/10 mb-4" />
+                <p className="text-sm font-semibold text-text-muted mb-1">This playlist is empty</p>
+                <p className="text-xs text-white/30">Add songs using the "Add to Playlist" option on any track.</p>
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-white/2 p-8 rounded-2xl border border-white/5">
+                <Music size={40} className="mx-auto text-white/10 mb-4 animate-bounce" />
+                <p className="text-sm font-semibold text-text-muted mb-1">No tracks found in database yet</p>
+                <p className="text-xs text-white/10">Keep uploading great local hits to populate charts!</p>
+              </div>
+            )
           ) : (
             songs.map((song, index) => {
               const isCurrent = checkCurrentlyPlaying(song.id);
@@ -537,6 +649,19 @@ const PlaylistDetails: React.FC = () => {
                   {/* Duration Time / Options */}
                   <div className="w-16 shrink-0 text-right pr-2 flex items-center justify-end gap-2 text-xs font-mono font-semibold text-text-muted">
                     <span className="group-hover:hidden">{formatDuration(song.duration)}</span>
+                    {isOwner && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); moveSong(index, 'up'); }} disabled={index === 0} className="p-1 text-smash-gray hover:text-white disabled:opacity-20">
+                          <ChevronUp size={14} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); moveSong(index, 'down'); }} disabled={index === songs.length - 1} className="p-1 text-smash-gray hover:text-white disabled:opacity-20">
+                          <ChevronDown size={14} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveSong(song); }} className="p-1 text-smash-gray hover:text-red-400">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                     <button 
                       onClick={(e) => { e.stopPropagation(); }}
                       className="hidden group-hover:flex w-8 h-8 items-center justify-center hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-all ml-auto"
@@ -550,6 +675,67 @@ const PlaylistDetails: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowSettings(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] max-w-md w-full shadow-2xl space-y-5 transform scale-100 opacity-100" // simpler since animate isn't strictly imported per user instruct but motion might be
+          >
+            <h3 className="text-xl font-studio font-bold uppercase tracking-tight text-white">Playlist Settings</h3>
+
+            <div>
+              <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
+              <input
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 outline-none focus:border-smash-orange transition-all font-bold text-white"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+              <div className="flex items-center gap-3">
+                {editPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
+                <div>
+                  <p className="text-sm font-black uppercase tracking-widest text-white">Public Playlist</p>
+                  <p className="text-[10px] text-smash-gray font-medium">Anyone can find and play this</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditPublic(!editPublic)}
+                className={`w-12 h-6 rounded-full transition-all relative ${editPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+              >
+                <div 
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${editPublic ? 'translate-x-7' : 'translate-x-1'}`} 
+                />
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs text-smash-gray hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePlaylistSettings}
+                className="flex-1 py-3.5 bg-white text-smash-black rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-smash-orange hover:text-white transition-all"
+              >
+                Save Changes
+              </button>
+            </div>
+
+            <button
+              onClick={handleDeletePlaylist}
+              className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2"
+            >
+              <Trash2 size={14} /> Delete Playlist
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
