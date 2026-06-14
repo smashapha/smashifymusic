@@ -1700,16 +1700,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     userProfile?.subscription_tier,
     userProfile?.subscription_ends,
   ]);
-  const startOfPeriod = new Date();
-  startOfPeriod.setMonth(startOfPeriod.getMonth() - 6);
-  startOfPeriod.setHours(0, 0, 0, 0);
-  const songsUploadedThisPeriod = songs.filter((s: any) => {
-    const createdDate = new Date(s.created_at);
-    return createdDate >= startOfPeriod;
-  }).length;
-  const totalSongsUploaded = songs.length;
-  // Enforce 6 month uploads strictly
-  const canUploadMore = (limits as any).yearlyUploads === Infinity ? true : songsUploadedThisPeriod < (limits as any).yearlyUploads;
 
   // ── Image compression utility ─────────────────────────────
   const compressCoverImage = (file: File): Promise<Blob> => {
@@ -2704,12 +2694,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         </div>
 
                         <div className="flex flex-col gap-4">
-                           {!canUploadMore && (
+                           {guardResult?.allowed === false && (
                              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm font-sans text-center">
-                               You have reached your upload limit. Upgrade your plan to upload more songs.
+                               {guardResult.message || 'You have reached your slot limit. Archive a track or upgrade your plan to upload more songs.'}
                              </div>
                            )}
-                           <button type="submit" disabled={!canUploadMore || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
                            </button>
                            <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
