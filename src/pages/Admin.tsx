@@ -180,7 +180,6 @@ const Admin = () => {
       .from('moto_feed')
       .select('*, profiles:artist_id(stage_name, avatar_url)')
       .eq('approved', false)
-      .neq('status', 'draft')
       .order('created_at', { ascending: true });
     setPendingSnippets(data || []);
   };
@@ -221,7 +220,7 @@ const Admin = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'artist'),
         supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', true),
-        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', false).neq('status', 'draft'),
+        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', false),
         supabase.from('transactions').select('platform_fee, type, created_at, net_amount').eq('status', 'completed'),
         supabase.from('transactions').select('id, type, platform_fee, created_at, net_amount, profiles:artist_id(full_name, stage_name)').eq('status', 'completed').order('created_at', { ascending: false }).limit(6),
       ]);
@@ -461,12 +460,15 @@ const Admin = () => {
   };
 
   const fetchPendingSongs = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('songs')
       .select('*, profiles!artist_id(stage_name, full_name, email)')
       .eq('approved', false)
-      .neq('status', 'draft')
       .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching pending songs:', error);
+    }
     setPendingSongs(data || []);
   };
 
@@ -583,7 +585,7 @@ const Admin = () => {
     if (artistsData) {
       const artistsWithPending = await Promise.all(artistsData.map(async (art) => {
         try {
-          const { count } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('artist_id', art.id).eq('approved', false).neq('status', 'draft');
+          const { count } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('artist_id', art.id).eq('approved', false);
           
           // Fetch agent reference / referral code from their application
           const { data: appData } = await supabase.from('artist_applications').select('*').eq('profile_id', art.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -724,7 +726,7 @@ const Admin = () => {
   };
 
   const approveAllSongs = async (artistId: string) => {
-    const { error } = await supabase.from('songs').update({ approved: true, status: 'approved' }).eq('artist_id', artistId).eq('approved', false).neq('status', 'draft');
+    const { error } = await supabase.from('songs').update({ approved: true, status: 'approved' }).eq('artist_id', artistId).eq('approved', false);
     if (error) toast.error(error.message);
     else {
       toast.success('All songs for this artist approved!');
@@ -1208,7 +1210,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 text-sm">
-                        {listeners.filter(l => l.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || l.email?.toLowerCase().includes(searchQuery.toLowerCase())).map(l => (
+                        {listeners.filter(l => (l.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map(l => (
                           <tr key={l.id} className="hover:bg-white/[0.02] transition-colors group">
                             <td className="px-8 py-6">
                               <div className="flex items-center gap-4">
@@ -1265,7 +1267,7 @@ const Admin = () => {
                          </tr>
                        </thead>
                        <tbody className="divide-y divide-white/5 text-sm">
-                         {artists.filter(a => !searchQuery || a.stage_name?.toLowerCase().includes(searchQuery.toLowerCase()) || a.email?.toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
+                         {artists.filter(a => !searchQuery || (a.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
                            <tr key={a.id} className="hover:bg-white/[0.02] transition-colors group">
                              <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
@@ -1566,7 +1568,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {allSongs.filter(s => s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.profiles?.stage_name?.toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
+                        {allSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
                           <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
                             <td className="px-8 py-6">
                                <div className="flex items-center gap-4">
@@ -1617,7 +1619,7 @@ const Admin = () => {
                      </div>
                   </div>
                   <div className="overflow-x-auto">
-                    {applications.filter(app => app.stage_name?.toLowerCase().includes(searchQuery.toLowerCase()) || app.email?.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                    {applications.filter(app => (app.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (app.email || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
                       <table className="w-full text-left text-sm">
                         <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
                           <tr>
@@ -1627,7 +1629,7 @@ const Admin = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {applications.filter(app => app.stage_name?.toLowerCase().includes(searchQuery.toLowerCase()) || app.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((app) => (
+                          {applications.filter(app => (app.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (app.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map((app) => (
                             <tr key={app.id} className="hover:bg-white/[0.02] transition-colors group">
                               <td className="px-8 py-6">
                                 <div>
@@ -1700,7 +1702,7 @@ const Admin = () => {
                     )}
                   </div>
                   <div className="overflow-x-auto">
-                    {pendingSongs.filter(s => s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.profiles?.stage_name?.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                    {pendingSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
                       <table className="w-full text-left text-sm">
                         <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
                           <tr>
@@ -1711,7 +1713,7 @@ const Admin = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {pendingSongs.filter(s => s.title?.toLowerCase().includes(searchQuery.toLowerCase()) || s.profiles?.stage_name?.toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
+                          {pendingSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
                             <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
                               <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
@@ -1878,7 +1880,7 @@ const Admin = () => {
                            </tr>
                          </thead>
                          <tbody className="divide-y divide-white/5">
-                           {ads.filter(ad => ad.advertiser_name?.toLowerCase().includes(searchQuery.toLowerCase()) || ad.title?.toLowerCase().includes(searchQuery.toLowerCase())).map(ad => (
+                           {ads.filter(ad => (ad.advertiser_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (ad.title || '').toLowerCase().includes(searchQuery.toLowerCase())).map(ad => (
                              <tr key={ad.id} className="hover:bg-white/[0.02] transition-colors group">
                                <td className="px-8 py-6">
                                  <div className="flex items-center gap-4">

@@ -1320,11 +1320,9 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
   };
 
   const filteredSongs = songs.filter((s: any) => {
-    if (filter === 'draft') return s.status === 'draft';
-    if (filter === 'live') return s.approved && s.status !== 'draft';
-    if (filter === 'pending') return !s.approved && s.status !== 'draft';
-    if (filter === 'for_sale') return s.is_for_sale && s.status !== 'draft';
-    if (filter === 'all') return s.status !== 'draft';
+    if (filter === 'live') return s.approved;
+    if (filter === 'pending') return !s.approved;
+    if (filter === 'for_sale') return s.is_for_sale;
     return true;
   });
 
@@ -1387,8 +1385,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
              { id: 'all', label: 'All Catalog' },
              { id: 'live', label: 'Live Tracks' },
              { id: 'pending', label: 'Reviewing' },
-             { id: 'for_sale', label: 'Premium' },
-             { id: 'draft', label: 'Drafts' }
+             { id: 'for_sale', label: 'Premium' }
            ].map(t => (
              <button 
                key={t.id}
@@ -1430,9 +1427,9 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                     </td>
                     <td className="px-4 py-3">
                        <div className="flex items-center gap-2">
-                          <div className={`w-[6px] h-[6px] rounded-full ${song.status === 'draft' ? 'bg-text-muted' : song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
-                          <span className={`text-[12px] font-display font-medium ${song.status === 'draft' ? 'text-text-muted' : song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
-                             {song.status === 'draft' ? 'Draft' : song.approved ? 'Distributed' : 'Reviewing'}
+                          <div className={`w-[6px] h-[6px] rounded-full ${song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
+                          <span className={`text-[12px] font-display font-medium ${song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
+                             {song.approved ? 'Distributed' : 'Reviewing'}
                           </span>
                        </div>
                     </td>
@@ -1924,7 +1921,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         is_for_sale: isForSale,
         is_exclusive: isExclusive,
         approved: false,
-        status: asDraft ? 'draft' : 'pending',
+        status: 'pending',
         type: mode === 'snippet' ? 'snippet' : 'single',
         plays: 0
       }).select().single();
@@ -2030,7 +2027,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           is_for_sale: isForSale,
           is_exclusive: isExclusive,
           approved: false,
-          status: asDraft ? 'draft' : 'pending',
+          status: 'pending',
           type: 'single',
           plays: 0
         });
@@ -2714,9 +2711,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            )}
                            <button type="submit" disabled={!canUploadMore || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
-                           </button>
-                           <button type="submit" onClick={() => setIsDrafting(true)} className="w-full h-16 bg-white/5 border border-white/10 text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center">
-                             💾 SAVE AS DRAFT
                            </button>
                            <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
                         </div>

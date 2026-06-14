@@ -25,7 +25,7 @@ export interface Song {
   featured_artist?: string;
   plays?: number;
   approved?: boolean;
-  status?: 'draft' | 'pending' | 'approved';
+  status?: 'pending' | 'approved';
   is_for_sale?: boolean;
   album_id?: string;
   supporter_only?: boolean;
