@@ -7,7 +7,7 @@ import {
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
   ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
-  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt, BookOpen
+  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt, BookOpen, Loader2, RefreshCw, Save
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -1599,6 +1599,13 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
   
+  const [audioUploadUrl, setAudioUploadUrl] = useState<string | null>(null);
+  const [audioUploading, setAudioUploading] = useState(false);
+  const [audioUploadProgress, setAudioUploadProgress] = useState(0);
+  const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  
   const [currentStep, setCurrentStep] = useState<1|2|3>(1);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string|null>(null);
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
@@ -1677,6 +1684,109 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const { userProfile } = useAuth();
   const { guardResult, checking, checkUpload } = useUploadGuard();
+
+  useEffect(() => {
+    if (userProfile?.id) {
+      checkUpload(userProfile.id);
+    }
+  }, [userProfile?.id]);
+
+  useEffect(() => {
+    const handleOffline = async () => {
+      if (!userProfile?.id || !title) return; // Need at least a title to save something useful
+      toast('Connection lost — saving your progress as a draft...', { icon: '📡', duration: 4000 });
+
+      try {
+        const draftPayload: any = {
+          title,
+          artist_id: userProfile.id,
+          audio_url: audioUploadUrl || null,
+          cover_url: null,
+          is_explicit: isExplicit,
+          release_date: releaseDate,
+          featured_artist: featuredArtists.map(f => f.name).join(', '),
+          language: language,
+          lyrics: lyrics,
+          genre: genre,
+          status: 'draft',
+        };
+
+        if (currentDraftId) {
+          await supabase.from('songs').update(draftPayload).eq('id', currentDraftId);
+        } else {
+          const { data } = await supabase.from('songs').insert(draftPayload).select('id').single();
+          if (data?.id) setCurrentDraftId(data.id);
+        }
+        setDraftSavedAt(new Date());
+        toast.success('Draft saved! Your audio is preserved — pick up where you left off.', { duration: 4000 });
+      } catch (err) {
+        console.error('Auto-draft save failed:', err);
+      }
+    };
+
+    window.addEventListener('offline', handleOffline);
+    return () => window.removeEventListener('offline', handleOffline);
+  }, [userProfile?.id, title, audioUploadUrl, isExplicit, releaseDate, featuredArtists, language, lyrics, genre, currentDraftId]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (draftSavedAt) {
+        toast.success('Back online! Your draft is saved in the Drafts tab — continue anytime.', { duration: 5000 });
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [draftSavedAt]);
+
+  const uploadAudioInBackground = async (file: File) => {
+    if (!userProfile?.id) return;
+    setAudioUploading(true);
+    setAudioUploadProgress(5);
+    setAudioUploadError(null);
+    setAudioUploadUrl(null);
+
+    try {
+      // Check upload guard first
+      const guardCheck = await checkUpload(userProfile.id, file.size);
+      if (!guardCheck.allowed) {
+        setAudioUploadError(guardCheck.message || 'Upload not allowed.');
+        setAudioUploading(false);
+        return;
+      }
+
+      setAudioUploadProgress(15);
+      toast.loading('Uploading audio in the background...', { id: 'bg-audio-upload' });
+
+      const compressedAudio = await compressAudio(file);
+      setAudioUploadProgress(40);
+
+      const isWebm = compressedAudio.type === 'audio/webm';
+      const audioExt = isWebm ? 'webm' : file.name.split('.').pop();
+      const audioPath = `songs/${userProfile.id}/song-${Date.now()}.${audioExt}`;
+
+      const { error: audioErr } = await supabase.storage
+        .from('songs')
+        .upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
+
+      if (audioErr) throw audioErr;
+
+      const { data: { publicUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
+
+      setAudioUploadUrl(publicUrl);
+      setAudioUploadProgress(100);
+      toast.success('Audio uploaded! You can continue filling in details.', { id: 'bg-audio-upload' });
+    } catch (err: any) {
+      console.error('Background audio upload error:', err);
+      setAudioUploadError(err.message || 'Audio upload failed. Will retry when you publish.');
+      toast.error('Audio upload failed — will retry on publish.', { id: 'bg-audio-upload' });
+    } finally {
+      setAudioUploading(false);
+    }
+  };
+
+  const retryAudioUpload = () => {
+    if (songFile) uploadAudioInBackground(songFile);
+  };
 
   const canSellTracks = ['Elite', 'elite', 'Label', 'label'].includes(
     userProfile?.artist_tier || ''
@@ -1878,18 +1988,28 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       if (coverErr) throw coverErr;
       const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
-      setUploadProgress(30);
-      toast.loading('Compressing audio (saves storage)...', { id: 'audiocompress' });
-      const compressedAudio = await compressAudio(songFile);
-      toast.dismiss('audiocompress');
+      let audioUrl: string;
 
-      setUploadProgress(45);
-      const isWebm = compressedAudio.type === 'audio/webm';
-      const audioExt = isWebm ? 'webm' : songFile.name.split('.').pop();
-      const audioPath = `songs/${userProfile?.id}/song-${Date.now()}.${audioExt}`;
-      const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
-      if (audioErr) throw audioErr;
-      const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
+      if (audioUploadUrl) {
+        // Already uploaded in the background — reuse it
+        setUploadProgress(60);
+        audioUrl = audioUploadUrl;
+      } else {
+        // Background upload didn't finish or failed — upload now as fallback
+        setUploadProgress(30);
+        toast.loading('Uploading audio...', { id: 'audiocompress' });
+        const compressedAudio = await compressAudio(songFile);
+        toast.dismiss('audiocompress');
+
+        setUploadProgress(45);
+        const isWebm = compressedAudio.type === 'audio/webm';
+        const audioExt = isWebm ? 'webm' : songFile.name.split('.').pop();
+        const audioPath = `songs/${userProfile?.id}/song-${Date.now()}.${audioExt}`;
+        const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
+        if (audioErr) throw audioErr;
+        const { data: { publicUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
+        audioUrl = publicUrl;
+      }
 
       setUploadProgress(70);
       const { data: songData, error: dbErr } = await supabase.from('songs').insert({
@@ -2052,7 +2172,21 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
             {isDrafting ? 'Your music has been saved as a draft. You can publish it anytime from your inventory.' : 'Your music is headed to the Smashify review team. This usually takes 2-4 hours.'}
           </p>
           <div className="space-y-4">
-            <button onClick={() => { setIsSuccess(false); setUploadStep(1); setTitle(''); setSongFile(null); setCoverFile(null); setFeaturedArtists([]); setFeaturedInput(''); }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
+            <button onClick={() => { 
+                setIsSuccess(false); 
+                setUploadStep(1); 
+                setTitle(''); 
+                setSongFile(null); 
+                setCoverFile(null); 
+                setFeaturedArtists([]); 
+                setFeaturedInput(''); 
+                setAudioUploadUrl(null);
+                setAudioUploading(false);
+                setAudioUploadProgress(0);
+                setAudioUploadError(null);
+                setDraftSavedAt(null);
+                setCurrentDraftId(null);
+              }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
             <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-display font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
           </div>
         </motion.div>
@@ -2062,6 +2196,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   return (
     <div className="max-w-4xl mx-auto pb-20 mt-6 px-4 md:px-8">
+      {draftSavedAt && (
+        <div className="flex items-center justify-center gap-2 mb-4 text-[10px] font-bold text-smash-gray uppercase tracking-widest">
+          <Save size={12} />
+          Draft auto-saved at {draftSavedAt.toLocaleTimeString()} — find it in your Drafts tab
+        </div>
+      )}
       {/* STEP INDICATOR */}
       <div className="flex items-center justify-center max-w-lg mx-auto mb-10">
         <div className="flex items-center w-full">
@@ -2184,6 +2324,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              setAudioDuration(`${mins}:${secs.toString().padStart(2, '0')}`);
                            };
                            setAudioFileSize((file.size / (1024*1024)).toFixed(1) + ' MB');
+                           uploadAudioInBackground(file);
 
                            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
                            const cleanName = nameWithoutExt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
@@ -2223,6 +2364,33 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                     {audioPreviewUrl && (
                                        <audio controls src={audioPreviewUrl} className="w-full h-12 rounded-2xl mt-4 opacity-80" onClick={e => e.stopPropagation()} />
                                     )}
+
+                                    {/* Background upload status */}
+                                    <div className="mt-3 flex items-center justify-center gap-2 pointer-events-auto">
+                                      {audioUploading ? (
+                                        <>
+                                          <Loader2 size={14} className="animate-spin text-smash-purple" />
+                                          <span className="text-[11px] font-bold text-smash-purple uppercase tracking-widest">
+                                            Uploading in background... {audioUploadProgress}%
+                                          </span>
+                                        </>
+                                      ) : audioUploadUrl ? (
+                                        <>
+                                          <CircleCheck size={14} className="text-smash-green" />
+                                          <span className="text-[11px] font-bold text-smash-green uppercase tracking-widest">
+                                            Audio uploaded & ready
+                                          </span>
+                                        </>
+                                      ) : audioUploadError ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); retryAudioUpload(); }}
+                                          className="flex items-center gap-2 text-[11px] font-bold text-red-400 uppercase tracking-widest hover:text-red-300"
+                                        >
+                                          <RefreshCw size={14} /> Upload failed — Tap to retry
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   </div>
                                )}
 
@@ -2274,6 +2442,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              setAudioDuration(`${mins}:${secs.toString().padStart(2, '0')}`);
                            };
                            setAudioFileSize((file.size / (1024*1024)).toFixed(1) + ' MB');
+                           uploadAudioInBackground(file);
 
                            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
                            const cleanName = nameWithoutExt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
