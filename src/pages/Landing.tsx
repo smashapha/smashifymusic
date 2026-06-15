@@ -219,8 +219,8 @@ const Landing: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-[clamp(3.5rem,7vw,7rem)] font-studio font-extrabold leading-[0.88] tracking-[-0.03em] uppercase mb-8"
             >
-              <span className="italic block">Your fans.</span>
-              <span className="text-smash-orange block">Your money.</span>
+              <span className="italic block">Stream Music.</span>
+              <span className="text-smash-orange block">Support Artist.</span>
             </motion.h1>
 
             <motion.p
