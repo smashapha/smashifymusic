@@ -6,17 +6,7 @@ const PAYCHANGU_WEBHOOK_SECRET = Deno.env.get("PAYCHANGU_WEBHOOK_SECRET") || Den
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-paychangu-signature",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const url = new URL(req.url);
@@ -79,12 +69,12 @@ serve(async (req) => {
     // 1. Verify Webhook Signature
     if (!PAYCHANGU_WEBHOOK_SECRET) {
       console.error("WEBHOOK_SECRET is not configured — rejecting request");
-      return new Response("Webhook secret not configured", { status: 500, headers: corsHeaders });
+      return new Response("Webhook secret not configured", { status: 500 });
     }
     // signature verification (always runs)
     const signature = req.headers.get("x-paychangu-signature");
     if (!signature) {
-      return new Response("Missing signature", { status: 401, headers: corsHeaders });
+      return new Response("Missing signature", { status: 401 });
     }
     const key = await crypto.subtle.importKey(
       "raw",
@@ -102,7 +92,7 @@ serve(async (req) => {
     );
     if (!isValid) {
       console.error("Invalid webhook signature");
-      return new Response("Invalid signature", { status: 401, headers: corsHeaders });
+      return new Response("Invalid signature", { status: 401 });
     }
 
     const payload = JSON.parse(bodyText);
@@ -133,7 +123,7 @@ serve(async (req) => {
       console.log(
         `Duplicate webhook received for ${tx_ref} — already processed, skipping`,
       );
-      return new Response("Already processed", { status: 200, headers: corsHeaders });
+      return new Response("Already processed", { status: 200 });
     }
 
     // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
@@ -158,7 +148,7 @@ serve(async (req) => {
 
     if (txError || !transaction) {
       console.error(`Transaction not found: ${tx_ref}`);
-      return new Response("Ok", { status: 200, headers: corsHeaders }); // Return 200 to stop retries
+      return new Response("Ok", { status: 200 }); // Return 200 to stop retries
     }
 
     // 3. Handle Failed Payment
@@ -176,7 +166,7 @@ serve(async (req) => {
         .update({ status: "failed" })
         .eq("id", transaction.id)
         .eq("status", "pending");
-      return new Response("Ok", { status: 200, headers: corsHeaders });
+      return new Response("Ok", { status: 200 });
     }
 
     // 4. Process Successful Payment based on Type
@@ -201,7 +191,7 @@ serve(async (req) => {
       console.log(
         `Transaction ${transaction.id} already processed or no longer pending`,
       );
-      return new Response("Ok", { status: 200, headers: corsHeaders });
+      return new Response("Ok", { status: 200 });
     }
 
     // Log the webhook
@@ -465,10 +455,10 @@ serve(async (req) => {
       }
     }
 
-    return new Response("Success", { status: 200, headers: corsHeaders });
+    return new Response("Success", { status: 200 });
   } catch (error) {
     console.error("Webhook processing error:", error);
-    return new Response("Internal error", { status: 200, headers: corsHeaders }); // Return 200 to prevent PayChangu retrying broken code
+    return new Response("Internal error", { status: 200 }); // Return 200 to prevent PayChangu retrying broken code
   }
 });
 
