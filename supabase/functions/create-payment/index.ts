@@ -286,14 +286,12 @@ Deno.serve(async (req) => {
         first_name,
         last_name,
         tx_ref,
-        callback_url: `${SUPABASE_URL}/functions/v1/paychangu-webhook`,
         return_url: return_url.includes("?") 
             ? `${return_url}&tx_ref=${tx_ref}`
             : `${return_url}?tx_ref=${tx_ref}`,
         customization: {
           title: "Smashify",
           description: descriptions[type] || "Smashify Payment",
-          logo: "https://ais-pre-mqanea5thkwbq6cnhd3hxr-828774785557.europe-west2.run.app/logo.png",
         },
       }),
     });

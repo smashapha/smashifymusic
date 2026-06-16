@@ -320,7 +320,6 @@ async function startServer() {
           first_name,
           last_name,
           tx_ref,
-          callback_url: callback_url || `${APP_URL}/api/paychangu-webhook`,
           return_url: finalReturnUrl,
           customization: {
             title: 'Smashify',
