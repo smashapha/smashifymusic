@@ -456,26 +456,37 @@ async function startServer() {
           const { songId, anonymous, plays } = metadata;
 
           // Compute Fee & Net
-          let platformFeeRate = 0.15;
-          if (artistId) {
-            const { data: artistProfile } = await supabaseAdmin
-              .from('profiles')
-              .select('subscription_tier, artist_tier')
-              .eq('id', artistId)
-              .single();
-            const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Free').toLowerCase();
-            if (currentTier.includes('rising')) platformFeeRate = 0.10;
-            else if (currentTier.includes('standard')) platformFeeRate = 0.07;
-            else if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.05;
-          }
-
           let pFee = 0;
-          if (type === 'TRACK_PURCHASE' || type === 'TIP' || type === 'FAN_SUBSCRIPTION') {
-            pFee = dbTx.gross_amount * platformFeeRate;
-          } else if (type.includes('LISTENER_') || type.includes('ARTIST_')) {
+          let artistNet = dbTx.gross_amount;
+
+          if (type.includes('LISTENER_') || type.includes('ARTIST_') || type === 'ARTIST_AD_CAMPAIGN' || type === 'FEATURED_PLACEMENT') {
             pFee = dbTx.gross_amount;
+            artistNet = 0;
+          } else if (type === 'TIP') {
+            pFee = Math.round(dbTx.gross_amount * 0.05);
+            artistNet = dbTx.gross_amount - pFee;
+          } else if (type === 'TRACK_PURCHASE') {
+            const SALE_FLAT_FEE = 50;
+            let platformFeeRate = 0.20;
+            if (artistId) {
+              const { data: artistProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('subscription_tier, artist_tier')
+                .eq('id', artistId)
+                .single();
+              const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Standard').toLowerCase();
+              if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.10;
+              else if (currentTier.includes('label')) platformFeeRate = 0.05;
+            }
+            pFee = Math.round(dbTx.gross_amount * platformFeeRate) + SALE_FLAT_FEE;
+            artistNet = Math.max(dbTx.gross_amount - pFee, 0);
+          } else if (type === 'FAN_SUBSCRIPTION') {
+            pFee = Math.round(dbTx.gross_amount * 0.10);
+            artistNet = dbTx.gross_amount - pFee;
+          } else {
+            pFee = Math.round(dbTx.gross_amount * 0.15);
+            artistNet = dbTx.gross_amount - pFee;
           }
-          const artistNet = dbTx.gross_amount - pFee;
 
           // Check and update transaction in DB safely
           const { data: updatedTxs, error: updateError } = await supabaseAdmin
@@ -687,7 +698,7 @@ async function startServer() {
 
       if (artistError || !artist) throw new Error('Artist profile not found');
       if (artist.wallet_balance < amount) throw new Error('Insufficient wallet balance');
-      if (amount < 2000) throw new Error('Minimum withdrawal is MK 2,000');
+      if (amount < 10000) throw new Error('Minimum withdrawal is MK 10,000');
 
       // Optimistically deduct balance
       const { data: updatedArtist, error: updateError } = await supabaseAdmin
@@ -993,38 +1004,36 @@ async function startServer() {
 
       // Calculate dynamic platform fee based on artist tier
       let pFee = 0;
-      let artistNet = 0;
-      let platformFeeRate = 0.15; // Default for Free tier
+      let artistNet = amount;
 
-      if (artistId) {
-        const { data: artistProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('subscription_tier, artist_tier')
-          .eq('id', artistId)
-          .single();
-        
-        const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Free').toLowerCase();
-        
-        if (currentTier.includes('rising')) {
-          platformFeeRate = 0.10;
-        } else if (currentTier.includes('standard')) {
-          platformFeeRate = 0.07;
-        } else if (currentTier.includes('elite') || currentTier.includes('platinum')) {
-          platformFeeRate = 0.05;
-        }
-      }
-
-      if (type === 'TRACK_PURCHASE') {
-        pFee = amount * platformFeeRate;
+      if (type.includes('LISTENER_') || type.includes('ARTIST_') || type === 'ARTIST_AD_CAMPAIGN' || type === 'FEATURED_PLACEMENT') {
+        pFee = amount;
+        artistNet = 0;
       } else if (type === 'TIP') {
-        pFee = amount * platformFeeRate;
+        pFee = Math.round(amount * 0.05);
+        artistNet = amount - pFee;
+      } else if (type === 'TRACK_PURCHASE') {
+        const SALE_FLAT_FEE = 50;
+        let platformFeeRate = 0.20;
+        if (artistId) {
+          const { data: artistProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('subscription_tier, artist_tier')
+            .eq('id', artistId)
+            .single();
+          const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Standard').toLowerCase();
+          if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.10;
+          else if (currentTier.includes('label')) platformFeeRate = 0.05;
+        }
+        pFee = Math.round(amount * platformFeeRate) + SALE_FLAT_FEE;
+        artistNet = Math.max(amount - pFee, 0);
       } else if (type === 'FAN_SUBSCRIPTION') {
-        pFee = amount * platformFeeRate;
-      } else if (type.includes('LISTENER_') || type.includes('ARTIST_')) {
-        pFee = amount; // Platform takes 100% for studio tiers and listener subs
+        pFee = Math.round(amount * 0.10);
+        artistNet = amount - pFee;
+      } else {
+        pFee = Math.round(amount * 0.15);
+        artistNet = amount - pFee;
       }
-
-      artistNet = amount - pFee;
 
       await supabaseAdmin.from('transactions').update({ 
         status: 'completed',
