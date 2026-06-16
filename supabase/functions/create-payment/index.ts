@@ -293,6 +293,7 @@ Deno.serve(async (req) => {
         customization: {
           title: "Smashify",
           description: descriptions[type] || "Smashify Payment",
+          logo: "https://ais-pre-mqanea5thkwbq6cnhd3hxr-828774785557.europe-west2.run.app/logo.png",
         },
       }),
     });
@@ -303,17 +304,7 @@ Deno.serve(async (req) => {
       console.error("Payment Function: PayChangu Error:", payload);
       // Cleanup on failed initialization
       await supabase.from("transactions").delete().eq("paychangu_ref", tx_ref);
-      let errorMsg = "PayChangu initialization failed";
-      if (payload?.message) {
-         if (typeof payload.message === 'string') {
-            errorMsg = payload.message;
-         } else {
-            errorMsg = JSON.stringify(payload.message);
-         }
-      } else if (payload?.error) {
-         errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
-      }
-      throw new Error(errorMsg);
+      throw new Error(payload.message || "PayChangu initialization failed");
     }
 
     console.log("Payment Function: Success, returning checkout URL");
