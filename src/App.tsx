@@ -228,7 +228,8 @@ function AppContent() {
   // Expose globally so paychangu.ts can trigger it
   useEffect(() => {
     (window as any).__smashifyShowPayment = (checkoutUrl: string, txRef: string) => {
-      setPaymentModal({ checkoutUrl, txRef })
+      // Redirect directly to checkout to avoid iframe security/CORS issues on mobile
+      window.location.href = checkoutUrl;
     }
     return () => { delete (window as any).__smashifyShowPayment }
   }, [])
