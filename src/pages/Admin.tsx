@@ -4,9 +4,10 @@ import {
   ShieldCheck, CircleCheck, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
-  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send
+  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { verifyPayment } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -51,6 +52,7 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdForm, setShowAdForm] = useState(false);
   const [adUploading, setAdUploading] = useState(false);
+  const [fixStuckLoading, setFixStuckLoading] = useState(false);
   
   const [platformStats, setPlatformStats] = useState({
     totalArtists: 0, totalListeners: 0, totalSongs: 0,
@@ -130,6 +132,43 @@ const Admin = () => {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleRefreshStuckTransactions = async () => {
+    setFixStuckLoading(true);
+    try {
+      const { data: stuckTxs } = await supabase
+        .from('transactions')
+        .select('paychangu_ref')
+        .eq('status', 'pending')
+        .not('paychangu_ref', 'is', null);
+
+      if (!stuckTxs || stuckTxs.length === 0) {
+        toast.success('No pending transactions found');
+        return;
+      }
+
+      toast(`Found ${stuckTxs.length} pending transactions. Verifying...`);
+      
+      let fixedCount = 0;
+      for (const tx of stuckTxs) {
+        if (tx.paychangu_ref) {
+          try {
+            await verifyPayment(tx.paychangu_ref);
+            fixedCount++;
+          } catch (e) {
+            console.warn('Failed to verify tx', tx.paychangu_ref, e);
+          }
+        }
+      }
+      
+      await fetchPlatformStats(); 
+      toast.success(`Processed ${fixedCount} pending transactions`);
+    } catch (error: any) {
+      toast.error('Failed to sync transactions: ' + error.message);
+    } finally {
+      setFixStuckLoading(false);
     }
   };
 
@@ -1156,7 +1195,17 @@ const Admin = () => {
                     </div>
 
                     <div className="bg-[#141428] border border-[#22223e] rounded-[14px] p-6">
-                      <h3 className="text-base font-semibold text-white mb-1">Recent Transactions</h3>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-base font-semibold text-white">Recent Transactions</h3>
+                        <button 
+                          onClick={handleRefreshStuckTransactions}
+                          disabled={fixStuckLoading}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 text-smash-purple hover:bg-smash-purple/30 rounded-lg transition-colors text-xs font-bold"
+                        >
+                          <RefreshCw size={14} className={fixStuckLoading ? 'animate-spin' : ''} />
+                          {fixStuckLoading ? 'Syncing...' : 'Sync Pending'}
+                        </button>
+                      </div>
                       <p className="text-xs text-[#7878a0] mb-6">Latest platform financial activity</p>
                       <table className="w-full mt-2">
                         <thead>
