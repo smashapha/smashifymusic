@@ -141,12 +141,12 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
       toast.error('Identity verification is required before initiating payouts.');
       return;
     }
-    if (balance < 2000) {
-      toast.error('Minimum withdrawal balance is MK 2,000.');
+    if (balance < 10000) {
+      toast.error('Minimum withdrawal balance is MK 10,000.');
       return;
     }
-    if (!withdrawalAmount || withdrawalAmount < 2000) {
-      toast.error('Please enter a withdrawal amount of at least MK 2,000.');
+    if (!withdrawalAmount || withdrawalAmount < 10000) {
+      toast.error('Please enter a withdrawal amount of at least MK 10,000.');
       return;
     }
     if (withdrawalAmount > balance) {
@@ -387,13 +387,13 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
                     type="number" 
                     value={withdrawalAmount || ''} 
                     onChange={e => setWithdrawalAmount(Math.max(0, Number(e.target.value)))}
-                    placeholder="Minimum 2,000"
+                    placeholder="Minimum 10,000"
                     className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-4 h-14 font-studio font-bold text-[24px] outline-none focus:border-smash-purple text-text-primary placeholder:text-text-muted"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MWK</div>
                 </div>
                 <div className="flex justify-between items-center mt-2 px-1">
-                  <span className="text-[10px] text-text-muted uppercase font-semibold">Min: MK 2,000</span>
+                  <span className="text-[10px] text-text-muted uppercase font-semibold">Min: MK 10,000</span>
                   <button 
                     onClick={() => setWithdrawalAmount(balance)}
                     className="text-[10px] text-smash-purple font-medium uppercase tracking-widest hover:underline"
@@ -404,15 +404,22 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
               </div>
 
               {/* PLATFORM FEES PREVIEW */}
-              {withdrawalAmount >= 2000 && (
-                <div className="p-4 bg-bg-elevated/50 border border-border-subtle rounded-[14px] space-y-2 animate-in fade-in zoom-in-95 duration-300">
-                  <div className="flex justify-between items-center text-[11px] font-display font-medium uppercase tracking-wider text-text-bold">
-                    <span>Platform Handshake Fee (3%)</span>
-                    <span className="text-text-primary font-mono">-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</span>
+              {withdrawalAmount >= 10000 && (
+                <div className="p-4 bg-bg-elevated/50 border border-border-subtle rounded-[14px] space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white">Network Transfer Fee (3%)</p>
+                      <p className="text-[9px] text-smash-gray">Charged by {detectedNetwork} — not a Smashify fee</p>
+                    </div>
+                    <p className="text-sm font-black text-red-400">-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</p>
                   </div>
-                  <div className="pt-2 border-t border-border-subtle flex justify-between items-center">
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <p className="text-xs font-bold text-smash-green">Smashify Fee</p>
+                    <p className="text-sm font-black text-smash-green">MK 0 (0%)</p>
+                  </div>
+                  <div className="pt-2 border-t border-white/10 flex justify-between items-center">
                     <span className="text-[11px] font-display font-bold uppercase tracking-widest text-text-primary">Net Transfer Disbursed</span>
-                    <span className="text-[18px] font-studio font-bold text-smash-green">MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
+                    <span className="text-[18px] font-studio font-bold text-white">MK {Math.round(withdrawalAmount * 0.97).toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -420,7 +427,7 @@ export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void
               {/* WITHDRAW SUBMIT BUTTON */}
               <button 
                 onClick={handleWithdrawRequest}
-                disabled={requesting || balance < 2000 || withdrawalAmount < 2000 || withdrawalAmount > balance}
+                disabled={requesting || balance < 10000 || withdrawalAmount < 10000 || withdrawalAmount > balance}
                 className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {requesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'INITIATE payout REQUEST'}

@@ -1,0 +1,4 @@
+ALTER TABLE public.payout_requests
+  ADD COLUMN IF NOT EXISTS network_fee NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS net_amount NUMERIC DEFAULT 0;
+

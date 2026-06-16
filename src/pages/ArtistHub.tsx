@@ -753,10 +753,10 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
                      </div>
                      <button
                        onClick={() => setActiveTab('withdraw')}
-                       disabled={balance < 2000}
+                       disabled={balance < 10000}
                        className="w-full max-w-sm h-12 bg-smash-green text-white rounded-2xl font-black text-sm uppercase tracking-widest disabled:opacity-40 hover:brightness-110 transition-all shadow-lg shadow-smash-green/20 mt-4"
                      >
-                       {balance < 2000 ? `Min MK 2,000 required` : `Withdraw Earnings`}
+                       {balance < 10000 ? `Min MK 10,000 required` : `Withdraw Earnings`}
                      </button>
                    </div>
                  </>

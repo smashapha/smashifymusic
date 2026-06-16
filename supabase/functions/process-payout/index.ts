@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
       throw new Error('Artist profile not found')
     }
     if (artist.wallet_balance < amount) throw new Error('Insufficient wallet balance')
-    if (amount < 2000) throw new Error('Minimum withdrawal is MK 2,000')
+    if (amount < 10000) throw new Error('Minimum withdrawal is MK 10,000')
+
+    // Network transfer fee — charged by the mobile money network, NOT Smashify
+    const NETWORK_TRANSFER_FEE_RATE = 0.03
+    const networkFee = Math.round(amount * NETWORK_TRANSFER_FEE_RATE)
+    const netPayoutAmount = amount - networkFee
 
     // 3. Pessimistically Deduct from Wallet
     console.log("Payout Function: Deducting from wallet...")
@@ -75,6 +80,8 @@ Deno.serve(async (req) => {
       .insert({
         artist_id: user.id,
         requested_amount: amount,
+        network_fee: networkFee,
+        net_amount: netPayoutAmount,
         phone,
         network,
         status: 'pending', // Directly set to pending so that the administrator can process it manually from their panel
@@ -96,7 +103,7 @@ Deno.serve(async (req) => {
       artist_id: user.id,
       type: 'withdrawal',
       gross_amount: amount,
-      net_amount: amount,
+      net_amount: netPayoutAmount,
       status: 'pending',
       reference: payoutRef,
       description: `Withdrawal to ${network} (${phone})`
@@ -107,7 +114,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       reference: payoutRef,
-      message: 'Withdrawal request submitted! Please wait for a moment while we verify your payout.'
+      message: `Withdrawal request submitted! MK ${netPayoutAmount.toLocaleString()} will be sent to ${network} ${phone} once approved. Smashify charges 0% — the only deduction is the ${network} network transfer fee (3%, MK ${networkFee.toLocaleString()}).`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

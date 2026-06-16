@@ -83,11 +83,9 @@ const Pricing = () => {
   };
 
   const calculateKeep = (tier: string) => {
-    let fee = 0.15;
-    if (tier === 'Rising Star') fee = 0.10;
-    if (tier === 'Standard') fee = 0.07;
-    if (tier === 'Elite') fee = 0.05;
-    return expectedTips - (expectedTips * fee);
+    // Tips are 5% all-in for every tier — tier no longer affects tip earnings
+    const TIP_FEE = 0.05;
+    return expectedTips - (expectedTips * TIP_FEE);
   };
 
   return (
@@ -218,9 +216,10 @@ const Pricing = () => {
                 features={[
                   "5 total uploads (lifetime)",
                   "Streaming only — no track sales or downloads",
-                  "15% fee on tips",
+                  "5% fee on tips (same for everyone)",
                   "Basic play analytics",
                   "MK 50,000 max withdrawal",
+                  "Minimum withdrawal: MK 10,000",
                   "7 day payout speed"
                 ]} 
              />
@@ -235,10 +234,11 @@ const Pricing = () => {
                   "10 uploads per 6 months",
                   "Tips & fan subscriptions only (no track sales)",
                   "Accept fan subscriptions",
-                  "10% fee on tips & sales",
+                  "5% fee on tips",
                   "Fan messaging enabled",
                   "Standard analytics",
                   "MK 200,000 max withdrawal",
+                  "Minimum withdrawal: MK 10,000",
                   "3 day payout speed"
                 ]} 
              />
@@ -254,11 +254,12 @@ const Pricing = () => {
                   "15 uploads per 6 months",
                   "Tips & fan subscriptions only (no track sales)",
                   "Accept fan subscriptions",
-                  "7% fee on tips & sales",
+                  "5% fee on tips",
                   "1 free featured placement/month",
                   "Advanced analytics suite",
                   "Verified badge on profile",
                   "MK 500,000 max withdrawal",
+                  "Minimum withdrawal: MK 10,000",
                   "24 hour payout speed"
                 ]} 
              />
@@ -271,14 +272,15 @@ const Pricing = () => {
                 onAction={() => handleAction('Elite')}
                 features={[
                   "25 uploads per 6 months",
-                  "Sell tracks to fans — with fan download access",
+                  "Sell tracks to fans — 10% + MK 50 per sale, with fan download access",
                   "Elite exclusive: track sales & downloads",
-                  "5% fee on tips & sales",
+                  "5% fee on tips",
                   "3 free featured placements/month",
                   "Full analytics with CSV export",
                   "Gold verified badge",
                   "Instant payouts",
-                  "Unlimited withdrawals"
+                  "Unlimited withdrawals",
+                  "Minimum withdrawal: MK 10,000"
                 ]} 
              />
           </div>
@@ -314,21 +316,19 @@ const Pricing = () => {
                 </p>
               </div>
               <div className="space-y-3 md:space-y-4">
-                <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                  <span className="font-bold text-xs md:text-sm text-smash-gray truncate mr-2">Free (85%):</span>
-                  <span className="text-base md:text-lg font-black shrink-0">MK {calculateKeep('Free').toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                  <span className="font-bold text-xs md:text-sm text-smash-gray truncate mr-2">Rising Star (90%):</span>
-                  <span className="text-base md:text-lg font-black shrink-0">MK {calculateKeep('Rising Star').toLocaleString()}</span>
-                </div>
                 <div className="flex justify-between items-center p-4 bg-smash-orange/20 rounded-xl border border-smash-orange/50">
-                  <span className="font-bold text-xs md:text-sm text-smash-orange truncate mr-2">Standard (93%):</span>
-                  <span className="text-base md:text-lg font-black text-white shrink-0">MK {calculateKeep('Standard').toLocaleString()}</span>
+                  <div>
+                    <span className="font-bold text-xs md:text-sm text-smash-orange block">You Keep (95%):</span>
+                    <span className="text-[9px] text-smash-gray">Tips are 5% all-in — same for every tier</span>
+                  </div>
+                  <span className="text-base md:text-lg font-black text-white shrink-0">MK {calculateKeep('any').toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                  <span className="font-bold text-xs md:text-sm text-smash-gray truncate mr-2">Elite (95%):</span>
-                  <span className="text-base md:text-lg font-black shrink-0">MK {calculateKeep('Elite').toLocaleString()}</span>
+                  <div>
+                    <span className="font-bold text-xs md:text-sm text-smash-gray block">Smashify Fee (5%):</span>
+                    <span className="text-[9px] text-smash-gray">Covers payment processing + platform costs</span>
+                  </div>
+                  <span className="text-base md:text-lg font-black text-smash-gray shrink-0">MK {(expectedTips - calculateKeep('any')).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -359,10 +359,26 @@ const Pricing = () => {
 
       <div className="max-w-3xl mx-auto mb-20">
         <h3 className="text-4xl font-black font-display italic uppercase text-center mb-12">FAQ</h3>
+        
+        <div className="mt-12 mb-8 p-6 md:p-8 bg-white/5 border border-white/10 rounded-2xl">
+          <h3 className="text-lg md:text-xl font-studio font-black uppercase italic text-white mb-4">
+            Full Fee Transparency
+          </h3>
+          <div className="space-y-3 text-sm text-smash-gray">
+            <p><span className="text-white font-bold">Tips:</span> 5% all-in, every tier. You keep 95%.</p>
+            <p><span className="text-white font-bold">Track sales (Elite/Label only):</span> 10% (Elite) or 5% (Label) + MK 50 flat fee per sale.</p>
+            <p><span className="text-white font-bold">Fan subscriptions:</span> Our 10% fee is baked into the listed price — what fans see is final.</p>
+            <p><span className="text-white font-bold">Withdrawals:</span> Smashify takes 0%. Only the mobile money network's 3% transfer fee applies — that's Airtel/TNM's cost, not ours. Minimum withdrawal: MK 10,000.</p>
+            <p><span className="text-white font-bold">Studio subscriptions:</span> Your tier price is fixed and transparent — no hidden add-ons at checkout.</p>
+          </div>
+        </div>
+
         <div className="space-y-4">
           {[
             { q: "How do I get paid?", a: "When your wallet reaches the minimum withdrawal amount for your tier, you can cash out directly to your registered Airtel Money or TNM Mpamba number." },
-            { q: "Are there hidden fees?", a: "No. PayChangu charges a standard ~1.5% processing fee, and we take our platform cut (which depends on your tier). The rest is 100% yours." },
+            { q: "Are there hidden fees?", a: "No. Tips have a flat 5% fee for every artist — no tier differences. Track sales (Elite/Label only) have a tiered commission plus a small MK 50 processing fee. Fan subscription prices already include our fee — what's listed is what's paid. Withdrawals: Smashify charges 0%, you only pay the standard mobile money network transfer fee (3%), which goes to Airtel/TNM, not us." },
+            { q: "What's the minimum withdrawal amount?", a: "MK 10,000. This helps us process payouts efficiently as the platform grows. There's no maximum on most tiers beyond your tier's withdrawal cap." },
+            { q: "Does Smashify charge anything on withdrawals?", a: "No. Smashify takes 0% on withdrawals. The only deduction is the mobile money network's standard 3% transfer fee, which is the cost of moving money to Airtel Money or TNM Mpamba — not a Smashify charge." },
             { q: "Can I upgrade or downgrade anytime?", a: "Yes. Listener plans are billed monthly. Artist Studio plans are billed every 6 months. You can upgrade at any time — the new plan takes effect immediately." },
             { q: "Do listeners have to pay to hear my music?", a: "No, listeners on the Free plan can hear your music with ads. However, they can tip you directly. Only music you explicitly set a price for requires purchase." }
           ].map((faq, i) => (

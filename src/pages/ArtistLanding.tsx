@@ -146,7 +146,7 @@ const ArtistLanding: React.FC = () => {
              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10 border-t border-white/5 pt-12">
                 {[
                   { label: 'Artist Keep', val: 'Up to 95%' },
-                  { label: 'Min. Withdrawal', val: 'MK 2,000' },
+                  { label: 'Min. Withdrawal', val: 'MK 10,000' },
                   { label: 'Paid Via', val: 'Airtel / TNM' }
                 ].map((stat, i) => (
                   <div key={i} className="flex flex-col items-center lg:items-start">
@@ -357,7 +357,7 @@ const ArtistLanding: React.FC = () => {
               {[
                 { step: '01', title: 'Join Studio', desc: 'Create your artist account and complete your profile. We review every artist to ensure quality for our listeners.' },
                 { step: '02', title: 'Upload & Distribute', desc: 'Upload your high-quality tracks or albums. Set your price, add lyrics, and choose your release date.' },
-                { step: '03', title: 'Get Paid', desc: 'Fans buy your music, send tips, and subscribe monthly. Your earnings go straight to your Smashify wallet. Withdraw to Airtel Money or TNM anytime — minimum MK 2,000.' }
+                { step: '03', title: 'Get Paid', desc: 'Fans buy your music, send tips, and subscribe monthly. Your earnings go straight to your Smashify wallet. Withdraw to Airtel Money or TNM anytime — minimum MK 10,000.' }
               ].map((s, i) => (
                 <div key={i} className={`flex flex-col md:flex-row items-center gap-12 relative z-10 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                    <div className="flex-1 md:text-right">
@@ -397,9 +397,10 @@ const ArtistLanding: React.FC = () => {
                   {[
                     "5 uploads (lifetime)",
                     "Free streaming only",
-                    "15% fee on tips",
+                    "5% fee on tips (same for everyone)",
                     "Basic analytics",
                     "MK 50,000 max withdrawal",
+                    "Minimum withdrawal: MK 10,000",
                     "Must be verified to withdraw"
                   ].map((f, i) => (
                     <li key={i} className="flex items-center gap-3 text-[14px] text-white/40 font-medium font-sans">
@@ -425,11 +426,12 @@ const ArtistLanding: React.FC = () => {
                 <ul className="space-y-4 flex-1">
                    {[
                      "10 uploads per 6 months",
-                     "Sell tracks to fans",
+                     "Tips & fan subscriptions only",
                      "Accept fan subscriptions",
-                     "10% fee on tips & sales",
+                     "5% fee on tips",
                      "Standard analytics",
                      "MK 200,000 max withdrawal",
+                     "Minimum withdrawal: MK 10,000",
                      "3 day payout speed"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
@@ -456,12 +458,13 @@ const ArtistLanding: React.FC = () => {
                 <ul className="space-y-4 flex-1">
                    {[
                      "15 uploads per 6 months",
-                     "Sell tracks + fan subscriptions",
-                     "7% fee on tips & sales",
+                     "Tips & fan subscriptions only",
+                     "5% fee on tips",
                      "1 free featured placement/month",
                      "Advanced analytics",
                      "Verified badge on profile",
                      "MK 500,000 max withdrawal",
+                     "Minimum withdrawal: MK 10,000",
                      "24 hour payout speed"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white font-medium font-sans">
@@ -487,13 +490,14 @@ const ArtistLanding: React.FC = () => {
                 <ul className="space-y-4 flex-1">
                    {[
                      "25 uploads per 6 months",
-                     "All Standard features included",
-                     "5% fee on tips & sales",
+                     "Sell tracks (10% + MK 50 fee)",
+                     "5% fee on tips",
                      "3 free featured placements/month",
                      "Full analytics with CSV export",
                      "Gold verified badge",
                      "Instant payouts",
-                     "Unlimited withdrawals"
+                     "Unlimited withdrawals",
+                     "Minimum withdrawal: MK 10,000"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
                         <CircleCheck size={16} className="text-smash-purple shrink-0" />

@@ -58,25 +58,13 @@ export default function ArtistGuide() {
 
           <GuideSection idx={2} icon={DollarSign} title="How Your Earnings Work">
             <div className="bg-bg-elevated/50 border border-white/5 p-5 rounded-xl font-mono text-sm space-y-3 mb-6">
-              <p>💰 Tips from fans → You earn 85-95% (based on tier)</p>
-              <p>🛒 Track sales → Elite & Label tier only — You earn 95%</p>
-              <p>❤️ Fan subscriptions → You earn 85-95% (based on tier)</p>
-              <p>🎙️ Studio subscriptions → 100% goes to platform (this pays for hosting)</p>
+              <p>💸 Tips → 5% all-in fee — you keep 95% of every tip, every tier</p>
+              <p>🛒 Track sales (Elite/Label only) → 10% (Elite) or 5% (Label) + MK 50 per sale</p>
+              <p>❤️ Fan subscriptions → Smashify fee already included in the listed price</p>
+              <p>💰 Withdrawals → Smashify charges 0%. Only the mobile money network's 3% transfer fee applies. Minimum withdrawal: MK 10,000.</p>
             </div>
             
-            <p className="font-bold text-white uppercase tracking-widest text-xs mt-6 mb-3">Tier fee breakdown:</p>
-            <ul className="space-y-2 list-none">
-              <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-text-muted" /> Free tier: 15% platform fee on tips & sales</li>
-              <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Rising Star: 10% platform fee</li>
-              <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-smash-purple" /> Standard: 7% platform fee</li>
-              <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-smash-orange" /> Elite: 5% platform fee</li>
-              <li className="flex items-start gap-2 mt-4 p-3 bg-smash-orange/10 border border-smash-orange/20 rounded-xl">
-                <div className="w-1.5 h-1.5 rounded-full bg-smash-orange mt-2 shrink-0" />
-                <span className="text-smash-orange font-bold text-xs">
-                  Track sales & fan downloads are an Elite-exclusive feature. Free, Rising Star, and Standard artists earn through tips and fan subscriptions only.
-                </span>
-              </li>
-            </ul>
+
           </GuideSection>
 
           <GuideSection idx={3} icon={Music} title="Your Slot System Explained">
@@ -128,11 +116,12 @@ export default function ArtistGuide() {
 
           <GuideSection idx={6} icon={DollarSign} title="Payout Rules">
             <ul className="space-y-3 list-disc pl-5 marker:text-smash-purple">
-              <li>Minimum withdrawal: <span className="text-white font-medium">MK 2,000</span></li>
-              <li>Platform handshake fee on withdrawals: <span className="text-white font-medium">3%</span></li>
+              <li>Minimum withdrawal: <span className="text-white font-medium">MK 10,000</span></li>
+              <li>Smashify withdrawal fee: <span className="text-white font-medium">0%</span></li>
+              <li>Mobile money network transfer fee (Airtel/TNM): <span className="text-white font-medium">3%</span></li>
               <li>Payouts are manual — you submit a request and admin sends it to your verified mobile money number within 24-48 hours</li>
               <li>Your payout phone number is locked to your verified identity for security — contact support to update it</li>
-              <li>Free tier artists must reach <span className="text-white font-medium">MK 5,000</span> before requesting a payout</li>
+              <li>Free tier artists must reach <span className="text-white font-medium">MK 10,000</span> before requesting a payout</li>
             </ul>
           </GuideSection>
 

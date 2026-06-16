@@ -78,7 +78,7 @@ const Terms = () => {
         <section className="space-y-3">
           <h2 className="text-xl md:text-2xl font-black font-display uppercase italic tracking-tighter text-white">6. Financial Terms and Platform Fees</h2>
           <p className="text-smash-gray text-sm md:text-base">
-            Smashify charges a platform fee on artist earnings from tips and track sales based on the artist's subscription tier (Free: 15%, Rising Star: 10%, Standard: 7%, Elite: 5%). Studio subscription payments (Rising Star, Standard, Elite) are non-refundable once the subscription period has begun. Payout requests are subject to a 3% processing fee. Smashify processes payouts manually within 24-48 business hours of an approved request. Smashify reserves the right to withhold payouts pending fraud investigation.
+            Smashify charges a flat 5% platform fee on all tips, applied equally regardless of artist tier. Track sales — available exclusively to Elite and Label tier artists — incur a commission of 10% (Elite) or 5% (Label), plus a flat MK 50 processing fee per transaction. Fan subscription prices displayed to fans include Smashify's 10% fee; no additional charges apply at checkout. Studio subscription payments (Rising Star, Standard, Elite, Label) are non-refundable once the subscription period has begun. Withdrawal requests are subject only to the standard mobile money network transfer fee (currently 3%, set by Airtel Money or TNM Mpamba) — Smashify applies no additional fee on withdrawals. The minimum withdrawal amount is MK 10,000. Smashify processes payouts manually within 24-48 business hours of an approved request. Smashify reserves the right to withhold payouts pending fraud investigation.
           </p>
         </section>
 

@@ -55,7 +55,7 @@ const Help = () => {
         <div className="space-y-8 max-w-2xl mx-auto">
           <div className="border-b border-white/5 pb-6">
             <h4 className="font-bold text-white text-lg mb-3">How do I get paid?</h4>
-            <p className="text-text-secondary leading-relaxed">Payouts are sent directly to your Airtel Money or TNM Mpamba wallet. The minimum withdrawal is MK 2,000, and processing time depends on your Studio Tier (Instant for Elite members!).</p>
+            <p className="text-text-secondary leading-relaxed">Payouts are sent directly to your Airtel Money or TNM Mpamba wallet. The minimum withdrawal is MK 10,000, and processing time depends on your Studio Tier (Instant for Elite members!).</p>
           </div>
           <div className="border-b border-white/5 pb-6">
             <h4 className="font-bold text-white text-lg mb-3">Can fans listen for free?</h4>

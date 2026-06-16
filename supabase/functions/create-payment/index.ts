@@ -175,8 +175,7 @@ Deno.serve(async (req) => {
       dbType = 'promotion';
     }
 
-    // Fetch artist tier to calculate correct fee
-    let platformFeeRate = 0.15; // Default for Free tier
+    // Fee calculation — different rules for tips, sales, and platform-pure payment types
     const platformPures = [
       "LISTENER_DAILY_PASS",
       "LISTENER_WEEKLY_PASS",
@@ -189,31 +188,67 @@ Deno.serve(async (req) => {
       "FEATURED_PLACEMENT",
     ];
 
+    let platformFee = 0;
+    let netAmount = finalAmount;
+
     if (platformPures.includes(type.toUpperCase())) {
-      platformFeeRate = 1.0;
-    } else if (meta.artistId) {
-      const { data: artistProfile } = await supabase
+      // 100% goes to platform — these are subscription/promo payments, not artist earnings
+      platformFee = finalAmount;
+      netAmount = 0;
+    } else if (typeLower === "tip") {
+      // Flat 5% on tips, every tier, no exceptions
+      const TIP_FEE_RATE = 0.05;
+      platformFee = Math.round(finalAmount * TIP_FEE_RATE);
+      netAmount = finalAmount - platformFee;
+    } else if (typeLower === "track_purchase") {
+      // Tiered commission + flat MK 50 fee — Elite/Label only, but apply rate based on tier regardless as a safety net
+      const SALE_FEE_RATES: Record<string, number> = {
+        Free: 0.20, free: 0.20,
+        RisingStar: 0.20, risingstar: 0.20,
+        Standard: 0.20, standard: 0.20,
+        Elite: 0.10, elite: 0.10,
+        Label: 0.05, label: 0.05,
+      };
+      const SALE_FLAT_FEE = 50;
+
+      let tierRate = 0.20;
+      if (meta.artistId) {
+        const { data: artistProfile } = await supabase
+          .from("profiles")
+          .select("artist_tier")
+          .eq("id", meta.artistId)
+          .single();
+        tierRate = SALE_FEE_RATES[artistProfile?.artist_tier || "Standard"] ?? 0.20;
+      }
+      const percentageFee = Math.round(finalAmount * tierRate);
+      platformFee = percentageFee + SALE_FLAT_FEE;
+      netAmount = Math.max(finalAmount - platformFee, 0);
+    } else if (typeLower.includes("subscription") || typeLower === "fan_subscription") {
+      // Fan subscriptions — 10% Smashify fee, rest to artist
+      const SUB_FEE_RATE = 0.10;
+      platformFee = Math.round(finalAmount * SUB_FEE_RATE);
+      netAmount = finalAmount - platformFee;
+    } else {
+      // Fallback — should rarely hit, default to 15% to be safe
+      platformFee = Math.round(finalAmount * 0.15);
+      netAmount = finalAmount - platformFee;
+    }
+
+    if (typeLower === "track_purchase" && meta.artistId) {
+      const { data: sellerProfile } = await supabase
         .from("profiles")
         .select("artist_tier")
         .eq("id", meta.artistId)
         .single();
-
-      const tierFees: Record<string, number> = {
-        Free: 0.15,
-        free: 0.15,
-        RisingStar: 0.10,
-        risingstar: 0.10,
-        Standard: 0.07,
-        standard: 0.07,
-        Elite: 0.05,
-        elite: 0.05,
-        Label: 0.05,
-        label: 0.05,
-      };
-      platformFeeRate = tierFees[artistProfile?.artist_tier || "Free"] || 0.15;
+    
+      const eligibleTiers = ["Elite", "elite", "Label", "label"];
+      if (!sellerProfile || !eligibleTiers.includes(sellerProfile.artist_tier)) {
+        return new Response(
+          JSON.stringify({ error: "This artist's plan does not support track sales. Only Elite and Label tier artists can sell tracks." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
     }
-    const platformFee = Math.round(finalAmount * platformFeeRate);
-    const netAmount = finalAmount - platformFee;
 
     const txFanId = meta.userId || user.id;
 
