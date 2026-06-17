@@ -87,19 +87,9 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     toast.dismiss(toastId);
     toast.success('Opening secure payment checkout...', { duration: 3000 });
     
-    // Always use the inline modal flow when available
+    // Direct redirect to PayChangu
     setTimeout(() => {
-      try {
-        const sanitizedRef = tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
-        if ((window as any).__smashifyShowPayment) {
-          (window as any).__smashifyShowPayment(data.checkout_url, sanitizedRef);
-        } else {
-          // Fallback if modal is somehow not registered
-          window.location.href = data.checkout_url;
-        }
-      } catch (e) {
-        window.location.href = data.checkout_url;
-      }
+      window.location.href = data.checkout_url;
     }, 500);
 
     return { checkout_url: data.checkout_url, tx_ref: tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '') };

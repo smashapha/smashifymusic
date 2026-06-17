@@ -6,7 +6,6 @@ import { AuthProvider } from './context/AuthContext';
 import MainLayout from './components/common/MainLayout';
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
-import PaymentModal from './components/common/PaymentModal';
 import { verifyPayment } from './lib/paychangu';
 
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -206,13 +205,7 @@ function AppContent() {
   } | null>(null);
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
 
-  const [paymentModal, setPaymentModal] = useState<{
-    checkoutUrl: string
-    txRef: string
-  } | null>(null)
-
   const handlePaymentSuccess = async (txRef: string) => {
-    setPaymentModal(null)
     toast.loading('Confirming payment...', { id: 'payment-confirm' })
     try {
       await verifyPayment(txRef)
@@ -225,25 +218,20 @@ function AppContent() {
     }
   }
 
-  // Expose globally so paychangu.ts can trigger it
-  useEffect(() => {
-    (window as any).__smashifyShowPayment = (checkoutUrl: string, txRef: string) => {
-      setPaymentModal({ checkoutUrl, txRef })
-    }
-    return () => { delete (window as any).__smashifyShowPayment }
-  }, [])
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'complete') {
-      // Clean URL
-      window.history.replaceState({}, '', '/');
-      // Try to close this tab — works if opened by window.open
-      window.close();
-      // If window.close() is blocked, show a message
-      setTimeout(() => {
-        toast.success('Payment complete! You can close this tab and return to Smashify.');
-      }, 300);
+      const txRef = params.get('tx_ref');
+      // Clean URL, keep the path
+      window.history.replaceState({}, '', window.location.pathname);
+      
+      if (txRef) {
+        handlePaymentSuccess(txRef);
+      } else {
+        setTimeout(() => {
+          toast.success('Payment status received.');
+        }, 300);
+      }
     }
   }, []);
 
@@ -409,14 +397,6 @@ function AppContent() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-      {paymentModal && (
-        <PaymentModal
-          checkoutUrl={paymentModal.checkoutUrl}
-          txRef={paymentModal.txRef}
-          onSuccess={handlePaymentSuccess}
-          onClose={() => setPaymentModal(null)}
-        />
-      )}
     </Suspense>
   );
 }
