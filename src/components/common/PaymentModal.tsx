@@ -12,6 +12,7 @@ interface PaymentModalProps {
 
 export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }: PaymentModalProps) {
   const [isCompleted, setIsCompleted] = useState(false)
+  const [pollSeconds, setPollSeconds] = useState(0)
 
   // Clean the reference in case it has slashes or quotes
   const cleanRef = txRef.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '')
@@ -56,7 +57,10 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
     checkPaymentStatus()
 
     // Poll every 3 seconds
-    const pollInterval = setInterval(checkPaymentStatus, 3000)
+    const pollInterval = setInterval(() => {
+      setPollSeconds(s => s + 3)
+      checkPaymentStatus()
+    }, 3000)
 
     return () => clearInterval(pollInterval)
   }, [cleanRef, onSuccess, isCompleted])
@@ -114,6 +118,11 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
                 allow="payment"
               />
             </div>
+            {pollSeconds >= 60 && !isCompleted && (
+              <p className="text-[10px] text-yellow-400 text-center mt-2 max-w-xs">
+                Still confirming with the mobile money network — this can take a minute on slower connections. We'll automatically check again shortly.
+              </p>
+            )}
           </div>
         </motion.div>
       </motion.div>

@@ -302,8 +302,11 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error("Payment Function: PayChangu Error:", payload);
-      // Cleanup on failed initialization
-      await supabase.from("transactions").delete().eq("paychangu_ref", tx_ref);
+      // Mark as failed instead of deleting — keeps an honest record for the user and for reconciliation
+      await supabase
+        .from("transactions")
+        .update({ status: "failed", metadata: { ...meta, payment_type: type, failure_reason: "paychangu_init_failed", paychangu_error: payload.message || "Unknown error" } })
+        .eq("paychangu_ref", tx_ref);
       throw new Error(payload.message || "PayChangu initialization failed");
     }
 
