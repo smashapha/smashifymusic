@@ -110,7 +110,7 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
     first_name: user.full_name?.split(' ')[0] || 'Fan',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'track_purchase',
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: user.id,
       songId: song.id,
@@ -134,7 +134,7 @@ export async function sendTip({ artist, fan, amount, anonymous = false }: { arti
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'tip',
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: fan.id,
       artistId: artist.id,
@@ -155,7 +155,7 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'fan_subscription',
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: fan.id,
       artistId: artist.id
@@ -192,7 +192,7 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
     first_name: user.full_name?.split(' ')[0] || 'Listener',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: user.id,
       plan: normalizedPlan,
@@ -225,7 +225,7 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: artist.id,
       tier,
@@ -255,7 +255,7 @@ export async function payForAdCampaign({
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'artist_ad_campaign',
-    return_url: `${APP_URL}/?payment=complete`,
+    return_url: `${APP_URL}/purchase-success`,
     meta: {
       userId: artist.id,
       plays,

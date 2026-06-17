@@ -38,8 +38,20 @@ const Trending = lazy(() => import('./pages/Trending'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const ApplicationPending = lazy(() => import('./pages/ApplicationPending'));
 const Admin = lazy(() => import('./pages/Admin'));
-const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
+
+const PaymentRedirect = ({ onTxRef }: { onTxRef: (ref: string) => void }) => {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const txRef = params.get('tx_ref') || params.get('reference');
+    if (txRef) {
+      // Small timeout to ensure redirect completes before toast renders
+      setTimeout(() => onTxRef(txRef), 100);
+    }
+  }, [onTxRef]);
+
+  return <Navigate to="/home" replace />;
+};
 
 const ArtistRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, role, loading } = useAuth();
@@ -330,12 +342,12 @@ function AppContent() {
         <Route path="/application-pending" element={role === 'pending' || role === 'artist' ? <Navigate to="/artist-hub" replace /> : <ApplicationPending />} />
         
         {/* Payment Processing Pages (Standalone) */}
-        <Route path="/purchase-success" element={<PaymentSuccess />} />
-        <Route path="/tip-success" element={<PaymentSuccess />} />
-        <Route path="/subscribe-success" element={<PaymentSuccess />} />
-        <Route path="/upgrade-success" element={<PaymentSuccess />} />
-        <Route path="/tier-success" element={<PaymentSuccess />} />
-        <Route path="/ad-success" element={<PaymentSuccess />} />
+        <Route path="/purchase-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/tip-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/subscribe-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/upgrade-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/tier-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/ad-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
         <Route path="/payment-failed" element={<PaymentFailed />} />
 
         {/* Artist Hub (Standalone for better editing experience) */}
