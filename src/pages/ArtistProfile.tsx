@@ -18,10 +18,40 @@ import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 
 const ArtistProfile: React.FC = () => {
-   const { id } = useParams<{ id: string }>();
+   const { id: paramId } = useParams<{ id: string }>();
    const navigate = useNavigate();
    const { userProfile } = useAuth();
    const { playQueue } = usePlayer();
+   
+   const [resolvedId, setResolvedId] = useState<string | null>(null);
+
+   useEffect(() => {
+     const resolveArtistId = async () => {
+       if (!paramId) return;
+       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(paramId);
+       if (isUUID) {
+         setResolvedId(paramId);
+         return;
+       }
+       
+       const { data, error } = await supabase
+         .from('profiles')
+         .select('id')
+         .ilike('stage_name', decodeURIComponent(paramId))
+         .maybeSingle();
+
+       if (data && data.id) {
+         setResolvedId(data.id);
+       } else {
+         toast.error('Artist not found');
+         navigate('/home');
+       }
+     };
+
+     resolveArtistId();
+   }, [paramId, navigate]);
+
+   const id = resolvedId;
    
    const [artist, setArtist] = useState<UserProfile | null>(null);
    const [songs, setSongs] = useState<Song[]>([]);
@@ -72,18 +102,19 @@ const ArtistProfile: React.FC = () => {
    };
 
    const handleShare = () => {
-      navigator.clipboard.writeText(window.location.href);
+      const shareUrl = `${window.location.origin}/artist/${encodeURIComponent(artist?.stage_name || id || '')}`;
+      navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Profile link copied!');
       setTimeout(() => setCopied(false), 2000);
    };
 
    const handleWhatsAppShare = () => {
-      const profileUrl = window.location.href;
+      const shareUrl = `${window.location.origin}/artist/${encodeURIComponent(artist?.stage_name || id || '')}`;
       const text = encodeURIComponent(
          `🎵 Check out ${artist?.stage_name} on Smashify!\n` +
          `Stream their music and support them directly.\n\n` +
-         `${profileUrl}`
+         `${shareUrl}`
       );
       window.open(`https://wa.me/?text=${text}`, '_blank');
    };
