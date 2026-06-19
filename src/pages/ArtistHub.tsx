@@ -3002,6 +3002,11 @@ const ProfileTab = ({ userProfile }: any) => {
                   <Upload size={24} className="text-white mb-2" />
                   <span className="text-[11px] font-display font-semibold uppercase tracking-widest text-white">Change Banner</span>
                 </div>
+                {saving && bannerFile && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
+                    <Loader2 size={32} className="text-smash-purple animate-spin" />
+                  </div>
+                )}
                 <input id="artist-banner-input" type="file" accept="image/*" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="hidden" />
               </div>
             </div>
@@ -3019,6 +3024,11 @@ const ProfileTab = ({ userProfile }: any) => {
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload size={20} className="text-white" />
                 </div>
+                {saving && avatarFile && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
+                    <Loader2 size={24} className="text-smash-purple animate-spin" />
+                  </div>
+                )}
                 <input id="artist-avatar-input" type="file" accept="image/*" onChange={e => setAvatarFile(e.target.files?.[0] || null)} className="hidden" />
               </div>
             </div>
@@ -3149,8 +3159,13 @@ const ProfileTab = ({ userProfile }: any) => {
            </div>
          )}
 
-         <button disabled={saving} type="submit" className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest rounded-[10px] mt-4 hover:bg-smash-purple/90 transition-colors disabled:opacity-50 text-[13px]">
-            {saving ? 'SYNCING...' : 'UPDATE STUDIO PROFILE'}
+         <button disabled={saving} type="submit" className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest rounded-[10px] mt-4 hover:bg-smash-purple/90 transition-colors disabled:opacity-50 text-[13px] flex items-center justify-center gap-2">
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                SYNCING...
+              </>
+            ) : 'UPDATE STUDIO PROFILE'}
          </button>
       </form>
     </div>
