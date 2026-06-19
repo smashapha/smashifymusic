@@ -147,7 +147,7 @@ export async function sendTip({ artist, fan, amount, anonymous = false }: { arti
  * Start a monthly subscription to an artist
  */
 export async function startFanSubscription({ artist, fan }: { artist: UserProfile; fan: UserProfile }) {
-  const amount = artist.subscription_price || 500;
+  const amount = artist.subscription_price || 1500;
   
   return initiatePayment({
     amount,

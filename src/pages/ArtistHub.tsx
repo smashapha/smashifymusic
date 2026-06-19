@@ -1626,6 +1626,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [title, setTitle] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [price, setPrice] = useState(2500);
+  const [subscriptionPrice, setSubscriptionPrice] = useState(1500);
   const [isForSale, setIsForSale] = useState(false);
   const [isExclusive, setIsExclusive] = useState(false);
 
@@ -1684,6 +1685,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
   const { userProfile } = useAuth();
   const { guardResult, checking, checkUpload } = useUploadGuard();
+
+  useEffect(() => {
+    if (userProfile?.subscription_price && typeof userProfile.subscription_price === 'number') {
+      setSubscriptionPrice(userProfile.subscription_price);
+    }
+  }, [userProfile?.subscription_price]);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -2058,6 +2065,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         else console.log('MotoFeed entry created for snippet:', songData.id);
       }
       
+      if (isExclusive && subscriptionPrice && userProfile?.id) {
+         await supabase.from('profiles').update({ subscription_price: subscriptionPrice }).eq('id', userProfile.id);
+      }
+
       setUploadProgress(100);
       setIsSuccess(true);
       if (onComplete) onComplete();
@@ -2146,6 +2157,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
         completed++;
         setUploadProgress(15 + Math.floor((completed / totalTracks) * 85));
+      }
+
+      if (isExclusive && subscriptionPrice && userProfile?.id) {
+         await supabase.from('profiles').update({ subscription_price: subscriptionPrice }).eq('id', userProfile.id);
       }
 
       setUploadProgress(100);
@@ -2717,20 +2732,35 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              </div>
                              
                              {/* Exclusive content toggle */}
-                             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                               <div>
-                                 <p className="text-sm font-bold text-white">Subscriber Exclusive</p>
-                                 <p className="text-[10px] text-smash-gray mt-0.5">
-                                   Only fans who subscribe monthly can access this track
-                                 </p>
+                             <div className="flex flex-col gap-4 p-4 bg-white/5 border border-white/10 rounded-xl">
+                               <div className="flex items-center justify-between">
+                                 <div>
+                                   <p className="text-sm font-bold text-white">Subscriber Exclusive</p>
+                                   <p className="text-[10px] text-smash-gray mt-0.5">
+                                     Only fans who subscribe monthly can access this track
+                                   </p>
+                                 </div>
+                                 <button
+                                   type="button"
+                                   onClick={() => setIsExclusive(prev => !prev)}
+                                   className={`w-12 h-6 rounded-full transition-colors ${isExclusive ? 'bg-smash-orange' : 'bg-white/10'}`}
+                                 >
+                                   <div className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${isExclusive ? 'translate-x-6' : 'translate-x-0'}`} />
+                                 </button>
                                </div>
-                               <button
-                                 type="button"
-                                 onClick={() => setIsExclusive(prev => !prev)}
-                                 className={`w-12 h-6 rounded-full transition-colors ${isExclusive ? 'bg-smash-orange' : 'bg-white/10'}`}
-                               >
-                                 <div className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${isExclusive ? 'translate-x-6' : 'translate-x-0'}`} />
-                               </button>
+                               
+                               {isExclusive && (
+                                 <div className="pt-4 border-t border-white/10">
+                                   <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Monthly Subscription Price</label>
+                                   <div className="relative">
+                                      <input type="number" required={isExclusive} value={subscriptionPrice === 0 ? '' : subscriptionPrice} onChange={e => setSubscriptionPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-orange transition-all outline-none text-white pr-20" />
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK / MO</div>
+                                   </div>
+                                   <p className="text-[10px] text-smash-gray mt-2">
+                                     Set the monthly price for fans to access all your exclusive content.
+                                   </p>
+                                 </div>
+                               )}
                              </div>
                              </>
                            )}

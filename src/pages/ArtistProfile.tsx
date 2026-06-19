@@ -562,13 +562,13 @@ const ArtistProfile: React.FC = () => {
                   <Crown size={32} className="text-smash-orange mx-auto mb-3" />
                   <p className="text-sm font-bold text-white mb-1">Subscriber Only Content</p>
                   <p className="text-xs text-smash-gray mb-4">
-                    Subscribe to {artist?.stage_name || artist?.full_name} for MK 150/month to unlock exclusive tracks, early releases, and behind-the-scenes content.
+                    Subscribe to {artist?.stage_name || artist?.full_name} for MK {(artist?.subscription_price || 1500).toLocaleString()}/month to unlock exclusive tracks, early releases, and behind-the-scenes content.
                   </p>
                   <button
                     onClick={() => handleSubscribe()}
                     className="px-6 py-2 bg-smash-orange text-white rounded-full font-black text-xs uppercase tracking-widest"
                   >
-                    Subscribe · MK 150/mo
+                    Subscribe · MK {(artist?.subscription_price || 1500).toLocaleString()}/mo
                   </button>
                 </div>
               ) : exclusiveContent.length === 0 ? (
