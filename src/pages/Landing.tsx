@@ -243,14 +243,14 @@ const Landing: React.FC = () => {
                 className="h-14 px-10 bg-smash-orange text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-xl shadow-smash-orange/20 flex items-center justify-center gap-3"
               >
                 <Headphones size={20} />
-                Start Listening Free
+                For Listeners
               </button>
               <button
                 onClick={() => navigate('/artists')}
                 className="h-14 px-10 bg-white/5 border border-smash-purple/30 text-smash-purple rounded-full font-display font-black uppercase tracking-widest text-sm hover:bg-smash-purple/10 transition-all flex items-center justify-center gap-3"
               >
                 <Mic2 size={20} />
-                Explore Artist Studio
+                For Artists
               </button>
             </motion.div>
 
