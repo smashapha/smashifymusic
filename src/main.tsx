@@ -12,6 +12,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Temporary CSP debugger for mobile
+document.addEventListener('securitypolicyviolation', (e) => {
+  alert(`CSP VIOLATION:
+Directive: ${e.violatedDirective}
+Blocked URI: ${e.blockedURI}
+Original Policy: ${e.originalPolicy}`);
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
