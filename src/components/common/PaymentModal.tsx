@@ -11,7 +11,6 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }: PaymentModalProps) {
-  console.log('CHECKOUT URL DEBUG:', checkoutUrl);
   const [isCompleted, setIsCompleted] = useState(false)
   const [pollSeconds, setPollSeconds] = useState(0)
 
@@ -124,11 +123,6 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
                 Still confirming with the mobile money network — this can take a minute on slower connections. We'll automatically check again shortly.
               </p>
             )}
-            {/* DEBUG UI FOR SMARTPHONES */}
-            <div className="w-full mt-2 p-2 bg-red-900/50 border border-red-500 rounded text-[10px] text-white text-left break-all select-all">
-              <strong>DEBUG CHECKOUT URL:</strong><br/>
-              {checkoutUrl}
-            </div>
           </div>
         </motion.div>
       </motion.div>
