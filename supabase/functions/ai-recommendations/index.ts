@@ -1,10 +1,8 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from "../_shared/cors.ts"
 
 Deno.serve(async (req) => {
   console.log("AI Function: Request received", req.method)
+  const corsHeaders = getCorsHeaders(req.headers.get("origin"))
   
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders } from "../_shared/cors.ts"
 
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
@@ -13,6 +9,7 @@ const twilioBase = `https://verify.twilio.com/v2/Services/${TWILIO_VERIFY_SID ||
 const authHeader = 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID || ''}:${TWILIO_AUTH_TOKEN || ''}`)
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get("origin"))
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {

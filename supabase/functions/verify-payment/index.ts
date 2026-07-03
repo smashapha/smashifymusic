@@ -267,25 +267,14 @@ async function reconcileStuckTransactions(supabase: any, PAYCHANGU_SECRET_KEY: s
   return { checked: stuckTxns.length, resolved };
 }
 
-const ALLOWED_ORIGINS = [
-  "https://play-smashify.vercel.app",
-  "http://localhost:5173",
-];
-
-function getCorsHeaders(req: Request) {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
-  };
-}
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const PAYCHANGU_SECRET_KEY = Deno.env.get("PAYCHANGU_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
+  const corsHeaders = getCorsHeaders(req.headers.get("origin"));
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
