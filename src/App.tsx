@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 import { verifyPayment } from './lib/paychangu';
 
 import ErrorBoundary from './components/common/ErrorBoundary';
+import InstallPWA from './components/common/InstallPWA';
 
 import { Mail, Phone, MessageSquare, Send, Facebook, Instagram, Youtube, Music } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -431,6 +432,7 @@ export default function App() {
           </PlayerProvider>
         </AuthProvider>
       </Router>
+      <InstallPWA />
     </ErrorBoundary>
   );
 }
