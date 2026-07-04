@@ -429,8 +429,8 @@ const Discover: React.FC = () => {
         ) : searchQuery || selectedGenre ? (
           <motion.div
             key="results"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="space-y-8"
           >
             {/* iOS Segmented Control equivalent */}
@@ -500,9 +500,8 @@ const Discover: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {results.artists.map((artist, i) => (
-                    <motion.div
+                    <div
                       key={`discover-artist-${artist.id}-${i}`}
-                      whileHover={{ scale: 1.02 }}
                       onClick={() => navigate(`/artist/${artist.id}`)}
                       className="p-3 bg-bg-surface border border-white/5 rounded-[16px] flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-all shadow-sm"
                     >
@@ -523,7 +522,7 @@ const Discover: React.FC = () => {
                         className="text-smash-purple/50 opacity-0 group-hover:opacity-100 transition-opacity"
                         size={16}
                       />
-                    </motion.div>
+                    </div>
                   ))}
                   {results.artists.length === 0 && (
                     <div className="col-span-full p-10 bg-white/5 rounded-[24px] border border-white/5 text-center">

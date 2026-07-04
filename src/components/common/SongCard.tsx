@@ -242,15 +242,18 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            </div>
            {/* Currently playing indicator */}
            {isCurrent && isPlaying && (
-             <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5">
+             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <div style={{ transform: 'translateZ(0)' }} className="flex items-center gap-0.5">
                {[...Array(3)].map((_, i) => (
                  <motion.div
                    key={i}
+                   style={{ willChange: 'height' }}
                    animate={{ height: [4, 12, 6, 10, 4] }}
                    transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
                    className="w-0.5 bg-smash-orange rounded-full"
                  />
                ))}
+             </div>
              </div>
            )}
            {/* Buy badge */}
@@ -280,7 +283,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
              <button
                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-               className="w-7 h-7 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
+               className="w-7 h-7 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
              >
                <MoreVertical size={14} className="text-white" />
              </button>
@@ -338,15 +341,18 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
             {isCurrent && isPlaying ? <Pause size={20} fill="white" className="text-white" /> : <Play size={20} fill="white" className="ml-0.5 text-white" />}
           </div>
           {isCurrent && isPlaying && (
-            <div className="absolute inset-x-0 bottom-0 top-0 bg-black/40 flex items-center justify-center gap-0.5">
+            <div className="absolute inset-x-0 bottom-0 top-0 bg-black/40 flex items-center justify-center">
+                <div style={{ transform: 'translateZ(0)' }} className="flex items-center gap-0.5">
                {[...Array(3)].map((_, i) => (
                   <motion.div
                     key={i}
-                    animate={{ height: [4, 12, 6, 10, 4] }}
+                    style={{ willChange: 'height' }}
+                   animate={{ height: [4, 12, 6, 10, 4] }}
                     transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
                     className="w-0.5 bg-smash-orange rounded-full"
                   />
                 ))}
+            </div>
             </div>
           )}
         </div>

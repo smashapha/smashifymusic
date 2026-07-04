@@ -324,7 +324,7 @@ const Library: React.FC = () => {
                        </div>
                        )}
                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                       <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 p-2 bg-white/10 backdrop-blur-md rounded-lg">
+                       <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 p-2 bg-black/40 rounded-lg">
                           <Music2 size={14} className="md:w-4 md:h-4" />
                        </div>
                     </div>

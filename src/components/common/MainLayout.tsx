@@ -17,7 +17,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
   const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
 
   return (
-    <div className="h-16 flex items-center px-4 lg:px-8 bg-bg-page/90 backdrop-blur-xl sticky top-0 z-30 border-b border-border-subtle">
+    <div className="h-16 flex items-center px-4 lg:px-8 bg-bg-page sticky top-0 z-30 border-b border-border-subtle">
       
       {/* Mobile Logo */}
       <div className="md:hidden flex-1 flex items-center">
@@ -305,7 +305,7 @@ export const BottomNav = () => {
   const activeBgClass = role === 'artist' ? 'bg-smash-purple/20' : 'bg-smash-orange/20';
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-bg-page/92 backdrop-blur-xl border-t border-white/5 z-40 flex items-center justify-around px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-bg-page border-t border-border-subtle z-40 flex items-center justify-around px-2 shadow-2xl">
       {tabs.map(tab => (
         <NavLink 
           key={tab.path} 
@@ -390,15 +390,15 @@ const MainLayout: React.FC = () => {
         <TopBar unreadCount={unreadCount} />
         
         {/* Content container with padding for sticky player and mobile tab bar */}
-        <main className="flex-1 w-full pb-[148px] md:pb-[96px]">
+        <main className="flex-1 w-full pb-[148px] md:pb-[96px] overflow-x-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-              className="w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "linear" }}
+              className="w-full h-full will-change-[opacity]"
             >
               <Outlet />
             </motion.div>

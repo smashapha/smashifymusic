@@ -1,5 +1,4 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { motion } from 'motion/react';
 import { 
   User, CreditCard, ShoppingBag, Settings, LogOut, 
   ChevronRight, BadgeCheck, Shield, ShieldCheck, ExternalLink, Sparkles, Mail, Phone, MapPin, Camera, Upload, Crown, Check
