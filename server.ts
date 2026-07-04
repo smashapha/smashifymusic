@@ -424,7 +424,7 @@ async function startServer() {
       }
 
       // If already completed or failed, return status as-is
-      if (dbTx.status === 'completed' || dbTx.status === 'failed') {
+      if (dbTx.status === 'completed') {
         return res.json({ status: dbTx.status, transaction: dbTx });
       }
 
@@ -498,7 +498,7 @@ async function startServer() {
               completed_at: new Date().toISOString()
             })
             .eq('id', dbTx.id)
-            .eq('status', 'pending')
+            .neq('status', 'completed')
             .select();
 
           if (!updateError && updatedTxs && updatedTxs.length > 0) {
@@ -985,7 +985,7 @@ async function startServer() {
         return res.sendStatus(200);
       }
 
-      if (transaction.status === 'completed' || transaction.status === 'failed') {
+      if (transaction.status === 'completed') {
         return res.sendStatus(200);
       }
 
