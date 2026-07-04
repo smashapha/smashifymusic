@@ -149,6 +149,7 @@ export default function ArtistHub() {
   const [stats, setStats] = useState({ streams: 0, revenue: 0, followers: 0, songs: 0 });
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [artistNotifications, setArtistNotifications] = useState<any[]>([]);
   const unreadNotifCount = artistNotifications.filter(n => !n.read).length;
@@ -175,7 +176,15 @@ export default function ArtistHub() {
     daysRemaining <= 7;
 
   useEffect(() => {
-    if (userProfile?.id) fetchData();
+    if (userProfile?.id) {
+      fetchData();
+      
+      const interval = setInterval(() => {
+        fetchData(false);
+      }, 30 * 60 * 1000); // 30 mins
+      
+      return () => clearInterval(interval);
+    }
   }, [userProfile]);
 
   useEffect(() => {
@@ -199,8 +208,9 @@ export default function ArtistHub() {
     };
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+    setIsRefreshing(true);
     try {
       if (!userProfile?.id) return;
       
@@ -254,7 +264,8 @@ export default function ArtistHub() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -453,6 +464,17 @@ export default function ArtistHub() {
           </div>
           
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => {
+                toast.success('Refreshing data...', { id: 'artist-refresh', duration: 2000 });
+                fetchData(false);
+              }}
+              disabled={isRefreshing}
+              className="p-2 text-smash-gray hover:text-white transition-colors disabled:opacity-50"
+              title="Refresh Data"
+            >
+              <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            </button>
             {isAdmin && (
               <Link 
                 to="/admin" 
