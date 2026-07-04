@@ -990,7 +990,7 @@ async function startServer() {
       }
 
       if (status !== 'successful') {
-        await supabaseAdmin.from('transactions').update({ status: 'failed' }).eq('id', transaction.id);
+        await supabaseAdmin.from('transactions').update({ status: 'failed' }).eq('id', transaction.id).neq('status', 'completed');
         return res.sendStatus(200);
       }
 
@@ -1041,7 +1041,7 @@ async function startServer() {
         platform_fee: pFee,
         net_amount: artistNet,
         completed_at: new Date().toISOString()
-      }).eq('id', transaction.id);
+      }).eq('id', transaction.id).neq('status', 'completed');
 
       // Increment Admin Wallet if platform fee exists
       if (pFee > 0) {

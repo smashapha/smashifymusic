@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { XCircle, RefreshCw, MessageCircle, ArrowLeft } from 'lucide-react';
+import { XCircle, RefreshCw, MessageCircle, ArrowLeft, CheckCircle } from 'lucide-react';
+import { verifyPayment } from '../lib/paychangu';
+import toast from 'react-hot-toast';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
@@ -9,6 +11,27 @@ const PaymentFailed = () => {
   const tx_ref = searchParams.get('app_ref') || searchParams.get('tx_ref') || searchParams.get('reference');
 
   const type = searchParams.get('type') || ''
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const handleReVerify = async () => {
+    if (!tx_ref) return;
+    setIsVerifying(true);
+    toast.loading('Checking PayChangu for actual payment status...', { id: 'verify-toast' });
+    try {
+      const res = await verifyPayment(tx_ref);
+      if (res && res.status === 'completed') {
+        toast.success('Payment was actually successful! Redirecting...', { id: 'verify-toast' });
+        setTimeout(() => navigate('/home'), 2000);
+      } else {
+        toast.error('Payment is still marked as failed or incomplete.', { id: 'verify-toast' });
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to verify payment', { id: 'verify-toast' });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const getRetryPath = () => {
     if (type.includes('LISTENER') || type.includes('ARTIST')) return '/pricing'
     if (type.includes('FAN_SUBSCRIPTION')) return '/'
@@ -54,6 +77,16 @@ const PaymentFailed = () => {
              >
                 <RefreshCw size={16} /> Try Again
              </button>
+
+             {tx_ref && (
+               <button 
+                  onClick={handleReVerify}
+                  disabled={isVerifying}
+                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-smash-orange/10 text-smash-orange font-black uppercase text-xs tracking-widest rounded-full hover:bg-smash-orange/20 transition-all border border-smash-orange/20"
+               >
+                  <CheckCircle size={16} /> {isVerifying ? 'Checking...' : 'I paid, re-verify status'}
+               </button>
+             )}
              
              <a 
                 href="https://wa.me/265883728868" // Mock support link

@@ -49,6 +49,7 @@ const Admin = () => {
   const [notificationSending, setNotificationSending] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdForm, setShowAdForm] = useState(false);
   const [adUploading, setAdUploading] = useState(false);
@@ -90,7 +91,15 @@ const Admin = () => {
         fetchPendingSongs();
       }, 60000);
       
-      return () => clearInterval(refreshInterval);
+      // Auto-refresh everything every 30 minutes
+      const fullRefreshInterval = setInterval(() => {
+        fetchAllData(false);
+      }, 30 * 60 * 1000);
+      
+      return () => {
+        clearInterval(refreshInterval);
+        clearInterval(fullRefreshInterval);
+      };
     }
   }, [userProfile, navigate]);
 
@@ -106,8 +115,9 @@ const Admin = () => {
     setExpiringArtists(data || []);
   };
 
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchAllData = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+    setIsRefreshing(true);
     await Promise.all([
       fetchArtists(),
       fetchListeners(),
@@ -121,7 +131,8 @@ const Admin = () => {
       fetchMaintenance(),
       fetchExpiringArtists()
     ]);
-    setLoading(false);
+    if (showSpinner) setLoading(false);
+    setIsRefreshing(false);
   };
 
   const fetchMaintenance = async () => {
@@ -911,6 +922,17 @@ const Admin = () => {
           </div>
 
           <div className="flex items-center gap-4">
+             <button 
+                onClick={() => {
+                  toast.success('Refreshing data...', { id: 'admin-refresh', duration: 2000 });
+                  fetchAllData(false);
+                }}
+                disabled={isRefreshing}
+                className="p-2 text-smash-gray hover:text-white transition-colors disabled:opacity-50"
+                title="Refresh Data"
+             >
+                <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+             </button>
              <div className="relative group w-64 hidden md:block">
                 <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-smash-gray" />
                 <input 
