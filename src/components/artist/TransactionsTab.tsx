@@ -182,11 +182,11 @@ export const TransactionsTab = ({ userProfile }: any) => {
                         {tx.status}
                       </div>
                     </div>
-                    {tx.status === 'pending' && (
+                    {(tx.status === 'pending' || tx.status === 'failed') && (
                       <button
                         onClick={() => handleVerify(tx)}
                         disabled={verifyingId === tx.id}
-                        className="p-2 ml-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-lg transition-colors cursor-pointer"
+                        className={`p-2 ml-2 ${tx.status === 'failed' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20'} rounded-lg transition-colors cursor-pointer`}
                         title="Verify Payment Status manually"
                       >
                         <RefreshCw size={16} className={verifyingId === tx.id ? 'animate-spin' : ''} />

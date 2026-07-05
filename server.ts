@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 
 console.log('--- SERVER.TS BOOTING ---');
 
@@ -30,8 +31,21 @@ async function startServer() {
 
   console.log(`NODE_ENV is: ${process.env.NODE_ENV}`);
 
+  const allowedOrigins = [
+    'https://smashifymusic.vercel.app',
+    'https://play-smashify.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+
   app.use(cors({
-    origin: true,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true
   }));
   app.use(express.json({
@@ -39,6 +53,32 @@ async function startServer() {
       req.rawBody = buf;
     }
   }));
+
+  // Security Headers
+  app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+  });
+
+  // Rate Limiter for API endpoints
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Apply to all /api routes
+  app.use('/api/', apiLimiter);
+
+  // Apply stricter limit to auth endpoints if they exist in the future
+  const authLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: { error: 'Too many login attempts. Please try again later.' }
+  });
+  app.use('/api/auth/', authLimiter);
 
   // Log all API requests
   app.use('/api', (req, res, next) => {

@@ -152,15 +152,15 @@ const Admin = () => {
       const { data: stuckTxs } = await supabase
         .from('transactions')
         .select('paychangu_ref')
-        .eq('status', 'pending')
+        .in('status', ['pending', 'failed'])
         .not('paychangu_ref', 'is', null);
 
       if (!stuckTxs || stuckTxs.length === 0) {
-        toast.success('No pending transactions found');
+        toast.success('No pending/failed transactions found');
         return;
       }
 
-      toast(`Found ${stuckTxs.length} pending transactions. Verifying...`);
+      toast(`Found ${stuckTxs.length} unresolved transactions. Verifying...`);
       
       let fixedCount = 0;
       for (const tx of stuckTxs) {
@@ -1225,7 +1225,7 @@ const Admin = () => {
                           className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 text-smash-purple hover:bg-smash-purple/30 rounded-lg transition-colors text-xs font-bold"
                         >
                           <RefreshCw size={14} className={fixStuckLoading ? 'animate-spin' : ''} />
-                          {fixStuckLoading ? 'Syncing...' : 'Sync Pending'}
+                          {fixStuckLoading ? 'Syncing...' : 'Sync Unresolved'}
                         </button>
                       </div>
                       <p className="text-xs text-[#7878a0] mb-6">Latest platform financial activity</p>
