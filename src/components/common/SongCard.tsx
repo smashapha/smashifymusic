@@ -5,6 +5,7 @@ import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { purchaseTrack } from '../../lib/paychangu';
+import { getEffectivePrice, isOnSale } from '../../lib/pricing';
 import { downloadPurchasedSong } from '../../lib/downloads';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -262,7 +263,17 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                onClick={handleBuy}
                className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-smash-orange text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg`}
              >
-               <ShoppingBag size={10} /> MK {song.price}
+               {isOnSale(song) ? (
+                 <>
+                   <ShoppingBag size={10} />
+                   <span className="line-through opacity-60 mr-1">MK {song.price}</span>
+                   MK {getEffectivePrice(song)}
+                 </>
+               ) : (
+                 <>
+                   <ShoppingBag size={10} /> MK {song.price}
+                 </>
+               )}
              </button>
            )}
            {(song.is_purchased || purchasedIds?.has(song.id)) && artistCanSell && (
@@ -374,10 +385,20 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
              <button 
                onClick={handleBuy}
                className={`flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white`}
-               title={`Buy track for MK ${song.price}`}
+               title={`Buy track for MK ${getEffectivePrice(song)}`}
              >
-               <ShoppingBag size={14} />
-               <span className="hidden sm:inline">MK {song.price}</span>
+               {isOnSale(song) ? (
+                 <>
+                   <ShoppingBag size={14} />
+                   <span className="hidden sm:inline line-through opacity-60 mr-1">MK {song.price}</span>
+                   <span className="hidden sm:inline">MK {getEffectivePrice(song)}</span>
+                 </>
+               ) : (
+                 <>
+                   <ShoppingBag size={14} />
+                   <span className="hidden sm:inline">MK {song.price}</span>
+                 </>
+               )}
              </button>
            )}
            {(song.is_purchased || purchasedIds?.has(song.id)) && artistCanSell && (
@@ -498,7 +519,17 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist, artistCanSell }: any)
               onClick={onBuy}
               className={`w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors uppercase tracking-widest`}
             >
-              <ShoppingBag size={14} /> Buy MK {song.price}
+              {isOnSale(song) ? (
+                <>
+                  <ShoppingBag size={14} /> Buy 
+                  <span className="line-through opacity-60 mx-1">MK {song.price}</span>
+                  MK {getEffectivePrice(song)}
+                </>
+              ) : (
+                <>
+                  <ShoppingBag size={14} /> Buy MK {song.price}
+                </>
+              )}
             </button>
           </>
         )}

@@ -43,8 +43,45 @@ Deno.serve(async (req) => {
       ARTIST_STANDARD: 16000,
       ARTIST_ELITE: 27000,
     };
+    let finalAmount: number;
     const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
-    const finalAmount = canonicalAmount ?? Number(amount);
+
+    if (type === 'track_purchase') {
+      if (!meta?.songId) {
+        return new Response(JSON.stringify({ error: 'Missing songId for track purchase' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const { data: songRow, error: songError } = await supabase
+        .from('songs')
+        .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+        .eq('id', meta.songId)
+        .single();
+
+      if (songError || !songRow || !songRow.is_for_sale) {
+        return new Response(JSON.stringify({ error: 'This track is not available for purchase' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      // Mirror of getEffectivePrice() in src/lib/pricing.ts — kept in sync manually
+      // since Edge Functions run on Deno and can't import from src/.
+      const pct = songRow.discount_percent || 0;
+      const saleExpired = songRow.sale_ends_at && new Date(songRow.sale_ends_at).getTime() < Date.now();
+      finalAmount = (pct > 0 && !saleExpired)
+        ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
+        : songRow.price;
+
+      // meta.artistId must match the song's actual artist — prevents mismatched fee/payout routing
+      if (meta.artistId && meta.artistId !== songRow.artist_id) {
+        meta.artistId = songRow.artist_id;
+      }
+    } else {
+      finalAmount = canonicalAmount ?? Number(amount);
+    }
 
     if (isNaN(finalAmount) || finalAmount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid payment amount" }), {

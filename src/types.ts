@@ -29,6 +29,8 @@ export interface Song {
   is_for_sale?: boolean;
   album_id?: string;
   supporter_only?: boolean;
+  discount_percent?: number;
+  sale_ends_at?: string;
   created_at?: string;
   profiles?: { 
     full_name: string; 

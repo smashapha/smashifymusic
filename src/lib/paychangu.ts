@@ -100,12 +100,14 @@ export async function initiatePayment(params: InitiatePaymentParams) {
   }
 }
 
+import { getEffectivePrice } from './pricing';
+
 /**
  * Buy a specific track
  */
 export async function purchaseTrack({ song, user }: { song: Song; user: UserProfile }) {
   return initiatePayment({
-    amount: song.price || 500,
+    amount: getEffectivePrice(song) || 500,
     email: user.email,
     first_name: user.full_name?.split(' ')[0] || 'Fan',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',

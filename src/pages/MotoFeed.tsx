@@ -13,6 +13,7 @@ import Avatar from '../components/common/Avatar';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { getListenerLimits } from '../lib/tierUtils';
+import { getEffectivePrice, isOnSale } from '../lib/pricing';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -391,7 +392,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                        onClick={handleBuy}
                        className="flex-1 py-3 bg-smash-orange text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
                      >
-                        BUY (MK {song.price})
+                        BUY (MK {getEffectivePrice(song)})
                      </button>
                      <button 
                        onClick={(e) => { e.stopPropagation(); onSkip(); }}
@@ -413,7 +414,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                  onClick={handleBuy}
                  className="w-full max-w-[240px] px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20 mb-4 hover:scale-105 transition-transform"
                >
-                  BUY FOR MK {song.price}
+                  BUY FOR MK {getEffectivePrice(song)}
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onSkip(); }}

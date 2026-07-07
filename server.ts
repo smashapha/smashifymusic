@@ -22,8 +22,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -1252,7 +1250,7 @@ async function startServer() {
   });
 
   // --- VITE MIDDLEWARE OR STATIC SERVING ---
-  const distPath = path.resolve(__dirname, 'dist');
+  const distPath = path.resolve(process.cwd(), 'dist');
   const indexHtmlExists = fs.existsSync(path.join(distPath, 'index.html'));
 
   if (process.env.NODE_ENV === 'production') {
@@ -1296,7 +1294,7 @@ async function startServer() {
       app.get('*', async (req, res, next) => {
         const url = req.originalUrl;
         try {
-          const indexPath = path.resolve(__dirname, 'index.html');
+          const indexPath = path.resolve(process.cwd(), 'dist/index.html');
           if (!fs.existsSync(indexPath)) {
              return res.status(404).send('index.html not found in root');
           }

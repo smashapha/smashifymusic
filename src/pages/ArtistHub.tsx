@@ -231,7 +231,7 @@ export default function ArtistHub() {
       // Real stats calculation
       const { data: allPlays } = await supabase
         .from('songs')
-        .select('plays, price, is_for_sale')
+        .select('plays, price, is_for_sale, discount_percent, sale_ends_at')
         .eq('artist_id', userProfile.id);
       
       const { count: followersCount } = await supabase
@@ -331,7 +331,7 @@ export default function ArtistHub() {
 
   return (
     <div className="min-h-screen bg-bg-page text-white flex overflow-hidden font-sans">
-      
+
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -1267,6 +1267,10 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 };
 
 const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
+  const [promoModalSong, setPromoModalSong] = useState<any>(null);
+  const [promoPercent, setPromoPercent] = useState(20);
+  const [promoEndsAt, setPromoEndsAt] = useState("");
+
   const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale' | 'draft'>('all');
   const [catalogStats, setCatalogStats] = useState<any[] | null>(null);
   const { checkUpload, setGuardResult } = useUploadGuard();
@@ -1324,6 +1328,56 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
     }
   };
 
+
+  const openPromoModal = (song: any) => {
+    setPromoModalSong(song);
+    setPromoPercent(song.discount_percent || 20);
+    setPromoEndsAt(song.sale_ends_at ? song.sale_ends_at.slice(0, 16) : '');
+  };
+
+  const savePromo = async () => {
+    if (!promoModalSong) return;
+    if (!promoEndsAt) {
+      toast.error('Please set an end date/time for the promotion');
+      return;
+    }
+    const endsAtIso = new Date(promoEndsAt).toISOString();
+    if (new Date(endsAtIso) <= new Date()) {
+      toast.error('End time must be in the future');
+      return;
+    }
+    const { error } = await supabase
+      .from('songs')
+      .update({ discount_percent: promoPercent, sale_ends_at: endsAtIso })
+      .eq('id', promoModalSong.id)
+      .eq('artist_id', userProfile?.id);
+
+    if (error) {
+      toast.error('Could not save promotion');
+      return;
+    }
+    toast.success(`${promoPercent}% off applied until ${new Date(endsAtIso).toLocaleString()}`);
+    setPromoModalSong(null);
+    onRefresh(); // Refresh
+  };
+
+  const cancelPromo = async () => {
+    if (!promoModalSong) return;
+    const { error } = await supabase
+      .from('songs')
+      .update({ discount_percent: 0, sale_ends_at: null })
+      .eq('id', promoModalSong.id)
+      .eq('artist_id', userProfile?.id);
+
+    if (error) {
+      toast.error('Could not remove promotion');
+      return;
+    }
+    toast.success('Promotion removed');
+    setPromoModalSong(null);
+    onRefresh(); // Refresh
+  };
+
   const handleDelete = async (song: any) => {
     if(!confirm('Are you sure you want to delete this track?')) return;
     try {
@@ -1364,6 +1418,30 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
 
   return (
     <div className="space-y-8">
+      {promoModalSong && (
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setPromoModalSong(null); }}>
+          <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[24px] p-6">
+            <h3 className="text-base font-studio font-black uppercase tracking-wider text-white mb-1">Run a Promotion</h3>
+            <p className="text-[11px] text-smash-gray mb-6">{promoModalSong.title} — currently MK {promoModalSong.price?.toLocaleString()}</p>
+
+            <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Discount</label>
+            <input type="range" min={5} max={90} step={5} value={promoPercent} onChange={e => setPromoPercent(Number(e.target.value))} className="w-full mb-1" />
+            <p className="text-[13px] font-display font-bold text-white mb-4">
+              {promoPercent}% off → MK {Math.max(Math.round(promoModalSong.price * (1 - promoPercent / 100)), 1).toLocaleString()}
+            </p>
+
+            <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Ends at</label>
+            <input type="datetime-local" value={promoEndsAt} onChange={e => setPromoEndsAt(e.target.value)} className="w-full h-12 bg-bg-elevated border border-white/5 rounded-xl px-4 text-[14px] font-display font-bold text-white outline-none mb-6" />
+
+            <div className="flex gap-2">
+              {promoModalSong.discount_percent > 0 && (
+                <button onClick={cancelPromo} className="flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest bg-white/5 text-text-secondary hover:text-white transition-all">Remove Promo</button>
+              )}
+              <button onClick={savePromo} className="flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest bg-smash-orange text-white transition-all">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex-1 min-w-0">
            <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><Music2 className="text-smash-purple shrink-0" /> Track <span className="text-smash-purple">Inventory</span></h2>
@@ -1499,6 +1577,19 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                        >
                          {song.slot_mode === 'archive' ? '↑ Restore' : '📦 Archive'}
                        </button>
+                                              {song.is_for_sale && (
+                         <button
+                           onClick={(e) => { e.stopPropagation(); openPromoModal(song); }}
+                           title={song.discount_percent > 0 ? 'Edit promotion' : 'Run a promotion'}
+                           className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 ${
+                             song.discount_percent > 0
+                               ? 'bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 border-smash-orange/20'
+                               : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
+                           }`}
+                         >
+                           🏷️ {song.discount_percent > 0 ? `${song.discount_percent}% off` : 'Promo'}
+                         </button>
+                       )}
                        <button onClick={(e) => { e.stopPropagation(); toast('Edit feature coming soon'); }} className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
                     </td>
@@ -1544,6 +1635,16 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                       >
                         {song.slot_mode === 'archive' ? '↑' : '📦'}
                       </button>
+                                            {song.is_for_sale && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openPromoModal(song); }}
+                          className={`w-6 h-6 inline-flex items-center justify-center rounded disabled:opacity-50 transition-colors ${
+                            song.discount_percent > 0 ? 'bg-smash-orange/10 text-smash-orange' : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
+                          }`}
+                        >
+                          🏷️
+                        </button>
+                      )}
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-6 h-6 inline-flex items-center justify-center bg-red-500/10 text-red-400 rounded disabled:opacity-50 transition-colors"><Trash2 size={12} /></button>
                    </div>
                 </div>
@@ -3355,7 +3456,7 @@ const AnalyticsTab = ({ userProfile }: any) => {
       // Per-song performance
       const { data: songs } = await supabase
         .from('songs')
-        .select('id, title, plays, sales, cover_url, slot_mode, plays_this_month')
+        .select('id, title, plays, sales, cover_url, slot_mode, plays_this_month, price, is_for_sale, discount_percent, sale_ends_at')
         .eq('artist_id', userProfile.id)
         .eq('is_active', true)
         .order('plays', { ascending: false })

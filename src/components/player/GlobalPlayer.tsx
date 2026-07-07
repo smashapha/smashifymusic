@@ -11,6 +11,7 @@ import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { EQPreset } from '../../types';
 import { purchaseTrack } from '../../lib/paychangu';
+import { getEffectivePrice, isOnSale } from '../../lib/pricing';
 import toast from 'react-hot-toast';
 import { Share2, Trash2 } from 'lucide-react';
 
@@ -353,7 +354,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                      className={`flex items-center gap-2 px-6 py-3 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md mr-4 ${accentColor.replace('text-', 'bg-')}`}
                    >
                      <ShoppingBag size={20} />
-                     Buy MK {currentSong.price}
+                     {isOnSale(currentSong) ? (<>Buy <span className="line-through opacity-60 mx-1">{isOnSale(currentSong) ? (<><span className="line-through opacity-50 mr-1">MK {currentSong.price}</span> MK {getEffectivePrice(currentSong)}</>) : (<>MK {currentSong.price}</>)}</span>MK {getEffectivePrice(currentSong)}</>) : (<>Buy MK {currentSong.price}</>)}
                    </button>
                  )}
                  <button 
@@ -699,7 +700,7 @@ const GlobalPlayer: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-studio font-bold text-sm text-text-primary truncate">{currentSong.title}</h3>
                   {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) && (
-                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>MK {currentSong.price}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>{isOnSale(currentSong) ? (<><span className="line-through opacity-50 mr-1">MK {currentSong.price}</span> MK {getEffectivePrice(currentSong)}</>) : (<>MK {currentSong.price}</>)}</span>
                   )}
                 </div>
                 <p className="font-sans text-xs text-text-secondary truncate">{((currentSong as any).featured_artist ? `${currentSong.profiles?.stage_name || currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : (currentSong.profiles?.stage_name || currentSong.artist_name))}</p>
@@ -957,7 +958,7 @@ const PreviewModal = () => {
             
             <div className="space-y-4">
                <button onClick={handleBuy} className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
-                  BUY NOW MK {song.price || 2500}
+                  BUY NOW {isOnSale(song) ? (<><span className="line-through opacity-60 mr-1">MK {song.price}</span>MK {getEffectivePrice(song)}</>) : (<>MK {song.price || 2500}</>)}
                </button>
                <button onClick={handleDismiss} className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
                   Maybe Later

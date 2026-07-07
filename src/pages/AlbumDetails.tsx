@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { Song, Album, Artist } from '../types';
+import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import toast from 'react-hot-toast';
 
 const AlbumDetails: React.FC = () => {
@@ -361,8 +362,15 @@ const AlbumDetails: React.FC = () => {
                           </span>
                         )}
                         {song.is_for_sale && !song.is_purchased && !purchasedIds?.has(song.id) && (
-                          <span className="px-1.5 py-0.5 bg-smash-purple/25 text-smash-purple text-[8.5px] font-display font-black uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0">
-                            MK {song.price}
+                          <span className="px-1.5 py-0.5 bg-smash-purple/25 text-smash-purple text-[8.5px] font-display font-black uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
+                            {isOnSale(song) ? (
+                              <>
+                                <span className="line-through opacity-50">MK {song.price}</span>
+                                <span>MK {getEffectivePrice(song)}</span>
+                              </>
+                            ) : (
+                              <span>MK {song.price}</span>
+                            )}
                           </span>
                         )}
                       </div>
