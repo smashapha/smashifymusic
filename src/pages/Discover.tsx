@@ -17,10 +17,12 @@ import { supabase } from "../lib/supabase";
 import { Song, UserProfile } from "../types";
 import SongCard from "../components/common/SongCard";
 import Avatar from "../components/common/Avatar";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
+import SEO from "../components/common/SEO";
+import Footer from "../components/common/Footer";
 
 const GENRES = [
   { name: "Afropop", icon: Music2, color: "text-smash-orange" },
@@ -340,6 +342,11 @@ const Discover: React.FC = () => {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      <SEO 
+        title="Discover New African Music | Smashify Music" 
+        description="Explore the latest African sounds, new music releases, and diverse genres from across the continent." 
+      />
+
       {refreshing && (
         <div className="flex justify-center -mt-8 pt-8">
           <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
@@ -709,6 +716,27 @@ const Discover: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Discover page contextual links */}
+      <div className="bg-bg-surface border border-white/5 p-6 rounded-[24px] mt-12 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h4 className="font-bold text-base text-text-primary mb-1">Looking for more?</h4>
+          <p className="text-xs text-text-muted">Explore our registered artists or listen to the hottest trending tracks.</p>
+        </div>
+        <div className="flex gap-3">
+          <Link to="/artists" className="px-5 py-2.5 bg-smash-purple/20 border border-smash-purple/30 text-smash-purple rounded-full text-xs font-bold uppercase tracking-widest hover:bg-smash-purple/30 transition-all">
+            Browse Artists
+          </Link>
+          <Link to="/trending" className="px-5 py-2.5 bg-smash-orange/20 border border-smash-orange/30 text-smash-orange rounded-full text-xs font-bold uppercase tracking-widest hover:bg-smash-orange/30 transition-all">
+            Trending Hits
+          </Link>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12 -mx-4 md:-mx-8 -mb-32">
+        <Footer />
+      </div>
     </div>
   );
 };

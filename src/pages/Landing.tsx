@@ -11,6 +11,8 @@ import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { optimizeImage } from '../lib/imageUtils';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -195,6 +197,10 @@ const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-orange/30 overflow-x-hidden">
+      <SEO 
+        title="Smashify Music | Stream & Support African Artists" 
+        description="Stream, download, and buy original music from talented African artists. Support creators directly using local mobile payment systems." 
+      />
       <Nav />
 
       {/* Hero Section */}
@@ -750,55 +756,7 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="pt-32 pb-16 px-6 md:px-12 border-t border-white/5 bg-black">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
-          <div className="space-y-8">
-            <Logo size="lg" />
-            <p className="text-white/40 text-[15px] max-w-sm font-sans leading-relaxed">
-              Smashify is a digital music, podcast, and video service that gives you access to millions of African songs and other content.
-            </p>
-            <div className="flex gap-4">
-               {['ti-brand-instagram', 'ti-brand-facebook', 'ti-brand-twitter', 'ti-brand-tiktok'].map((icon, i) => (
-                 <div key={i} className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-smash-orange transition-all cursor-pointer">
-                   <i className={`ti ${icon} text-lg`} />
-                 </div>
-               ))}
-            </div>
-          </div>
-          
-          {/* Footer content continues... */}
-          <div className="flex flex-col gap-6">
-             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Platform</h4>
-             {['Discover', 'Pricing', 'About', 'Trending'].map(link => (
-               <Link key={link} to={`/${link.toLowerCase()}`} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
-             ))}
-          </div>
-
-          <div className="flex flex-col gap-6">
-             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Artists</h4>
-             {['Artist Studio', 'Apply Now', 'Distribution', 'Help'].map(link => (
-               <Link key={link} to="/auth/artist" className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link}</Link>
-             ))}
-          </div>
-
-          <div className="flex flex-col gap-6">
-             <h4 className="font-display font-semibold text-[12px] uppercase tracking-widest text-white/40">Company</h4>
-             {[
-               { name: 'About Us', path: '/about' },
-               { name: 'Contact', path: '/contact' },
-               { name: 'Privacy Policy', path: '/privacy' },
-               { name: 'Terms', path: '/terms' }
-             ].map(link => (
-               <Link key={link.name} to={link.path} className="text-white/60 hover:text-smash-orange transition-colors font-medium text-[14px]">{link.name}</Link>
-             ))}
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-           <p className="text-[13px] text-white/30 font-medium">© {new Date().getFullYear()} Smashify. Built in Blantyre, Malaŵi.</p>
-           <p className="font-display font-bold text-[10px] text-smash-orange uppercase tracking-[0.3em]">Artists keep up to 95% of every sale.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

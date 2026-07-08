@@ -6,12 +6,14 @@ import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const FEATURED_CHARTS = [
   {
@@ -366,6 +368,11 @@ const Home: React.FC = () => {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      <SEO 
+        title="Smashify Music | Stream & Support African Artists" 
+        description="Stream, download, and buy original music from talented African artists. Support creators directly using local mobile payment systems." 
+      />
+
       {refreshing && (
         <div className="flex justify-center -mt-4 mb-4">
           <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
@@ -773,6 +780,27 @@ const Home: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Contextual links banner for SEO internal linking */}
+      <div className="bg-white/5 border border-white/10 rounded-[24px] p-6 mt-16 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 className="font-bold text-lg text-white mb-1">Discover &amp; Explore</h3>
+          <p className="text-sm text-smash-gray font-medium">Explore the newest tracks on the platform or keep up with the trending hits across Africa.</p>
+        </div>
+        <div className="flex gap-4">
+          <Link to="/discover" className="px-5 py-2.5 bg-smash-orange text-white rounded-full text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-smash-orange/20">
+            Explore Music
+          </Link>
+          <Link to="/trending" className="px-5 py-2.5 bg-white/10 text-white rounded-full text-xs font-black uppercase tracking-widest hover:bg-white/20 transition-all">
+            Trending Charts
+          </Link>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-16 -mx-4 md:-mx-8 -mb-32">
+        <Footer />
+      </div>
 
     </div>
   );

@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Info, ChevronRight, Music, Heart, BarChart, Globe, DollarSign, ShieldAlert, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const About = () => {
   return (
@@ -11,6 +13,11 @@ const About = () => {
       exit={{ opacity: 0, y: -20 }}
       className="p-8 md:p-12 pb-32 max-w-5xl mx-auto text-white select-none"
     >
+      <SEO 
+        title="About Us | Smashify Music" 
+        description="Learn about Smashify Music's mission to empower African musicians and connect fans directly with artists." 
+      />
+
       {/* Breadcrumbs */}
       <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
          <Link to="/" className="hover:text-white transition-colors animate-pulse">Home</Link>
@@ -154,6 +161,22 @@ const About = () => {
         </div>
       </div>
 
+      {/* Contextual CTA links for SEO internal linking */}
+      <div className="bg-zinc-950/20 border border-white/5 p-8 rounded-[32px] mt-12 mb-12 text-center">
+        <h3 className="text-xl font-bold font-display uppercase tracking-wider text-white mb-4">Ready to support or create?</h3>
+        <p className="text-zinc-400 text-sm max-w-xl mx-auto mb-6">
+          Whether you want to find affordable listener plans or join our artist platform, Smashify has you covered. Learn more about our plans or start publishing.
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          <Link to="/pricing" className="px-6 py-3 bg-smash-orange text-white font-bold rounded-full hover:brightness-110 transition-all text-sm uppercase tracking-wider">
+            View Pricing Plans
+          </Link>
+          <Link to="/artists" className="px-6 py-3 bg-smash-purple/20 border border-smash-purple/30 text-smash-purple font-bold rounded-full hover:bg-smash-purple/30 transition-all text-sm uppercase tracking-wider">
+            Join as Artist
+          </Link>
+        </div>
+      </div>
+
       {/* Contact Section */}
       <div className="bg-zinc-950/40 p-8 md:p-12 rounded-[32px] border border-white/5 text-center shadow-lg">
         <h2 className="text-2xl font-black font-display uppercase italic tracking-tighter text-white mb-6">Connect With Us</h2>
@@ -171,6 +194,11 @@ const About = () => {
             <span className="text-zinc-400">Smashify Ltd., Blantyre, Malawi</span>
           </p>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-12 -mx-8 md:-mx-12 -mb-32">
+        <Footer />
       </div>
     </motion.div>
   );

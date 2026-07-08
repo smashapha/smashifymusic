@@ -6,6 +6,8 @@ import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
 import { useAuth } from '../context/AuthContext';
 import { getListenerLimits } from '../lib/tierUtils';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const Trending: React.FC = () => {
    const { userProfile } = useAuth();
@@ -73,6 +75,10 @@ const Trending: React.FC = () => {
          onTouchStart={handleTouchStart}
          onTouchEnd={handleTouchEnd}
       >
+         <SEO 
+            title="Trending African Hits | Smashify Music" 
+            description="Listen to the hottest African hits and trending tracks updated daily on Smashify." 
+         />
          {refreshing && (
            <div className="flex justify-center -mt-8 pt-8">
              <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
@@ -164,6 +170,11 @@ const Trending: React.FC = () => {
                   </button>
                </div>
             </div>
+         </div>
+
+         {/* Footer */}
+         <div className="mt-12 -mx-4 md:-mx-8 -mb-24">
+            <Footer />
          </div>
       </div>
    );

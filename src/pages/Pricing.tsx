@@ -5,6 +5,8 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo' }: any) => (
   <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5'}`}>
@@ -92,6 +94,11 @@ const Pricing = () => {
     <div 
       className="p-4 md:p-12 pb-32 max-w-[1400px] mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
+      <SEO 
+        title="Plans & Pricing | Smashify Music" 
+        description="Affordable listener plans and premium artist tiers on Smashify Music." 
+      />
+
       <div className="flex items-center gap-3 text-[10px] md:text-sm font-bold text-smash-gray uppercase tracking-widest mb-8 md:mb-12">
          <Link to="/" className="hover:text-white transition-colors">Home</Link>
          <ChevronRight size={12} className="md:w-3.5 md:h-3.5" />
@@ -395,6 +402,11 @@ const Pricing = () => {
           <MessageCircle size={24} />
           Still unsure? Chat on WhatsApp
         </a>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-16 -mx-4 md:-mx-12 -mb-32">
+        <Footer />
       </div>
 
     </div>

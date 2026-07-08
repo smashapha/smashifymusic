@@ -16,6 +16,7 @@ import { getListenerLimits } from '../lib/tierUtils';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 
 import { useNavigate } from 'react-router-dom';
+import SEO from '../components/common/SEO';
 
 import { Sidebar, BottomNav } from '../components/common/MainLayout';
 
@@ -1147,6 +1148,10 @@ const MotoFeed: React.FC = () => {
 
   return (
     <div className="h-[100dvh] w-screen bg-smash-black overflow-hidden touch-none flex flex-col relative">
+       <SEO 
+          title="Moto Feed | Smashify Music" 
+          description="Scroll through vertical short-form musical previews and audio ads on Smashify Music." 
+       />
        {/* UI Tooltips */}
        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 pointer-events-none">
           <div className="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center gap-2">

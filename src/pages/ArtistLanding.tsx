@@ -8,6 +8,8 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { supabase } from '../lib/supabase';
+import SEO from '../components/common/SEO';
+import Footer from '../components/common/Footer';
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -87,6 +89,10 @@ const ArtistLanding: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-purple/30 overflow-x-hidden pt-[72px]">
+      <SEO 
+        title="Artist Studio | Smashify Music" 
+        description="Are you an artist? Join Smashify Studio, publish your music, and start earning up to 95% of your sales." 
+      />
       <Nav />
 
       {/* Hero Section - Split Photo Layout */}
@@ -574,7 +580,7 @@ const ArtistLanding: React.FC = () => {
          <div className="max-w-4xl mx-auto text-center relative z-10">
             <h2 className="text-5xl md:text-8xl font-studio font-black italic uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
             <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">
-              Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week.
+              Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week. Interested in details? See our <Link to="/pricing" className="underline hover:text-black transition-colors font-bold">Pricing Plans</Link>.
             </p>
             <button 
                onClick={() => navigate('/auth/artist?mode=signup')}
@@ -586,20 +592,7 @@ const ArtistLanding: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 md:px-12 border-t border-white/5 bg-black">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
-           <Logo size="md" />
-           <div className="text-center md:text-left order-last md:order-none">
-              <p className="text-[14px] text-white/30 font-medium mb-2">© {new Date().getFullYear()} Smashify Studio. All rights reserved.</p>
-              <p className="text-[12px] text-white/20 font-medium">Contact: <a href="mailto:smashfymusic@gmail.com" className="hover:text-white/40">smashfymusic@gmail.com</a> | +265 88 372 88 68</p>
-           </div>
-           <div className="flex gap-10">
-              {['About', 'Help', 'Terms', 'Privacy'].map(l => (
-                <Link key={l} to={`/${l.toLowerCase()}`} className="text-[12px] font-bold text-white/40 uppercase tracking-widest hover:text-white transition-colors">{l}</Link>
-              ))}
-           </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

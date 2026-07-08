@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+import ReactGA from 'react-ga4';
 import { Toaster } from 'react-hot-toast';
 import { PlayerProvider } from './context/PlayerContext';
 import { AuthProvider } from './context/AuthContext';
@@ -211,12 +213,18 @@ const LoadingSpinner = () => (
 
 function AppContent() {
   const { user, role, loading: authLoading } = useAuth();
+  const location = useLocation();
   const [maintenance, setMaintenance] = useState<{
     active: boolean;
     message?: string;
     estimatedTime?: string;
   } | null>(null);
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+
+  // Track page views on every route change
+  useEffect(() => {
+    ReactGA.send({ hitType: 'pageview', page: location.pathname + location.search });
+  }, [location]);
 
   const handlePaymentSuccess = async (txRef: string) => {
     toast.loading('Confirming payment...', { id: 'payment-confirm' })
@@ -416,23 +424,25 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <Router>
-        <Toaster position="bottom-center" toastOptions={{
-          style: {
-            background: '#1A1A1A',
-            color: '#FFF',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '16px',
-          }
-        }} />
-        <AuthProvider>
-          <PlayerProvider>
-            <AppContent />
-          </PlayerProvider>
-        </AuthProvider>
-      </Router>
-      <InstallPWA />
-    </ErrorBoundary>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <Router>
+          <Toaster position="bottom-center" toastOptions={{
+            style: {
+              background: '#1A1A1A',
+              color: '#FFF',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+            }
+          }} />
+          <AuthProvider>
+            <PlayerProvider>
+              <AppContent />
+            </PlayerProvider>
+          </AuthProvider>
+        </Router>
+        <InstallPWA />
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }

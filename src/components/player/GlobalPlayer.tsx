@@ -1,25 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, 
-  ChevronDown, ListMusic, Heart, Shuffle, Repeat, Info, Zap, 
-  Wifi, WifiOff, Clock, Headphones, Music2, Gauge, X, Download, Lock as AppLockIcon,
-  ShoppingBag
-} from 'lucide-react';
+import { Lock as AppLockIcon, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, VolumeX, Maximize2, Minimize2, Radio, Heart, Mic2, X, Share2, AlertCircle, Coins, Gift, RefreshCw, Crown, Info, Lock, ChevronDown, ListMusic, MoreVertical, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingBag, Gauge, Clock, Zap, Download, Headphones } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import { EQPreset } from '../../types';
 import { purchaseTrack } from '../../lib/paychangu';
 import { getEffectivePrice, isOnSale } from '../../lib/pricing';
+import { formatDisplayTitle } from '../../lib/formatting';
 import toast from 'react-hot-toast';
-import { Share2, Trash2 } from 'lucide-react';
 
 import { getListenerTier, getListenerLimits } from '../../lib/tierUtils';
 
+const FormattedPrice = ({ song }: { song: any }) => {
+  if (!song) return null;
+  return isOnSale(song) ? (
+    <><span className="line-through opacity-50 mx-1 font-normal">MK {song.price}</span> MK {getEffectivePrice(song)}</>
+  ) : (
+    <>MK {song.price || 2500}</>
+  );
+};
+
 const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void, isLiked: boolean, handleLike: () => void }) => {
   const { 
-    currentSong, isPlaying, togglePlay, currentTime, duration, 
+    currentSong, isPlaying, isBuffering, togglePlay, currentTime, duration, 
     seek, volume, setVolume, nextTrack, previousTrack, 
     eqPreset, setEQPreset,
     playbackRate, setPlaybackRate,
@@ -52,40 +56,68 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
   const [loadingLyrics, setLoadingLyrics] = useState(false);
 
   const ProgressBar = ({ current, total, onSeek, disabled = false }: { current: number, total: number, onSeek: (time: number) => void, disabled?: boolean }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragWidth, setDragWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPercent, setDragPercent] = useState<number | null>(null);
 
-    const handleInteract = (e: React.MouseEvent | React.TouchEvent) => {
-      if (disabled) return;
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-      const percent = x / rect.width;
-      onSeek(percent * total);
-    };
-
-    return (
-      <div 
-        className={`group relative h-2.5 bg-white/10 rounded-full flex-1 md:flex-none cursor-pointer touch-none ${disabled ? 'pointer-events-none opacity-80' : ''}`}
-        onMouseDown={(e) => { if (disabled) return; setIsDragging(true); handleInteract(e); }}
-        onMouseMove={(e) => { if (!disabled && isDragging) handleInteract(e); }}
-        onMouseUp={() => setIsDragging(false)}
-        onMouseLeave={() => setIsDragging(false)}
-        onTouchStart={(e) => { if (disabled) return; setIsDragging(true); handleInteract(e); }}
-        onTouchMove={(e) => { if (!disabled && isDragging) handleInteract(e); }}
-        onTouchEnd={() => setIsDragging(false)}
-      >
-        <motion.div 
-          className="h-full bg-gradient-to-r from-smash-orange to-red-500 relative rounded-full"
-          style={{ width: `${(current / total) * 100}%` }}
-        />
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity border-4 border-smash-black" 
-          style={{ left: `calc(${(current / total) * 100}% - 10px)` }} 
-        />
-      </div>
-    );
+  const getPercent = (e: React.MouseEvent | React.TouchEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    return x / rect.width;
   };
+
+  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (disabled) return;
+    setIsDragging(true);
+    setDragPercent(getPercent(e));
+  };
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (disabled || !isDragging) return;
+    setDragPercent(getPercent(e));
+  };
+
+  const commit = () => {
+    if (isDragging && dragPercent !== null) {
+      onSeek(dragPercent * total);
+    }
+    setIsDragging(false);
+    setDragPercent(null);
+  };
+
+  const displayPercent = isDragging && dragPercent !== null ? dragPercent : (total > 0 ? current / total : 0);
+
+  return (
+    <div
+      className={`group relative h-2.5 bg-white/10 rounded-full flex-1 md:flex-none cursor-pointer touch-none ${disabled ? 'pointer-events-none opacity-80' : ''}`}
+      onMouseDown={handleStart}
+      onMouseMove={handleMove}
+      onMouseUp={commit}
+      onMouseLeave={() => { if (isDragging) commit(); }}
+      onTouchStart={handleStart}
+      onTouchMove={handleMove}
+      onTouchEnd={commit}
+    >
+      <motion.div
+        className="h-full bg-gradient-to-r from-smash-orange to-red-500 relative rounded-full"
+        style={{ width: `${displayPercent * 100}%` }}
+        transition={isDragging ? { duration: 0 } : undefined}
+      />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity border-4 border-smash-black"
+        style={{ left: `calc(${displayPercent * 100}% - 10px)`, opacity: isDragging ? 1 : undefined }}
+      />
+      {isDragging && (
+        <div
+          className="absolute -top-8 -translate-x-1/2 px-2 py-1 bg-black/80 rounded-md text-[10px] font-mono text-white pointer-events-none"
+          style={{ left: `${displayPercent * 100}%` }}
+        >
+          {formatTime(displayPercent * total)}
+        </div>
+      )}
+    </div>
+  );
+};
 
   const formatTime = (time: number) => {
     const mins = Math.floor(time / 60);
@@ -141,7 +173,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       const link = document.createElement('a');
       link.href = url;
       const displayArtist = (currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name;
-      link.download = `${currentSong.title} - ${displayArtist}.mp3`;
+      link.download = `${formatDisplayTitle(currentSong.title)} - ${displayArtist}.mp3`;
       link.style.display = 'none';
       if (document.body) {
         document.body.appendChild(link);
@@ -213,7 +245,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar pt-12 md:pt-12">
+      <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-12">
          <div className="flex items-center justify-between mb-8 md:mb-12">
             <button onClick={onClose} className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-page focus:ring-border-default">
                <ChevronDown size={28} />
@@ -243,7 +275,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
              className={`relative aspect-square w-full max-w-[280px] sm:max-w-[300px] md:max-w-[380px] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-border-subtle cursor-pointer ${isPlaying ? `shadow-[0_0_80px_rgba(var(--color-${accentColor.replace('text-', '')}),0.2)]` : ''}`}
              onClick={togglePlay}
            >
-              <img src={currentSong?.cover_url} className="w-full h-full object-cover" alt={currentSong?.title} />
+              <img src={currentSong?.cover_url} className="w-full h-full object-cover" alt={formatDisplayTitle(currentSong?.title)} />
               {!isPlaying && (
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-sm">
                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
@@ -259,7 +291,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 animate={{ y: 0, opacity: 1 }}
                 className="text-2xl sm:text-3xl md:text-5xl font-studio font-bold tracking-tight text-text-primary mb-1 md:mb-2 line-clamp-2"
               >
-                {adPlaying ? currentSong?.artist_name : currentSong?.title}
+                {adPlaying ? currentSong?.artist_name : formatDisplayTitle(currentSong?.title)}
               </motion.h1>
               <motion.p 
                 initial={{ y: 20, opacity: 0 }}
@@ -267,7 +299,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 transition={{ delay: 0.1 }}
                 className="text-lg md:text-xl text-text-secondary font-sans font-medium"
               >
-                {adPlaying ? currentSong?.title : (((currentSong as any)?.featured_artist ? `${currentSong?.profiles?.stage_name || currentSong?.artist_name} ft. ${(currentSong as any)?.featured_artist}` : (currentSong?.profiles?.stage_name || currentSong?.artist_name)))}
+                {adPlaying ? formatDisplayTitle(currentSong?.title) : (((currentSong as any)?.featured_artist ? `${currentSong?.profiles?.stage_name || currentSong?.artist_name} ft. ${(currentSong as any)?.featured_artist}` : (currentSong?.profiles?.stage_name || currentSong?.artist_name)))}
               </motion.p>
               {adPlaying && (
                  <div className="mt-8">
@@ -333,6 +365,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 </button>
               </div>
 
+              <div className="relative">
               <div className="flex items-center justify-center gap-3 overflow-x-auto no-scrollbar py-2">
                  {presets.map(p => (
                    <button 
@@ -344,6 +377,9 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                    </button>
                  ))}
               </div>
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg-page to-transparent pointer-events-none" />
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-bg-page to-transparent pointer-events-none" />
+              </div>
            </div>
                      {/* Bottom Toolbar */}
            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-border-default relative">
@@ -354,7 +390,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                      className={`flex items-center gap-2 px-6 py-3 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md mr-4 ${accentColor.replace('text-', 'bg-')}`}
                    >
                      <ShoppingBag size={20} />
-                     {isOnSale(currentSong) ? (<>Buy <span className="line-through opacity-60 mx-1">{isOnSale(currentSong) ? (<><span className="line-through opacity-50 mr-1">MK {currentSong.price}</span> MK {getEffectivePrice(currentSong)}</>) : (<>MK {currentSong.price}</>)}</span>MK {getEffectivePrice(currentSong)}</>) : (<>Buy MK {currentSong.price}</>)}
+                     Buy <FormattedPrice song={currentSong} />
                    </button>
                  )}
                  <button 
@@ -363,15 +399,15 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                  >
                    <Heart size={24} fill={isLiked ? "currentColor" : "none"} />
                  </button>
-                 <div className="flex items-center gap-3 flex-1 max-w-[120px] md:max-w-[200px]">
-                   <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors">
+                 <div className="flex items-center gap-3 flex-1 min-w-[80px] max-w-[200px]">
+                   <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0">
                       {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                    </button>
                    <input 
                      type="range" 
                      min="0" max="1" step="0.01" value={volume}
                      onChange={(e) => setVolume(parseFloat(e.target.value))}
-                     className={`w-full accent-${accentColor.replace('text-', '')} bg-border-default h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor.replace('text-', '')}`}
+                     className={`w-full min-w-[40px] accent-${accentColor.replace('text-', '')} bg-border-default h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor.replace('text-', '')}`}
                    />
                  </div>
               </div>
@@ -456,7 +492,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                        <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
                     </div>
                     <div className="min-w-0 flex-1">
-                       <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
+                       <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{formatDisplayTitle(song.title)}</p>
                        <p className="text-xs text-text-secondary font-medium truncate">{(song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name}</p>
                     </div>
                  </div>
@@ -515,7 +551,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
 
 const GlobalPlayer: React.FC = () => {
   const { 
-    currentSong, isPlaying, togglePlay, currentTime, duration, 
+    currentSong, isPlaying, isBuffering, togglePlay, currentTime, duration, 
     volume, setVolume, dataSaver, toggleDataSaver, isExpanded, setIsExpanded,
     queue, nextTrack, previousTrack, radioMode, toggleRadioMode, playSong, adPlaying, adSkipAvailable, skipAd,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, seek, removeFromQueue, purchasedIds
@@ -698,9 +734,9 @@ const GlobalPlayer: React.FC = () => {
               </div>
               <div className="flex flex-col min-w-0 justify-center">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-studio font-bold text-sm text-text-primary truncate">{currentSong.title}</h3>
+                  <h3 className="font-studio font-bold text-sm text-text-primary truncate">{formatDisplayTitle(currentSong.title)}</h3>
                   {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) && (
-                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}>{isOnSale(currentSong) ? (<><span className="line-through opacity-50 mr-1">MK {currentSong.price}</span> MK {getEffectivePrice(currentSong)}</>) : (<>MK {currentSong.price}</>)}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}><FormattedPrice song={currentSong} /></span>
                   )}
                 </div>
                 <p className="font-sans text-xs text-text-secondary truncate">{((currentSong as any).featured_artist ? `${currentSong.profiles?.stage_name || currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : (currentSong.profiles?.stage_name || currentSong.artist_name))}</p>
@@ -718,7 +754,13 @@ const GlobalPlayer: React.FC = () => {
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                 className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white ${accentColor.replace('text-', 'bg-')} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')}`}
               >
-                {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+                {isBuffering && isPlaying ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : isPlaying ? (
+                  <Pause size={18} fill="currentColor" />
+                ) : (
+                  <Play size={18} fill="currentColor" className="ml-1" />
+                )}
               </button>
             </div>
 
@@ -739,7 +781,13 @@ const GlobalPlayer: React.FC = () => {
                   onClick={togglePlay}
                   className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')} ${accentColor.replace('text-', 'bg-')}`}
                 >
-                  {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
+                  {isBuffering && isPlaying ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : isPlaying ? (
+                  <Pause size={20} fill="currentColor" />
+                ) : (
+                  <Play size={20} fill="currentColor" className="ml-1" />
+                )}
                 </button>
                 <button onClick={nextTrack} disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
                   <SkipForward size={20} fill="currentColor" />
@@ -867,7 +915,7 @@ const GlobalPlayer: React.FC = () => {
                        )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{song.title}</p>
+                      <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{formatDisplayTitle(song.title)}</p>
                       <p className="text-xs text-text-secondary font-medium truncate">{(song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name}</p>
                     </div>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -958,7 +1006,7 @@ const PreviewModal = () => {
             
             <div className="space-y-4">
                <button onClick={handleBuy} className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
-                  BUY NOW {isOnSale(song) ? (<><span className="line-through opacity-60 mr-1">MK {song.price}</span>MK {getEffectivePrice(song)}</>) : (<>MK {song.price || 2500}</>)}
+                  BUY NOW <FormattedPrice song={song} />
                </button>
                <button onClick={handleDismiss} className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
                   Maybe Later
