@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import { BottomNav } from '../components/common/MainLayout';
 import { useUploadGuard } from '../hooks/useUploadGuard';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
+import { uploadFileWithProgress, formatSpeed, formatEta } from '../lib/uploadWithProgress';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 
 type TabType = 'dashboard' | 'music' | 'upload' | 'promotion' | 'profile' | 'subscription' | 'notifications' | 'transactions' | 'withdraw' | 'analytics' | 'fans';
@@ -1725,6 +1726,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [audioUploadUrl, setAudioUploadUrl] = useState<string | null>(null);
   const [audioUploading, setAudioUploading] = useState(false);
   const [audioUploadProgress, setAudioUploadProgress] = useState(0);
+  const [audioUploadSpeedBps, setAudioUploadSpeedBps] = useState(0);
+  const [audioUploadEtaSeconds, setAudioUploadEtaSeconds] = useState<number | null>(null);
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -1737,7 +1740,22 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [audioFileSize, setAudioFileSize] = useState<string>('');
 
   const [songFile, setSongFile] = useState<File | null>(null);
-  const [albumTracks, setAlbumTracks] = useState<{file: File, title: string, price: number, lyrics?: string, is_explicit?: boolean, featured_artist?: string}[]>([]);
+  const [albumTracks, setAlbumTracks] = useState<{
+  id: string;
+  file: File;
+  title: string;
+  price: number;
+  lyrics?: string;
+  is_explicit?: boolean;
+  featured_artist?: string;
+  uploadStatus: 'pending' | 'compressing' | 'uploading' | 'done' | 'error';
+  uploadProgress: number;      // 0-100
+  uploadSpeedBps: number;
+  uploadEtaSeconds: number | null;
+  uploadedUrl?: string;
+  uploadedPath?: string;
+  uploadError?: string;
+}[]>([]);
   const [albumPricingMode, setAlbumPricingMode] = useState<'album' | 'individual'>('album');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   
@@ -2094,6 +2112,79 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     return arrayBuf;
   };
 
+  const startAlbumTrackUpload = async (trackId: string, file: File) => {
+    if (!userProfile?.id) return;
+
+    const updateTrack = (patch: Partial<typeof albumTracks[number]>) => {
+      setAlbumTracks(prev => prev.map(t => t.id === trackId ? { ...t, ...patch } : t));
+    };
+
+    const guardCheck = await checkUpload(userProfile.id, file.size);
+    if (!guardCheck.allowed) {
+      updateTrack({ uploadStatus: 'error', uploadError: guardCheck.message || 'Upload not allowed.' });
+      return;
+    }
+
+    updateTrack({ uploadStatus: 'compressing', uploadProgress: 0 });
+
+    try {
+      const compressed = await compressAudio(file);
+      const isWebm = compressed.type === 'audio/webm';
+      const audioExt = isWebm ? 'webm' : file.name.split('.').pop();
+      const audioPath = `songs/${userProfile.id}/song-${Date.now()}-${Math.random().toString(36).substring(7)}.${audioExt}`;
+
+      updateTrack({ uploadStatus: 'uploading', uploadProgress: 0 });
+
+      const { promise } = uploadFileWithProgress(
+        'songs',
+        audioPath,
+        compressed,
+        compressed.type || 'audio/mpeg',
+        (info) => {
+          updateTrack({
+            uploadProgress: info.percent,
+            uploadSpeedBps: info.speedBps,
+            uploadEtaSeconds: info.etaSeconds,
+          });
+        }
+      );
+
+      const result = await promise;
+      updateTrack({
+        uploadStatus: 'done',
+        uploadProgress: 100,
+        uploadedUrl: result.publicUrl,
+        uploadedPath: result.path,
+        uploadEtaSeconds: 0,
+      });
+    } catch (err: any) {
+      updateTrack({ uploadStatus: 'error', uploadError: err.message || 'Upload failed' });
+    }
+  };
+
+  const retryAlbumTrackUpload = (trackId: string) => {
+    const track = albumTracks.find(t => t.id === trackId);
+    if (track) startAlbumTrackUpload(trackId, track.file);
+  };
+
+  const initAlbumTracks = (files: File[]) => {
+    const tracks = files.map((f) => ({
+      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      file: f,
+      title: f.name.replace(/\.[^/.]+$/, ''),
+      price: 2500,
+      lyrics: '',
+      is_explicit: false,
+      featured_artist: '',
+      uploadStatus: 'pending' as const,
+      uploadProgress: 0,
+      uploadSpeedBps: 0,
+      uploadEtaSeconds: null,
+    }));
+    setAlbumTracks(tracks);
+    tracks.forEach(t => { startAlbumTrackUpload(t.id, t.file); });
+  };
+
   const handleUploadSingle = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
     if (!songFile || !coverFile || !title) return toast.error('Please fill all fields');
@@ -2205,17 +2296,18 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const handleUploadAlbum = async (e: React.FormEvent, asDraft: boolean = false) => {
     e.preventDefault();
     if (albumTracks.length === 0 || !coverFile || !title) return toast.error('Check files and fields');
-    if (userProfile?.id) {
-       const maxTrackSize = Math.max(...albumTracks.map(t => t.file.size));
-       const guardCheck = await checkUpload(userProfile.id, maxTrackSize);
-       if (!guardCheck.allowed) return toast.error(guardCheck.message);
-    }
-    
+
+    const stillWorking = albumTracks.some(t => t.uploadStatus === 'pending' || t.uploadStatus === 'compressing' || t.uploadStatus === 'uploading');
+    if (stillWorking) return toast.error('Please wait for all tracks to finish uploading.');
+
+    const failed = albumTracks.filter(t => t.uploadStatus === 'error');
+    if (failed.length > 0) return toast.error(`${failed.length} track(s) failed to upload. Retry them before publishing.`);
+
     setUploading(true);
     setUploadProgress(5);
-    
+
     try {
-      // 1. Upload Cover
+      // 1. Upload Cover (unchanged — cover is a single small file, no need to background it)
       toast.loading('Optimising album artwork...', { id: 'covercomp' });
       const compressedAlbumCover = await compressCoverImage(coverFile);
       toast.dismiss('covercomp');
@@ -2225,8 +2317,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       if (coverErr) throw coverErr;
       const { data: { publicUrl: coverUrl } } = supabase.storage.from('covers').getPublicUrl(coverPath);
 
-      setUploadProgress(15);
-      
+      setUploadProgress(20);
+
       // 2. Create Album Record
       const { data: newAlbum, error: albumErr } = await supabase.from('albums').insert({
         artist_id: userProfile?.id,
@@ -2237,28 +2329,19 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
       if (albumErr) throw albumErr;
 
-      // 3. Upload Tracks
+      // 3. Insert track DB rows using the already-uploaded URLs — no upload happens here anymore
       const totalTracks = albumTracks.length;
       let completed = 0;
 
       for (const track of albumTracks) {
-        const compressedTrack = await compressAudio(track.file);
-        const isTrackWebm = compressedTrack.type === 'audio/webm';
-        const audioExt = isTrackWebm ? 'webm' : track.file.name.split('.').pop();
-        const audioPath = `songs/${userProfile?.id}/song-${Date.now()}-${Math.random().toString(36).substring(7)}.${audioExt}`;
-        const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedTrack, { contentType: compressedTrack.type || 'audio/mpeg' });
-        if (audioErr) throw audioErr;
-        
-        const { data: { publicUrl: audioUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
-
-        const trackPrice = isForSale 
-          ? (albumPricingMode === 'album' ? Math.floor(price / totalTracks) : track.price) 
+        const trackPrice = isForSale
+          ? (albumPricingMode === 'album' ? Math.floor(price / totalTracks) : track.price)
           : 0;
 
         const { error: dbErr } = await supabase.from('songs').insert({
           title: track.title,
           artist_id: userProfile?.id,
-          audio_url: audioUrl,
+          audio_url: track.uploadedUrl,
           cover_url: coverUrl,
           is_explicit: track.is_explicit || false,
           release_date: releaseDate,
@@ -2279,7 +2362,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         if (dbErr) throw dbErr;
 
         completed++;
-        setUploadProgress(15 + Math.floor((completed / totalTracks) * 85));
+        setUploadProgress(20 + Math.floor((completed / totalTracks) * 80));
       }
 
       if (isExclusive && subscriptionPrice && userProfile?.id) {
@@ -2448,7 +2531,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         if (files.length === 0) return toast.error('Please drop valid audio files');
                         
                         if (mode === 'album') {
-                           setAlbumTracks(files.map((f: any) => ({ file: f as File, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500, lyrics: '', is_explicit: false, featured_artist: '' })));
+                           initAlbumTracks(files as File[]);
                         } else {
                            const file = files[0] as File;
                            setSongFile(file);
@@ -2484,10 +2567,34 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                   <div className="w-full bg-black/40 rounded-2xl p-4 border border-white/10 space-y-2">
                                      <h3 className="font-studio font-black text-xl text-white mb-2">{albumTracks.length} Tracks Selected</h3>
                                      <div className="max-h-[150px] overflow-y-auto space-y-2 pr-2 custom-scrollbar pointer-events-auto">
-                                        {albumTracks.map((track, idx) => (
-                                           <div key={idx} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2">
-                                              <span className="text-[14px] font-display font-medium text-white truncate max-w-[200px] text-left">{track.file.name}</span>
-                                              <span className="text-[12px] font-mono text-text-muted">{(track.file.size / (1024*1024)).toFixed(1)} MB</span>
+                                        {albumTracks.map((track) => (
+                                           <div key={track.id} className="bg-white/5 rounded-xl px-4 py-2">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[14px] font-display font-medium text-white truncate max-w-[200px] text-left">{track.file.name}</span>
+                                                <span className="text-[12px] font-mono text-text-muted">{(track.file.size / (1024*1024)).toFixed(1)} MB</span>
+                                              </div>
+                                              {track.uploadStatus === 'compressing' && (
+                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-purple">Compressing...</div>
+                                              )}
+                                              {track.uploadStatus === 'uploading' && (
+                                                <div>
+                                                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
+                                                    <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
+                                                  </div>
+                                                  <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
+                                                    <span>{track.uploadProgress}% · {formatSpeed(track.uploadSpeedBps)}</span>
+                                                    <span>{formatEta(track.uploadEtaSeconds)}</span>
+                                                  </div>
+                                                </div>
+                                              )}
+                                              {track.uploadStatus === 'done' && (
+                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-green">✓ Uploaded</div>
+                                              )}
+                                              {track.uploadStatus === 'error' && (
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 hover:text-red-300">
+                                                  ⚠ {track.uploadError || 'Failed'} — Tap to retry
+                                                </button>
+                                              )}
                                            </div>
                                         ))}
                                      </div>
@@ -2508,9 +2615,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                       {audioUploading ? (
                                         <>
                                           <Loader2 size={14} className="animate-spin text-smash-purple" />
-                                          <span className="text-[11px] font-bold text-smash-purple uppercase tracking-widest">
-                                            Uploading in background... {audioUploadProgress}%
-                                          </span>
+                                          <div className="flex flex-col items-start gap-1">
+                                            <span className="text-[11px] font-bold text-smash-purple uppercase tracking-widest">
+                                              Uploading in background... {audioUploadProgress}%
+                                            </span>
+                                            <span className="text-[10px] font-mono text-text-muted">
+                                              {formatSpeed(audioUploadSpeedBps)} · {formatEta(audioUploadEtaSeconds)}
+                                            </span>
+                                          </div>
                                         </>
                                       ) : audioUploadUrl ? (
                                         <>
@@ -2565,7 +2677,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        <input id="audio-file-wizard" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e => {
                          if (mode === 'album') {
                            const files = Array.from(e.target.files || []);
-                           setAlbumTracks(files.map((f: any) => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), price: 2500, lyrics: '', is_explicit: false, featured_artist: '' })));
+                           initAlbumTracks(files as File[]);
                          } else {
                            const file = e.target.files?.[0];
                            if (!file) return;
@@ -2902,14 +3014,41 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
                                  <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Individual Tracks Metadata</label>
                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                   {albumTracks.map((track, idx) => (
-                                      <div key={idx} className="bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                                         <input required placeholder="Track Title" value={track.title} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].title = e.target.value; setAlbumTracks(newTracks); }} className="w-full bg-transparent font-sans font-bold text-[14px] text-white mb-3 focus:outline-none border-b border-transparent focus:border-white/20 pb-1 px-1 transition-all" />
+                                   {albumTracks.map((track) => (
+                                      <div key={track.id} className="bg-bg-elevated p-4 rounded-2xl border border-white/5">
+                                         
+                                         {/* Background upload status */}
+                                         <div className="mb-3">
+                                            {track.uploadStatus === 'compressing' && (
+                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-purple">Compressing...</div>
+                                            )}
+                                            {track.uploadStatus === 'uploading' && (
+                                                <div>
+                                                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
+                                                    <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
+                                                  </div>
+                                                  <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
+                                                    <span>{track.uploadProgress}% · {formatSpeed(track.uploadSpeedBps)}</span>
+                                                    <span>{formatEta(track.uploadEtaSeconds)}</span>
+                                                  </div>
+                                                </div>
+                                            )}
+                                            {track.uploadStatus === 'done' && (
+                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-green">✓ Uploaded</div>
+                                            )}
+                                            {track.uploadStatus === 'error' && (
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 hover:text-red-300">
+                                                  ⚠ {track.uploadError || 'Failed'} — Tap to retry
+                                                </button>
+                                            )}
+                                         </div>
+
+                                         <input required placeholder="Track Title" value={track.title} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, title: e.target.value } : t))} className="w-full bg-transparent font-sans font-bold text-[14px] text-white mb-3 focus:outline-none border-b border-transparent focus:border-white/20 pb-1 px-1 transition-all" />
                                          <div className="space-y-3">
                                            {isForSale && albumPricingMode === 'individual' && (
                                               canSellTracks ? (
                                                 <div className="relative">
-                                                  <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].price = e.target.value === '' ? 0 : Number(e.target.value); setAlbumTracks(newTracks); }} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
+                                                  <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, price: e.target.value === '' ? 0 : Number(e.target.value) } : t))} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
                                                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
                                                 </div>
                                               ) : (
@@ -2920,11 +3059,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                                 </div>
                                               )
                                            )}
-                                           <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].featured_artist = e.target.value; setAlbumTracks(newTracks); }} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple" />
-                                           <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => { const newTracks = [...albumTracks]; newTracks[idx].lyrics = e.target.value; setAlbumTracks(newTracks); }} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple resize-y max-h-[100px]" />
+                                           <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, featured_artist: e.target.value } : t))} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple" />
+                                           <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, lyrics: e.target.value } : t))} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple resize-y max-h-[100px]" />
                                            <div className="flex items-center justify-between pt-1">
                                               <span className="text-[11px] font-sans text-text-muted">🔞 Contains explicit content</span>
-                                              <button type="button" onClick={() => { const newTracks = [...albumTracks]; newTracks[idx].is_explicit = !newTracks[idx].is_explicit; setAlbumTracks(newTracks); }} className={`w-10 h-5 rounded-full transition-all relative ${track.is_explicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
+                                              <button type="button" onClick={() => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, is_explicit: !track.is_explicit } : t))} className={`w-10 h-5 rounded-full transition-all relative ${track.is_explicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
                                                 <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${track.is_explicit ? 'right-0.5' : 'left-0.5'}`} />
                                               </button>
                                            </div>
@@ -3021,7 +3160,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                {guardResult.message || 'You have reached your slot limit. Archive a track or upgrade your plan to upload more songs.'}
                              </div>
                            )}
-                           <button type="submit" disabled={guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={uploading || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
                            </button>
                            <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
