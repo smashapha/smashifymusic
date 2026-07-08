@@ -338,7 +338,9 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
            animate={{ scale: 1, opacity: 1 }}
            style={{ x, rotate }}
            drag="x"
+           dragDirectionLock
            dragConstraints={{ left: 0, right: 0 }}
+           dragElastic={0.7}
            onDragEnd={handleDragEnd}
            className="relative aspect-square w-full max-w-[340px] md:max-w-[400px] shadow-[0_0_80px_rgba(255,95,0,0.3)] group"
          >
@@ -904,7 +906,8 @@ const MotoFeed: React.FC = () => {
   const [songs, setSongs] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const dragY = useMotionValue(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const isTransitioning = useRef(false);
   const [seenSongs, setSeenSongs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -1030,21 +1033,45 @@ const MotoFeed: React.FC = () => {
   };
 
   const handleNext = () => {
+    if (isTransitioning.current) return;
     if (currentIndex < songs.length - 1) {
+      isTransitioning.current = true;
+      setDirection(1);
       setCurrentIndex(prev => prev + 1);
-      
-      // Fetch more when near end
+
       if (currentIndex >= songs.length - 3) {
-         fetchSongs();
+        fetchSongs();
       }
     }
   };
 
   const handlePrev = () => {
+    if (isTransitioning.current) return;
     if (currentIndex > 0) {
+      isTransitioning.current = true;
+      setDirection(-1);
       setCurrentIndex(prev => prev - 1);
     }
   };
+
+  useEffect(() => {
+    const next = songs[currentIndex + 1];
+    if (!next || next.is_ad) return;
+
+    if (next.cover_url) {
+      const img = new Image();
+      img.src = next.cover_url;
+    }
+
+    const audioUrl = next.audio_url || next.media_url;
+    if (audioUrl) {
+      const warmer = document.createElement('audio');
+      warmer.preload = 'auto';
+      warmer.src = audioUrl;
+      warmer.load();
+      setTimeout(() => { warmer.src = ''; }, 8000);
+    }
+  }, [currentIndex, songs]);
 
   useEffect(() => {
      const handleKeyDown = (e: KeyboardEvent) => {
@@ -1064,9 +1091,24 @@ const MotoFeed: React.FC = () => {
      return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, songs.length]);
 
+  const SWIPE_OFFSET_THRESHOLD = 80;
+  const SWIPE_VELOCITY_THRESHOLD = 500;
+
   const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.y < -100) handleNext();
-    else if (info.offset.y > 100) handlePrev();
+    const { offset, velocity } = info;
+    const passedOffset = Math.abs(offset.y) > SWIPE_OFFSET_THRESHOLD;
+    const passedVelocity = Math.abs(velocity.y) > SWIPE_VELOCITY_THRESHOLD;
+
+    if (!passedOffset && !passedVelocity) return; // snap back, handled by dragConstraints/elastic
+
+    if (offset.y < 0 || velocity.y < -SWIPE_VELOCITY_THRESHOLD) handleNext();
+    else if (offset.y > 0 || velocity.y > SWIPE_VELOCITY_THRESHOLD) handlePrev();
+  };
+
+  const cardVariants = {
+    enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%' }),
+    center: { y: 0 },
+    exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%' }),
   };
 
   if (loading) return (
@@ -1121,16 +1163,21 @@ const MotoFeed: React.FC = () => {
 
        {songs[currentIndex] && !songs[currentIndex].is_ad && <LiveActivity />}
 
-       <AnimatePresence initial={false}>
+       <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentIndex}
-            initial={{ y: 0 }}
-            animate={{ y: 0 }}
-            exit={dragY.get() < 0 ? { y: '-100%' } : { y: '100%' }}
+            custom={direction}
+            variants={cardVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'tween', duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             onDragEnd={handleDragEnd}
             dragElastic={0.2}
+            dragDirectionLock
+            onAnimationComplete={() => { isTransitioning.current = false; }}
             className="h-full w-full absolute inset-0 cursor-grab active:cursor-grabbing"
           >
              {songs[currentIndex]?.is_ad ? (
