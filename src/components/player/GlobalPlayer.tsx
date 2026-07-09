@@ -14,11 +14,19 @@ import { getListenerTier, getListenerLimits } from '../../lib/tierUtils';
 
 const FormattedPrice = ({ song }: { song: any }) => {
   if (!song) return null;
-  return isOnSale(song) ? (
-    <><span className="line-through opacity-50 mx-1 font-normal">MK {song.price}</span> MK {getEffectivePrice(song)}</>
-  ) : (
-    <>MK {song.price || 2500}</>
-  );
+  const originalPrice = song.price || 2500;
+  const saleActive = isOnSale(song);
+  const effectivePrice = getEffectivePrice(song);
+
+  if (saleActive) {
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap font-bold">
+        <span className="line-through opacity-50 font-normal text-[11px]">MK {originalPrice}</span>
+        <span className="text-white">MK {effectivePrice}</span>
+      </span>
+    );
+  }
+  return <span className="font-bold text-white whitespace-nowrap">MK {originalPrice}</span>;
 };
 
 const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void, isLiked: boolean, handleLike: () => void }) => {
@@ -246,24 +254,32 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col p-6 md:p-12 overflow-y-auto no-scrollbar pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-12">
-         <div className="flex items-center justify-between mb-8 md:mb-12">
-            <button onClick={onClose} className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-page focus:ring-border-default">
-               <ChevronDown size={28} />
+         <div className="flex items-center justify-between mb-8 md:mb-12 pt-[max(env(safe-area-inset-top),1rem)]">
+            <button 
+              onClick={onClose} 
+              className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-page focus:ring-border-default shadow-[0px_2px_8px_rgba(0,0,0,0.05)]"
+              aria-label="Collapse Player"
+            >
+               <ChevronDown size={24} />
             </button>
-            <div className="text-center flex-1">
-              <p className="text-[10px] font-display font-medium text-text-muted uppercase tracking-widest mb-1">{adPlaying ? 'SPONSORED' : 'Now Playing'}</p>
-              <h4 className="font-studio font-bold text-sm text-text-primary tracking-tight">{adPlaying ? 'AUDIO ADVERTISEMENT' : currentSong?.genre || 'Album'}</h4>
+            <div className="text-center flex-1 mx-4">
+              <p className="text-[10px] font-display font-semibold text-text-muted uppercase tracking-widest mb-1 select-none">{adPlaying ? 'SPONSORED' : 'NOW PLAYING'}</p>
+              <h4 className="font-studio font-bold text-sm text-text-primary tracking-tight select-none no-underline border-none leading-tight">{adPlaying ? 'AUDIO ADVERTISEMENT' : (currentSong?.genre || 'Album')}</h4>
            </div>
            {adPlaying ? (
              <button 
                onClick={() => setVolume(volume === 0 ? 0.8 : 0)}
-               className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors flex items-center gap-2 text-text-secondary hover:text-text-primary focus:outline-none"
+               className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary focus:outline-none shadow-[0px_2px_8px_rgba(0,0,0,0.05)]"
+               aria-label="Mute Ad"
              >
-               {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+               {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
              </button>
            ) : (
-             <button className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none shadow-[0px_2px_8px_rgba(0,0,0,0.05)]">
-               <Info size={24} />
+             <button 
+               className="p-3 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary focus:outline-none shadow-[0px_2px_8px_rgba(0,0,0,0.05)]"
+               aria-label="Song Info"
+             >
+               <Info size={20} />
              </button>
            )}
         </div>
@@ -365,49 +381,49 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 </button>
               </div>
 
-              <div className="relative">
-              <div className="flex items-center justify-center gap-3 overflow-x-auto no-scrollbar py-2">
-                 {presets.map(p => (
-                   <button 
-                     key={p}
-                     onClick={() => setEQPreset(p)}
-                     className={`px-4 py-1.5 rounded-full text-[11px] font-display font-medium uppercase tracking-wider transition-all flex-shrink-0 border ${eqPreset === p ? `border-transparent ${accentColor.replace('text-', 'bg-')} text-white` : 'border-border-default bg-transparent text-text-secondary hover:text-text-primary'}`}
-                   >
-                     {p}
-                   </button>
-                 ))}
-              </div>
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-bg-page to-transparent pointer-events-none" />
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-bg-page to-transparent pointer-events-none" />
+              <div className="relative w-full overflow-hidden">
+                <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto no-scrollbar py-2 px-6">
+                   {presets.map(p => (
+                     <button 
+                       key={p}
+                       onClick={() => setEQPreset(p)}
+                       className={`px-4 py-1.5 rounded-full text-[11px] font-display font-medium uppercase tracking-wider transition-all flex-shrink-0 border ${eqPreset === p ? `border-transparent ${accentColor.replace('text-', 'bg-')} text-white` : 'border-border-default bg-transparent text-text-secondary hover:text-text-primary'}`}
+                     >
+                       {p}
+                     </button>
+                   ))}
+                </div>
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#121824] to-transparent pointer-events-none z-10" />
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#121824] to-transparent pointer-events-none z-10" />
               </div>
            </div>
                      {/* Bottom Toolbar */}
            <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-border-default relative">
-              <div className="flex items-center gap-3 md:gap-4 flex-1">
+              <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                  {!currentSong?.is_purchased && !purchasedIds.has(currentSong?.id || '') && currentSong?.is_for_sale && (
                    <button 
                      onClick={(e: any) => handleBuy(e)}
-                     className={`flex items-center gap-2 px-6 py-3 text-white rounded-full font-display font-bold uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md mr-4 ${accentColor.replace('text-', 'bg-')}`}
+                     className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-white rounded-full font-display font-bold uppercase text-xs sm:text-sm tracking-widest hover:scale-105 active:scale-95 transition-transform shadow-md flex-shrink-0 ${accentColor.replace('text-', 'bg-')}`}
                    >
-                     <ShoppingBag size={20} />
-                     Buy <FormattedPrice song={currentSong} />
+                     <ShoppingBag size={16} />
+                     <span>Buy</span> <FormattedPrice song={currentSong} />
                    </button>
                  )}
                  <button 
                    onClick={handleLike}
-                   className={`transition-colors p-2 rounded-full hover:bg-bg-elevated ${isLiked ? 'text-red-400' : 'text-text-muted hover:text-text-primary'}`}
+                   className={`transition-colors p-2 rounded-full hover:bg-bg-elevated flex-shrink-0 ${isLiked ? 'text-red-400' : 'text-text-muted hover:text-text-primary'}`}
                  >
-                   <Heart size={24} fill={isLiked ? "currentColor" : "none"} />
+                   <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
                  </button>
-                 <div className="flex items-center gap-3 flex-1 min-w-[80px] max-w-[200px]">
+                 <div className="flex items-center gap-2 flex-1 min-w-[70px] sm:min-w-[100px] max-w-[180px]">
                    <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0">
-                      {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                      {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
                    </button>
                    <input 
                      type="range" 
                      min="0" max="1" step="0.01" value={volume}
                      onChange={(e) => setVolume(parseFloat(e.target.value))}
-                     className={`w-full min-w-[40px] accent-${accentColor.replace('text-', '')} bg-border-default h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor.replace('text-', '')}`}
+                     className={`w-full min-w-[30px] accent-${accentColor.replace('text-', '')} bg-border-default h-1.5 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-${accentColor.replace('text-', '')}`}
                    />
                  </div>
               </div>

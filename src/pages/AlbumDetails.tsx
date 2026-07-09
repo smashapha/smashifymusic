@@ -7,6 +7,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
+import { formatDisplayTitle } from '../lib/formatting';
 import toast from 'react-hot-toast';
 
 const AlbumDetails: React.FC = () => {
@@ -345,7 +346,7 @@ const AlbumDetails: React.FC = () => {
                   {/* Thumbnail / Title & Artist */}
                   <div className="flex-1 flex items-center gap-3.5 min-w-0">
                     <div className="w-11 h-11 rounded-lg overflow-hidden relative shadow-md shrink-0 bg-white/5">
-                      <img src={song.cover_url} className="w-full h-full object-cover" alt={song.title} />
+                      <img src={song.cover_url} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Play fill="white" size={14} className="text-white" />
                       </div>
@@ -354,7 +355,7 @@ const AlbumDetails: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-smash-purple' : 'text-white group-hover:text-smash-purple'}`}>
-                          {song.title}
+                          {formatDisplayTitle(song.title)}
                         </h4>
                         {(song as any).is_explicit && (
                           <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-black uppercase tracking-widest mt-0.5 shrink-0">

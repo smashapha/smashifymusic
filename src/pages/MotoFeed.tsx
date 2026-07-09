@@ -14,6 +14,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { getListenerLimits } from '../lib/tierUtils';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
+import { formatDisplayTitle } from '../lib/formatting';
 
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/common/SEO';
@@ -348,7 +349,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             <img 
               src={song.cover_url} 
               className={`w-full h-full object-cover rounded-[40px] md:rounded-[60px] border-4 border-white/10 ${isPlaying ? 'animate-pulse' : ''}`} 
-              alt={song.title} 
+              alt={formatDisplayTitle(song.title)} 
               referrerPolicy="no-referrer"
             />
             {/* Swipe Indicators */}
@@ -539,7 +540,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                {song.region && <span className="px-3 py-1 bg-white/10 text-white text-[10px] font-black rounded-full uppercase tracking-widest">{song.region}</span>}
             </div>
             <div>
-               <h2 className="text-[32px] md:text-[44px] font-studio font-bold uppercase tracking-tight leading-[1.1] mb-2 text-white">{song.title}</h2>
+               <h2 className="text-[32px] md:text-[44px] font-studio font-bold uppercase tracking-tight leading-[1.1] mb-2 text-white">{formatDisplayTitle(song.title)}</h2>
                <div className="flex items-center gap-2">
                   <p className="text-xl font-bold text-white/80">{song.artist_name || (song.profiles as any)?.stage_name || (song.profiles as any)?.full_name}</p>
                   {song.profiles?.verified && <div className="w-4 h-4 bg-smash-cyan rounded-full flex items-center justify-center"><Check size={10} className="text-black" /></div>}

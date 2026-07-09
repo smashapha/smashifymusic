@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
 import { optimizeImage } from '../../lib/imageUtils';
+import { formatDisplayTitle } from '../../lib/formatting';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 
@@ -233,7 +234,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            <LazyImage
               src={optimizeImage(song.cover_url || null, 200, 200)}
              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-             alt={song.title || 'Unknown Title'}
+             alt={formatDisplayTitle(song.title) || 'Unknown Title'}
            />
            {/* Play overlay */}
            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -316,7 +317,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
          <div className="flex items-start justify-between gap-1 px-1 mt-1">
            <div className="flex-1 min-w-0">
              <h3 className={`font-display font-semibold text-[13px] truncate leading-tight ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
-               {song.title || "Unknown Title"}
+               {formatDisplayTitle(song.title) || "Unknown Title"}
              </h3>
              <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
                {song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}
@@ -370,7 +371,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
         </div>
         <div className="flex-1 min-w-0">
           <h4 className={`font-sans font-semibold text-[14px] md:text-[15px] truncate mb-0.5 ${isCurrent ? 'text-smash-orange' : 'text-text-primary'}`}>
-            {song.title || "Unknown Title"}
+            {formatDisplayTitle(song.title) || "Unknown Title"}
           </h4>
           <div className="flex items-center gap-2">
             <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}</p>
