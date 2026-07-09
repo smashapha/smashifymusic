@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 
 import { lazy, Suspense } from 'react';
 import Maintenance from './pages/Maintenance';
-const Landing = lazy(() => import('./pages/Landing'));
+import Landing from './pages/Landing';
 const AuthListener = lazy(() => import('./pages/AuthListener'));
 const AuthArtist = lazy(() => import('./pages/AuthArtist'));
 const Home = lazy(() => import('./pages/Home'));

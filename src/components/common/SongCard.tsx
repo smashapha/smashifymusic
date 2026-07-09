@@ -13,6 +13,7 @@ import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
 import { optimizeImage } from '../../lib/imageUtils';
 import toast from 'react-hot-toast';
+import LazyImage from './LazyImage';
 
 interface SongCardProps {
   song: Song;
@@ -229,8 +230,8 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
        >
          {/* Cover art */}
          <div className="relative aspect-square w-full rounded-[8px] overflow-hidden shadow-sm">
-           <img
-             src={optimizeImage(song.cover_url || null, 200, 200)}
+           <LazyImage
+              src={optimizeImage(song.cover_url || null, 200, 200)}
              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
              alt={song.title || 'Unknown Title'}
            />
@@ -342,7 +343,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     <div className={`group flex items-center gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-smash-orange shadow-sm border-smash-orange/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
-            <img src={optimizeImage(song.cover_url || null, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" />
+            <LazyImage src={optimizeImage(song.cover_url || null, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" />
           ) : (
             <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
                <Music2 size={24} className="text-text-muted/30" />

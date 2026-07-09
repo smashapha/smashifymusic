@@ -13,7 +13,7 @@ const Avatar: React.FC<AvatarProps> = ({ src, name, className = "" }) => {
     const widthVal = Number(className.match(/(?:w|h)-(\d+)/)?.[1] || 12);
     const isLarge = widthVal >= 20 || className.includes('h-[') || className.includes('w-[');
     const size = isLarge ? 200 : 80;
-    return <img src={optimizeImage(src, size, size)} className={`object-cover ${className}`} alt={name || "Avatar"} />;
+    return <img src={optimizeImage(src, size, size)} className={`object-cover ${className}`} alt={name || "Avatar"} loading="lazy" decoding="async" />;
   }
 
   // Fallback: Initial or placeholder

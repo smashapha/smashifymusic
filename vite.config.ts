@@ -18,7 +18,7 @@ export default defineConfig(() => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg'],
         manifest: {
           name: 'Smashify',
           short_name: 'Smashify',
@@ -39,6 +39,56 @@ export default defineConfig(() => {
               purpose: 'any maskable'
             }
           ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          runtimeCaching: [
+            {
+              // Stale-While-Revalidate for Supabase API / database rest requests
+              urlPattern: /^https:\/\/akclwguqzeijscftatqp\.supabase\.co\/rest\/.*/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'supabase-api-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              // Cache-First strategy for music cover and static images
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'image-cache',
+                expiration: {
+                  maxEntries: 150,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              // Cache-First strategy for font styles
+              urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-cache',
+                expiration: {
+                  maxEntries: 30,
+                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            }
+          ]
         }
       })
     ],
@@ -47,9 +97,13 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     build: {
       target: ['es2020', 'chrome87', 'safari14'],
       cssTarget: 'chrome61',
+      cssCodeSplit: true,
       sourcemap: false,
       rollupOptions: {
         output: {
@@ -57,6 +111,9 @@ export default defineConfig(() => {
             if (id.includes('node_modules')) {
               if (id.includes('react-router') || id.includes('@remix-run')) {
                 return 'vendor-router';
+              }
+              if (id.includes('react-dom') || id.includes('react/')) {
+                return 'vendor-react';
               }
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
@@ -67,6 +124,9 @@ export default defineConfig(() => {
               if (id.includes('motion') || id.includes('framer-motion')) {
                 return 'vendor-animation';
               }
+              if (id.includes('recharts') || id.includes('d3')) {
+                return 'vendor-recharts';
+              }
               return 'vendor';
             }
           }
@@ -75,7 +135,7 @@ export default defineConfig(() => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };
