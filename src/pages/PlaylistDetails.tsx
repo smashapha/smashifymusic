@@ -8,6 +8,7 @@ import { musicService } from '../services/musicService';
 import { Song } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
 
 // Chart Metadata matching the visual screenshots
@@ -443,8 +444,8 @@ const PlaylistDetails: React.FC = () => {
       </div>
 
       {/* Playlist Actions Row */}
-      <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-8">
-        <div className="flex items-center gap-6 mb-10">
+      <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} py-8`}>
+        <div className={`flex items-center gap-6 ${SECTION_SPACING}`}>
           <button 
             onClick={handlePlayAll} 
             className="h-14 px-8 bg-[#1db954] rounded-full flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#1db954]/20 text-black font-display font-black uppercase tracking-widest text-xs"

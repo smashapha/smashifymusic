@@ -8,6 +8,7 @@ import { musicService } from '../services/musicService';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
 
 const AlbumDetails: React.FC = () => {
@@ -218,8 +219,8 @@ const AlbumDetails: React.FC = () => {
       </div>
 
       {/* Album Actions Row */}
-      <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-8">
-        <div className="flex items-center gap-6 mb-10">
+      <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} py-8`}>
+        <div className={`flex items-center gap-6 ${SECTION_SPACING}`}>
           <button 
             onClick={handlePlayAll} 
             className="h-14 px-8 bg-smash-purple rounded-full flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-smash-purple/20 text-white font-display font-black uppercase tracking-widest text-xs"

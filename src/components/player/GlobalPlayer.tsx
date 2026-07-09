@@ -381,7 +381,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 </button>
               </div>
 
-              <div className="relative w-full overflow-hidden">
+              <div className="relative w-full overflow-hidden mt-6 md:mt-8">
                 <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto no-scrollbar py-2 px-6">
                    {presets.map(p => (
                      <button 
@@ -398,7 +398,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
               </div>
            </div>
                      {/* Bottom Toolbar */}
-           <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-6 border-t border-border-default relative">
+           <div className="flex flex-wrap items-center justify-between gap-4 mt-12 pt-8 border-t border-border-default relative">
               <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                  {!currentSong?.is_purchased && !purchasedIds.has(currentSong?.id || '') && currentSong?.is_for_sale && (
                    <button 

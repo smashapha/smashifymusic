@@ -10,6 +10,7 @@ import SongCard from '../components/common/SongCard';
 import { downloadPurchasedSong } from '../lib/downloads';
 
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_LIST_CARDS } from '../lib/layout';
 
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
@@ -220,7 +221,7 @@ const Library: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 md:space-y-12 pb-24 px-4 md:px-0">
+    <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-12 pt-6`}>
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
         <div className="space-y-4 md:space-y-6">
@@ -280,14 +281,14 @@ const Library: React.FC = () => {
         </div>
 
         {loading ? (
-           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+           <div className={GRID_SONG_CARDS}>
              {[...Array(5)].map((_, i) => (
                 <div key={i} className="aspect-square bg-white/5 rounded-[20px] md:rounded-[24px] animate-pulse" />
              ))}
            </div>
         ) : activeTab === 'playlists' ? (
           <div className="space-y-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
+           <div className={GRID_SONG_CARDS}>
                <motion.div 
                  whileHover={{ y: -5 }}
                  onClick={() => {
@@ -494,7 +495,7 @@ const Library: React.FC = () => {
             <PlayCircle className="text-smash-orange w-6 h-6 md:w-7 md:h-7" />
             <h2 className="text-lg md:text-[22px] font-studio font-bold uppercase tracking-tight text-text-primary">Quick Play</h2>
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+         <div className={GRID_LIST_CARDS}>
             <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
                <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-smash-orange flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Clock size={20} fill="white" className="md:w-6 md:h-6" />

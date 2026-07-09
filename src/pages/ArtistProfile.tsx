@@ -16,6 +16,7 @@ import Avatar from '../components/common/Avatar';
 import SupportArtistModal from '../components/common/SupportArtistModal';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING, GRID_ARTIST_CARDS } from '../lib/layout';
 
 const ArtistProfile: React.FC = () => {
    const { id: paramId } = useParams<{ id: string }>();
@@ -419,7 +420,7 @@ const ArtistProfile: React.FC = () => {
     </div>
 
     {/* ── ACTION BAR ── */}
-    <div className="px-4 md:px-8 py-4 flex items-center gap-3 border-b border-white/5">
+    <div className={`${PAGE_CONTAINER} py-4 flex items-center gap-3 border-b border-white/5`}>
       {/* Play button */}
       <button
         onClick={() => playQueue(songs, 0)}
@@ -477,7 +478,7 @@ const ArtistProfile: React.FC = () => {
     </div>
 
     {/* ── TABS ── */}
-    <div className="flex border-b border-white/5 px-4 md:px-8">
+    <div className={`${PAGE_CONTAINER} flex border-b border-white/5`}>
       {[
         { key: 'tracks', label: 'Music' },
         { key: 'albums', label: 'Discography' },
@@ -499,7 +500,7 @@ const ArtistProfile: React.FC = () => {
     </div>
 
     {/* ── TAB CONTENT ── */}
-    <div className="px-4 md:px-8 py-6">
+    <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} py-6`}>
       <AnimatePresence mode="wait">
 
         {/* MUSIC TAB */}
@@ -711,7 +712,7 @@ const ArtistProfile: React.FC = () => {
                 <p className="text-white/30 text-sm font-bold">No albums yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+              <div className={GRID_ARTIST_CARDS}>
                 {albums.map(al => (
                   <div
                     key={al.id}

@@ -23,6 +23,7 @@ import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
 import SEO from "../components/common/SEO";
 import Footer from "../components/common/Footer";
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_ARTIST_CARDS, GRID_LIST_CARDS } from "../lib/layout";
 
 const GENRES = [
   { name: "Afropop", icon: Music2, color: "text-smash-orange" },
@@ -338,7 +339,7 @@ const Discover: React.FC = () => {
 
   return (
     <div
-      className="space-y-6 md:space-y-8 pb-32 pt-4 md:pt-6 px-4 md:px-8 max-w-7xl mx-auto"
+      className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-6 md:space-y-8 pt-4 md:pt-6`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -423,7 +424,7 @@ const Discover: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 animate-pulse mt-8"
+            className={`${GRID_SONG_CARDS} animate-pulse mt-8`}
           >
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div key={n} className="flex flex-col gap-3">
@@ -470,7 +471,7 @@ const Discover: React.FC = () => {
                   <div
                     className={
                       viewMode === "grid"
-                        ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                        ? GRID_SONG_CARDS
                         : "flex flex-col gap-2"
                     }
                   >
@@ -505,7 +506,7 @@ const Discover: React.FC = () => {
                     {results.artists.length} results
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className={GRID_LIST_CARDS}>
                   {results.artists.map((artist, i) => (
                     <div
                       key={`discover-artist-${artist.id}-${i}`}
@@ -561,7 +562,7 @@ const Discover: React.FC = () => {
               <div
                 className={
                   viewMode === "grid"
-                    ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                    ? GRID_SONG_CARDS
                     : "flex flex-col gap-2"
                 }
               >
@@ -599,7 +600,7 @@ const Discover: React.FC = () => {
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                      ? GRID_SONG_CARDS
                       : "flex flex-col gap-2"
                   }
                 >
@@ -621,7 +622,7 @@ const Discover: React.FC = () => {
                 <h2 className="text-xl md:text-2xl font-studio font-black italic uppercase text-white mb-6">
                   Community Playlists
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className={GRID_SONG_CARDS}>
                   {publicPlaylists.map(pl => (
                     <div
                       key={pl.id}
@@ -657,7 +658,7 @@ const Discover: React.FC = () => {
                   <div
                     className={
                       viewMode === "grid"
-                        ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                        ? GRID_SONG_CARDS
                         : "flex flex-col gap-2"
                     }
                   >
@@ -694,7 +695,7 @@ const Discover: React.FC = () => {
               <h2 className="text-[20px] font-studio font-bold text-text-primary">
                 Browse Categories
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className={GRID_ARTIST_CARDS}>
                 {GENRES.map((cat) => (
                   <div
                     key={`cat-grid-${cat.name}`}

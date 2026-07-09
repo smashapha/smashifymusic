@@ -14,13 +14,14 @@ import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
 import SEO from '../components/common/SEO';
 import Footer from '../components/common/Footer';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 
 const FEATURED_CHARTS = [
   {
     id: 'top-songs-global',
     title: 'Top Songs Global',
     subtitle: 'Your weekly update of the most played tracks right now - Global.',
-    style: 'from-purple-800 to-indigo-950',
+    style: 'from-smash-purple to-smash-black',
     type: 'weekly',
     cardTitle: 'Top Songs',
     cardSub: 'Global',
@@ -30,7 +31,7 @@ const FEATURED_CHARTS = [
     id: 'top-songs-malawi',
     title: 'Top Songs Malawi',
     subtitle: 'Your weekly update of the most played tracks right now - Malawi.',
-    style: 'from-orange-850 to-red-950',
+    style: 'from-smash-orange to-smash-black',
     type: 'weekly',
     cardTitle: 'Top Songs',
     cardSub: 'Malawi',
@@ -40,7 +41,7 @@ const FEATURED_CHARTS = [
     id: 'top-50-global',
     title: 'Top 50 - Global',
     subtitle: 'Your daily update of the most played tracks right now - Global.',
-    style: 'from-teal-800 to-cyan-950',
+    style: 'from-smash-cyan to-smash-black',
     type: 'daily',
     cardTitle: 'Top 50',
     cardSub: 'GLOBAL',
@@ -50,7 +51,7 @@ const FEATURED_CHARTS = [
     id: 'top-50-malawi',
     title: 'Top 50 - Malawi',
     subtitle: 'Your daily update of the most played tracks right now - Malawi.',
-    style: 'from-pink-800 to-rose-950',
+    style: 'from-smash-pink to-smash-black',
     type: 'daily',
     cardTitle: 'Top 50',
     cardSub: 'MALAŴI',
@@ -364,7 +365,7 @@ const Home: React.FC = () => {
 
   return (
     <div 
-      className="pb-32 pt-6 px-4 md:px-8 max-w-7xl mx-auto"
+      className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} pt-6`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -516,7 +517,7 @@ const Home: React.FC = () => {
       
       {/* Quick Picks */}
       {trendingSongs.length > 0 && (
-        <section className="mb-10">
+        <section className={SECTION_SPACING}>
           <div className="flex items-end justify-between mb-4">
             <div>
               <p className="text-[13px] font-display font-medium text-text-muted mb-1">Start radio from a song</p>
@@ -807,7 +808,7 @@ const Home: React.FC = () => {
 };
 
 const HomeSection = ({ title, subtitle, children }: { title: string, subtitle: string, children: React.ReactNode }) => (
-  <section className="mb-10">
+  <section className={SECTION_SPACING}>
     <div className="flex items-end justify-between mb-4">
       <div>
         <h2 className="text-[22px] font-studio font-bold tracking-tight text-white leading-none mb-1">{title}</h2>
