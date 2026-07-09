@@ -223,7 +223,11 @@ function AppContent() {
 
   // Track page views on every route change
   useEffect(() => {
-    ReactGA.send({ hitType: 'pageview', page: location.pathname + location.search });
+    try {
+      ReactGA.send({ hitType: 'pageview', page: location.pathname + location.search });
+    } catch (e) {
+      console.warn('Google Analytics event tracking skipped (not initialized):', e);
+    }
   }, [location]);
 
   const handlePaymentSuccess = async (txRef: string) => {

@@ -5,7 +5,7 @@ import App from './App.tsx';
 import './index.css';
 
 // Initialize Google Analytics (GA4)
-ReactGA.initialize('G-XXXXXXXXXX');
+// ReactGA.initialize('G-XXXXXXXXXX');
 
 // Register Service Worker for PWA and better background audio handling
 if ('serviceWorker' in navigator) {
