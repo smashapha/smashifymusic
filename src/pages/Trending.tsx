@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { Flame, TrendingUp, Filter, PlayCircle, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { Lock as AppLockIcon, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, VolumeX, Maximize2, Minimize2, Radio, Heart, Mic2, X, Share2, AlertCircle, Coins, Gift, RefreshCw, Crown, Info, Lock, ChevronDown, ListMusic, MoreVertical, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingBag, Gauge, Clock, Zap, Download, Headphones } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { usePlayer } from '../../context/PlayerContext';

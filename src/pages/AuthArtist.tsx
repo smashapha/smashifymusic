@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Mail, Lock as AppLockIcon, User, Check, ArrowRight, ShieldCheck, 
   Mic2, AlertCircle, Phone, MapPin, 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Play, Share2, Instagram, Twitter, Music2, MapPin, Users, Check, 
   Trophy, Heart, CircleCheck, Disc, Sparkles, TrendingUp,

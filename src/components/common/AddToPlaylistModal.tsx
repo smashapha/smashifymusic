@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { 
   X, Plus, Music2, Check, Lock as AppLockIcon, Globe, Loader2 
 } from 'lucide-react';

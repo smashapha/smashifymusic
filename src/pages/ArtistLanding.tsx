@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { 
   Mic2, Rocket, Star, ShieldCheck, 
   CircleCheck, TrendingUp, Music, LayoutDashboard,

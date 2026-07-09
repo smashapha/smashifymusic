@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { X, Heart, ShieldCheck, ChevronRight, Zap, Coffee, Trophy } from 'lucide-react';
 import Avatar from './Avatar';
 import { UserProfile } from '../../types';

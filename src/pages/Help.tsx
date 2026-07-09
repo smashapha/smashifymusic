@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { LifeBuoy, ChevronRight, Mail, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

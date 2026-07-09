@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence } from "motion/react"
 import { X, Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 

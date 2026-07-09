@@ -109,12 +109,6 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react-router') || id.includes('@remix-run')) {
-                return 'vendor-router';
-              }
-              if (id.includes('react-dom') || id.includes('react/')) {
-                return 'vendor-react';
-              }
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
               }
@@ -127,7 +121,6 @@ export default defineConfig(() => {
               if (id.includes('recharts') || id.includes('d3')) {
                 return 'vendor-recharts';
               }
-              return 'vendor';
             }
           }
         }

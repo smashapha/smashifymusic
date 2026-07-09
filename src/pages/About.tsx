@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { Info, ChevronRight, Music, Heart, BarChart, Globe, DollarSign, ShieldAlert, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/common/SEO';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Mic2, Headphones, TrendingUp, 
   Check, ChevronDown, ChevronUp, Compass, Heart,

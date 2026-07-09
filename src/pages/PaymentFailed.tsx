@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 import { XCircle, RefreshCw, MessageCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 import { verifyPayment } from '../lib/paychangu';
 import toast from 'react-hot-toast';

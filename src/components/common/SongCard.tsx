@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "motion/react";
 import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Music2, ListMusic, Info, Gift, Download, Loader2 } from 'lucide-react';
 import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
