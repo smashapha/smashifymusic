@@ -7,7 +7,6 @@ import SongCard from '../components/common/SongCard';
 import { useAuth } from '../context/AuthContext';
 import { getListenerLimits } from '../lib/tierUtils';
 import SEO from '../components/common/SEO';
-import Footer from '../components/common/Footer';
 
 const Trending: React.FC = () => {
    const { userProfile } = useAuth();
@@ -170,11 +169,6 @@ const Trending: React.FC = () => {
                   </button>
                </div>
             </div>
-         </div>
-
-         {/* Footer */}
-         <div className="mt-12 -mx-4 md:-mx-8 -mb-24">
-            <Footer />
          </div>
       </div>
    );

@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import { Info, ChevronRight, Music, Heart, BarChart, Globe, DollarSign, ShieldAlert, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/common/SEO';
-import Footer from '../components/common/Footer';
 
 const About = () => {
   return (
@@ -194,11 +193,6 @@ const About = () => {
             <span className="text-zinc-400">Smashify Ltd., Blantyre, Malawi</span>
           </p>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-12 -mx-8 md:-mx-12 -mb-32">
-        <Footer />
       </div>
     </motion.div>
   );

@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
-import Footer from '../components/common/Footer';
 
 const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo' }: any) => (
   <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5'}`}>
@@ -402,11 +401,6 @@ const Pricing = () => {
           <MessageCircle size={24} />
           Still unsure? Chat on WhatsApp
         </a>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-16 -mx-4 md:-mx-12 -mb-32">
-        <Footer />
       </div>
 
     </div>

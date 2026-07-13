@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from "motion/react";
 import { Lock as AppLockIcon, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
 
 const Privacy = () => {
   return (
@@ -9,7 +10,7 @@ const Privacy = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="p-8 md:p-12 pb-32 max-w-4xl mx-auto text-white select-none"
+      className={`pt-8 md:pt-12 ${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} text-white select-none max-w-4xl`}
     >
       <div className="flex items-center gap-3 text-sm font-bold text-smash-gray uppercase tracking-widest mb-8">
          <Link to="/" className="hover:text-white transition-colors animate-pulse">Home</Link>

@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
+import Footer from './Footer';
 
 const TopBar = ({ unreadCount }: { unreadCount: number }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
@@ -401,6 +402,9 @@ const MainLayout: React.FC = () => {
               className="w-full h-full will-change-[opacity]"
             >
               <Outlet />
+              <div className="mt-20">
+                <Footer />
+              </div>
             </motion.div>
           </AnimatePresence>
         </main>

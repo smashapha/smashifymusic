@@ -22,7 +22,6 @@ import { useAuth } from "../context/AuthContext";
 import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
 import SEO from "../components/common/SEO";
-import Footer from "../components/common/Footer";
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_ARTIST_CARDS, GRID_LIST_CARDS } from "../lib/layout";
 
 const GENRES = [
@@ -732,11 +731,6 @@ const Discover: React.FC = () => {
             Trending Hits
           </Link>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-12 -mx-4 md:-mx-8 -mb-32">
-        <Footer />
       </div>
     </div>
   );

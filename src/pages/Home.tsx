@@ -13,7 +13,6 @@ import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
 import SEO from '../components/common/SEO';
-import Footer from '../components/common/Footer';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 
 const FEATURED_CHARTS = [
@@ -796,11 +795,6 @@ const Home: React.FC = () => {
             Trending Charts
           </Link>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-16 -mx-4 md:-mx-8 -mb-32">
-        <Footer />
       </div>
 
     </div>
