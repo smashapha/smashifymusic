@@ -17,6 +17,7 @@ import { Mail, Phone, MessageSquare, Send, Facebook, Instagram, Youtube, Music }
 import toast from 'react-hot-toast';
 
 import { lazy, Suspense } from 'react';
+import ScrollToTop from './components/common/ScrollToTop';
 import Maintenance from './pages/Maintenance';
 import Landing from './pages/Landing';
 const AuthListener = lazy(() => import('./pages/AuthListener'));
@@ -431,6 +432,7 @@ export default function App() {
     <HelmetProvider>
       <ErrorBoundary>
         <Router>
+          <ScrollToTop />
           <Toaster position="bottom-center" toastOptions={{
             style: {
               background: '#1A1A1A',
