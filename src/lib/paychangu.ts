@@ -330,7 +330,15 @@ export async function requestPayout({
 export async function verifyPayment(tx_ref: string) {
   try {
     const sanitizedRef = (tx_ref || '').trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
-    const session = (await supabase.auth.getSession()).data.session;
+    
+    let session = (await supabase.auth.getSession()).data.session;
+    if (!session) {
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => setTimeout(r, 400));
+        session = (await supabase.auth.getSession()).data.session;
+        if (session) break;
+      }
+    }
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/verify-payment`,
       {

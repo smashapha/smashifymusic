@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ReactGA from 'react-ga4';
 import { Toaster } from 'react-hot-toast';
@@ -44,17 +44,47 @@ const ApplicationPending = lazy(() => import('./pages/ApplicationPending'));
 const Admin = lazy(() => import('./pages/Admin'));
 const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 
-const PaymentRedirect = ({ onTxRef }: { onTxRef: (ref: string) => void }) => {
+const PaymentRedirect = () => {
+  const navigate = useNavigate();
+  const [status, setStatus] = useState('Verifying your payment...');
+  const hasKickedOff = useRef(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const txRef = params.get('tx_ref') || params.get('reference');
-    if (txRef) {
-      // Small timeout to ensure redirect completes before toast renders
-      setTimeout(() => onTxRef(txRef), 100);
+    
+    if (!txRef) {
+      toast.error('No payment reference found.');
+      navigate('/home', { replace: true });
+      return;
     }
-  }, [onTxRef]);
 
-  return <Navigate to="/home" replace />;
+    if (hasKickedOff.current) return;
+    hasKickedOff.current = true;
+
+    const handleVerification = async () => {
+      toast.loading('Confirming payment...', { id: 'payment-confirm' });
+      try {
+        await verifyPayment(txRef);
+        toast.success('Payment confirmed! ✅', { id: 'payment-confirm' });
+        setStatus('Payment confirmed! Redirecting...');
+        await new Promise(r => setTimeout(r, 1000));
+        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }));
+      } catch (err) {
+        toast.error('Payment received but confirmation is taking longer than usual. Your account will update shortly.', { id: 'payment-confirm', duration: 6000 });
+      } finally {
+        navigate('/home', { replace: true });
+      }
+    };
+    handleVerification();
+  }, [navigate]);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg-base text-text-primary">
+      <div className="w-12 h-12 border-4 border-smash-purple border-t-transparent rounded-full animate-spin mb-4" />
+      <h2 className="text-xl font-bold">{status}</h2>
+    </div>
+  );
 };
 
 const ArtistRoute = ({ children }: { children: React.ReactNode }) => {
@@ -231,35 +261,7 @@ function AppContent() {
     }
   }, [location]);
 
-  const handlePaymentSuccess = async (txRef: string) => {
-    toast.loading('Confirming payment...', { id: 'payment-confirm' })
-    try {
-      await verifyPayment(txRef)
-      toast.success('Payment confirmed! ✅', { id: 'payment-confirm' })
-      // Give backend 2 seconds then refresh profile
-      await new Promise(r => setTimeout(r, 2000))
-      window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }))
-    } catch {
-      toast.error('Payment received but confirmation is taking longer than usual. Your account will update shortly.', { id: 'payment-confirm', duration: 6000 })
-    }
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'complete') {
-      const txRef = params.get('tx_ref');
-      // Clean URL, keep the path
-      window.history.replaceState({}, '', window.location.pathname);
-      
-      if (txRef) {
-        handlePaymentSuccess(txRef);
-      } else {
-        setTimeout(() => {
-          toast.success('Payment status received.');
-        }, 300);
-      }
-    }
-  }, []);
+  
 
   useEffect(() => {
     const handleOffline = () => {
@@ -356,12 +358,12 @@ function AppContent() {
         <Route path="/application-pending" element={role === 'pending' || role === 'artist' ? <Navigate to="/artist-hub" replace /> : <ApplicationPending />} />
         
         {/* Payment Processing Pages (Standalone) */}
-        <Route path="/purchase-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
-        <Route path="/tip-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
-        <Route path="/subscribe-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
-        <Route path="/upgrade-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
-        <Route path="/tier-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
-        <Route path="/ad-success" element={<PaymentRedirect onTxRef={handlePaymentSuccess} />} />
+        <Route path="/purchase-success" element={<PaymentRedirect />} />
+        <Route path="/tip-success" element={<PaymentRedirect />} />
+        <Route path="/subscribe-success" element={<PaymentRedirect />} />
+        <Route path="/upgrade-success" element={<PaymentRedirect />} />
+        <Route path="/tier-success" element={<PaymentRedirect />} />
+        <Route path="/ad-success" element={<PaymentRedirect />} />
         <Route path="/payment-failed" element={<PaymentFailed />} />
 
         {/* Artist Hub (Standalone for better editing experience) */}
