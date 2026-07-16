@@ -2,7 +2,7 @@
 // page's spacing and grid rhythm matches.
 
 export const PAGE_CONTAINER = "max-w-7xl mx-auto px-4 md:px-8";
-export const PAGE_BOTTOM_PADDING = "pb-12"; // vertical gap between page content and the footer
+export const PAGE_BOTTOM_PADDING = "pb-40"; // clears mini-player + bottom nav + safe-area with margin
 
 export const SECTION_SPACING = "mb-12"; // vertical gap between major page sections — use everywhere, not mb-10 in some places and mb-12 in others
 

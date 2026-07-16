@@ -391,7 +391,7 @@ const MainLayout: React.FC = () => {
         <TopBar unreadCount={unreadCount} />
         
         {/* Content container with padding for sticky player and mobile tab bar */}
-        <main className="flex-1 w-full pb-[148px] md:pb-[96px] overflow-x-hidden flex flex-col">
+        <main className="flex-1 w-full pb-[148px] md:pb-[96px] overflow-x-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -399,14 +399,14 @@ const MainLayout: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "linear" }}
-              className="w-full will-change-[opacity] flex-1 flex flex-col"
+              className="w-full h-full will-change-[opacity]"
             >
               <Outlet />
+              <div className="mt-20">
+                <Footer />
+              </div>
             </motion.div>
           </AnimatePresence>
-          <div className="mt-auto w-full">
-            <Footer />
-          </div>
         </main>
       </div>
 
