@@ -634,7 +634,7 @@ const Landing: React.FC = () => {
                   ['Payment speed', '3-6 months', 'Within 24 hours'],
                   ['Payment method', 'Bank transfer (USD)', 'Airtel Money / TNM'],
                   ['Artist keeps', '~30% after labels', 'Up to 95%'],
-                  ['Minimum payout', '$10 USD threshold', 'MWK 2,000'],
+                  ['Minimum payout', '$10 USD threshold', 'MWK 10,000'],
                   ['Available in Malawi', 'Limited', '100% local'],
                 ].map(([feature, spotify, smashify], i) => (
                   <tr key={i} className="border-b border-white/5">
