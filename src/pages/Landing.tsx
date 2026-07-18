@@ -210,14 +210,7 @@ const Landing: React.FC = () => {
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-12 items-center w-full">
           <div className="relative z-10 text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-white/5 border border-white/8 text-white/70 font-display font-medium text-[12px] mb-8"
-            >
-              🌍 Built in Malawi. Made for Africa.
-            </motion.div>
+
 
             <h1
               className="text-[clamp(3.5rem,7vw,7rem)] font-studio font-extrabold leading-[0.88] tracking-[-0.03em] uppercase mb-8"
@@ -229,7 +222,7 @@ const Landing: React.FC = () => {
             <p
               className="text-[18px] font-sans text-white/60 max-w-lg leading-[1.7] mb-10 mx-auto lg:mx-0"
             >
-              Sell your music. Accept tips. Get paid today via Airtel Money or TNM. Artists keep up to 95% of every sale — no waiting, no middleman.
+              Discover new music. Support your favorite artists. Stream exclusive tracks, tip creators, and enjoy Africa's growing direct-to-fan music platform.
             </p>
 
             <motion.div
