@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ReactGA from 'react-ga4';
 import { Toaster } from 'react-hot-toast';
 import { PlayerProvider } from './context/PlayerContext';
 import { AuthProvider } from './context/AuthContext';
-import MainLayout from './components/common/MainLayout';
+const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
 import { verifyPayment } from './lib/paychangu';
@@ -16,7 +16,6 @@ import InstallPWA from './components/common/InstallPWA';
 import { Mail, Phone, MessageSquare, Send, Facebook, Instagram, Youtube, Music } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { lazy, Suspense } from 'react';
 import ScrollToTop from './components/common/ScrollToTop';
 import Maintenance from './pages/Maintenance';
 import Landing from './pages/Landing';

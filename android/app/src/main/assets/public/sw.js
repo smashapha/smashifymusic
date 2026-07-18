@@ -93,7 +93,7 @@ define(['./workbox-5ccb27be'], (function (workbox) { 'use strict';
     "revision": "47242121213f596340184409de36eea3"
   }, {
     "url": "index.html",
-    "revision": "556c4d693764e50281c13e1f38d9ca33"
+    "revision": "3ff6ac8e3dfb9720a05e6686eb486806"
   }, {
     "url": "favicon.ico",
     "revision": "f9bfefa3e3f6bb10b0dca56f6c963e3c"
@@ -104,13 +104,16 @@ define(['./workbox-5ccb27be'], (function (workbox) { 'use strict';
     "url": "assets/vendor-supabase-Cbasmoxk.js",
     "revision": null
   }, {
-    "url": "assets/vendor-recharts-BviudJiL.js",
+    "url": "assets/vendor-recharts-BS2VhshP.js",
     "revision": null
   }, {
-    "url": "assets/vendor-icons-DxiOlUeT.js",
+    "url": "assets/vendor-react-LldWpXBE.js",
     "revision": null
   }, {
-    "url": "assets/vendor-animation-HKufzUDw.js",
+    "url": "assets/vendor-icons-DzQ_qQ9m.js",
+    "revision": null
+  }, {
+    "url": "assets/vendor-animation-ULbptBA_.js",
     "revision": null
   }, {
     "url": "assets/layout-Dym8yIum.js",
@@ -119,85 +122,91 @@ define(['./workbox-5ccb27be'], (function (workbox) { 'use strict';
     "url": "assets/index-DVJls2GW.css",
     "revision": null
   }, {
-    "url": "assets/index-9kXiRT2b.js",
+    "url": "assets/index-CSIrgRQD.js",
+    "revision": null
+  }, {
+    "url": "assets/formatting-DPMaj0PK.js",
     "revision": null
   }, {
     "url": "assets/emailValidation-CLl2M2JZ.js",
     "revision": null
   }, {
-    "url": "assets/Trending-COnI4rL9.js",
+    "url": "assets/Trending-_x9yKLR0.js",
     "revision": null
   }, {
-    "url": "assets/Terms-D3GAnsej.js",
+    "url": "assets/Terms-CHgdUlzB.js",
     "revision": null
   }, {
-    "url": "assets/SongCard-DlGwCV8w.js",
+    "url": "assets/SongCard-C2qRAAKx.js",
     "revision": null
   }, {
-    "url": "assets/Profile-MfxCaNZo.js",
+    "url": "assets/Profile-DeXWgbWy.js",
     "revision": null
   }, {
-    "url": "assets/Privacy-usLg4cWo.js",
+    "url": "assets/Privacy-Cqx7ORqU.js",
     "revision": null
   }, {
-    "url": "assets/Pricing-VkQb15iP.js",
+    "url": "assets/Pricing-BljJiE3W.js",
     "revision": null
   }, {
-    "url": "assets/PlaylistDetails-COmCYzd5.js",
+    "url": "assets/PlaylistDetails-1DgQr-QA.js",
     "revision": null
   }, {
-    "url": "assets/PaymentFailed-l65CgLzj.js",
+    "url": "assets/PaymentFailed-BaIFJp1G.js",
     "revision": null
   }, {
-    "url": "assets/Notifications-CIxmNeIZ.js",
+    "url": "assets/Notifications-C-FLhmkV.js",
     "revision": null
   }, {
-    "url": "assets/MotoFeed-DYT0NbHT.js",
+    "url": "assets/MotoFeed-0qhj_ola.js",
     "revision": null
   }, {
-    "url": "assets/Library-BTiIw0zg.js",
+    "url": "assets/MainLayout-Ck_ttlrx.js",
     "revision": null
   }, {
-    "url": "assets/Home-DrygrVPt.js",
+    "url": "assets/Library-D7DZOJan.js",
     "revision": null
   }, {
-    "url": "assets/Help-_2tnfEZe.js",
+    "url": "assets/Home-xecMj4a8.js",
     "revision": null
   }, {
-    "url": "assets/Discover-DucF0NqW.js",
+    "url": "assets/Help-B7oNKusQ.js",
     "revision": null
   }, {
-    "url": "assets/Avatar-Ct1u5TsH.js",
+    "url": "assets/Discover-BRS9sKHk.js",
     "revision": null
   }, {
-    "url": "assets/AuthListener-wNeZ90Xf.js",
+    "url": "assets/Avatar-BBeoJzgH.js",
     "revision": null
   }, {
-    "url": "assets/AuthArtist-BZEkdjTV.js",
+    "url": "assets/AuthListener-Tke18-AB.js",
     "revision": null
   }, {
-    "url": "assets/ArtistProfile-BsKiatqF.js",
+    "url": "assets/AuthArtist-acUNvscg.js",
     "revision": null
   }, {
-    "url": "assets/ArtistLanding-BIZzSOmZ.js",
+    "url": "assets/ArtistProfile-BCmgua1X.js",
     "revision": null
   }, {
-    "url": "assets/ArtistHub-DRSsxpim.js",
+    "url": "assets/ArtistLanding--CtdQ4ES.js",
     "revision": null
   }, {
-    "url": "assets/ArtistGuide-BG25xghb.js",
+    "url": "assets/ArtistHub-DERVA8pQ.js",
     "revision": null
   }, {
-    "url": "assets/ApplicationPending-BXVD3jrT.js",
+    "url": "assets/ArtistGuide-C_qhmwrP.js",
     "revision": null
   }, {
-    "url": "assets/AlbumDetails-1Osh1vsp.js",
+    "url": "assets/ApplicationPending-DbCltG0M.js",
     "revision": null
   }, {
-    "url": "assets/Admin-CLLHBr0M.js",
+    "url": "assets/AlbumDetails-rU9Qf7vj.js",
     "revision": null
   }, {
-    "url": "assets/About-B46rH_8G.js",
+    "url": "assets/Admin-C2hqxbWR.js",
+    "revision": null
+  }, {
+    "url": "assets/About-CUcL2_ri.js",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

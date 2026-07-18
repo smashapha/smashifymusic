@@ -17,7 +17,7 @@ const Nav = () => {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -165,7 +165,7 @@ const ArtistLanding: React.FC = () => {
 
           <div className="flex-1 w-full max-w-2xl relative">
              <div className="aspect-[4/5] rounded-[24px] overflow-hidden group shadow-2xl border border-white/5">
-                <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" />
+                <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Artist Studio" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
              </div>
 
