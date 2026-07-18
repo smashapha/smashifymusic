@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -39,8 +38,8 @@
     --border-subtle: rgba(100, 116, 139, 0.15);
     --border-default: rgba(100, 116, 139, 0.3);
     --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
   }
 
   /* FOR EXPLICIT .dark class TOGGLE IF NEEDED */
@@ -52,8 +51,8 @@
       --border-subtle: rgba(100, 116, 139, 0.15);
       --border-default: rgba(100, 116, 139, 0.3);
       --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
   }
 
   body {

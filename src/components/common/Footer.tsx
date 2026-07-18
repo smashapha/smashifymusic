@@ -15,16 +15,16 @@ export default function Footer() {
             Africa's first direct fan-to-artist music platform. Stream free, buy tracks, and support your favorite creators directly.
           </p>
           <div className="flex items-center gap-4 text-text-muted">
-            <a href="https://facebook.com/Smashify" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
+            <a href="https://facebook.com/Smashify" aria-label="Facebook" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
               <Facebook size={18} />
             </a>
-            <a href="https://instagram.com/Smashify" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
+            <a href="https://instagram.com/Smashify" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
               <Instagram size={18} />
             </a>
-            <a href="https://tiktok.com/@Smashify" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
+            <a href="https://tiktok.com/@Smashify" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
               <Music size={18} />
             </a>
-            <a href="https://youtube.com/@Smashify" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
+            <a href="https://youtube.com/@Smashify" aria-label="YouTube" target="_blank" rel="noopener noreferrer" className="hover:text-smash-orange transition-colors">
               <Youtube size={18} />
             </a>
           </div>

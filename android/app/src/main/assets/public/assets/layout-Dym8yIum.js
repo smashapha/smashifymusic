@@ -1,0 +1,1 @@
+const s="max-w-7xl mx-auto px-4 md:px-8",g="pb-40",o="mb-12",c="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4",d="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",l="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";export{d as G,s as P,o as S,g as a,c as b,l as c};

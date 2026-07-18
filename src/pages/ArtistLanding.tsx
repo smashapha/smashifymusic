@@ -88,7 +88,7 @@ const ArtistLanding: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-purple/30 overflow-x-hidden pt-[72px]">
+    <main className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-purple/30 overflow-x-hidden pt-[72px]">
       <SEO 
         title="Artist Studio | Smashify Music" 
         description="Are you an artist? Join Smashify Studio, publish your music, and start earning up to 95% of your sales." 
@@ -593,7 +593,7 @@ const ArtistLanding: React.FC = () => {
 
       {/* Footer */}
       <Footer />
-    </div>
+    </main>
   );
 };
 

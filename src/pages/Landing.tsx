@@ -61,7 +61,7 @@ const Nav = () => {
               Artist Studio
             </button>
           </div>
-          <button className="lg:hidden text-white p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button aria-label="Toggle mobile menu" className="lg:hidden text-white p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <div className="space-y-1.5 flex flex-col items-end">
               <motion.div animate={{ width: mobileMenuOpen ? 24 : 24, rotate: mobileMenuOpen ? 45 : 0, y: mobileMenuOpen ? 8 : 0 }} className="h-0.5 bg-white rounded-full" />
               <motion.div animate={{ opacity: mobileMenuOpen ? 0 : 1 }} className="w-4 h-0.5 bg-white rounded-full" />
@@ -196,7 +196,7 @@ const Landing: React.FC = () => {
   if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-orange/30 overflow-x-hidden">
+    <main className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-orange/30 overflow-x-hidden">
       <SEO 
         title="Smashify Music | Stream & Support African Artists" 
         description="Stream, download, and buy original music from talented African artists. Support creators directly using local mobile payment systems." 
@@ -219,24 +219,18 @@ const Landing: React.FC = () => {
               🌍 Built in Malawi. Made for Africa.
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+            <h1
               className="text-[clamp(3.5rem,7vw,7rem)] font-studio font-extrabold leading-[0.88] tracking-[-0.03em] uppercase mb-8"
             >
               <span className="italic block">Stream Music.</span>
               <span className="text-smash-orange block">Support Artist.</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
+            <p
               className="text-[18px] font-sans text-white/60 max-w-lg leading-[1.7] mb-10 mx-auto lg:mx-0"
             >
               Sell your music. Accept tips. Get paid today via Airtel Money or TNM. Artists keep up to 95% of every sale — no waiting, no middleman.
-            </motion.p>
+            </p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -349,7 +343,7 @@ const Landing: React.FC = () => {
                           ease: "easeInOut" 
                         }}
                       >
-                        <img src={optimizeImage(artist.avatar_url, 80, 80)} className="w-full h-full object-cover" alt={artist.stage_name} />
+                        <img src={optimizeImage(artist.avatar_url, 80, 80)} className="w-full h-full object-cover" alt={artist.stage_name} loading="lazy" decoding="async" />
                       </motion.div>
                     </motion.div>
                   );
@@ -357,7 +351,7 @@ const Landing: React.FC = () => {
 
                 {/* Now Playing Mini Card */}
                 <div className="absolute bottom-10 right-0 w-[200px] h-[100px] bg-[#141418]/85 backdrop-blur-xl border border-white/8 rounded-[16px] p-4 flex items-center gap-3 shadow-2xl animate-fade-in">
-                   <img src={optimizeImage("https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100", 120, 120)} className="w-[60px] h-[60px] rounded-[10px] object-cover" />
+                   <img src={optimizeImage("https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100", 120, 120)} className="w-[60px] h-[60px] rounded-[10px] object-cover" alt="Listen" loading="lazy" decoding="async" />
                    <div className="flex-1 min-w-0">
                       <p className="text-[8px] font-black text-smash-orange uppercase tracking-widest mb-1">Live Now</p>
                       <p className="text-[13px] font-display font-bold text-white truncate">Top Hits 2024</p>
@@ -505,7 +499,7 @@ const Landing: React.FC = () => {
             {artists.map((artist) => (
               <div key={artist.id} className="flex-shrink-0 w-[110px] flex flex-col items-center group cursor-pointer" onClick={() => navigate(`/artist/${artist.id}`)}>
                 <div className="w-20 h-20 rounded-full border-2 border-white/8 overflow-hidden transition-all duration-300 group-hover:border-smash-orange/40 group-hover:scale-[1.05]">
-                  <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-full h-full object-cover" alt={artist.stage_name} />
+                  <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-full h-full object-cover" alt={artist.stage_name} loading="lazy" decoding="async" />
                 </div>
                 <p className="font-display font-semibold text-[13px] text-center mt-3 truncate w-full group-hover:text-smash-orange transition-colors">{artist.stage_name || artist.full_name}</p>
                 <p className="font-display text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{artist.genre || 'Afro'}</p>
@@ -547,7 +541,7 @@ const Landing: React.FC = () => {
                   {i + 1}
                 </span>
                 <div className="w-[52px] h-[52px] rounded-[10px] bg-white/5 overflow-hidden ml-6 shrink-0 shadow-lg">
-                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={song.title} loading="lazy" decoding="async" />
                 </div>
                 <div className="flex-1 ml-6 min-w-0">
                   <p className="font-display font-bold text-[15px] truncate group-hover:text-smash-orange transition-colors uppercase italic tracking-tight">{song.title}</p>
@@ -555,7 +549,7 @@ const Landing: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-10">
                    <span className="font-display font-medium text-[12px] text-white/30 hidden md:block">{(song.plays || 0).toLocaleString()} PLAYS</span>
-                   <button className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center hover:bg-smash-orange hover:text-white transition-all transform hover:scale-110">
+                   <button aria-label="Play song" className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center hover:bg-smash-orange hover:text-white transition-all transform hover:scale-110">
                       <Play size={16} fill="currentColor" />
                    </button>
                 </div>
@@ -634,7 +628,7 @@ const Landing: React.FC = () => {
                   ['Payment speed', '3-6 months', 'Within 24 hours'],
                   ['Payment method', 'Bank transfer (USD)', 'Airtel Money / TNM'],
                   ['Artist keeps', '~30% after labels', 'Up to 95%'],
-                  ['Minimum payout', '$10 USD threshold', 'MWK 10,000'],
+                  ['Minimum payout', '$10 USD threshold', 'MWK 2,000'],
                   ['Available in Malawi', 'Limited', '100% local'],
                 ].map(([feature, spotify, smashify], i) => (
                   <tr key={i} className="border-b border-white/5">
@@ -736,7 +730,7 @@ const Landing: React.FC = () => {
       <section className="py-32 px-6 md:px-12 relative overflow-hidden bg-bg-surface">
          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
             <div className="hidden lg:block w-[40%] h-[500px] relative rounded-[32px] overflow-hidden group">
-               <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" />
+               <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Artist Performing" loading="lazy" decoding="async" />
                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#141418] pointer-events-none" />
             </div>
             <div className="flex-1 text-center lg:text-left">
@@ -757,7 +751,7 @@ const Landing: React.FC = () => {
 
       {/* Footer */}
       <Footer />
-    </div>
+    </main>
   );
 };
 

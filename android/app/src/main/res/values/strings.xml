@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Smashify</string>
+    <string name="title_activity_main">Smashify</string>
+    <string name="package_name">com.smashify.music</string>
+    <string name="custom_url_scheme">com.smashify.music</string>
+</resources>

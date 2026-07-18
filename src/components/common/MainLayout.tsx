@@ -56,7 +56,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
         
         {/* Mobile Notifications Bell */}
         {user && (
-          <button 
+          <button aria-label="Notifications" 
             onClick={() => navigate('/notifications')}
             className="md:hidden p-2.5 relative bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none"
             title="Notifications"
@@ -78,7 +78,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
         )}
 
         <ThemeToggle />
-        <button 
+        <button aria-label="Toggle Data Saver" 
            onClick={toggleDataSaver}
            className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
            title={dataSaver ? 'Turn Data Saver Off' : 'Turn Data Saver On'}
@@ -86,7 +86,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
           {dataSaver ? <WifiOff size={16} className="text-smash-orange" /> : <Wifi size={16} />}
         </button>
         {user && (
-          <button 
+          <button aria-label="Sign out" 
             onClick={() => signOut()}
             className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
             title="Sign Out"
@@ -272,7 +272,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
       </nav>
 
       <div className="px-4 mt-6 flex justify-center shrink-0">
-        <button 
+        <button aria-label="Toggle Sidebar" 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="w-[36px] h-[36px] rounded-full bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary transition-colors hover:scale-105 active:scale-95"
         >
@@ -310,7 +310,7 @@ export const BottomNav = () => {
       {tabs.map(tab => (
         <NavLink 
           key={tab.path} 
-          to={tab.path} 
+          to={tab.path} aria-label={tab.label} 
           className={({ isActive }) => `relative flex flex-col items-center justify-center gap-1 w-16 h-full ${isActive ? activeColorClass : 'text-text-muted/50 transition-colors'}`}
         >
           {({ isActive }) => (

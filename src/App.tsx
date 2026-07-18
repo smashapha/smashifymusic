@@ -154,19 +154,19 @@ const Contact = () => {
           <div className="p-8 bg-smash-purple/10 rounded-3xl border border-smash-purple/20">
             <h3 className="text-lg font-black uppercase italic mb-2 text-smash-purple">Social Media</h3>
             <div className="space-y-4 mt-4">
-              <a href="https://facebook.com/Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+              <a href="https://facebook.com/Smashify" aria-label="Facebook" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
                 <Facebook size={18} className="text-blue-500" />
                 <span className="font-bold">Smashify</span>
               </a>
-              <a href="https://instagram.com/Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+              <a href="https://instagram.com/Smashify" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
                 <Instagram size={18} className="text-pink-500" />
                 <span className="font-bold">Smashify</span>
               </a>
-              <a href="https://tiktok.com/@Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+              <a href="https://tiktok.com/@Smashify" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
                 <Music size={18} className="text-white" />
                 <span className="font-bold">Smashify</span>
               </a>
-              <a href="https://youtube.com/@Smashify" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+              <a href="https://youtube.com/@Smashify" aria-label="YouTube" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
                 <Youtube size={18} className="text-red-500" />
                 <span className="font-bold">Smashify</span>
               </a>

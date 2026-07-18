@@ -358,13 +358,13 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 </button>
                 
                 <div className="flex items-center gap-6 md:gap-10">
-                   <button onClick={previousTrack} disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
+                   <button onClick={previousTrack} aria-label="Previous track" disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
                      <SkipBack className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" />
                    </button>
-                   <button onClick={togglePlay} className={`w-16 h-16 md:w-20 md:h-20 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0px_4px_16px_rgba(0,0,0,0.2)] ${accentColor.replace('text-', 'bg-')}`}>
+                   <button onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"} className={`w-16 h-16 md:w-20 md:h-20 rounded-full text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0px_4px_16px_rgba(0,0,0,0.2)] ${accentColor.replace('text-', 'bg-')}`}>
                       {isPlaying ? <Pause className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" /> : <Play className="w-8 h-8 md:w-10 md:h-10 ml-1.5" fill="currentColor" />}
                    </button>
-                   <button onClick={nextTrack} disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
+                   <button onClick={nextTrack} aria-label="Next track" disabled={adPlaying} className={`transition-colors active:scale-95 ${adPlaying ? 'opacity-20 cursor-not-allowed' : `text-text-secondary hover:text-text-primary`}`}>
                      <SkipForward className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" />
                    </button>
                 </div>
@@ -416,7 +416,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                    <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
                  </button>
                  <div className="flex items-center gap-2 flex-1 min-w-[70px] sm:min-w-[100px] max-w-[180px]">
-                   <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0">
+                   <button onClick={toggleMute} aria-label={volume === 0 ? "Unmute" : "Mute"} className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0">
                       {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
                    </button>
                    <input 
@@ -538,7 +538,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
              >
                 <div className="flex items-center justify-between mb-6">
                    <h3 className="text-xl sm:text-2xl font-studio font-bold tracking-tight text-text-primary">Lyrics</h3>
-                   <button onClick={() => setShowLyricsModal(false)} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
+                   <button onClick={() => setShowLyricsModal(false)} aria-label="Close lyrics" className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
                      <X size={20} />
                    </button>
                 </div>
@@ -761,7 +761,7 @@ const GlobalPlayer: React.FC = () => {
 
             {/* Mobile Actions: Like & Play */}
             <div className="flex items-center gap-4 md:hidden">
-              <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className="text-text-muted hover:text-text-primary focus:outline-none">
+              <button onClick={(e) => { e.stopPropagation(); handleLike(); }} aria-label={isLiked ? "Unlike" : "Like"} className="text-text-muted hover:text-text-primary focus:outline-none">
                 <motion.div whileTap={{ scale: 0.8 }}>
                   <Heart size={20} fill={isLiked ? "currentColor" : "none"} className={isLiked ? 'text-red-400' : ''} />
                 </motion.div>
@@ -790,7 +790,7 @@ const GlobalPlayer: React.FC = () => {
                 >
                   <Shuffle size={18} />
                 </button>
-                <button onClick={previousTrack} disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
+                <button onClick={previousTrack} aria-label="Previous track" disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
                   <SkipBack size={20} fill="currentColor" />
                 </button>
                 <button 
@@ -805,7 +805,7 @@ const GlobalPlayer: React.FC = () => {
                   <Play size={20} fill="currentColor" className="ml-1" />
                 )}
                 </button>
-                <button onClick={nextTrack} disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
+                <button onClick={nextTrack} aria-label="Next track" disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
                   <SkipForward size={20} fill="currentColor" />
                 </button>
                 <button 
@@ -841,7 +841,7 @@ const GlobalPlayer: React.FC = () => {
 
             {/* [vol · like · expand] (Desktop) */}
             <div className="hidden md:flex flex-row items-center justify-end gap-4 lg:w-1/4">
-               <button onClick={handleLike} className={`${isLiked ? 'text-red-400' : 'text-text-muted hover:text-text-primary'} transition-colors focus:outline-none`}>
+               <button onClick={handleLike} aria-label={isLiked ? "Unlike" : "Like"} className={`${isLiked ? 'text-red-400' : 'text-text-muted hover:text-text-primary'} transition-colors focus:outline-none`}>
                  <motion.div whileTap={{ scale: 0.8 }}>
                    <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                  </motion.div>
@@ -852,7 +852,7 @@ const GlobalPlayer: React.FC = () => {
                       setVolume(newVol);
                    }}
                >
-                 <button onClick={toggleMute} className="text-text-muted hover:text-text-primary focus:outline-none">
+                 <button onClick={toggleMute} aria-label={volume === 0 ? "Unmute" : "Mute"} className="text-text-muted hover:text-text-primary focus:outline-none">
                     {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
                  </button>
                  <div className="flex-1 h-1 bg-border-default rounded-full relative overflow-visible flex items-center">
@@ -863,7 +863,7 @@ const GlobalPlayer: React.FC = () => {
                    <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity -ml-1" style={{ left: `${volume * 100}%` }} />
                  </div>
                </div>
-               <button onClick={() => setIsExpanded(true)} className="text-text-muted hover:text-text-primary p-2 focus:outline-none rounded-lg hover:bg-bg-elevated transition-colors">
+               <button onClick={() => setIsExpanded(true)} aria-label="Expand player" className="text-text-muted hover:text-text-primary p-2 focus:outline-none rounded-lg hover:bg-bg-elevated transition-colors">
                  <Maximize2 size={16} />
                </button>
                <button 
@@ -907,7 +907,7 @@ const GlobalPlayer: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl sm:text-2xl font-studio font-bold tracking-tight">Queue</h3>
-                <button onClick={() => setShowQueueModal(false)} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
+                <button onClick={() => setShowQueueModal(false)} aria-label="Close queue" className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
                   <X size={20} />
                 </button>
               </div>
@@ -1021,10 +1021,10 @@ const PreviewModal = () => {
             <p className="text-text-secondary text-lg mb-10 font-medium tracking-tight">Buy the full track to support the artist and hear the rest of this anthem.</p>
             
             <div className="space-y-4">
-               <button onClick={handleBuy} className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
+               <button onClick={handleBuy} aria-label="Buy song" className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
                   BUY NOW <FormattedPrice song={song} />
                </button>
-               <button onClick={handleDismiss} className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
+               <button onClick={handleDismiss} aria-label="Dismiss ad" className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
                   Maybe Later
                </button>
             </div>
