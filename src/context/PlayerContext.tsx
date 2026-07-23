@@ -17,6 +17,10 @@ interface PlayerContextType {
   dataSaver: boolean;
   eqPreset: EQPreset;
   playbackRate: number;
+  crossfadeEnabled: boolean;
+  crossfadeDuration: number;
+  toggleCrossfade: () => void;
+  setCrossfadeDuration: (seconds: number) => void;
   sleepTimerRemaining: number | null;
   isExpanded: boolean;
   radioMode: boolean;
@@ -75,6 +79,35 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
   const [eqPreset, setEQPreset] = useState<EQPreset>('normal');
   const [playbackRate, setPlaybackRateState] = useState(1);
+  const [crossfadeEnabled, setCrossfadeEnabled] = useState(() => {
+    try {
+      const val = localStorage.getItem('smash_crossfade_enabled');
+      return val === null ? true : val === 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+  const [crossfadeDuration, setCrossfadeDurationState] = useState(() => {
+    try {
+      const val = localStorage.getItem('smash_crossfade_duration');
+      return val ? parseInt(val, 10) : 3;
+    } catch (e) {
+      return 3;
+    }
+  });
+
+  const toggleCrossfade = () => {
+    setCrossfadeEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('smash_crossfade_enabled', String(next));
+      return next;
+    });
+  };
+
+  const setCrossfadeDuration = (sec: number) => {
+    setCrossfadeDurationState(sec);
+    localStorage.setItem('smash_crossfade_duration', String(sec));
+  };
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [radioMode, setRadioMode] = useState(() => {
@@ -366,12 +399,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     secondaryAudioRef.current = document.createElement('audio');
   }
 
+  const crossfadeDurationRef = useRef(crossfadeDuration);
+  useEffect(() => { crossfadeDurationRef.current = crossfadeDuration; }, [crossfadeDuration]);
+
+  const crossfadeEnabledRef = useRef(crossfadeEnabled);
+  useEffect(() => { crossfadeEnabledRef.current = crossfadeEnabled; }, [crossfadeEnabled]);
+
   const startCrossfade = (oldAudio: HTMLAudioElement, newAudio: HTMLAudioElement, targetVolume: number) => {
     if (fadeOutInterval.current) clearInterval(fadeOutInterval.current);
     if (fadeInInterval.current) clearInterval(fadeInInterval.current);
 
     const fadeStep = 50; 
-    const fadeDuration = 3000;
+    const durationSec = crossfadeDurationRef.current || 3;
+    const fadeDuration = durationSec * 1000;
     const volumeStep = targetVolume / (fadeDuration / fadeStep);
 
     let oldVol = oldAudio.volume;
@@ -406,7 +446,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const transitionToSong = (song: Song) => {
-    if (currentSong && isPlaying && currentSong.id !== song.id && audioRef.current && secondaryAudioRef.current && !adPlaying) {
+    if (crossfadeEnabledRef.current && currentSong && isPlaying && currentSong.id !== song.id && audioRef.current && secondaryAudioRef.current && !adPlaying) {
       // Crossfade
       const oldAudio = audioRef.current;
       audioRef.current = secondaryAudioRef.current;
@@ -465,7 +505,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       
-      if (!adPlaying && audio.duration > 3.0 && (audio.duration - audio.currentTime <= 3.0) && !crossfadeScheduled.current && repeatMode !== 'one') {
+      const cfDuration = crossfadeDurationRef.current || 3;
+      if (crossfadeEnabledRef.current && !adPlaying && audio.duration > cfDuration && (audio.duration - audio.currentTime <= cfDuration) && !crossfadeScheduled.current && repeatMode !== 'one') {
         crossfadeScheduled.current = true;
         handleEnded();
         return;
@@ -952,6 +993,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     dataSaver,
     eqPreset,
     playbackRate,
+    crossfadeEnabled,
+    crossfadeDuration,
+    toggleCrossfade,
+    setCrossfadeDuration,
     sleepTimerRemaining,
     isExpanded,
     radioMode,
@@ -982,7 +1027,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     refreshPurchasedIds
   }), [
     currentSong, isPlaying, currentTime, duration, volume, queue, dataSaver,
-    eqPreset, playbackRate, sleepTimerRemaining, isExpanded, radioMode,
+    eqPreset, playbackRate, crossfadeEnabled, crossfadeDuration, sleepTimerRemaining, isExpanded, radioMode,
     adPlaying, adSkipAvailable, isShuffle, repeatMode, purchasedIds
   ]);
 
