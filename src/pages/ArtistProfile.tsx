@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useRequireAuth } from '../context/AuthGateContext';
 import { Song, UserProfile, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
@@ -22,6 +23,7 @@ const ArtistProfile: React.FC = () => {
    const { id: paramId } = useParams<{ id: string }>();
    const navigate = useNavigate();
    const { userProfile } = useAuth();
+   const requireAuth = useRequireAuth();
    const { playQueue } = usePlayer();
    
    const [resolvedId, setResolvedId] = useState<string | null>(null);
@@ -85,7 +87,7 @@ const ArtistProfile: React.FC = () => {
 
    const handleSubscribe = async () => {
       if (!userProfile) {
-         toast.error('Please sign in to subscribe.');
+         requireAuth(() => {}, 'Sign in to subscribe to this artist');
          return;
       }
       if (isSubscribed) {
@@ -328,7 +330,7 @@ const ArtistProfile: React.FC = () => {
 
    const handleFollow = async () => {
       if (!userProfile) {
-         toast.error('Please sign in to follow artists.');
+         requireAuth(() => {}, 'Sign in to follow this artist');
          return;
       }
       setFollowLoading(true);

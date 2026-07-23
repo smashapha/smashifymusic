@@ -4,6 +4,7 @@ import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Musi
 import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
+import { useRequireAuth } from '../../context/AuthGateContext';
 import { purchaseTrack } from '../../lib/paychangu';
 import { getEffectivePrice, isOnSale } from '../../lib/pricing';
 import { downloadPurchasedSong } from '../../lib/downloads';
@@ -27,6 +28,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   const navigate = useNavigate();
   const { currentSong, isPlaying, playSong, addToQueue, playQueue, dataSaver, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
+  const requireAuth = useRequireAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -130,14 +132,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   const handleSupportClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (artistData) {
-      setShowSupportModal(true);
+      requireAuth(() => setShowSupportModal(true), 'Sign in to send a tip to this artist');
       return;
     }
     try {
       const { data } = await supabase.from('profiles').select('*').eq('id', song.artist_id).single();
       if (data) {
         setArtistData(data);
-        setShowSupportModal(true);
+        requireAuth(() => setShowSupportModal(true), 'Sign in to send a tip to this artist');
       } else {
         toast.error('Artist profile not found.');
       }
@@ -213,14 +215,13 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
 
   const handleBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!userProfile) {
-      toast.error('Please sign in to buy tracks');
-      return;
-    }
-    purchaseTrack({
-      song,
-      user: userProfile
-    });
+    
+    requireAuth(() => {
+      purchaseTrack({
+        song,
+        user: userProfile
+      });
+    }, 'Sign in to buy this track');
   };
 
   if (layout === 'grid') {

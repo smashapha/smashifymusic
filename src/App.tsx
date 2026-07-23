@@ -5,6 +5,7 @@ import ReactGA from 'react-ga4';
 import { Toaster } from 'react-hot-toast';
 import { PlayerProvider } from './context/PlayerContext';
 import { AuthProvider } from './context/AuthContext';
+import { AuthGateProvider } from './context/AuthGateContext';
 const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
@@ -348,7 +349,7 @@ function AppContent() {
         <Route path="/auth" element={<Navigate to="/auth/listener" replace />} />
         
         {/* Public Landing or Dashboard Redirect */}
-        <Route path="/" element={user ? <Navigate to="/home" replace /> : <Landing />} />
+        <Route path="/" element={<Landing />} />
         
         {/* Auth & Standalone Routes */}
         <Route path="/auth/listener" element={<AuthListener />} />
@@ -378,7 +379,7 @@ function AppContent() {
         {/* Main App Experience (Shared Layout) */}
         <Route path="/moto-feed" element={<MotoFeed />} />
         <Route element={<MainLayout />}>
-          <Route path="home" element={user ? <Home /> : <Navigate to="/" replace />} />
+          <Route path="home" element={<Home />} />
           <Route path="discover" element={<Discover />} />
           <Route path="trending" element={<Trending />} />
           <Route 
@@ -444,7 +445,9 @@ export default function App() {
           }} />
           <AuthProvider>
             <PlayerProvider>
+              <AuthGateProvider>
               <AppContent />
+                          </AuthGateProvider>
             </PlayerProvider>
           </AuthProvider>
         </Router>

@@ -12,6 +12,7 @@ import { Song } from '../types';
 import Avatar from '../components/common/Avatar';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
+import { useRequireAuth } from '../context/AuthGateContext';
 import { getListenerLimits } from '../lib/tierUtils';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
@@ -25,6 +26,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   const navigate = useNavigate();
   const { playSong, isPlaying, togglePlay, currentTime, duration, seek, volume, setVolume, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
+  const requireAuth = useRequireAuth();
   
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
@@ -249,10 +251,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleFollow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!userProfile) {
-       toast.error('Sign in to follow artists');
-       return;
-    }
+    requireAuth(async () => {
     try {
        if (isFollowing) {
           const { error } = await supabase.from('followers').delete().eq('follower_id', userProfile.id).eq('artist_id', song.artist_id);
@@ -268,19 +267,18 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     } catch (err: any) {
        toast.error(err.message);
     }
+    }, 'Sign in to follow this artist');
   };
 
   const handleBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
     logEvent('buy_tap');
-    if (!userProfile) {
-       toast.error('Sign in to buy tracks');
-       return;
-    }
-    purchaseTrack({
-       song,
-       user: userProfile
-    });
+    requireAuth(() => {
+      purchaseTrack({
+         song,
+         user: userProfile
+      });
+    }, 'Sign in to buy this track');
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -462,13 +460,14 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
                   <button 
                      onClick={() => {
-                        if (!userProfile) return toast.error('Sign in to tip artists');
-                        sendTip({ 
+                        requireAuth(() => {
+      sendTip({ 
                            artist: { id: song.artist_id, ...song.profiles } as any, 
                            fan: userProfile, 
                            amount: tipAmount,
                            anonymous: isAnonymous
-                        });
+      })
+    }, 'Sign in to tip this artist');
                      }}
                      className="w-full py-4 bg-smash-cyan text-black font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
                   >
@@ -513,11 +512,12 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   ) : (
                      <button 
                         onClick={() => {
-                           if (!userProfile) return toast.error('Sign in to subscribe');
-                           startFanSubscription({ 
+                           requireAuth(() => {
+      startFanSubscription({ 
                               artist: { id: song.artist_id, ...song.profiles } as any, 
                               fan: userProfile
-                           });
+      });
+    }, 'Sign in to subscribe to this artist');
                         }}
                         className="w-full py-4 bg-smash-purple text-white font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform shadow-xl shadow-smash-purple/20"
                      >

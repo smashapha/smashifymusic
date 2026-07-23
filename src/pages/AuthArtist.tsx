@@ -5,7 +5,7 @@ import {
   Mic2, AlertCircle, Phone, MapPin, 
   Music, ChevronLeft, Disc, Chrome, Eye, EyeOff, Headphones
 } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { upgradeArtistTier } from '../lib/paychangu';
@@ -23,6 +23,8 @@ const AuthArtist: React.FC = () => {
   const [loadingState, setLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = new URLSearchParams(location.search).get('returnTo') || '/home';
 
   const [email, setEmail] = useState('');
   const [referralCode, setReferralCode] = useState('');
@@ -48,10 +50,10 @@ const AuthArtist: React.FC = () => {
   useEffect(() => {
     if (user && !loading && role !== null) {
       if (mode !== 'signup' || artistStep !== 4) {
-         if (role === 'artist' || role === 'pending') navigate('/artist-hub');
+         if (role === 'artist' || role === 'pending') navigate(new URLSearchParams(location.search).get('returnTo') || '/artist-hub');
          else {
            toast.error('You are logged in as a Listener. Please apply if you wish to use the Artist Studio.');
-           navigate('/');
+           navigate(returnTo);
          }
       }
     }
@@ -243,7 +245,7 @@ const AuthArtist: React.FC = () => {
     if (plan === 'Free') {
        toast.success('Your Free Studio application is under review.');
        await refreshProfile();
-       navigate('/artist-hub');
+       navigate(new URLSearchParams(location.search).get('returnTo') || '/artist-hub');
     } else {
        if (!userProfile) return;
        upgradeArtistTier({

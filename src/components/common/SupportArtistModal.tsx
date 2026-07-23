@@ -30,10 +30,7 @@ const SupportArtistModal: React.FC<SupportArtistModalProps> = ({ artist, onClose
       return;
     }
 
-    if (!userProfile) {
-      toast.error('Please sign in to support this artist');
-      return;
-    }
+    
 
     setLoading(true);
     try {

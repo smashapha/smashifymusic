@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Mail, Lock as AppLockIcon, User, Chrome, AlertCircle, Headphones, Phone, Eye, EyeOff, Mic2
 } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan } from '../lib/paychangu';
@@ -20,6 +20,8 @@ const AuthListener: React.FC = () => {
   const [loadingState, setLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = new URLSearchParams(location.search).get('returnTo') || '/home';
 
   useEffect(() => {
     if (user && !loading && role !== null) {
@@ -27,8 +29,8 @@ const AuthListener: React.FC = () => {
         toast.error('This is a Listener portal. Please use Artist Studio login.');
         navigate('/auth/artist');
       }
-      else if (role === 'listener') navigate('/');
-      else navigate('/');
+      else if (role === 'listener') navigate(returnTo);
+      else navigate(returnTo);
     }
   }, [user, loading, role, navigate]);
 
@@ -160,7 +162,7 @@ const AuthListener: React.FC = () => {
       if (plan === 'Free') {
         toast.success('Account created! Vibes loading...');
         await refreshProfile();
-        navigate('/');
+        navigate(returnTo);
       } else {
         upgradeListenerPlan({
             plan: plan as any,

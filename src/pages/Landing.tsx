@@ -4,7 +4,7 @@ import {
   Mic2, Headphones, TrendingUp, 
   Check, ChevronDown, ChevronUp, Compass, Heart,
   ShieldCheck, Infinity, Download, LayoutDashboard,
-  Smartphone, User, Info, Star, Play
+  Smartphone, User, Info, Star, Play, MapPin, Wallet, PieChart
 } from 'lucide-react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
@@ -49,7 +49,7 @@ const Nav = () => {
               Log In
             </button>
             <button
-              onClick={() => navigate('/auth/listener?mode=signup')}
+              onClick={() => navigate('/home')}
               className="h-9 px-5 bg-smash-orange rounded-full text-white font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 transition-all"
             >
               Join Free
@@ -98,7 +98,7 @@ const Nav = () => {
                 Log In
               </button>
               <button 
-                onClick={() => { navigate('/auth/listener?mode=signup'); setMobileMenuOpen(false); }}
+                onClick={() => { navigate('/home'); setMobileMenuOpen(false); }}
                 className="h-16 w-full bg-smash-orange text-white rounded-2xl font-display font-black uppercase tracking-widest shadow-xl shadow-smash-orange/20"
               >
                 Sign Up Free
@@ -149,13 +149,6 @@ const Landing: React.FC = () => {
   const [topSongs, setTopSongs] = useState<any[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
 
-  const [platformStats, setPlatformStats] = useState({
-    listeners: 0,
-    songs: 0,
-    artists: 0,
-    totalPaidOut: 0
-  });
-
   useEffect(() => {
     const fetchData = async () => {
       const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('approved', true).limit(12);
@@ -167,33 +160,11 @@ const Landing: React.FC = () => {
 
       const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTrendingSongs(trendingData || []);
-
-      // Get real platform stats
-      const [
-        { count: listenerCount },
-        { count: songCount },
-        { count: artistCount },
-        { data: payoutData }
-      ] = await Promise.all([
-        supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', true),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('approved', true),
-        supabase.from('payout_requests').select('amount').eq('status', 'paid')
-      ]);
-
-      const totalPaid = (payoutData || []).reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
-      setPlatformStats({
-        listeners: listenerCount || 0,
-        songs: songCount || 0,
-        artists: artistCount || 0,
-        totalPaidOut: totalPaid
-      });
     };
     fetchData();
   }, []);
 
-  if (user) return <Navigate to="/" replace />;
+  
 
   return (
     <main className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-orange/30 overflow-x-hidden">
@@ -229,67 +200,69 @@ const Landing: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mt-8 mb-16"
+              className="flex flex-col items-center lg:items-start gap-4 mt-8 mb-16"
             >
               <button
-                onClick={() => navigate('/auth/listener?mode=signup')}
-                className="h-14 px-10 bg-smash-orange text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-xl shadow-smash-orange/20 flex items-center justify-center gap-3"
+                onClick={() => navigate('/home')}
+                className="h-14 px-10 bg-smash-orange text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-xl shadow-smash-orange/20 flex items-center justify-center gap-3 w-full sm:w-auto"
               >
                 <Headphones size={20} />
-                For Listeners
+                Start Listening
               </button>
               <button
                 onClick={() => navigate('/artists')}
-                className="h-14 px-10 bg-white/5 border border-smash-purple/30 text-smash-purple rounded-full font-display font-black uppercase tracking-widest text-sm hover:bg-smash-purple/10 transition-all flex items-center justify-center gap-3"
+                className="flex items-center justify-center gap-2 text-smash-purple hover:text-smash-purple/80 transition-colors font-display font-bold uppercase tracking-widest text-xs pt-2"
               >
-                <Mic2 size={20} />
-                For Artists
+                <Mic2 size={16} />
+                Are you an artist? Apply &rarr;
               </button>
             </motion.div>
 
-            <div className="flex items-center justify-center lg:justify-start gap-8 md:gap-12 pt-12 border-t border-white/10">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+              className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 pt-10 mt-10 border-t border-white/5 w-full"
+            >
               {[
                 { 
-                  label: 'Listeners', 
-                  val: platformStats.listeners > 1000 
-                    ? `${(platformStats.listeners/1000).toFixed(1)}K+` 
-                    : platformStats.listeners > 0 
-                    ? `${platformStats.listeners}+` 
-                    : 'Growing',
-                  color: 'text-white'
+                  value: 'Malawi & Africa', 
+                  label: 'Proudly Built For',
+                  color: 'text-white',
+                  bgColor: 'bg-white/10',
+                  icon: MapPin
                 },
                 { 
-                  label: 'Songs', 
-                  val: platformStats.songs > 0 
-                    ? `${platformStats.songs}+` 
-                    : 'Loading',
-                  color: 'text-smash-orange' 
+                  value: 'Direct Payouts', 
+                  label: 'Airtel Money · TNM',
+                  color: 'text-smash-orange',
+                  bgColor: 'bg-smash-orange/10',
+                  icon: Wallet
                 },
                 { 
-                  label: 'Artists', 
-                  val: platformStats.artists > 0 
-                    ? `${platformStats.artists}+` 
-                    : 'Growing',
-                  color: 'text-white'
-                },
-                { 
-                  label: 'Paid Out', 
-                  val: platformStats.totalPaidOut > 0 
-                    ? `MK ${(platformStats.totalPaidOut/1000).toFixed(0)}K` 
-                    : 'Soon',
-                  color: 'text-smash-green' 
+                  value: '95% to Artists', 
+                  label: 'No Middlemen',
+                  color: 'text-smash-green',
+                  bgColor: 'bg-smash-green/10',
+                  icon: PieChart
                 }
               ].map((stat, i) => (
-                <div key={i} className="flex flex-col">
-                  <span className={`text-[clamp(1.6rem,3vw,2.2rem)] font-studio font-bold leading-none mb-1 ${stat.color || 'text-white'}`}>
-                    {stat.val}
+                <div key={i} className="group relative flex flex-col items-center lg:items-start text-center lg:text-left p-6 lg:p-8 rounded-[32px] bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-500 overflow-hidden shadow-2xl shadow-black/20 hover:-translate-y-1">
+                  <div className={`absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[50px] ${stat.bgColor} pointer-events-none translate-x-1/2 -translate-y-1/2`} />
+                  
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${stat.bgColor} border border-white/5 group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner`}>
+                    <stat.icon size={20} className={stat.color} />
+                  </div>
+                  
+                  <span className={`text-[clamp(1.1rem,2vw,1.4rem)] font-studio font-bold leading-tight mb-2 ${stat.color} relative z-10`}>
+                    {stat.value}
                   </span>
-                  <span className="text-[11px] font-display text-white/50 uppercase tracking-widest whitespace-nowrap">
+                  <span className="text-[10px] lg:text-[11px] font-display text-white/50 uppercase tracking-[0.2em] font-semibold relative z-10">
                     {stat.label}
                   </span>
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
 
           <div className="relative hidden lg:block h-[600px]">
@@ -679,7 +652,7 @@ const Landing: React.FC = () => {
              <PricingCard 
                 title="Free" 
                 price="0" 
-                onAction={() => navigate('/auth/listener?mode=signup')}
+                onAction={() => navigate('/home')}
                 features={[
                   "Ad-supported streaming (128kbps)", 
                   "6 skips per hour", 
@@ -692,7 +665,7 @@ const Landing: React.FC = () => {
                 title="Premium" 
                 price="2,000" 
                 badge="MOST POPULAR"
-                onAction={() => navigate('/auth/listener?mode=signup')}
+                onAction={() => navigate('/home')}
                 features={[
                   "Ad-free listening", 
                   "High quality audio (320kbps)", 
@@ -705,7 +678,7 @@ const Landing: React.FC = () => {
              <PricingCard 
                 title="Family" 
                 price="5,000" 
-                onAction={() => navigate('/auth/listener?mode=signup')}
+                onAction={() => navigate('/home')}
                 features={[
                   "5 Premium accounts included", 
                   "Ad-free listening for everyone",
