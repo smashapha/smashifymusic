@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRequireAuth } from '../../context/AuthGateContext';
 import { purchaseTrack } from '../../lib/paychangu';
 import { getEffectivePrice, isOnSale } from '../../lib/pricing';
-import { downloadPurchasedSong } from '../../lib/downloads';
+import { downloadPurchasedSong, handleTrackDownload } from '../../lib/downloads';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
@@ -41,16 +41,18 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!userProfile?.id) {
-      toast.error('Please log in to download your purchased songs.');
-      return;
-    }
     setIsDownloading(true);
+    const toastId = toast.loading('Preparing download...');
     try {
-      await downloadPurchasedSong(song.id, userProfile.id);
-      toast.success('Download started!');
+      await handleTrackDownload(
+        song,
+        userProfile,
+        purchasedIds,
+        () => requireAuth(() => {}, 'Sign in to download music')
+      );
+      toast.success('Download started!', { id: toastId });
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err?.message || 'Download failed', { id: toastId });
     } finally {
       setIsDownloading(false);
     }
@@ -439,7 +441,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                  <MoreVertical size={16} />
               </button>
               <AnimatePresence>
-                {showMenu && <SongMenu song={song} onClose={() => setShowMenu(false)} onBuy={handleBuy} onAddToPlaylist={() => setShowPlaylistModal(true)} artistCanSell={artistCanSell} />}
+                {showMenu && <SongMenu song={song} onClose={() => setShowMenu(false)} onBuy={handleBuy} onDownload={handleDownload} onAddToPlaylist={() => setShowPlaylistModal(true)} artistCanSell={artistCanSell} />}
               </AnimatePresence>
            </div>
         </div>
@@ -451,7 +453,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   );
 };
 
-const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist, artistCanSell }: any) => {
+const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCanSell }: any) => {
   const navigate = useNavigate();
   const { addToQueue, purchasedIds } = usePlayer();
   const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['Elite', 'elite', 'Label', 'label'].includes((song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || '').toLowerCase());
@@ -512,6 +514,14 @@ const SongMenu = ({ song, onClose, onBuy, onAddToPlaylist, artistCanSell }: any)
         >
           <User size={16} /> Go to Artist
         </button>
+        {onDownload && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDownload(e); onClose(); }}
+            className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
+          >
+            <Download size={16} /> Download Song
+          </button>
+        )}
         <button className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary">
           <Info size={16} /> Song Details
         </button>

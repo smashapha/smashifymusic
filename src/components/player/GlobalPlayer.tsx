@@ -7,7 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useRequireAuth } from '../../context/AuthGateContext';
 import { EQPreset } from '../../types';
 import { purchaseTrack } from '../../lib/paychangu';
-import { getEffectivePrice, isOnSale } from '../../lib/pricing';
+import { getEffectivePrice, isOnSale, getSaleTimeRemaining } from '../../lib/pricing';
+import { downloadPurchasedSong, handleTrackDownload, checkDownloadPermission } from '../../lib/downloads';
 import { formatDisplayTitle } from '../../lib/formatting';
 import toast from 'react-hot-toast';
 
@@ -34,128 +35,64 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
   const { 
     currentSong, isPlaying, isBuffering, togglePlay, currentTime, duration, 
     seek, volume, setVolume, nextTrack, previousTrack, 
-    eqPreset, setEQPreset,
-    playbackRate, setPlaybackRate,
-    sleepTimerRemaining, setSleepTimer,
-    pauseSong, playSong,
-    radioMode, toggleRadioMode, adPlaying, adSkipAvailable, skipAd,
-    isShuffle, toggleShuffle, repeatMode, toggleRepeat,
-    purchasedIds
+    adPlaying, isShuffle, toggleShuffle, repeatMode, toggleRepeat,
+    purchasedIds, queue, playSong
   } = usePlayer();
   const { role, userProfile } = useAuth();
-  const playerLimits = useMemo(() => getListenerLimits(userProfile), [
-    userProfile?.subscription_tier,
-    userProfile?.subscription_expires_at,
-    userProfile?.artist_tier,
-  ]);
-  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
+  const requireAuth = useRequireAuth();
+  
+  const accentBg = role === 'artist' ? 'bg-smash-purple' : 'bg-blue-600';
   const displayDuration = adPlaying ? Math.min(30, duration || 30) : duration;
   const [showQueue, setShowQueue] = useState(false);
-  const [showSleepMenu, setShowSleepMenu] = useState(false);
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-
-  // Local helper
-  const toggleMute = () => {
-    setVolume(volume === 0 ? 0.8 : 0);
-  };
   
-  // Lyrics State
-  const [showLyricsModal, setShowLyricsModal] = useState(false);
+  // Audio Device Output state
+  const [activeDevice, setActiveDevice] = useState("Bukky's AirPods");
+  const [showDeviceMenu, setShowDeviceMenu] = useState(false);
+
+  // Lyrics Drawer State
+  const [showLyricsDrawer, setShowLyricsDrawer] = useState(false);
   const [lyrics, setLyrics] = useState<string | null>(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
 
-  const ProgressBar = ({ current, total, onSeek, disabled = false }: { current: number, total: number, onSeek: (time: number) => void, disabled?: boolean }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPercent, setDragPercent] = useState<number | null>(null);
-
-  const getPercent = (e: React.MouseEvent | React.TouchEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    return x / rect.width;
-  };
-
-  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
-    if (disabled) return;
-    setIsDragging(true);
-    setDragPercent(getPercent(e));
-  };
-
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (disabled || !isDragging) return;
-    setDragPercent(getPercent(e));
-  };
-
-  const commit = () => {
-    if (isDragging && dragPercent !== null) {
-      onSeek(dragPercent * total);
-    }
-    setIsDragging(false);
-    setDragPercent(null);
-  };
-
-  const displayPercent = isDragging && dragPercent !== null ? dragPercent : (total > 0 ? current / total : 0);
-
-  return (
-    <div
-      className={`group relative h-2.5 bg-white/10 rounded-full flex-1 md:flex-none cursor-pointer touch-none ${disabled ? 'pointer-events-none opacity-80' : ''}`}
-      onMouseDown={handleStart}
-      onMouseMove={handleMove}
-      onMouseUp={commit}
-      onMouseLeave={() => { if (isDragging) commit(); }}
-      onTouchStart={handleStart}
-      onTouchMove={handleMove}
-      onTouchEnd={commit}
-    >
-      <motion.div
-        className="h-full bg-gradient-to-r from-smash-orange to-red-500 relative rounded-full"
-        style={{ width: `${displayPercent * 100}%` }}
-        transition={isDragging ? { duration: 0 } : undefined}
-      />
-      <div
-        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity border-4 border-smash-black"
-        style={{ left: `calc(${displayPercent * 100}% - 10px)`, opacity: isDragging ? 1 : undefined }}
-      />
-      {isDragging && (
-        <div
-          className="absolute -top-8 -translate-x-1/2 px-2 py-1 bg-black/80 rounded-md text-[10px] font-mono text-white pointer-events-none"
-          style={{ left: `${displayPercent * 100}%` }}
-        >
-          {formatTime(displayPercent * total)}
-        </div>
-      )}
-    </div>
-  );
-};
-
   const formatTime = (time: number) => {
+    if (isNaN(time) || !time) return '0:00';
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.y > 100) {
-      onClose();
+  const handleDownload = async () => {
+    if (!currentSong) return;
+    const toastId = toast.loading('Preparing download...');
+    try {
+      await handleTrackDownload(
+        currentSong,
+        userProfile,
+        purchasedIds,
+        () => requireAuth(() => {}, 'Sign in to download music')
+      );
+      toast.success('Download started!', { id: toastId });
+    } catch (err: any) {
+      console.error('Download error:', err);
+      toast.error(err?.message || 'Failed to download track.', { id: toastId });
     }
   };
 
   const fetchLyrics = async () => {
     if (!currentSong) return;
-    setShowLyricsModal(true);
     setLoadingLyrics(true);
+    setShowLyricsDrawer(true);
     try {
       const { data, error } = await supabase
         .from('songs')
         .select('lyrics')
         .eq('id', currentSong.id)
-        .single();
-      if (error) throw error;
+        .maybeSingle();
       
       if (data?.lyrics) {
         setLyrics(data.lyrics);
       } else {
-        setLyrics("No lyrics found for this song.");
+        setLyrics("No lyrics found for this song.\n\nEnjoy the music!");
       }
     } catch (err) {
       setLyrics("Error loading lyrics.");
@@ -163,118 +100,401 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     setLoadingLyrics(false);
   };
 
-  const handleDownload = async () => {
-    if (!currentSong) return;
-    
-    const isPurchased = currentSong.is_purchased || purchasedIds.has(currentSong.id);
-    const isFree = !currentSong.is_for_sale;
-
-    if (!isFree && !isPurchased) {
-      toast.error("This track is not purchased. Downloads are only available for purchased tracks.");
-      return;
-    }
-
-    const toastId = toast.loading('Preparing download...');
-    try {
-      const response = await fetch(currentSong.audio_url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const displayArtist = (currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name;
-      link.download = `${formatDisplayTitle(currentSong.title)} - ${displayArtist}.mp3`;
-      link.style.display = 'none';
-      if (document.body) {
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-
-      toast.success('Download started!', { id: toastId });
-      let downloads: string[] = [];
-      try {
-        const stored = localStorage.getItem('smash_downloads');
-        downloads = JSON.parse(stored || '[]');
-      } catch (e) {
-        console.error('Error parsing downloads:', e);
-      }
-      
-      if (!downloads.includes(currentSong.id)) {
-        localStorage.setItem('smash_downloads', JSON.stringify([...downloads, currentSong.id]));
-      }
-    } catch (err) {
-      console.error('Download failed:', err);
-      toast.error('Failed to download track.', { id: toastId });
-    }
-  };
-
-  const handleBuy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!currentSong) return;
-    
-    // NOTE: using a generic requireAuth logic to buy
-    purchaseTrack({
-      song: currentSong,
-      user: userProfile
-    });
-  };
-
-  // We need to provide the UI for ExpandedPlayer here!
   return (
     <motion.div 
       initial={{ y: "100%" }}
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[100] bg-bg-screen flex flex-col"
+      transition={{ type: "spring", damping: 28, stiffness: 220 }}
+      className="fixed inset-0 z-[100] bg-[#0E0E12] text-white flex flex-col justify-between overflow-hidden selection:bg-blue-500/30"
     >
-      <div className="flex items-center justify-between p-4 sm:p-6 pb-2">
-        <button onClick={onClose} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
-          <ChevronDown size={24} />
+      {/* Background ambient glow matching current artwork */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+        <img 
+          src={currentSong.cover_url} 
+          className="w-full h-full object-cover blur-[120px] scale-125" 
+          alt="" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0E0E12]/80 via-[#0E0E12]/90 to-[#0E0E12]" />
+      </div>
+
+      {/* Top Header Row */}
+      <div className="relative z-10 flex items-center justify-between px-6 pt-6 sm:pt-8 pb-4">
+        <button 
+          onClick={onClose} 
+          className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-white/80 hover:text-white"
+          aria-label="Minimize player"
+        >
+          <ChevronDown size={22} />
         </button>
+
         <div className="flex items-center gap-2">
-          <button onClick={handleLike} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors">
-            <Heart size={20} className={isLiked ? accentColor : "text-text-secondary"} fill={isLiked ? "currentColor" : "none"} />
+          <span className="font-display font-medium text-xs sm:text-sm tracking-wide text-white/70">
+            Now Playing
+          </span>
+        </div>
+
+        <button 
+          onClick={handleLike} 
+          className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all"
+          aria-label={isLiked ? "Unlike song" : "Like song"}
+        >
+          <Heart 
+            size={20} 
+            className={isLiked ? "text-blue-500 fill-blue-500" : "text-white/70 hover:text-white"} 
+          />
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 sm:px-12 max-w-lg mx-auto w-full my-auto">
+        {/* Large Artwork */}
+        <div className="w-full max-w-[320px] sm:max-w-[360px] aspect-square rounded-[32px] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-white/10 relative group mb-6 transition-transform duration-500 hover:scale-[1.02]">
+          <img 
+            src={currentSong.cover_url} 
+            className="w-full h-full object-cover" 
+            alt={currentSong.title} 
+            referrerPolicy="no-referrer" 
+          />
+        </div>
+
+        {/* Title & Artist & Sale Status */}
+        <div className="w-full text-center mb-6">
+          <h2 className="text-2xl sm:text-3xl font-studio font-bold tracking-tight text-white mb-1 truncate">
+            {formatDisplayTitle(currentSong.title)}
+          </h2>
+          <p className="text-white/60 text-base sm:text-lg font-medium truncate mb-2">
+            {(currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name}
+          </p>
+
+          {/* Sale / Pricing / Purchase Status Banner */}
+          {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) ? (
+            <div className="inline-flex flex-col items-center gap-1.5 mt-1">
+              {isOnSale(currentSong) && (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-red-500/20 via-amber-500/20 to-red-500/20 border border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">
+                  <Zap size={13} className="text-amber-400 fill-amber-400" />
+                  <span>ON SALE! {currentSong.discount_percent}% OFF</span>
+                  {getSaleTimeRemaining(currentSong) && (
+                    <span className="opacity-80 font-mono">({getSaleTimeRemaining(currentSong)})</span>
+                  )}
+                </span>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  requireAuth(() => {
+                    purchaseTrack({ song: currentSong, user: userProfile });
+                  }, 'Sign in to buy this track');
+                }}
+                className="px-5 py-2 rounded-full bg-gradient-to-r from-blue-600 via-sky-600 to-blue-600 hover:from-blue-500 hover:to-sky-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all border border-blue-400/30"
+              >
+                <ShoppingBag size={15} />
+                <span>Buy Track • </span>
+                <FormattedPrice song={currentSong} />
+              </button>
+            </div>
+          ) : currentSong.is_for_sale ? (
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <CheckCircle size={14} />
+              <span>Purchased Track</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 border border-white/10 text-white/70 text-xs font-semibold">
+              <span>Free Track</span>
+            </div>
+          )}
+        </div>
+
+        {/* Progress Bar & Timestamps */}
+        <div className="w-full mb-8">
+          <div 
+            className="group relative h-2 bg-white/15 rounded-full cursor-pointer touch-none"
+            onMouseDown={(e) => {
+              if (adPlaying) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              seek(percent * displayDuration);
+            }}
+          >
+            <div 
+              className="h-full bg-blue-500 rounded-full relative"
+              style={{ width: `${displayDuration > 0 ? (currentTime / displayDuration) * 100 : 0}%` }}
+            >
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-blue-600 scale-100 group-hover:scale-125 transition-transform"
+                style={{ right: '-8px' }}
+              />
+            </div>
+          </div>
+          <div className="flex justify-between text-xs font-mono font-medium text-white/50 mt-2.5">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(displayDuration)}</span>
+          </div>
+        </div>
+
+        {/* Control Buttons Row */}
+        <div className="flex items-center justify-between w-full max-w-[340px] mb-6">
+          <button 
+            onClick={toggleShuffle} 
+            className={`p-3 rounded-full transition-all ${isShuffle ? 'text-blue-400 bg-blue-500/20' : 'text-white/60 hover:text-white'}`}
+            disabled={adPlaying}
+            aria-label="Toggle shuffle"
+          >
+            <Shuffle size={20} />
           </button>
-          <button onClick={() => setShowQueue(true)} className="p-2 bg-bg-surface hover:bg-bg-elevated rounded-full transition-colors text-text-secondary hover:text-text-primary">
-            <ListMusic size={20} />
+
+          <button 
+            onClick={previousTrack} 
+            className="p-3 text-white/80 hover:text-white transition-transform active:scale-90 disabled:opacity-50" 
+            disabled={adPlaying}
+            aria-label="Previous track"
+          >
+            <SkipBack size={26} fill="currentColor" />
+          </button>
+
+          <button 
+            onClick={togglePlay} 
+            className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-600/40 hover:scale-105 active:scale-95 transition-all"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isBuffering ? (
+              <Loader2 size={30} className="animate-spin" />
+            ) : isPlaying ? (
+              <Pause size={30} fill="currentColor" />
+            ) : (
+              <Play size={30} fill="currentColor" className="ml-1" />
+            )}
+          </button>
+
+          <button 
+            onClick={nextTrack} 
+            className="p-3 text-white/80 hover:text-white transition-transform active:scale-90 disabled:opacity-50" 
+            disabled={adPlaying}
+            aria-label="Next track"
+          >
+            <SkipForward size={26} fill="currentColor" />
+          </button>
+
+          <button 
+            onClick={toggleRepeat} 
+            className={`p-3 rounded-full transition-all relative ${repeatMode !== 'off' ? 'text-blue-400 bg-blue-500/20' : 'text-white/60 hover:text-white'}`}
+            disabled={adPlaying}
+            aria-label="Toggle repeat"
+          >
+            <Repeat size={20} />
+            {repeatMode === 'one' && (
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-blue-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+                1
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 pb-8 custom-scrollbar">
-        <div className="max-w-md mx-auto w-full flex flex-col items-center">
-          <div className="w-full aspect-square rounded-[24px] overflow-hidden shadow-2xl mb-8 relative group">
-            <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+      {/* Bottom Audio Device & Swipe Up Lyrics Footer */}
+      <div className="relative z-10 px-6 pb-6 pt-2 max-w-lg mx-auto w-full flex flex-col items-center">
+        <div className="w-full flex items-center justify-between mb-4">
+          {/* Audio Output Selector Pill */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowDeviceMenu(!showDeviceMenu)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-semibold hover:bg-blue-500/25 transition-all shadow-lg shadow-blue-950/40"
+            >
+              <Headphones size={15} className="text-blue-400" />
+              <span>{activeDevice}</span>
+            </button>
+
+            {showDeviceMenu && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                className="absolute bottom-12 left-0 z-50 w-60 bg-[#16161D] border border-white/15 rounded-2xl p-2 shadow-2xl backdrop-blur-2xl"
+              >
+                <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white/40 border-b border-white/5 mb-1">
+                  Audio Output
+                </div>
+                {[
+                  "Bukky's AirPods",
+                  "Smash HD Speaker",
+                  "Phone Speaker",
+                  "Bluetooth Headset"
+                ].map((dev) => (
+                  <button 
+                    key={dev} 
+                    onClick={() => { 
+                      setActiveDevice(dev); 
+                      setShowDeviceMenu(false); 
+                      toast.success(`Connected to ${dev}`); 
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors ${activeDevice === dev ? 'bg-blue-600/30 text-blue-300 font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                  >
+                    <span>{dev}</span>
+                    {activeDevice === dev && <CheckCircle size={14} className="text-blue-400" />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
           </div>
-          <div className="w-full text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-studio font-bold tracking-tight mb-2 truncate">{formatDisplayTitle(currentSong.title)}</h2>
-            <p className="text-text-secondary text-lg font-medium truncate">{(currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name}</p>
-          </div>
-          <div className="w-full mb-8">
-             <ProgressBar current={currentTime} total={displayDuration} onSeek={seek} disabled={adPlaying} />
-             <div className="flex justify-between text-xs font-medium text-text-muted mt-2 tracking-widest uppercase">
-               <span>{Math.floor(currentTime / 60)}:{(Math.floor(currentTime) % 60).toString().padStart(2, '0')}</span>
-               <span>{Math.floor(displayDuration / 60)}:{(Math.floor(displayDuration) % 60).toString().padStart(2, '0')}</span>
-             </div>
-          </div>
-          <div className="flex items-center justify-center gap-6 sm:gap-8 w-full mb-8">
-             <button onClick={toggleShuffle} className={`p-2 rounded-full transition-colors ${isShuffle ? accentColor : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'}`} disabled={adPlaying}><Shuffle size={20} /></button>
-             <button onClick={previousTrack} className="p-3 bg-bg-surface hover:bg-bg-elevated text-text-primary rounded-full transition-colors disabled:opacity-50" disabled={adPlaying}><SkipBack size={24} fill="currentColor" /></button>
-             <button onClick={togglePlay} className={`w-20 h-20 flex items-center justify-center rounded-full text-white shadow-xl hover:scale-105 active:scale-95 transition-all ${accentColor.replace('text-', 'bg-')}`}>
-               {isBuffering ? <Loader2 size={32} className="animate-spin" /> : (isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-2" />)}
-             </button>
-             <button onClick={nextTrack} className="p-3 bg-bg-surface hover:bg-bg-elevated text-text-primary rounded-full transition-colors disabled:opacity-50" disabled={adPlaying}><SkipForward size={24} fill="currentColor" /></button>
-             <button onClick={toggleRepeat} className={`p-2 rounded-full transition-colors ${repeatMode !== 'none' ? accentColor : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'}`} disabled={adPlaying}><Repeat size={20} /></button>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleDownload} 
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-white/80 hover:text-white text-xs font-semibold shadow-sm"
+              title="Download Track"
+              aria-label="Download Track"
+            >
+              <Download size={15} className="text-blue-400" />
+              <span>Download</span>
+            </button>
+
+            <button 
+              onClick={() => setShowQueue(true)} 
+              className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white relative"
+              aria-label="Queue"
+            >
+              <ListMusic size={18} />
+              {queue.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {queue.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Swipe up for lyrics Trigger Handle */}
+        <motion.div 
+          onClick={fetchLyrics}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full cursor-pointer flex flex-col items-center group py-2"
+        >
+          <div className="w-12 h-1 bg-white/20 rounded-full mb-2.5 group-hover:bg-blue-400 transition-colors" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-300/80 group-hover:text-blue-300 transition-colors">
+            <span>Swipe up for lyrics</span>
+            <Mic2 size={14} className="text-blue-400 animate-bounce" />
+          </div>
+        </motion.div>
       </div>
+
+      {/* Lyrics Drawer Sheet Overlay */}
+      <AnimatePresence>
+        {showLyricsDrawer && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex flex-col justify-end"
+            onClick={() => setShowLyricsDrawer(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl mx-auto h-[85vh] bg-[#14141B] border-t border-white/10 rounded-t-[36px] flex flex-col overflow-hidden shadow-2xl relative"
+            >
+              {/* Drawer Top Handle */}
+              <div className="p-4 flex flex-col items-center border-b border-white/5 relative">
+                <div className="w-12 h-1.5 bg-white/20 rounded-full mb-3" />
+                <div className="flex items-center justify-between w-full px-4">
+                  <div className="flex items-center gap-3">
+                    <img src={currentSong.cover_url} className="w-10 h-10 rounded-xl object-cover" alt="" />
+                    <div>
+                      <h4 className="font-studio font-bold text-sm text-white">{formatDisplayTitle(currentSong.title)}</h4>
+                      <p className="text-xs text-white/50">{currentSong.artist_name}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowLyricsDrawer(false)}
+                    className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Lyrics Content Container */}
+              <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6 custom-scrollbar text-center">
+                {loadingLyrics ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-white/50 gap-3">
+                    <Loader2 size={32} className="animate-spin text-blue-400" />
+                    <p className="text-sm font-medium">Fetching lyrics...</p>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap font-sans text-lg sm:text-xl font-medium leading-relaxed text-white/90 space-y-4">
+                    {lyrics}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Expanded Queue Drawer Overlay */}
+      <AnimatePresence>
+        {showQueue && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex flex-col justify-end"
+            onClick={() => setShowQueue(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl mx-auto h-[80vh] bg-[#14141B] border-t border-white/10 rounded-t-[36px] flex flex-col overflow-hidden shadow-2xl relative p-6"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                <h3 className="text-xl font-studio font-bold text-white">Playback Queue ({queue.length})</h3>
+                <button 
+                  onClick={() => setShowQueue(false)}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                {queue.length > 0 ? (
+                  queue.map((song, i) => (
+                    <div 
+                      key={`${song.id}-${i}`}
+                      onClick={() => playSong(song)}
+                      className={`p-3 rounded-2xl flex items-center gap-3 cursor-pointer transition-colors ${currentSong.id === song.id ? 'bg-blue-600/20 border border-blue-500/30' : 'hover:bg-white/5'}`}
+                    >
+                      <img src={song.cover_url} className="w-12 h-12 rounded-xl object-cover" alt="" />
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-studio font-bold text-sm truncate ${currentSong.id === song.id ? 'text-blue-400' : 'text-white'}`}>
+                          {formatDisplayTitle(song.title)}
+                        </p>
+                        <p className="text-xs text-white/50 truncate">{song.artist_name}</p>
+                      </div>
+                      {currentSong.id === song.id && (
+                        <span className="text-xs font-semibold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">
+                          Playing
+                        </span>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-20 text-center text-white/40 font-medium text-sm">Queue is empty</div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
+
 
 const GlobalPlayer = () => {
   const { 
@@ -340,6 +560,25 @@ const GlobalPlayer = () => {
     }, 'Sign in to buy this track');
   };
 
+  const handleDownloadTrack = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!currentSong) return;
+
+    const toastId = toast.loading('Preparing download...');
+    try {
+      await handleTrackDownload(
+        currentSong,
+        userProfile,
+        purchasedIds,
+        () => requireAuth(() => {}, 'Sign in to download music')
+      );
+      toast.success('Download started!', { id: toastId });
+    } catch (err: any) {
+      console.error('Download error:', err);
+      toast.error(err?.message || 'Failed to download track.', { id: toastId });
+    }
+  };
+
   if (!currentSong) return null;
 
   return (
@@ -378,7 +617,13 @@ const GlobalPlayer = () => {
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-studio font-bold text-sm text-text-primary truncate">{formatDisplayTitle(currentSong.title)}</h3>
                   {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) && (
-                    <span className={`px-1.5 py-0.5 rounded-full ${accentColor.replace('text-', 'bg-')}/10 ${accentColor} text-[8px] font-display font-semibold uppercase tracking-wide`}><FormattedPrice song={currentSong} /></span>
+                    <button
+                      onClick={handleBuy}
+                      className={`px-2 py-0.5 rounded-full ${isOnSale(currentSong) ? 'bg-gradient-to-r from-red-500/20 to-amber-500/20 text-red-400 border border-red-500/30 animate-pulse' : `${accentColor.replace('text-', 'bg-')}/10 ${accentColor}`} text-[9px] font-display font-bold uppercase tracking-wide flex items-center gap-1 hover:scale-105 transition-transform`}
+                    >
+                      {isOnSale(currentSong) && <Zap size={10} className="text-amber-400 fill-amber-400" />}
+                      <FormattedPrice song={currentSong} />
+                    </button>
                   )}
                 </div>
                 <p className="font-sans text-xs text-text-secondary truncate">{((currentSong as any).featured_artist ? `${currentSong.profiles?.stage_name || currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : (currentSong.profiles?.stage_name || currentSong.artist_name))}</p>
@@ -471,6 +716,14 @@ const GlobalPlayer = () => {
                  <motion.div whileTap={{ scale: 0.8 }}>
                    <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                  </motion.div>
+               </button>
+               <button 
+                 onClick={handleDownloadTrack} 
+                 aria-label="Download track" 
+                 title="Download track"
+                 className="text-text-muted hover:text-text-primary p-2 focus:outline-none rounded-lg hover:bg-bg-elevated transition-colors"
+               >
+                 <Download size={16} />
                </button>
                <div className="flex items-center gap-2 w-[100px] group cursor-pointer"
                    onWheel={(e) => {

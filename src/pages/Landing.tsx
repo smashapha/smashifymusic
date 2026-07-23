@@ -560,63 +560,6 @@ const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Artist Trust Section */}
-      <section className="py-24 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-center text-[clamp(2rem,4vw,3rem)] font-studio font-black uppercase italic mb-4">
-            Why artists choose <span className="text-smash-orange">Smashify</span> over Spotify
-          </h2>
-          <p className="text-center text-white/40 text-sm mb-12 max-w-xl mx-auto">
-            You do not need 1 million streams to earn a living. You just need your fans.
-          </p>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left pb-4 text-white/40 text-xs uppercase tracking-widest font-display w-1/3">
-                  </th>
-                  <th className="pb-4 text-center">
-                    <span className="text-white/40 text-xs uppercase tracking-widest font-display">
-                      Spotify
-                    </span>
-                  </th>
-                  <th className="pb-4 text-center">
-                    <span className="text-smash-orange text-xs uppercase tracking-widest font-black font-display">
-                      Smashify
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="space-y-2">
-                {[
-                  ['Earn MWK 10,000', 'Need 330,000 streams', '20 fans paying MWK 500'],
-                  ['Payment speed', '3-6 months', 'Within 24 hours'],
-                  ['Payment method', 'Bank transfer (USD)', 'Airtel Money / TNM'],
-                  ['Artist keeps', '~30% after labels', 'Up to 95%'],
-                  ['Minimum payout', '$10 USD threshold', 'MWK 2,000'],
-                  ['Available in Malawi', 'Limited', '100% local'],
-                ].map(([feature, spotify, smashify], i) => (
-                  <tr key={i} className="border-b border-white/5">
-                    <td className="py-4 text-white/60 font-medium">
-                      {feature}
-                    </td>
-                    <td className="py-4 text-center text-white/30 text-xs">
-                      {spotify}
-                    </td>
-                    <td className="py-4 text-center">
-                      <span className="text-smash-green text-xs font-bold">
-                        ✓ {smashify}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
       {/* Vision & Mission */}
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto border border-white/8 rounded-[40px] overflow-hidden bg-bg-surface flex flex-col md:flex-row">

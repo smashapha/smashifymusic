@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
-import { downloadPurchasedSong } from '../lib/downloads';
+import { downloadPurchasedSong, handleTrackDownload } from '../lib/downloads';
 
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_LIST_CARDS } from '../lib/layout';
@@ -402,7 +402,7 @@ const Library: React.FC = () => {
                          onClick={async () => {
                            setDownloadingId(song.id);
                            try {
-                             await downloadPurchasedSong(song.id, userProfile.id);
+                             await handleTrackDownload(song, userProfile);
                              toast.success('Download started!');
                            } catch (err: any) {
                              toast.error(err.message);

@@ -340,7 +340,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const interval = setInterval(() => {
         setSleepTimerRemaining(prev => {
           if (prev && prev > 1) return prev - 1;
-          pauseSong();
+          setTimeout(() => {
+            pauseSong();
+          }, 0);
           return null;
         });
       }, 60000); // Decrement every minute
@@ -463,7 +465,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       
-      if (!adPlaying && audio.duration > 3.0 && (audio.duration - audio.currentTime <= 3.0) && !crossfadeScheduled.current) {
+      if (!adPlaying && audio.duration > 3.0 && (audio.duration - audio.currentTime <= 3.0) && !crossfadeScheduled.current && repeatMode !== 'one') {
         crossfadeScheduled.current = true;
         handleEnded();
         return;
@@ -754,12 +756,33 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [isPlaying, currentTime, duration, volume, currentSong]);
 
   const toggleRadioMode = () => setRadioMode(prev => !prev);
-  const toggleShuffle = () => setIsShuffle(prev => !prev);
+  const toggleShuffle = () => {
+    setIsShuffle(prev => {
+      const nextVal = !prev;
+      setTimeout(() => {
+        toast.success(nextVal ? 'Shuffle enabled' : 'Shuffle disabled', { id: 'shuffle-mode' });
+      }, 0);
+      return nextVal;
+    });
+  };
   const toggleRepeat = () => {
     setRepeatMode(prev => {
-      if (prev === 'off') return 'all';
-      if (prev === 'all') return 'one';
-      return 'off';
+      let nextMode: 'off' | 'all' | 'one' = 'off';
+      if (prev === 'off') nextMode = 'all';
+      else if (prev === 'all') nextMode = 'one';
+      else nextMode = 'off';
+
+      setTimeout(() => {
+        if (nextMode === 'all') {
+          toast.success('Repeat queue enabled', { id: 'repeat-mode' });
+        } else if (nextMode === 'one') {
+          toast.success('Repeat track enabled', { id: 'repeat-mode' });
+        } else {
+          toast.success('Repeat disabled', { id: 'repeat-mode' });
+        }
+      }, 0);
+
+      return nextMode;
     });
   };
 
@@ -840,9 +863,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     if (currentIndex < activeQueue.length - 1) {
       playSong(activeQueue[currentIndex + 1]);
-    } else if (repeatMode === 'all') {
-      playSong(activeQueue[0]); // Loop back to start
-    } else if (repeatMode === 'off') {
+    } else if (repeatMode === 'all' || repeatMode === 'one') {
+      playSong(activeQueue[0]); // Loop back to start of queue
+    } else {
       setIsPlaying(false);
       setCurrentTime(0);
       if (audioRef.current) audioRef.current.currentTime = 0;
@@ -853,11 +876,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const activeQueue = isShuffle && shuffledQueue.length > 0 ? shuffledQueue : queue;
     if (activeQueue.length === 0 || !currentSong) return;
     
+    if (currentTime > 3) {
+      // If song played > 3 seconds, restart current track
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+      }
+      return;
+    }
+
     const currentIndex = activeQueue.findIndex(s => s.id === currentSong.id);
     
     if (currentIndex > 0) {
       playSong(activeQueue[currentIndex - 1]);
-    } else if (repeatMode === 'all') {
+    } else if (repeatMode === 'all' || repeatMode === 'one') {
       playSong(activeQueue[activeQueue.length - 1]);
     } else {
       // Just restart current song
