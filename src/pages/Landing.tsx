@@ -6,7 +6,7 @@ import {
   ShieldCheck, Infinity, Download, LayoutDashboard,
   Smartphone, User, Info, Star, Play, MapPin, Wallet, PieChart
 } from 'lucide-react';
-import { useNavigate, Navigate, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -144,11 +144,7 @@ const PricingCard = ({ title, price, features, badge, onAction, period = 'mo' }:
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
-  if (user && !loading) {
-    return <Navigate to="/home" replace />;
-  }
+  const { user } = useAuth();
 
   const [artists, setArtists] = useState<any[]>([]);
   const [topSongs, setTopSongs] = useState<any[]>([]);
