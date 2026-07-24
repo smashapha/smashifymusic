@@ -10,6 +10,7 @@ const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
 import { verifyPayment } from './lib/paychangu';
+import { handleTrackDownload } from './lib/downloads';
 
 import ErrorBoundary from './components/common/ErrorBoundary';
 import InstallPWA from './components/common/InstallPWA';
@@ -46,6 +47,7 @@ const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 
 const PaymentRedirect = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [status, setStatus] = useState('Verifying your payment...');
   const hasKickedOff = useRef(false);
 
@@ -65,11 +67,34 @@ const PaymentRedirect = () => {
     const handleVerification = async () => {
       toast.loading('Confirming payment...', { id: 'payment-confirm' });
       try {
-        await verifyPayment(txRef);
+        const res = await verifyPayment(txRef);
         toast.success('Payment confirmed! ✅', { id: 'payment-confirm' });
         setStatus('Payment confirmed! Redirecting...');
+
+        // Check if this was a track purchase and trigger download automatically
+        const tx = res?.transaction || res?.data;
+        const metadata = tx?.metadata || {};
+        const songId = metadata.songId;
+
+        if (songId) {
+          try {
+            toast.loading('Starting track download...', { id: 'purchase-download' });
+            const { data: song } = await supabase.from('songs').select('*').eq('id', songId).single();
+            if (song) {
+              await handleTrackDownload(
+                song,
+                userProfile || { id: metadata.userId },
+                new Set([songId])
+              );
+              toast.success('Song download started! 🎵', { id: 'purchase-download' });
+            }
+          } catch (dlErr: any) {
+            console.error('Auto download after purchase error:', dlErr);
+          }
+        }
+
         await new Promise(r => setTimeout(r, 1000));
-        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }));
+        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
       } catch (err) {
         toast.error('Payment received but confirmation is taking longer than usual. Your account will update shortly.', { id: 'payment-confirm', duration: 6000 });
       } finally {
@@ -77,7 +102,7 @@ const PaymentRedirect = () => {
       }
     };
     handleVerification();
-  }, [navigate]);
+  }, [navigate, userProfile]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg-base text-text-primary">

@@ -11,8 +11,8 @@ export interface DownloadPermissionResult {
  * Checks if the user is authorized to download a given song.
  * Rules:
  * - Guests (unauthenticated): No download access.
- * - Free users without active subscription: No download access, UNLESS they explicitly purchased the track.
- * - Active subscribers (Weekly Pass, Premium, Family, or paid artist tier): Full download access.
+ * - Songs on sale (is_for_sale): MUST be purchased by the user to download. Active subscription does NOT bypass track purchase!
+ * - Non-sale songs: Available if purchased OR if the user has an active listener subscription.
  */
 export function checkDownloadPermission(
   userProfile: any | null,
@@ -23,27 +23,43 @@ export function checkDownloadPermission(
   if (!userProfile || !userProfile.id) {
     return {
       canDownload: false,
-      reason: 'Guests cannot download songs. Please sign in with an active subscription or purchase this song.',
+      reason: 'Guests cannot download songs. Please sign in or purchase this song.',
       code: 'GUEST'
     };
   }
 
-  // 2. Purchased song check
-  const isPurchased = song?.is_purchased || (purchasedIds && purchasedIds.has(song?.id));
+  // 2. Purchased song check or track owner check
+  const isOwner = userProfile?.id && song?.artist_id === userProfile.id;
+  const isPurchased = Boolean(song?.is_purchased || (purchasedIds && purchasedIds.has(song?.id)) || isOwner);
+
+  // 3. Songs on Sale check
+  const isForSale = Boolean(song?.is_for_sale);
+  if (isForSale) {
+    if (isPurchased) {
+      return { canDownload: true, code: 'OK' };
+    }
+    return {
+      canDownload: false,
+      reason: 'This song is on sale. You must purchase the song to download it.',
+      code: 'NO_SUBSCRIPTION'
+    };
+  }
+
+  // 4. Non-sale songs
   if (isPurchased) {
     return { canDownload: true, code: 'OK' };
   }
 
-  // 3. Active subscription check
+  // Active subscription check for non-sale tracks
   const limits = getListenerLimits(userProfile);
   if (limits.canDownload) {
     return { canDownload: true, code: 'OK' };
   }
 
-  // 4. Free user without purchase or active subscription
+  // Free user without purchase or active subscription
   return {
     canDownload: false,
-    reason: 'Downloads are not available for free users without an active subscription. Upgrade your plan to download songs.',
+    reason: 'Downloads are not available for free users without an active subscription. Upgrade your plan or purchase the song to download.',
     code: 'NO_SUBSCRIPTION'
   };
 }
@@ -128,18 +144,6 @@ export async function downloadPurchasedSong(
 
     if (songError || !song?.audio_url) {
       throw new Error('Song file not available for download.');
-    }
-
-    // Verify artist tier
-    const { data: artist } = await supabase
-      .from('profiles')
-      .select('artist_tier')
-      .eq('id', song.artist_id)
-      .single();
-
-    const eliteTiers = ['Elite', 'elite', 'Label', 'label'];
-    if (!artist || !eliteTiers.includes(artist.artist_tier)) {
-      throw new Error('This track is no longer available for download. The artist has changed their plan.');
     }
 
     // 3. Fetch the file as a blob to force browser download

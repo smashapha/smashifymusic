@@ -144,7 +144,12 @@ const PricingCard = ({ title, price, features, badge, onAction, period = 'mo' }:
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (user && !loading) {
+    return <Navigate to="/home" replace />;
+  }
+
   const [artists, setArtists] = useState<any[]>([]);
   const [topSongs, setTopSongs] = useState<any[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);

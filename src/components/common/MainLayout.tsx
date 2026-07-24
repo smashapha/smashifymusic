@@ -22,7 +22,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
       
       {/* Mobile Logo */}
       <div className="md:hidden flex-1 flex items-center">
-        <Logo size="sm" showText={true} onClick={() => navigate('/')} className="cursor-pointer" />
+        <Logo size="sm" showText={true} onClick={() => navigate('/home')} className="cursor-pointer" />
       </div>
 
       <div className="flex-1 max-w-xl hidden md:block min-w-0 mx-4">
