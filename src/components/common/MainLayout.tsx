@@ -210,12 +210,12 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                       isActive ? activeStyle : inactiveStyle
                     } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
                   }
-                  title="Artist Portal"
+                  title={role === 'artist' || role === 'pending' ? "Artist Studio" : "Browse Artists"}
                 >
                   {({ isActive }) => (
                     <>
                       <Mic2 size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
-                      {!isCollapsed && <span className="truncate">Artist Portal</span>}
+                      {!isCollapsed && <span className="truncate">{role === 'artist' || role === 'pending' ? 'Artist Studio' : 'Artists'}</span>}
                     </>
                   )}
                 </NavLink>
