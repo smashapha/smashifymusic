@@ -1792,7 +1792,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         .from('profiles')
         .select('id, stage_name, full_name, avatar_url, artist_tier, verified')
         .or(`stage_name.ilike.%${query}%,full_name.ilike.%${query}%`)
-        .eq('approved', true)
+        .eq('user_type', 'artist')
         .neq('id', userProfile?.id) // exclude self
         .limit(5);
       setFeaturedSuggestions(data || []);

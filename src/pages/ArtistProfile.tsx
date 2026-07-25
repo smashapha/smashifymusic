@@ -293,7 +293,8 @@ const ArtistProfile: React.FC = () => {
                .from('profiles')
                .select('*')
                .neq('id', id)
-               .eq('is_artist', true)
+               .eq('user_type', 'artist')
+               .not('stage_name', 'is', null)
                .limit(5);
             if (otherArtists) setFansAlsoLike(otherArtists);
 
