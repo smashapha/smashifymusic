@@ -311,7 +311,7 @@ const Discover: React.FC = () => {
         .from("profiles")
         .select("*")
         .eq("user_type", "artist")
-        .eq("approved", true);
+        .not("stage_name", "is", null);
 
       if (searchQuery) {
         artistsQuery = artistsQuery.ilike("stage_name", `%${searchQuery}%`);

@@ -71,28 +71,6 @@ const PaymentRedirect = () => {
         toast.success('Payment confirmed! ✅', { id: 'payment-confirm' });
         setStatus('Payment confirmed! Redirecting...');
 
-        // Check if this was a track purchase and trigger download automatically
-        const tx = res?.transaction || res?.data;
-        const metadata = tx?.metadata || {};
-        const songId = metadata.songId;
-
-        if (songId) {
-          try {
-            toast.loading('Starting track download...', { id: 'purchase-download' });
-            const { data: song } = await supabase.from('songs').select('*').eq('id', songId).single();
-            if (song) {
-              await handleTrackDownload(
-                song,
-                userProfile || { id: metadata.userId },
-                new Set([songId])
-              );
-              toast.success('Song download started! 🎵', { id: 'purchase-download' });
-            }
-          } catch (dlErr: any) {
-            console.error('Auto download after purchase error:', dlErr);
-          }
-        }
-
         await new Promise(r => setTimeout(r, 1000));
         window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
       } catch (err) {

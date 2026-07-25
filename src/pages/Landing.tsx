@@ -152,7 +152,7 @@ const Landing: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('approved', true).limit(12);
+      const { data: artistsData } = await supabase.from('profiles').select('id, full_name, stage_name, avatar_url, genre').eq('user_type', 'artist').not('stage_name', 'is', null).limit(12);
       setArtists(artistsData || []);
 
       const today = new Date().toISOString().split('T')[0];

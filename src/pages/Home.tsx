@@ -245,7 +245,6 @@ const Home: React.FC = () => {
         .from('profiles')
         .select('*')
         .eq('user_type', 'artist')
-        .eq('approved', true)
         .not('stage_name', 'is', null)
         .limit(10);
 
