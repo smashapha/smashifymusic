@@ -43,7 +43,6 @@ const Trending = lazy(() => import('./pages/Trending'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const ApplicationPending = lazy(() => import('./pages/ApplicationPending'));
 const Admin = lazy(() => import('./pages/Admin'));
-const ArtistsPage = lazy(() => import('./pages/Artists'));
 const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 
 const PaymentRedirect = () => {
@@ -380,8 +379,7 @@ function AppContent() {
         {/* Auth & Standalone Routes */}
         <Route path="/auth/listener" element={<AuthListener />} />
         <Route path="/auth/artist" element={<AuthArtist />} />
-        <Route path="/artist-studio" element={<ArtistLanding />} />
-        <Route path="/artists/join" element={<ArtistLanding />} />
+        <Route path="/artists" element={<ArtistLanding />} />
         <Route path="/application-pending" element={role === 'pending' || role === 'artist' ? <Navigate to="/artist-hub" replace /> : <ApplicationPending />} />
         
         {/* Payment Processing Pages (Standalone) */}
@@ -433,7 +431,6 @@ function AppContent() {
               </ListenerRoute>
             } 
           />
-          <Route path="artists" element={<ArtistsPage />} />
           <Route path="artist/:id" element={<ArtistProfile />} />
           <Route path="album/:id" element={<AlbumDetails />} />
           <Route path="playlist/:id" element={<PlaylistDetails />} />
