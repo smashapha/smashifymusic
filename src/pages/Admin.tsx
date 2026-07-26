@@ -471,6 +471,12 @@ const Admin = () => {
     const fd = new FormData(e.currentTarget);
     const file = fd.get('audio') as File;
 
+    if (file && !file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
+      toast.error('Only MP3 files are allowed.');
+      setAdUploading(false);
+      return;
+    }
+
     try {
       const path = `ads/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from('audio_ads').upload(path, file);
@@ -2026,8 +2032,8 @@ const Admin = () => {
                             </select>
 
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Audio File (MP3/WAV, max 30s)</label>
-                              <input name="audio" type="file" accept="audio/*" required
+                              <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Audio File (MP3, max 30s)</label>
+                              <input name="audio" type="file" accept="audio/mpeg, audio/mp3, .mp3" required
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-smash-orange file:text-black cursor-pointer" />
                             </div>
 

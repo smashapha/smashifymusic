@@ -1095,9 +1095,16 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                       <input 
                         id="ad-audio-input"
                         type="file" 
-                        accept="audio/*" 
+                        accept="audio/mpeg, audio/mp3, .mp3" 
                         className="hidden" 
-                        onChange={e => setAudioFile(e.target.files?.[0] || null)}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file && !file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
+                             toast.error('Only MP3 files are allowed.');
+                             return;
+                          }
+                          setAudioFile(file || null);
+                        }}
                       />
                       {audioFile ? (
                         <>
@@ -1736,7 +1743,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string|null>(null);
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
   const [isDraggingCover, setIsDraggingCover] = useState(false);
-  const [audioduration, setAudioDuration] = useState<string>('');
+  const [audioDuration, setAudioDuration] = useState<string>('');
   const [audioFileSize, setAudioFileSize] = useState<string>('');
 
   const [songFile, setSongFile] = useState<File | null>(null);
@@ -1890,6 +1897,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
     if (!userProfile?.id) return;
     setAudioUploading(true);
     setAudioUploadProgress(5);
+    setAudioUploadSpeedBps(0);
+    setAudioUploadEtaSeconds(null);
     setAudioUploadError(null);
     setAudioUploadUrl(null);
 
@@ -1908,19 +1917,24 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       const compressedAudio = await compressAudio(file);
       setAudioUploadProgress(40);
 
-      const isWebm = compressedAudio.type === 'audio/webm';
-      const audioExt = isWebm ? 'webm' : file.name.split('.').pop();
+      const audioExt = file.name.split('.').pop();
       const audioPath = `songs/${userProfile.id}/song-${Date.now()}.${audioExt}`;
 
-      const { error: audioErr } = await supabase.storage
-        .from('songs')
-        .upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
+      const { promise } = uploadFileWithProgress(
+        'songs',
+        audioPath,
+        compressedAudio,
+        file.type || 'audio/mpeg',
+        (info) => {
+          setAudioUploadProgress(Math.max(40, 40 + Math.floor(info.percent * 0.6)));
+          setAudioUploadSpeedBps(info.speedBps);
+          setAudioUploadEtaSeconds(info.etaSeconds);
+        }
+      );
 
-      if (audioErr) throw audioErr;
+      const result = await promise;
 
-      const { data: { publicUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
-
-      setAudioUploadUrl(publicUrl);
+      setAudioUploadUrl(result.publicUrl);
       setAudioUploadProgress(100);
       toast.success('Audio uploaded! You can continue filling in details.', { id: 'bg-audio-upload' });
     } catch (err: any) {
@@ -1989,88 +2003,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   };
 
   // ── Audio compression utility ─────────────────────────────
-  // Converts any audio file to a compressed version using
-  // Web Audio API offline rendering + MediaRecorder
+  // Since we enforce MP3 files only, we bypass recompression
+  // to preserve original MP3 quality and avoid WebM conversion.
   const compressAudio = (file: File): Promise<Blob> => {
-    return new Promise(async (resolve) => {
-      try {
-        // Skip if already a small MP3 (< 8MB) — no point recompressing
-        if (file.type === 'audio/mpeg' && file.size < 8 * 1024 * 1024) {
-          resolve(file);
-          return;
-        }
-
-        const arrayBuffer = await file.arrayBuffer();
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AudioContext();
-        const decoded = await ctx.decodeAudioData(arrayBuffer);
-        ctx.close();
-
-        // Render at same sample rate — we'll compress via MediaRecorder
-        const offlineCtx = new OfflineAudioContext(
-          Math.min(decoded.numberOfChannels, 2), // max stereo
-          decoded.length,
-          Math.min(decoded.sampleRate, 44100)    // max 44.1kHz
-        );
-        const source = offlineCtx.createBufferSource();
-        source.buffer = decoded;
-        source.connect(offlineCtx.destination);
-        source.start(0);
-        const rendered = await offlineCtx.startRendering();
-
-        // Convert AudioBuffer → WAV Blob → MediaRecorder compression
-        // Use a smaller channel to reduce size
-        const numChannels = rendered.numberOfChannels;
-        const sampleRate = rendered.sampleRate;
-        const length = rendered.length;
-
-        // Build WAV from rendered buffer (needed for MediaRecorder input)
-        const wavBuffer = audioBufferToWav(rendered);
-        const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
-
-        // If browser supports MediaRecorder with audio/webm (most do)
-        // encode to webm/opus which is ~50-70% smaller than WAV
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          const audioEl = new Audio();
-          audioEl.src = URL.createObjectURL(wavBlob);
-          
-          const stream = (audioEl as any).captureStream 
-            ? (audioEl as any).captureStream()
-            : null;
-          
-          if (stream) {
-            const chunks: BlobPart[] = [];
-            const recorder = new MediaRecorder(stream, { 
-              mimeType: 'audio/webm;codecs=opus',
-              audioBitsPerSecond: 128000  // 128kbps
-            });
-            recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-            recorder.onstop = () => {
-              URL.revokeObjectURL(audioEl.src);
-              const compressed = new Blob(chunks, { type: 'audio/webm' });
-              // Only use compressed if it's actually smaller
-              resolve(compressed.size < file.size ? compressed : file);
-            };
-            recorder.start();
-            audioEl.play();
-            audioEl.onended = () => recorder.stop();
-            // Safety timeout: stop after duration + 2s
-            setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 
-              (decoded.duration + 2) * 1000);
-            return;
-          }
-        }
-
-        // Fallback: return the WAV (at least it's been decoded and re-encoded cleanly)
-        // If WAV is larger than original, just return original
-        resolve(wavBlob.size < file.size ? wavBlob : file);
-
-      } catch (err) {
-        // If anything fails, upload original — never block the artist
-        console.warn('Audio compression failed, using original:', err);
-        resolve(file);
-      }
-    });
+    return Promise.resolve(file);
   };
 
   // WAV encoder helper (pure JS, no deps)
@@ -2129,8 +2065,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
     try {
       const compressed = await compressAudio(file);
-      const isWebm = compressed.type === 'audio/webm';
-      const audioExt = isWebm ? 'webm' : file.name.split('.').pop();
+      const audioExt = file.name.split('.').pop();
       const audioPath = `songs/${userProfile.id}/song-${Date.now()}-${Math.random().toString(36).substring(7)}.${audioExt}`;
 
       updateTrack({ uploadStatus: 'uploading', uploadProgress: 0 });
@@ -2139,7 +2074,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         'songs',
         audioPath,
         compressed,
-        compressed.type || 'audio/mpeg',
+        file.type || 'audio/mpeg',
         (info) => {
           updateTrack({
             uploadProgress: info.percent,
@@ -2223,11 +2158,20 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         toast.dismiss('audiocompress');
 
         setUploadProgress(45);
-        const isWebm = compressedAudio.type === 'audio/webm';
-        const audioExt = isWebm ? 'webm' : songFile.name.split('.').pop();
+        const audioExt = songFile.name.split('.').pop();
         const audioPath = `songs/${userProfile?.id}/song-${Date.now()}.${audioExt}`;
-        const { error: audioErr } = await supabase.storage.from('songs').upload(audioPath, compressedAudio, { contentType: compressedAudio.type || 'audio/mpeg' });
-        if (audioErr) throw audioErr;
+        
+        const { promise } = uploadFileWithProgress(
+          'songs',
+          audioPath,
+          compressedAudio,
+          songFile.type || 'audio/mpeg',
+          (info) => {
+            setUploadProgress(Math.max(45, 45 + Math.floor(info.percent * 0.45)));
+          }
+        );
+        const result = await promise;
+        
         const { data: { publicUrl } } = supabase.storage.from('songs').getPublicUrl(audioPath);
         audioUrl = publicUrl;
       }
@@ -2424,28 +2368,28 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
         </div>
       )}
       {/* STEP INDICATOR */}
-      <div className="flex items-center justify-center max-w-lg mx-auto mb-10">
+      <div className="flex items-center justify-center max-w-lg mx-auto mb-14 px-4">
         <div className="flex items-center w-full">
            <div className="relative flex flex-col items-center group cursor-pointer" onClick={() => currentStep > 1 && setCurrentStep(1)}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 1 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30' : currentStep > 1 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 1 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : currentStep > 1 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
                 {currentStep > 1 ? <CircleCheck size={20} /> : '1'}
               </div>
-              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Sound</div>
+              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Details</div>
            </div>
            
            <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 1 ? 'bg-smash-purple/60' : 'bg-white/10'}`} />
            
            <div className="relative flex flex-col items-center group cursor-pointer" onClick={() => currentStep > 2 && setCurrentStep(2)}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 2 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30' : currentStep > 2 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 2 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : currentStep > 2 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
                 {currentStep > 2 ? <CircleCheck size={20} /> : '2'}
               </div>
-              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Visual</div>
+              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Upload</div>
            </div>
            
            <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 2 ? 'bg-smash-purple/60' : 'bg-white/10'}`} />
 
            <div className="relative flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 3 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 3 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : 'bg-white/5 text-text-muted'}`}>
                 3
               </div>
               <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted">Publish</div>
@@ -2506,22 +2450,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                   </div>
                 )}
                 
-                {currentStep === 1 && (
-                  <div className={`p-6 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-smash-orange bg-smash-orange/5' : ''}`}>
-                    <div className="flex bg-bg-elevated p-1.5 rounded-full w-fit mx-auto md:mx-0 gap-1 border border-white/5 shadow-inner mb-8">
-                       {['single', 'album', 'snippet'].map((m) => (
-                         <button type="button" key={m} onClick={() => {
-                           if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
-                           if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star plan required to post MotoFeed snippets');
-                           setMode(m as any);
-                         }} className={`px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-105' : 'text-text-secondary hover:text-text-primary'}`}>
-                           {m}
-                         </button>
-                       ))}
-                    </div>
-
+                {currentStep === 2 && (
+                  <div className={`p-4 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-smash-orange bg-smash-orange/5' : ''}`}>
                     <div 
-                      className={`min-h-[320px] rounded-[32px] border-2 border-dashed flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingAudio ? 'border-smash-orange bg-smash-orange/5' : 'border-white/10 bg-bg-elevated hover:border-smash-orange/50'}`}
+                      className={`min-h-[240px] md:min-h-[320px] rounded-[32px] border-2 border-dashed flex flex-col items-center justify-center p-6 md:p-8 text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingAudio ? 'border-smash-orange bg-smash-orange/5' : 'border-white/10 bg-bg-elevated hover:border-smash-orange/50'}`}
                       onDragOver={(e) => { e.preventDefault(); setIsDraggingAudio(true) }}
                       onDragLeave={(e) => { e.preventDefault(); setIsDraggingAudio(false) }}
                       onDrop={(e) => {
@@ -2535,7 +2467,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         } else {
                            const file = files[0] as File;
                            setSongFile(file);
-                           setTitle(file.name.replace(/\.[^/.]+$/, ""));
                            const audio = new Audio();
                            audio.src = URL.createObjectURL(file);
                            setAudioPreviewUrl(audio.src);
@@ -2546,10 +2477,9 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            };
                            setAudioFileSize((file.size / (1024*1024)).toFixed(1) + ' MB');
                            uploadAudioInBackground(file);
-
                            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
                            const cleanName = nameWithoutExt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
-                           if (!title) setTitle(cleanName);
+                           setTitle(prev => (prev && prev.trim() ? prev : cleanName));
                         }
                       }}
                       onClick={() => document.getElementById('audio-file-wizard')?.click()}
@@ -2601,88 +2531,103 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                   </div>
                                ) : (
                                   <div className="space-y-4 w-full pointer-events-auto">
-                                    <h3 className="text-2xl font-studio font-black text-white truncate px-4">{title || songFile?.name}</h3>
-                                    <div className="flex items-center justify-center gap-3">
-                                       <div className="px-3 py-1 bg-white/10 rounded-lg text-[12px] font-mono font-medium text-text-secondary">{audioduration}</div>
-                                       <div className="px-3 py-1 bg-white/10 rounded-lg text-[12px] font-mono font-medium text-text-secondary">{audioFileSize}</div>
-                                    </div>
-                                    {audioPreviewUrl && (
-                                       <audio controls src={audioPreviewUrl} className="w-full h-12 rounded-2xl mt-4 opacity-80" onClick={e => e.stopPropagation()} />
-                                    )}
-
-                                    {/* Background upload status */}
-                                    <div className="mt-3 flex items-center justify-center gap-2 pointer-events-auto">
-                                      {audioUploading ? (
-                                        <>
-                                          <Loader2 size={14} className="animate-spin text-smash-purple" />
-                                          <div className="flex flex-col items-start gap-1">
-                                            <span className="text-[11px] font-bold text-smash-purple uppercase tracking-widest">
-                                              Uploading in background... {audioUploadProgress}%
-                                            </span>
-                                            <span className="text-[10px] font-mono text-text-muted">
-                                              {formatSpeed(audioUploadSpeedBps)} · {formatEta(audioUploadEtaSeconds)}
-                                            </span>
-                                          </div>
-                                        </>
-                                      ) : audioUploadUrl ? (
-                                        <>
-                                          <CircleCheck size={14} className="text-smash-green" />
-                                          <span className="text-[11px] font-bold text-smash-green uppercase tracking-widest">
-                                            Audio uploaded & ready
-                                          </span>
-                                        </>
-                                      ) : audioUploadError ? (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); retryAudioUpload(); }}
-                                          className="flex items-center gap-2 text-[11px] font-bold text-red-400 uppercase tracking-widest hover:text-red-300"
+                                     <div className="flex items-center justify-between gap-4">
+                                        <div className="text-left min-w-0">
+                                           <h3 className="font-studio font-black text-xl md:text-2xl text-white truncate max-w-[280px] md:max-w-[360px]">{songFile.name}</h3>
+                                           <p className="text-text-muted text-[13px] font-sans">{audioFileSize}{audioDuration ? ` • ${audioDuration}` : ''}</p>
+                                        </div>
+                                        <button 
+                                          type="button" 
+                                          onClick={(e) => { e.stopPropagation(); document.getElementById('audio-file-wizard')?.click(); }}
+                                          className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[11px] font-display font-black text-white uppercase tracking-widest transition-all shrink-0"
                                         >
-                                          <RefreshCw size={14} /> Upload failed — Tap to retry
+                                          Replace File
                                         </button>
-                                      ) : null}
-                                    </div>
+                                     </div>
+
+                                     {audioPreviewUrl && (
+                                       <div className="bg-black/40 border border-white/10 p-3 rounded-2xl">
+                                         <p className="text-[10px] font-display font-black uppercase tracking-widest text-text-muted mb-1 text-left">Preview Audio Track</p>
+                                         <audio controls src={audioPreviewUrl} className="w-full h-8 accent-smash-purple" />
+                                       </div>
+                                     )}
+
+                                     <div className="bg-white/5 rounded-2xl p-4">
+                                        {audioUploading ? (
+                                           <div>
+                                             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+                                               <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${audioUploadProgress}%` }} />
+                                             </div>
+                                             <div className="flex items-center justify-between text-[11px] font-mono text-text-muted">
+                                               <span>{audioUploadProgress}% · {formatSpeed(audioUploadSpeedBps)}</span>
+                                               <span>{formatEta(audioUploadEtaSeconds)}</span>
+                                             </div>
+                                           </div>
+                                        ) : audioUploadError ? (
+                                           <button type="button" onClick={() => uploadAudioInBackground(songFile!)} className="w-full h-10 border border-red-500/20 bg-red-500/10 text-red-500 font-display font-bold uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-500/20 transition-all">
+                                             ⚠ Upload Failed — Tap to retry
+                                           </button>
+                                        ) : audioUploadUrl ? (
+                                           <div className="flex items-center justify-between text-smash-green font-display font-black uppercase tracking-widest text-[12px]">
+                                              <span className="flex items-center gap-2"><CircleCheck size={16} /> Audio Processed &amp; Ready</span>
+                                              <span className="text-[10px] font-mono text-text-muted">Direct Stream URL Saved</span>
+                                           </div>
+                                        ) : null}
+                                     </div>
                                   </div>
                                )}
-
-                               <button type="button" onClick={(e) => { e.stopPropagation(); document.getElementById('audio-file-wizard')?.click(); }} className="px-6 py-2 border border-smash-orange/50 text-smash-orange rounded-full text-[11px] font-display font-black uppercase tracking-widest hover:bg-smash-orange/10 transition-colors pointer-events-auto">
-                                 Change File
-                               </button>
                             </div>
                          </div>
                        ) : (
-                         <div className="space-y-6 pointer-events-none">
-                            <div className="flex items-end justify-center gap-1 h-12 mb-4">
-                              {[0.4, 0.7, 1, 0.7, 0.4, 0.9, 0.6, 1, 0.5, 0.8].map((h, i) => (
-                                <div
-                                  key={i}
-                                  className="w-1.5 bg-smash-orange rounded-full"
-                                  style={{
+                         <div className="flex flex-col items-center justify-center space-y-6 max-w-sm mx-auto pointer-events-none">
+                            <div className="w-24 h-24 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center relative shadow-lg">
+                               <Music2 size={40} className={`text-white transition-all ${isDraggingAudio ? 'scale-110 text-smash-orange' : ''}`} />
+                               <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-smash-orange text-black flex items-center justify-center shadow-lg">
+                                  <Upload size={16} />
+                               </div>
+                            </div>
+                            <div className="flex gap-1">
+                              {Array.from({ length: 5 }).map((_, i) => {
+                                const heights = [0.4, 0.7, 1, 0.6, 0.3];
+                                const h = heights[i];
+                                return (
+                                <div 
+                                  key={i} 
+                                  className="w-1.5 bg-smash-orange rounded-full" 
+                                  style={{ 
                                     height: `${h * 100}%`,
                                     animation: `waveBar 1.2s ease-in-out infinite alternate`,
                                     animationDelay: `${i * 0.1}s`,
                                     opacity: isDraggingAudio ? 1 : 0.5,
-                                  }}
+                                  }} 
                                 />
-                              ))}
+                              )})}
                             </div>
                             <div>
-                               <h3 className="font-studio text-2xl md:text-3xl text-white uppercase tracking-tight mb-2">Drop your audio here</h3>
-                               <p className="text-text-muted text-[13px] md:text-sm font-sans">MP3, WAV, FLAC · Max 50MB · Auto-compressed on upload</p>
+                               <h3 className="font-studio text-2xl md:text-3xl text-white uppercase tracking-tight mb-2">Drop your MP3 here</h3>
+                               <p className="text-text-muted text-[13px] md:text-sm font-sans">MP3 Only · Max 50MB · Fast direct upload</p>
                             </div>
                             <button type="button" className="px-8 py-3 rounded-full bg-smash-orange text-black font-display font-black uppercase text-xs tracking-widest hover:brightness-110 shadow-[0_0_20px_rgba(255,95,0,0.3)] transition-all pointer-events-auto">
                                Browse Files
                             </button>
                          </div>
                        )}
-                       <input id="audio-file-wizard" type="file" multiple={mode === 'album'} accept="audio/*" onChange={e => {
+                       <input id="audio-file-wizard" type="file" multiple={mode === 'album'} accept="audio/mpeg, audio/mp3, .mp3" onChange={e => {
                          if (mode === 'album') {
-                           const files = Array.from(e.target.files || []);
-                           initAlbumTracks(files as File[]);
+                           const files = Array.from(e.target.files || []) as File[];
+                           const mp3Files = files.filter(f => f.name.toLowerCase().endsWith('.mp3'));
+                           if (mp3Files.length !== files.length) {
+                              toast.error('Only MP3 files are allowed.');
+                           }
+                           initAlbumTracks(mp3Files);
                          } else {
                            const file = e.target.files?.[0];
                            if (!file) return;
+                           if (!file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
+                              toast.error('Only MP3 files are allowed.');
+                              return;
+                           }
                            setSongFile(file);
-                           setTitle(file.name.replace(/\.[^/.]+$/, ""));
                            const audio = new Audio();
                            audio.src = URL.createObjectURL(file);
                            setAudioPreviewUrl(audio.src);
@@ -2693,31 +2638,48 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            };
                            setAudioFileSize((file.size / (1024*1024)).toFixed(1) + ' MB');
                            uploadAudioInBackground(file);
-
                            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
                            const cleanName = nameWithoutExt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
-                           if (!title) setTitle(cleanName);
+                           setTitle(prev => (prev && prev.trim() ? prev : cleanName));
                          }
                        }} className="hidden" />
                     </div>
 
-                    <div className="mt-8">
-                       <button 
-                         type="button" 
-                         disabled={mode === 'album' ? albumTracks.length === 0 : !songFile}
-                         onClick={() => setCurrentStep(2)} 
-                         className="w-full h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                    <div className="mt-8 flex gap-4">
+                       <button
+                         type="button"
+                         onClick={() => setCurrentStep(1)}
+                         className="h-14 px-8 border border-white/10 hover:bg-white/5 text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl transition-all"
                        >
-                         NEXT: Add Artwork <ChevronRight size={18} />
+                         ← BACK
+                       </button>
+                       <button
+                         type="button"
+                         disabled={mode === 'album' ? albumTracks.length === 0 : !songFile}
+                         onClick={() => setCurrentStep(3)} 
+                         className="flex-1 h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                       >
+                         NEXT: Final Check <ChevronRight size={18} />
                        </button>
                     </div>
                   </div>
                 )}
 
+                {currentStep === 1 && (
+                  <div className="p-4 md:p-12">
+                    <div className="flex bg-bg-elevated p-1.5 rounded-full w-full md:w-fit overflow-x-auto custom-scrollbar mx-auto md:mx-0 gap-1 border border-white/5 shadow-inner mb-8">
+                       {['single', 'album', 'snippet'].map((m) => (
+                         <button type="button" key={m} onClick={() => {
+                           if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
+                           if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star plan required to post MotoFeed snippets');
+                           setMode(m as any);
+                         }} className={`flex-1 md:flex-none whitespace-nowrap px-4 md:px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}>
+                           {m}
+                         </button>
+                       ))}
+                    </div>
 
-                {currentStep === 2 && (
-                  <div className="p-6 md:p-12">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10">
                         {/* LEFT COLUMN: COVER */}
                         <div>
                            <div 
@@ -2999,24 +2961,53 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              </div>
                              </>
                            )}
+                        </div>
+                     </div>
 
-                           {mode === 'album' && (
+                     <div className="flex gap-4 mt-10">
+                        <button type="button" onClick={() => setCurrentStep(2)} disabled={!coverFile || !title || !genre} className="flex-1 h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2">NEXT: Upload Audio <ChevronRight size={18} /></button>
+                     </div>
+                  </div>
+                )}
+
+
+                {currentStep === 3 && (
+                  <div className="p-6 md:p-12">
+                     <div className="max-w-xl mx-auto space-y-10">
+                        
+                        <div className="bg-bg-elevated border border-white/5 p-4 rounded-3xl flex items-center gap-4">
+                           <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
+                              {coverFile ? <img src={URL.createObjectURL(coverFile)} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5" />}
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <h3 className="font-studio font-black uppercase text-xl text-white truncate">{title}</h3>
+                              <p className="font-sans text-[14px] text-text-secondary truncate">{userProfile?.stage_name || userProfile?.full_name}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                 <span className="px-2.5 py-1 bg-white/10 rounded-md text-[10px] font-display font-black uppercase tracking-widest text-white">{genre}</span>
+                                 {isForSale ? (
+                                    <span className="px-2.5 py-1 bg-smash-purple/20 text-smash-purple rounded-md text-[10px] font-display font-black uppercase tracking-widest">MK {price.toLocaleString()}</span>
+                                 ) : (
+                                    <span className="px-2.5 py-1 bg-smash-green/20 text-smash-green rounded-md text-[10px] font-display font-black uppercase tracking-widest">Free Stream</span>
+                                 )}
+                              </div>
+                           </div>
+                        </div>
+
+                        {mode === 'album' && (
                               <div className="pt-4 border-t border-white/5 space-y-4">
                                  {isForSale && (
                                    <div className="space-y-4">
                                       <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Pricing Mode</label>
-                                      <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
-                                         <button type="button" onClick={() => setAlbumPricingMode('album')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${albumPricingMode === 'album' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Single Price for full Album</button>
-                                         <button type="button" onClick={() => setAlbumPricingMode('individual')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${albumPricingMode === 'individual' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Set Track Prices</button>
+                                      <div className="flex flex-col md:flex-row gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
+                                         <button type="button" onClick={() => setAlbumPricingMode('album')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all px-4 ${albumPricingMode === 'album' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Single Price for full Album</button>
+                                         <button type="button" onClick={() => setAlbumPricingMode('individual')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all px-4 ${albumPricingMode === 'individual' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Set Track Prices</button>
                                       </div>
                                    </div>
                                  )}
-
                                  <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Individual Tracks Metadata</label>
                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                    {albumTracks.map((track) => (
                                       <div key={track.id} className="bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                                         
                                          {/* Background upload status */}
                                          <div className="mb-3">
                                             {track.uploadStatus === 'compressing' && (
@@ -3042,7 +3033,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                                 </button>
                                             )}
                                          </div>
-
                                          <input required placeholder="Track Title" value={track.title} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, title: e.target.value } : t))} className="w-full bg-transparent font-sans font-bold text-[14px] text-white mb-3 focus:outline-none border-b border-transparent focus:border-white/20 pb-1 px-1 transition-all" />
                                          <div className="space-y-3">
                                            {isForSale && albumPricingMode === 'individual' && (
@@ -3073,38 +3063,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  </div>
                               </div>
                            )}
-                        </div>
-                     </div>
-
-                     <div className="flex gap-4 mt-10">
-                        <button type="button" onClick={() => setCurrentStep(1)} className="h-14 px-8 border border-white/10 hover:bg-white/5 text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl transition-all">← BACK</button>
-                        <button type="button" onClick={() => setCurrentStep(3)} disabled={!coverFile || !title || !genre} className="flex-1 h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all">NEXT: Final Check →</button>
-                     </div>
-                  </div>
-                )}
-
-
-                {currentStep === 3 && (
-                  <div className="p-6 md:p-12">
-                     <div className="max-w-xl mx-auto space-y-10">
-                        
-                        <div className="bg-bg-elevated border border-white/5 p-4 rounded-3xl flex items-center gap-4">
-                           <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
-                              {coverFile ? <img src={URL.createObjectURL(coverFile)} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5" />}
-                           </div>
-                           <div className="flex-1 min-w-0">
-                              <h3 className="font-studio font-black uppercase text-xl text-white truncate">{title}</h3>
-                              <p className="font-sans text-[14px] text-text-secondary truncate">{userProfile?.stage_name || userProfile?.full_name}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                 <span className="px-2.5 py-1 bg-white/10 rounded-md text-[10px] font-display font-black uppercase tracking-widest text-white">{genre}</span>
-                                 {isForSale ? (
-                                    <span className="px-2.5 py-1 bg-smash-purple/20 text-smash-purple rounded-md text-[10px] font-display font-black uppercase tracking-widest">MK {price.toLocaleString()}</span>
-                                 ) : (
-                                    <span className="px-2.5 py-1 bg-smash-green/20 text-smash-green rounded-md text-[10px] font-display font-black uppercase tracking-widest">Free Stream</span>
-                                 )}
-                              </div>
-                           </div>
-                        </div>
 
                         <div className="space-y-4">
                            <h4 className="text-[11px] font-display font-black uppercase tracking-widest text-text-muted mb-2">Checklist</h4>
@@ -3160,7 +3118,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                {guardResult.message || 'You have reached your slot limit. Archive a track or upgrade your plan to upload more songs.'}
                              </div>
                            )}
-                           <button type="submit" disabled={uploading || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={uploading || (mode === 'single' && audioUploading) || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
                            </button>
                            <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
