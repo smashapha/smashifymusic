@@ -12,29 +12,45 @@ interface SEOProps {
 export default function SEO({
   title,
   description,
-  url = 'https://smashifymusic.vercel.app',
+  url,
   type = 'website',
-  image = 'https://smashifymusic.vercel.app/og-image.png'
+  image
 }: SEOProps) {
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://smashifymusic.vercel.app';
+  const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : 'https://smashifymusic.vercel.app');
+
+  // Ensure image is an absolute URL so WhatsApp, Twitter, Facebook crawlers parse it correctly
+  const rawImage = image || '/og-image.png';
+  const fullImageUrl = rawImage.startsWith('http://') || rawImage.startsWith('https://')
+    ? rawImage
+    : `${currentOrigin}${rawImage.startsWith('/') ? '' : '/'}${rawImage}`;
+
   return (
     <Helmet>
       {/* Standard Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
 
-      {/* Open Graph / Facebook */}
+      {/* Open Graph / Facebook / WhatsApp */}
       <meta property="og:type" content={type} />
-      <meta property="og:url" content={url} />
+      <meta property="og:site_name" content="Smashify" />
+      <meta property="og:url" content={currentUrl} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={fullImageUrl} />
+      <meta property="og:image:secure_url" content={fullImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={`${title} — Smashify Music`} />
 
       {/* Twitter */}
-      <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:url" content={url} />
-      <meta property="twitter:title" content={title} />
-      <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content={image} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@Smashify" />
+      <meta name="twitter:url" content={currentUrl} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={fullImageUrl} />
     </Helmet>
   );
 }
+

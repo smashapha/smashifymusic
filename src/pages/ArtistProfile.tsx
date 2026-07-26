@@ -15,6 +15,7 @@ import { Song, UserProfile, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import Avatar from '../components/common/Avatar';
 import SupportArtistModal from '../components/common/SupportArtistModal';
+import SEO from '../components/common/SEO';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING, GRID_ARTIST_CARDS } from '../lib/layout';
@@ -104,11 +105,23 @@ const ArtistProfile: React.FC = () => {
       }
    };
 
-   const handleShare = () => {
+   const handleShare = async () => {
       const shareUrl = `${window.location.origin}/artist/${encodeURIComponent(artist?.stage_name || id || '')}`;
+      if (navigator.share) {
+         try {
+            await navigator.share({
+               title: `${artist?.stage_name || 'Artist'} — Smashify`,
+               text: `🎵 Stream music by ${artist?.stage_name || 'this artist'} on Smashify!`,
+               url: shareUrl
+            });
+            return;
+         } catch {
+            // fallback to clipboard on cancel or fail
+         }
+      }
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success('Profile link copied!');
+      toast.success('Profile link copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
    };
 
@@ -374,6 +387,12 @@ const ArtistProfile: React.FC = () => {
 
    return (
   <div className="min-h-screen pb-32">
+    <SEO 
+      title={`${artist.stage_name || artist.full_name || 'Artist Profile'} — Smashify`}
+      description={artist.bio || `Stream music by ${artist.stage_name || 'this artist'} on Smashify. Support directly via mobile money.`}
+      image={artist.avatar_url || artist.banner_url || '/og-image.png'}
+      url={`${window.location.origin}/artist/${encodeURIComponent(artist.stage_name || id || '')}`}
+    />
 
     {/* ── HERO ── */}
     <div className="relative h-[280px] md:h-[380px] overflow-hidden">

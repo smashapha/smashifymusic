@@ -10,6 +10,7 @@ import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
 
 const AlbumDetails: React.FC = () => {
   const { id } = useParams();
@@ -160,6 +161,12 @@ const AlbumDetails: React.FC = () => {
 
   return (
     <div className="pb-32 min-h-screen bg-bg-page select-none text-white overflow-x-hidden">
+      <SEO 
+        title={`${album.title} — ${artist?.stage_name || 'Smashify'}`}
+        description={`Listen to the album "${album.title}" by ${artist?.stage_name || 'artist'} on Smashify. Stream free or buy tracks directly.`}
+        image={album.cover_url || '/og-image.png'}
+        url={window.location.href}
+      />
       {/* Dynamic Glowing Banner Header - Matching Playlist Layout */}
       <div className="h-[42vh] min-h-[340px] relative bg-gradient-to-b from-[#9B5DE5]/20 to-[#0b0a0e] pt-12">
         <img src={album.cover_url} className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20 pointer-events-none" alt="" />

@@ -7,8 +7,8 @@ interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const LogoIcon = ({ className = "" }: { className?: string }) => (
   <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="41" stroke="currentColor" strokeWidth="18" fill="none" />
-    <circle cx="50" cy="50" r="14.5" stroke="currentColor" strokeWidth="13" fill="none" />
+    <circle cx="50" cy="50" r="41" stroke="#00A6FF" strokeWidth="18" fill="none" />
+    <circle cx="50" cy="50" r="14.5" stroke="#00A6FF" strokeWidth="13" fill="none" />
   </svg>
 );
 
@@ -29,13 +29,18 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', showText = tru
 
   return (
     <div className={`flex items-center gap-3 ${className}`} {...props}>
-      <div className={`${containerSizes[size]} flex items-center justify-center transform group-hover:rotate-12 transition-transform`}>
-        <LogoIcon className="w-full h-full text-smash-orange" />
+      <div className={`${containerSizes[size]} flex items-center justify-center transform group-hover:rotate-12 transition-transform shrink-0`}>
+        <LogoIcon className="w-full h-full" />
       </div>
       {showText && (
-        <span className={`${textSizes[size]} font-black font-display tracking-tighter italic uppercase`}>
-          SMASHIFY
-        </span>
+        <div className="flex flex-col">
+          <span className={`${textSizes[size]} font-black font-display tracking-tight text-[#00A6FF] uppercase leading-none`}>
+            SMASHIFY
+          </span>
+          <span className="text-[10px] font-sans font-bold italic tracking-tight text-white/70 mt-0.5">
+            Stream music. Support Artists.
+          </span>
+        </div>
       )}
     </div>
   );

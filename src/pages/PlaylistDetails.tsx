@@ -10,6 +10,7 @@ import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
 
 // Chart Metadata matching the visual screenshots
 const FEATURED_CHARTS = [
@@ -369,6 +370,12 @@ const PlaylistDetails: React.FC = () => {
 
   return (
     <div className="pb-32 min-h-screen bg-bg-page select-none text-white overflow-x-hidden">
+      <SEO 
+        title={`${displayInfo.title} — Smashify`}
+        description={displayInfo.subtitle || `Listen to ${displayInfo.title} on Smashify.`}
+        image={displayInfo.cover_url || '/og-image.png'}
+        url={window.location.href}
+      />
       {/* Dynamic Glowing Header Background */}
       <div className={`h-[42vh] min-h-[340px] relative bg-gradient-to-b ${displayInfo.style} to-[#0b0a0e] pt-12`}>
         <div className="absolute inset-0 bg-[#0b0a0e]/60" />
