@@ -92,13 +92,52 @@ const Discover: React.FC = () => {
     fetchAllSongs();
 
     const fetchPublicPlaylists = async () => {
-      const { data } = await supabase
+      let resultData: any[] = [];
+      const { data, error } = await supabase
         .from('playlists')
         .select('id, name, cover_url, profile_id, playlist_songs(songs(cover_url)), profiles:profile_id(full_name, avatar_url)')
         .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(12);
-      setPublicPlaylists(data || []);
+        
+      if (error) {
+        console.warn('Nested query failed in Discover, attempting manual join', error);
+        const { data: fallbackData } = await supabase
+          .from('playlists')
+          .select('id, name, cover_url, profile_id, playlist_songs(song_id), profiles:profile_id(full_name, avatar_url)')
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(12);
+          
+        if (fallbackData) {
+          // fetch all unique song_ids
+          const allSongIds = new Set<string>();
+          fallbackData.forEach(pl => {
+            (pl.playlist_songs || []).forEach((ps: any) => {
+              if (ps.song_id) allSongIds.add(ps.song_id);
+            });
+          });
+          
+          let fetchedSongs: Record<string, any> = {};
+          if (allSongIds.size > 0) {
+            const { data: sData } = await supabase
+              .from('songs')
+              .select('id, cover_url')
+              .in('id', Array.from(allSongIds));
+            (sData || []).forEach(s => fetchedSongs[s.id] = s);
+          }
+          
+          resultData = fallbackData.map(pl => ({
+            ...pl,
+            playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+              songs: fetchedSongs[ps.song_id] || null
+            }))
+          }));
+        }
+      } else {
+        resultData = data || [];
+      }
+      setPublicPlaylists(resultData);
     };
     fetchPublicPlaylists();
   }, [userProfile]);

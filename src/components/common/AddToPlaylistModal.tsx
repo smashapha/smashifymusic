@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  X, Plus, Music2, Check, Lock as AppLockIcon, Globe, Loader2 
+  X, Plus, Music2, Check, Lock as AppLockIcon, Globe, Loader2, Library
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Playlist, Song } from '../../types';
@@ -14,6 +16,7 @@ interface AddToPlaylistModalProps {
 
 const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }) => {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -26,8 +29,10 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
     if (userProfile?.id) {
       fetchPlaylists();
       checkIfAdded();
+    } else {
+      setLoading(false);
     }
-  }, [userProfile]);
+  }, [userProfile?.id]);
 
   const fetchPlaylists = async () => {
     try {
@@ -47,15 +52,24 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
   };
 
   const checkIfAdded = async () => {
+    if (!userProfile?.id) return;
     try {
-      const { data, error } = await supabase
-        .from('playlist_songs')
-        .select('playlist_id')
-        .eq('song_id', song.id);
+      const { data: userPlaylists } = await supabase
+        .from('playlists')
+        .select('id')
+        .eq('profile_id', userProfile.id);
 
-      if (error) throw error;
-      if (data) {
-        setAddedPlaylists(data.map(d => d.playlist_id));
+      if (userPlaylists && userPlaylists.length > 0) {
+        const playlistIds = userPlaylists.map(p => p.id);
+        const { data, error } = await supabase
+          .from('playlist_songs')
+          .select('playlist_id')
+          .eq('song_id', song.id)
+          .in('playlist_id', playlistIds);
+
+        if (!error && data) {
+          setAddedPlaylists(data.map(d => d.playlist_id));
+        }
       }
     } catch (err) {
       console.error('Error checking added playlists:', err);
@@ -63,7 +77,11 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
   };
 
   const handleCreatePlaylist = async () => {
-    if (!newName.trim() || !userProfile?.id) return;
+    if (!newName.trim()) return;
+    if (!userProfile?.id) {
+      toast.error('Please log in to create playlists');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -81,14 +99,25 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
       if (error) throw error;
 
       // Automatically add the song to the new playlist
-      await handleAddToPlaylist(data.id);
-      
+      const { error: songError } = await supabase
+        .from('playlist_songs')
+        .insert({
+          playlist_id: data.id,
+          song_id: song.id
+        });
+
+      if (songError && songError.code !== '23505') {
+        console.error('Error attaching song to new playlist:', songError);
+      }
+
+      setAddedPlaylists(prev => [...prev, data.id]);
+      toast.success(`Created "${newName.trim()}" and added song!`);
       setNewName('');
       setShowCreate(false);
       fetchPlaylists();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating playlist:', err);
-      alert('Failed to create playlist');
+      toast.error(err.message || 'Failed to create playlist');
     } finally {
       setLoading(false);
     }
@@ -96,6 +125,10 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
 
   const handleAddToPlaylist = async (playlistId: string) => {
     if (addedPlaylists.includes(playlistId)) return;
+    if (!userProfile?.id) {
+      toast.error('Please log in to save to playlist');
+      return;
+    }
     setAddingTo(playlistId);
 
     try {
@@ -103,30 +136,30 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
         .from('playlist_songs')
         .insert({
           playlist_id: playlistId,
-          song_id: song.id,
-          profile_id: userProfile?.id
+          song_id: song.id
         });
 
       if (error) {
-          if (error.code === '23505') { // Unique constraint violation
-              // Already added
-          } else {
-              throw error;
-          }
+        if (error.code === '23505') {
+          // Unique constraint violation - already added
+        } else {
+          throw error;
+        }
       }
 
       setAddedPlaylists(prev => [...prev, playlistId]);
+      toast.success('Added song to playlist!');
       
-      // Update playlist cover if it's the first song or just because
+      // Update playlist cover if it's empty
       await supabase
         .from('playlists')
         .update({ cover_url: song.cover_url })
         .eq('id', playlistId)
         .is('cover_url', null);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding to playlist:', err);
-      alert('Failed to add to playlist');
+      toast.error(err.message || 'Failed to add to playlist');
     } finally {
       setAddingTo(null);
     }
@@ -223,6 +256,19 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                 ) : (
                   <p className="text-center py-8 text-sm text-smash-gray font-medium">You don't have any playlists yet.</p>
                 )}
+              </div>
+
+              <div className="pt-2 border-t border-white/5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/library?tab=playlists');
+                    onClose();
+                  }}
+                  className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-smash-orange hover:underline py-2"
+                >
+                  <Library size={14} /> View All Playlists in Library
+                </button>
               </div>
             </div>
           ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, ShieldCheck, ChevronRight, ChevronLeft, Bell } from 'lucide-react';
+import { Home, Search, Library, User, Music, TrendingUp, Mic2, Compass, Flame, Wifi, WifiOff, LogOut, ShieldCheck, ChevronRight, ChevronLeft, Bell, ListMusic } from 'lucide-react';
 import GlobalPlayer from '../player/GlobalPlayer';
 import { motion, AnimatePresence } from "motion/react";
 import { usePlayer } from '../../context/PlayerContext';
@@ -107,6 +107,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
     { icon: Home, label: 'Home', path: '/home' },
     { icon: Compass, label: 'Discover', path: '/discover' },
     { icon: Library, label: 'Library', path: '/library' },
+    { icon: ListMusic, label: 'Playlists', path: '/library?tab=playlists' },
     { icon: Flame, label: 'Feed', path: '/moto-feed' },
     { icon: TrendingUp, label: 'Trending', path: '/trending' },
   ];
@@ -134,35 +135,35 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
       <nav className="flex-1 overflow-y-auto no-scrollbar pb-4">
         {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-display font-medium uppercase tracking-widest text-text-muted">NAVIGATE</div>}
         <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) => 
-                  `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
-                    isActive ? activeStyle : inactiveStyle
-                  } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
-                }
-                title={item.label}
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
-                    {!isCollapsed && (
-                      <motion.span 
-                        initial={false}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.1 }}
-                        className="truncate"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            </li>
-          ))}
+          {navItems.map((item) => {
+            const isItemActive = item.path.includes('?') 
+              ? (location.pathname + location.search) === item.path
+              : location.pathname === item.path && !(item.path === '/library' && location.search.includes('tab=playlists'));
+            
+            return (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  className={`flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
+                    isItemActive ? activeStyle : inactiveStyle
+                  } ${isCollapsed && isItemActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`}
+                  title={item.label}
+                >
+                  <item.icon size={20} className={`shrink-0 ${isItemActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                  {!isCollapsed && (
+                    <motion.span 
+                      initial={false}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.1 }}
+                      className="truncate"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
 
         {user && (

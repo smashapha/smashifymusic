@@ -69,6 +69,7 @@ const Home: React.FC = () => {
   const [recentSongs, setRecentSongs] = useState<Song[]>([]);
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
   const [aiPicks, setAiPicks] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,6 +276,53 @@ const Home: React.FC = () => {
       } else {
         setAlbums([]);
       }
+
+      // Fetch Public Playlists
+      let resultData: any[] = [];
+      const { data: plData, error: plError } = await supabase
+        .from('playlists')
+        .select('id, name, cover_url, profile_id, is_public, playlist_songs(songs(cover_url)), profiles:profile_id(full_name, avatar_url)')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+        
+      if (plError) {
+        console.warn('Nested query failed in Home, attempting manual join', plError);
+        const { data: fallbackData } = await supabase
+          .from('playlists')
+          .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id), profiles:profile_id(full_name, avatar_url)')
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
+        if (fallbackData) {
+          const allSongIds = new Set<string>();
+          fallbackData.forEach(pl => {
+            (pl.playlist_songs || []).forEach((ps: any) => {
+              if (ps.song_id) allSongIds.add(ps.song_id);
+            });
+          });
+          
+          let fetchedSongs: Record<string, any> = {};
+          if (allSongIds.size > 0) {
+            const { data: sData } = await supabase
+              .from('songs')
+              .select('id, cover_url')
+              .in('id', Array.from(allSongIds));
+            (sData || []).forEach(s => fetchedSongs[s.id] = s);
+          }
+          
+          resultData = fallbackData.map(pl => ({
+            ...pl,
+            playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+              songs: fetchedSongs[ps.song_id] || null
+            }))
+          }));
+        }
+      } else {
+        resultData = plData || [];
+      }
+      setPublicPlaylists(resultData);
 
       if (userProfile) {
         const { data: recentData } = await supabase
@@ -611,6 +659,41 @@ const Home: React.FC = () => {
             )}
          </div>
       </HomeSection>
+
+      {publicPlaylists.length > 0 && (
+        <HomeSection title="Public Playlists" subtitle="Discover what others are listening to.">
+           <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+              {publicPlaylists.map((pl: any) => (
+                 <div key={pl.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/playlist/${pl.id}`)}>
+                    <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
+                       {pl.cover_url && !pl.cover_url.includes('images.unsplash.com') ? (
+                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                       ) : (
+                          <div className="w-full h-full grid grid-cols-2 grid-rows-2">
+                             {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
+                                <img key={i} src={optimizeImage(ps.songs?.cover_url || pl.cover_url, 150, 150)} className="w-full h-full object-cover" />
+                             ))}
+                             {/* Fill empty spots if less than 4 songs */}
+                             {Array.from({ length: Math.max(0, 4 - (pl.playlist_songs?.length || 0)) }).map((_, i) => (
+                                <div key={`empty-${i}`} className="w-full h-full bg-white/5" />
+                             ))}
+                          </div>
+                       )}
+                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-smash-orange flex items-center justify-center text-white transform translate-y-4 group-hover:translate-y-0 transition-all">
+                             <Play size={18} className="ml-1" />
+                          </div>
+                       </div>
+                    </div>
+                    <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{pl.name}</h4>
+                    <div className="flex items-center gap-1.5 opacity-80">
+                       <span className="font-display font-black text-[9px] uppercase tracking-widest text-text-muted">By {pl.profiles?.full_name || 'User'}</span>
+                    </div>
+                 </div>
+              ))}
+           </div>
+        </HomeSection>
+      )}
 
       <HomeSection title="For Sale" subtitle="Support artists directly by owning their music.">
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">

@@ -113,13 +113,48 @@ const PlaylistDetails: React.FC = () => {
 
       if (!isCurated && id) {
         // Fetch custom playlist details
-        const { data: customPlaylist, error: plError } = await supabase
+        let customPlaylist = null;
+        const { data: initialData, error: plError } = await supabase
           .from('playlists')
-          .select('*, playlist_songs(id, position, songs(*, profiles:artist_id(full_name, stage_name, avatar_url, verified)))')
+          .select('*, playlist_songs(id, added_at, songs(*, profiles:artist_id(full_name, stage_name, avatar_url, verified)))')
           .eq('id', id)
           .maybeSingle();
 
-        if (plError) throw plError;
+        if (plError) {
+          console.warn('Nested query failed, attempting manual join for playlist:', plError);
+          const { data: fallbackData, error: fallbackErr } = await supabase
+            .from('playlists')
+            .select('*, playlist_songs(id, added_at, song_id)')
+            .eq('id', id)
+            .maybeSingle();
+            
+          if (fallbackErr) throw fallbackErr;
+          
+          if (fallbackData) {
+            // Manually fetch songs
+            const songIds = (fallbackData.playlist_songs || []).map((ps: any) => ps.song_id).filter(Boolean);
+            let fetchedSongs: any[] = [];
+            if (songIds.length > 0) {
+              const { data: sData } = await supabase
+                .from('songs')
+                .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified)')
+                .in('id', songIds);
+              fetchedSongs = sData || [];
+            }
+            
+            // Reconstruct the nested structure
+            fallbackData.playlist_songs = (fallbackData.playlist_songs || []).map((ps: any) => {
+              const matchedSong = fetchedSongs.find(s => s.id === ps.song_id);
+              return {
+                ...ps,
+                songs: matchedSong || null
+              };
+            });
+            customPlaylist = fallbackData;
+          }
+        } else {
+          customPlaylist = initialData;
+        }
 
         if (customPlaylist) {
           setCustomPlaylistInfo({
@@ -135,7 +170,7 @@ const PlaylistDetails: React.FC = () => {
           setEditPublic(customPlaylist.is_public);
 
           const sortedPlaylistSongs = (customPlaylist.playlist_songs || [])
-            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+            .sort((a: any, b: any) => (new Date(a.added_at).getTime() || 0) - (new Date(b.added_at).getTime() || 0));
           const playlistSongs = sortedPlaylistSongs.map((ps: any) => ps.songs ? ({ ...ps.songs, _playlistSongId: ps.id }) : null).filter(Boolean);
           const formatted = playlistSongs.map((s: any) => ({
             ...s,
@@ -236,9 +271,9 @@ const PlaylistDetails: React.FC = () => {
         setIsSaved(false);
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching playlist songs:', err);
-      toast.error('Failed to load chart songs');
+      toast.error(`Error: ${err?.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -278,29 +313,6 @@ const PlaylistDetails: React.FC = () => {
     }
   };
 
-  const moveSong = async (index: number, direction: 'up' | 'down') => {
-    if (!isOwner) return;
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= songs.length) return;
-
-    const newSongs = [...songs];
-    [newSongs[index], newSongs[newIndex]] = [newSongs[newIndex], newSongs[index]];
-    setSongs(newSongs);
-
-    // Persist new positions
-    try {
-      await Promise.all(newSongs.map((s, i) =>
-        supabase
-          .from('playlist_songs')
-          .update({ position: i })
-          .eq('playlist_id', id)
-          .eq('song_id', s.id)
-      ));
-    } catch (err) {
-      console.error('Failed to save order:', err);
-    }
-  };
-
   const handleSavePlaylistSettings = async () => {
     if (!editName.trim()) {
       toast.error('Playlist name cannot be empty');
@@ -311,7 +323,12 @@ const PlaylistDetails: React.FC = () => {
         .from('playlists')
         .update({ name: editName.trim(), is_public: editPublic })
         .eq('id', id);
-      toast.success('Playlist updated');
+      setCustomPlaylistInfo(prev => prev ? {
+        ...prev,
+        title: editName.trim(),
+        is_public: editPublic
+      } : null);
+      toast.success(`Playlist updated to ${editPublic ? 'Public' : 'Private'}`);
       setShowSettings(false);
       fetchSongs(); // Refresh
     } catch (err: any) {
@@ -426,9 +443,29 @@ const PlaylistDetails: React.FC = () => {
 
             {/* Title / Meta */}
             <div className="flex-1">
-              <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#1db954] bg-[#1db954]/10 px-2.5 py-1 rounded-full">
-                {displayInfo.isCustom ? 'My Library Playlist' : 'Public Playlist'}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#1db954] bg-[#1db954]/10 px-3 py-1 rounded-full flex items-center gap-1.5 border border-[#1db954]/20">
+                  {displayInfo.isCustom ? (
+                    <>
+                      {displayInfo.is_public ? <Globe size={12} className="text-[#1db954]" /> : <Lock size={12} className="text-[#1db954]" />}
+                      {displayInfo.is_public ? 'Public Playlist' : 'Private Playlist'}
+                    </>
+                  ) : (
+                    <>
+                      <Globe size={12} className="text-[#1db954]" />
+                      Public Playlist
+                    </>
+                  )}
+                </span>
+                {isOwner && (
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="text-[10px] font-black uppercase tracking-wider text-white/80 hover:text-white bg-white/10 hover:bg-smash-orange px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
+                  >
+                    <Pencil size={12} /> Edit Settings
+                  </button>
+                )}
+              </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-studio font-black italic uppercase tracking-tighter text-white mt-4 mb-3 leading-none drop-shadow-md">
                 {displayInfo.title}
               </h1>
@@ -668,12 +705,6 @@ const PlaylistDetails: React.FC = () => {
                     <span className="group-hover:hidden">{formatDuration(song.duration)}</span>
                     {isOwner && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); moveSong(index, 'up'); }} disabled={index === 0} className="p-1 text-smash-gray hover:text-white disabled:opacity-20">
-                          <ChevronUp size={14} />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); moveSong(index, 'down'); }} disabled={index === songs.length - 1} className="p-1 text-smash-gray hover:text-white disabled:opacity-20">
-                          <ChevronDown size={14} />
-                        </button>
                         <button onClick={(e) => { e.stopPropagation(); handleRemoveSong(song); }} className="p-1 text-smash-gray hover:text-red-400">
                           <Trash2 size={14} />
                         </button>

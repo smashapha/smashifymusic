@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from "motion/react";
-import { useNavigate } from 'react-router-dom';
-import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon, Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon, Loader2, Trash2, Globe, Lock, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -15,6 +15,9 @@ import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_LIST_CARDS }
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as 'purchased' | 'likes' | 'downloads' | 'playlists';
+  
   const limits = useMemo(() => getListenerLimits(userProfile), [
     userProfile?.subscription_tier,
     userProfile?.subscription_expires_at,
@@ -24,15 +27,32 @@ const Library: React.FC = () => {
     userProfile?.subscription_tier,
     userProfile?.subscription_expires_at,
   ]);
-  const [activeTab, setActiveTab] = useState<'purchased' | 'likes' | 'downloads' | 'playlists'>('purchased');
+  const [activeTab, setActiveTab] = useState<'purchased' | 'likes' | 'downloads' | 'playlists'>(
+    tabParam && ['purchased', 'likes', 'downloads', 'playlists'].includes(tabParam) ? tabParam : 'purchased'
+  );
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [newPlaylistIsPublic, setNewPlaylistIsPublic] = useState(false);
+  const [editingPlaylist, setEditingPlaylist] = useState<any | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPublic, setEditPublic] = useState(false);
   const [purchasedSongs, setPurchasedSongs] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tabParam && ['purchased', 'likes', 'downloads', 'playlists'].includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab: 'purchased' | 'likes' | 'downloads' | 'playlists') => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
 
   useEffect(() => {
     const fetchPurchased = async () => {
@@ -162,13 +182,55 @@ const Library: React.FC = () => {
            setSongs([]);
         }
       } else if (activeTab === 'playlists') {
-        const { data: playlistsData, error: plError } = await supabase
-          .from('playlists')
-          .select('*, playlist_songs(songs(*, profiles!artist_id(full_name, stage_name)))')
-          .eq('profile_id', userProfile?.id);
-        
-        if (plError) throw plError;
-        setPlaylists(playlistsData || []);
+        let playlistsResult: any[] = [];
+        try {
+          const { data: playlistsData, error: plError } = await supabase
+            .from('playlists')
+            .select('*, playlist_songs(id, songs(*, profiles:artist_id(full_name, stage_name)))')
+            .eq('profile_id', userProfile?.id)
+            .order('created_at', { ascending: false });
+          
+          if (!plError && playlistsData) {
+            playlistsResult = playlistsData;
+          } else {
+            console.warn('Nested query failed, attempting simple playlist query:', plError);
+            const { data: simpleData, error: simpleErr } = await supabase
+              .from('playlists')
+              .select('*, playlist_songs(id, song_id)')
+              .eq('profile_id', userProfile?.id)
+              .order('created_at', { ascending: false });
+
+            if (!simpleErr && simpleData) {
+              // fetch unique song covers for mosaic
+              const allSongIds = new Set<string>();
+              simpleData.forEach((pl: any) => {
+                (pl.playlist_songs || []).forEach((ps: any) => {
+                  if (ps.song_id) allSongIds.add(ps.song_id);
+                });
+              });
+              
+              let fetchedSongs: Record<string, any> = {};
+              if (allSongIds.size > 0) {
+                const { data: sData } = await supabase
+                  .from('songs')
+                  .select('id, cover_url')
+                  .in('id', Array.from(allSongIds));
+                (sData || []).forEach(s => fetchedSongs[s.id] = s);
+              }
+              
+              playlistsResult = simpleData.map((pl: any) => ({
+                ...pl,
+                playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+                  ...ps,
+                  songs: fetchedSongs[ps.song_id] || null
+                }))
+              }));
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching playlists tab:', e);
+        }
+        setPlaylists(playlistsResult);
       }
     } catch (err) {
       console.error('Error fetching library:', err);
@@ -182,21 +244,60 @@ const Library: React.FC = () => {
     s.artist_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredPlaylists = playlists.filter(p => 
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const deletePlaylist = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this playlist?')) return;
+    try {
+      const { error } = await supabase.from('playlists').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Playlist deleted');
+      setPlaylists(prev => prev.filter(p => p.id !== id));
+    } catch (err: any) {
+      toast.error('Failed to delete playlist: ' + err.message);
+    }
+  };
+
   const createPlaylist = async () => {
     if (!newPlaylistName.trim()) return;
     try {
       const { error } = await supabase.from('playlists').insert({
         profile_id: userProfile?.id,
-        name: newPlaylistName,
-        is_public: false
+        name: newPlaylistName.trim(),
+        is_public: newPlaylistIsPublic
       });
       if (error) throw error;
-      toast.success('Playlist created!');
+      toast.success(newPlaylistIsPublic ? 'Public Playlist created!' : 'Private Playlist created!');
       setNewPlaylistName('');
+      setNewPlaylistIsPublic(false);
       setShowCreatePlaylist(false);
       fetchLibrary();
     } catch (err: any) {
       toast.error('Error: ' + err.message);
+    }
+  };
+
+  const handleSaveEditPlaylist = async () => {
+    if (!editingPlaylist) return;
+    if (!editName.trim()) {
+      toast.error('Playlist name cannot be empty');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('playlists')
+        .update({ name: editName.trim(), is_public: editPublic })
+        .eq('id', editingPlaylist.id);
+
+      if (error) throw error;
+      toast.success(`Playlist updated to ${editPublic ? 'Public' : 'Private'}!`);
+      setPlaylists(prev => prev.map(p => p.id === editingPlaylist.id ? { ...p, name: editName.trim(), is_public: editPublic } : p));
+      setEditingPlaylist(null);
+    } catch (err: any) {
+      toast.error('Failed to update playlist: ' + err.message);
     }
   };
 
@@ -231,13 +332,13 @@ const Library: React.FC = () => {
            {/* Horizontally Scrollable Tabs */}
            <div className="flex items-center gap-5 md:gap-6 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 md:-mx-0 md:px-0">
               <button 
-                onClick={() => setActiveTab('purchased')}
+                onClick={() => handleTabChange('purchased')}
                 className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'purchased' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
               >
                 <ShoppingBag size={16} className="md:w-[18px] md:h-[18px]" /> Purchased ({songs.length})
               </button>
               <button 
-                onClick={() => setActiveTab('likes')}
+                onClick={() => handleTabChange('likes')}
                 className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'likes' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
               >
                 <Heart size={16} className="md:w-[18px] md:h-[18px]" /> Liked
@@ -248,17 +349,17 @@ const Library: React.FC = () => {
                     toast.error('Offline saves require Weekly Pass or higher. Buy tracks to access your purchases here.');
                     return;
                   }
-                  setActiveTab('downloads');
+                  handleTabChange('downloads');
                 }}
                 className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'downloads' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
               >
                 <Download size={16} className="md:w-[18px] md:h-[18px]" /> Offline
               </button>
               <button 
-                onClick={() => setActiveTab('playlists')}
+                onClick={() => handleTabChange('playlists')}
                 className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'playlists' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
               >
-                <Music2 size={16} className="md:w-[18px] md:h-[18px]" /> Playlists
+                <Music2 size={16} className="md:w-[18px] md:h-[18px]" /> Playlists ({playlists.length})
               </button>
            </div>
         </div>
@@ -307,12 +408,12 @@ const Library: React.FC = () => {
                   )}
                </motion.div>
 
-               {playlists.map(pl => (
+               {filteredPlaylists.map(pl => (
                  <motion.div 
                    key={pl.id}
                    whileHover={{ y: -5 }}
                    onClick={() => handlePlaylistClick(pl)}
-                   className="flex flex-col gap-2 md:gap-3 group cursor-pointer"
+                   className="flex flex-col gap-2 md:gap-3 group cursor-pointer relative"
                  >
                     <div className="aspect-square bg-smash-dark rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/5 relative shadow-lg md:shadow-xl">
                        {pl.cover_url ? (
@@ -326,35 +427,134 @@ const Library: React.FC = () => {
                        )}
                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                        <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 p-2 bg-black/40 rounded-lg">
-                          <Music2 size={14} className="md:w-4 md:h-4" />
+                          <Music2 size={14} className="md:w-4 md:h-4 text-white" />
+                       </div>
+
+                       {/* Public / Private Badge */}
+                       <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-white border border-white/10 z-10">
+                         {pl.is_public ? <Globe size={10} className="text-smash-orange" /> : <Lock size={10} className="text-smash-gray" />}
+                         <span>{pl.is_public ? 'Public' : 'Private'}</span>
+                       </div>
+
+                       {/* Edit & Delete Action Buttons */}
+                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                         <button
+                           type="button"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             setEditingPlaylist(pl);
+                             setEditName(pl.name);
+                             setEditPublic(!!pl.is_public);
+                           }}
+                           title="Edit playlist name & privacy"
+                           className="p-2 bg-black/60 hover:bg-smash-orange rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                         >
+                           <Pencil size={13} />
+                         </button>
+                         <button
+                           type="button"
+                           onClick={(e) => deletePlaylist(pl.id, e)}
+                           title="Delete playlist"
+                           className="p-2 bg-black/60 hover:bg-red-600 rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                         >
+                           <Trash2 size={13} />
+                         </button>
                        </div>
                     </div>
                     <div>
                        <h4 className="font-studio font-bold uppercase text-sm md:text-[18px] truncate tracking-tight text-white">{pl.name}</h4>
-                       <p className="text-[8px] md:text-[10px] font-black text-smash-gray uppercase tracking-widest">{pl.playlist_songs?.length || 0} Tracks</p>
+                       <p className="text-[8px] md:text-[10px] font-black text-smash-gray uppercase tracking-widest">{pl.playlist_songs?.length || 0} Tracks • {pl.is_public ? 'Public' : 'Private'}</p>
                     </div>
                  </motion.div>
                ))}
             </div>
 
+            {/* Create Playlist Modal */}
             {showCreatePlaylist && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
                  <motion.div 
                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                   className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] md:rounded-[40px] max-w-md w-full shadow-2xl"
+                   className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] md:rounded-[40px] max-w-md w-full shadow-2xl space-y-5"
                  >
-                    <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary mb-5 md:mb-6">NEW PLAYLIST</h3>
-                    <input 
-                      autoFocus
-                      type="text" 
-                      placeholder="My Summer Mix 24"
-                      value={newPlaylistName}
-                      onChange={e => setNewPlaylistName(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 p-4 md:p-5 rounded-xl md:rounded-2xl font-bold mb-5 md:mb-6 focus:border-smash-orange outline-none text-sm"
-                    />
-                    <div className="flex gap-3 md:gap-4">
-                       <button onClick={() => setShowCreatePlaylist(false)} className="flex-1 py-3 md:py-4 text-[10px] md:text-xs font-black uppercase tracking-widest text-smash-gray">Cancel</button>
-                       <button onClick={createPlaylist} className="flex-1 py-3 md:py-4 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl md:rounded-2xl hover:bg-smash-orange hover:text-white transition-all">Create</button>
+                    <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary">NEW PLAYLIST</h3>
+                    
+                    <div>
+                      <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
+                      <input 
+                        autoFocus
+                        type="text" 
+                        placeholder="My Summer Mix 24"
+                        value={newPlaylistName}
+                        onChange={e => setNewPlaylistName(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:border-smash-orange outline-none text-sm text-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        {newPlaylistIsPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider text-white">{newPlaylistIsPublic ? 'Public Playlist' : 'Private Playlist'}</p>
+                          <p className="text-[10px] text-smash-gray">{newPlaylistIsPublic ? 'Visible to everyone on Discover & Search' : 'Only visible to you in your Library'}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewPlaylistIsPublic(!newPlaylistIsPublic)}
+                        className={`w-12 h-6 rounded-full transition-all relative ${newPlaylistIsPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${newPlaylistIsPublic ? 'translate-x-7' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                       <button onClick={() => setShowCreatePlaylist(false)} className="flex-1 py-3.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-smash-gray hover:bg-white/5 rounded-2xl transition-all">Cancel</button>
+                       <button onClick={createPlaylist} className="flex-1 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-smash-orange hover:text-white transition-all">Create</button>
+                    </div>
+                 </motion.div>
+              </div>
+            )}
+
+            {/* Edit Playlist Modal */}
+            {editingPlaylist && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setEditingPlaylist(null)}>
+                 <motion.div 
+                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                   onClick={(e) => e.stopPropagation()}
+                   className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] md:rounded-[40px] max-w-md w-full shadow-2xl space-y-5"
+                 >
+                    <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary">EDIT PLAYLIST</h3>
+                    
+                    <div>
+                      <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
+                      <input 
+                        type="text" 
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:border-smash-orange outline-none text-sm text-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        {editPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider text-white">{editPublic ? 'Public Playlist' : 'Private Playlist'}</p>
+                          <p className="text-[10px] text-smash-gray">{editPublic ? 'Visible to everyone on Discover & Search' : 'Only visible to you in your Library'}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditPublic(!editPublic)}
+                        className={`w-12 h-6 rounded-full transition-all relative ${editPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${editPublic ? 'translate-x-7' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                       <button onClick={() => setEditingPlaylist(null)} className="flex-1 py-3.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-smash-gray hover:bg-white/5 rounded-2xl transition-all">Cancel</button>
+                       <button onClick={handleSaveEditPlaylist} className="flex-1 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-smash-orange hover:text-white transition-all">Save Changes</button>
                     </div>
                  </motion.div>
               </div>
