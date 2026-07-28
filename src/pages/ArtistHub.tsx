@@ -454,7 +454,7 @@ export default function ArtistHub() {
       </aside>
 
       {/* Main Area */}
-      <main className="flex-1 flex flex-col h-[100dvh] overflow-y-auto w-full min-w-0">
+      <main className="flex-1 flex flex-col h-[100dvh] overflow-hidden w-full min-w-0">
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/5 bg-bg-surface/80 backdrop-blur-md z-30 shrink-0">
           <div className="flex items-center gap-4">
@@ -1766,6 +1766,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const [albumPricingMode, setAlbumPricingMode] = useState<'album' | 'individual'>('album');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   
+  const coverPreviewUrl = useMemo(() => {
+    if (!coverFile) return null;
+    return URL.createObjectURL(coverFile);
+  }, [coverFile]);
+  
   const [releaseDate, setReleaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [genre, setGenre] = useState('');
   const [albumId, setAlbumId] = useState('');
@@ -1953,12 +1958,6 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   const canSellTracks = ['Elite', 'elite', 'Label', 'label'].includes(
     userProfile?.artist_tier || ''
   );
-
-  useEffect(() => {
-    if (userProfile?.id) {
-      checkUpload(userProfile.id);
-    }
-  }, [userProfile?.id, checkUpload]);
 
   const limits = useMemo(() => getTierLimits(userProfile), [
     userProfile?.artist_tier,
@@ -2486,8 +2485,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                     >
                        {(mode === 'album' ? albumTracks.length > 0 : songFile) ? (
                          <div className="w-full relative z-10">
-                            {coverFile && (
-                              <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-3xl pointer-events-none -z-10" />
+                            {coverPreviewUrl && (
+                              <img src={coverPreviewUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-3xl pointer-events-none -z-10" />
                             )}
                             
                             <div className="flex flex-col items-center max-w-xl mx-auto space-y-6">
@@ -2694,9 +2693,9 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                if (files.length > 0) setCoverFile(files[0] as File);
                              }}
                            >
-                              {coverFile ? (
+                              {coverPreviewUrl ? (
                                 <div className="absolute inset-0 w-full h-full group">
-                                  <img src={URL.createObjectURL(coverFile)} className="w-full h-full object-cover" />
+                                  <img src={coverPreviewUrl} className="w-full h-full object-cover" />
                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                      <button type="button" className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-white font-display font-black text-[11px] uppercase tracking-widest">Change</button>
                                   </div>
@@ -2977,7 +2976,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         
                         <div className="bg-bg-elevated border border-white/5 p-4 rounded-3xl flex items-center gap-4">
                            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
-                              {coverFile ? <img src={URL.createObjectURL(coverFile)} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5" />}
+                              {coverPreviewUrl ? <img src={coverPreviewUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5" />}
                            </div>
                            <div className="flex-1 min-w-0">
                               <h3 className="font-studio font-black uppercase text-xl text-white truncate">{title}</h3>
@@ -3146,6 +3145,16 @@ const ProfileTab = ({ userProfile }: any) => {
   const [avatarFile, setAvatarFile] = useState<File|null>(null);
   const [bannerFile, setBannerFile] = useState<File|null>(null);
 
+  const bannerPreviewUrl = useMemo(() => {
+    if (!bannerFile) return null;
+    return URL.createObjectURL(bannerFile);
+  }, [bannerFile]);
+
+  const avatarPreviewUrl = useMemo(() => {
+    if (!avatarFile) return null;
+    return URL.createObjectURL(avatarFile);
+  }, [avatarFile]);
+
   const handleSave = async(e:React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); 
     setSaving(true);
@@ -3245,7 +3254,7 @@ const ProfileTab = ({ userProfile }: any) => {
                 onClick={() => document.getElementById('artist-banner-input')?.click()}
               >
                 <img 
-                  src={bannerFile ? URL.createObjectURL(bannerFile) : (userProfile?.banner_url || "https://placehold.co/1200x300")} 
+                  src={bannerPreviewUrl || (userProfile?.banner_url || "https://placehold.co/1200x300")} 
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500" 
                 />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3268,7 +3277,7 @@ const ProfileTab = ({ userProfile }: any) => {
                 onClick={() => document.getElementById('artist-avatar-input')?.click()}
               >
                 <img 
-                  src={avatarFile ? URL.createObjectURL(avatarFile) : (userProfile?.avatar_url || "https://placehold.co/160")} 
+                  src={avatarPreviewUrl || (userProfile?.avatar_url || "https://placehold.co/160")} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
                 />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
