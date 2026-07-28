@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { PlayerProvider } from './context/PlayerContext';
 import { AuthProvider } from './context/AuthContext';
 import { AuthGateProvider } from './context/AuthGateContext';
+import { motion } from 'motion/react';
 const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
@@ -240,8 +241,48 @@ const NotFound = () => {
 };
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-bg-page flex items-center justify-center">
-    <div className="w-12 h-12 border-4 border-smash-purple border-t-transparent rounded-full animate-spin"></div>
+  <div className="min-h-screen bg-bg-page flex flex-col items-center justify-center gap-6 relative overflow-hidden">
+    {/* Ambient Background Glow */}
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <motion.div 
+        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="w-64 h-64 bg-smash-orange rounded-full blur-[80px]"
+      />
+      <motion.div 
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        className="w-64 h-64 bg-smash-purple rounded-full blur-[80px] absolute translate-x-12 translate-y-12"
+      />
+    </div>
+
+    {/* Equalizer */}
+    <div className="relative z-10 flex flex-col items-center">
+      <div className="flex items-end gap-1.5 h-12">
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="w-2.5 bg-gradient-to-t from-smash-orange to-smash-purple rounded-full"
+            animate={{ height: ["20%", "100%", "20%"] }}
+            transition={{
+              duration: 0.8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.15,
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Loading Text */}
+      <motion.p 
+        className="mt-6 text-xs font-display font-black tracking-[0.25em] text-white uppercase"
+        animate={{ opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        Loading
+      </motion.p>
+    </div>
   </div>
 );
 

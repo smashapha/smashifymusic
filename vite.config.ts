@@ -18,6 +18,7 @@ export default defineConfig(() => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: null,
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg'],
         manifest: {
           name: 'Smashify',
@@ -52,6 +53,21 @@ export default defineConfig(() => {
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              // Cache-First strategy for Supabase storage (audio/images)
+              urlPattern: /^https:\/\/akclwguqzeijscftatqp\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'supabase-storage-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
                 },
                 cacheableResponse: {
                   statuses: [0, 200]

@@ -3,11 +3,13 @@ import {createRoot} from 'react-dom/client';
 import ReactGA from 'react-ga4';
 import App from './App.tsx';
 import './index.css';
+import { registerSW } from 'virtual:pwa-register';
+
+// Register Service Worker for PWA
+registerSW({ immediate: true });
 
 // Initialize Google Analytics (GA4)
 // ReactGA.initialize('G-XXXXXXXXXX');
-
-// Register Service Worker for PWA and better background audio handling
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
