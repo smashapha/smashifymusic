@@ -28,7 +28,10 @@ export default defineConfig(() => {
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
+          display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
           orientation: 'portrait',
+          dir: 'ltr',
+          iarc_rating_id: 'e84b072d-71b3-4d3e-86ae-31a8ce4e53b7',
           categories: ['music', 'entertainment', 'lifestyle'],
           prefer_related_applications: false,
           related_applications: [
@@ -38,21 +41,68 @@ export default defineConfig(() => {
               id: 'com.smashify'
             }
           ],
+          launch_handler: {
+            client_mode: 'navigate-existing'
+          },
+          protocol_handlers: [
+            {
+              protocol: 'web+smashify',
+              url: '/?action=%s'
+            }
+          ],
+          shortcuts: [
+            {
+              name: 'Discover',
+              short_name: 'Discover',
+              description: 'Discover new music',
+              url: '/discover',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+            },
+            {
+              name: 'Library',
+              short_name: 'Library',
+              description: 'Your music library',
+              url: '/library',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+            }
+          ],
+          edge_side_panel: {
+            preferred_width: 400
+          },
+          share_target: {
+            action: '/share',
+            method: 'GET',
+            params: {
+              title: 'title',
+              text: 'text',
+              url: 'url'
+            }
+          },
+          file_handlers: [
+            {
+              action: '/play',
+              accept: {
+                'audio/mpeg': ['.mp3'],
+                'audio/wav': ['.wav'],
+                'audio/ogg': ['.ogg']
+              }
+            }
+          ],
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-512x512.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-512x512.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
@@ -60,13 +110,13 @@ export default defineConfig(() => {
           ],
           screenshots: [
             {
-              src: 'screenshot-1.png',
+              src: '/screenshot-1.png',
               sizes: '1200x630',
               type: 'image/png',
               form_factor: 'wide'
             },
             {
-              src: 'screenshot-2.png',
+              src: '/screenshot-2.png',
               sizes: '1200x630',
               type: 'image/png',
               form_factor: 'narrow'
