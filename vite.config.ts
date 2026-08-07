@@ -29,21 +29,30 @@ export default defineConfig(() => {
           background_color: '#0a0a0a',
           display: 'standalone',
           orientation: 'portrait',
+          categories: ['music', 'entertainment', 'lifestyle'],
+          prefer_related_applications: false,
+          related_applications: [
+            {
+              platform: 'play',
+              url: 'https://play.google.com/store/apps/details?id=com.smashify',
+              id: 'com.smashify'
+            }
+          ],
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: 'pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/pwa-512x512.png',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/pwa-512x512.png',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
@@ -51,13 +60,13 @@ export default defineConfig(() => {
           ],
           screenshots: [
             {
-              src: '/screenshot-1.png',
+              src: 'screenshot-1.png',
               sizes: '1200x630',
               type: 'image/png',
               form_factor: 'wide'
             },
             {
-              src: '/screenshot-2.png',
+              src: 'screenshot-2.png',
               sizes: '1200x630',
               type: 'image/png',
               form_factor: 'narrow'
