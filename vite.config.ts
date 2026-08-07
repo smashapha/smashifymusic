@@ -121,13 +121,24 @@ export default defineConfig(() => {
           // @ts-ignore
           scope_extensions: [
             {
+              type: 'origin',
+              origin: '*.supabase.co'
+            },
+            {
+              type: 'origin',
+              origin: '*.vercel.app'
+            },
+            {
+              type: 'origin',
+              origin: '*.run.app'
+            },
+            {
+              type: 'origin',
               origin: 'https://*.supabase.co'
             },
             {
+              type: 'origin',
               origin: 'https://*.vercel.app'
-            },
-            {
-              origin: 'https://*.run.app'
             }
           ],
           // @ts-ignore
