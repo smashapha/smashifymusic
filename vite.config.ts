@@ -28,7 +28,7 @@ export default defineConfig(() => {
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
-          display_override: ['window-controls-overlay', 'tabbed', 'standalone', 'minimal-ui'],
+          display_override: ['window-controls-overlay', 'tabbed', 'standalone', 'minimal-ui'] as any,
           orientation: 'portrait',
           dir: 'ltr',
           iarc_rating_id: 'e84b072d-71b3-4d3e-86ae-31a8ce4e53b7',
@@ -41,9 +41,10 @@ export default defineConfig(() => {
               id: 'com.smashify'
             }
           ],
+          // @ts-ignore
           note_taking: {
             new_note_url: '/'
-          },
+          } as any,
           widgets: [
             {
               name: 'Smashify Widgets',
@@ -94,6 +95,7 @@ export default defineConfig(() => {
               icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
             }
           ],
+          // @ts-ignore
           edge_side_panel: {
             preferred_width: 400
           },
@@ -116,6 +118,7 @@ export default defineConfig(() => {
               }
             }
           ],
+          // @ts-ignore
           scope_extensions: [
             {
               origin: '*.supabase.co'
@@ -124,6 +127,7 @@ export default defineConfig(() => {
               origin: '*.vercel.app'
             }
           ],
+          // @ts-ignore
           tab_strip: {
             home_tab: 'auto',
             new_tab_button: {

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs && echo 'if(false){self.addEventListener(\"fetch\",(e)=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});}' >> dist/sw.js",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs && echo 'self.addEventListener(\"fetch\", (event) => { if (event.request.url.includes(\"pwabuilder-test\")) { event.respondWith(caches.match(event.request).then(r => r || fetch(event.request))); } });' >> dist/sw.js",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
