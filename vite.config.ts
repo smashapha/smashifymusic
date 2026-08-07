@@ -19,7 +19,7 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: null,
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg', 'sw-custom.js'],
         manifest: {
           name: 'Smashify',
           short_name: 'Smashify',
@@ -28,7 +28,7 @@ export default defineConfig(() => {
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
-          display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
+          display_override: ['window-controls-overlay', 'tabbed', 'standalone', 'minimal-ui'],
           orientation: 'portrait',
           dir: 'ltr',
           iarc_rating_id: 'e84b072d-71b3-4d3e-86ae-31a8ce4e53b7',
@@ -39,6 +39,34 @@ export default defineConfig(() => {
               platform: 'play',
               url: 'https://play.google.com/store/apps/details?id=com.smashify',
               id: 'com.smashify'
+            }
+          ],
+          note_taking: {
+            new_note_url: '/'
+          },
+          widgets: [
+            {
+              name: 'Smashify Widgets',
+              description: 'Quick access to Smashify',
+              tag: 'smashify-widget',
+              template: 'widget.json',
+              ms_ac_template: 'widget.json',
+              data: 'widget-data.json',
+              type: 'application/json',
+              screenshots: [
+                {
+                  src: '/screenshot-1.png',
+                  sizes: '1200x630',
+                  label: 'Smashify Widget'
+                }
+              ],
+              icons: [
+                {
+                  src: '/pwa-192x192.png',
+                  sizes: '192x192',
+                  type: 'image/png'
+                }
+              ]
             }
           ],
           launch_handler: {
@@ -124,6 +152,7 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
+          importScripts: ['/sw-custom.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {
