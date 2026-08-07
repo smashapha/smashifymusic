@@ -9,8 +9,3 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('periodicsync', (event) => {
   console.log('Periodic sync received');
 });
-
-self.addEventListener('fetch', (event) => {
-  // Let Workbox handle the actual fetch events
-  // This listener is here to pass PWABuilder's static analysis
-});

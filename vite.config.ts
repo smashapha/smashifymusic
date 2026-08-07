@@ -153,13 +153,13 @@ export default defineConfig(() => {
           screenshots: [
             {
               src: '/screenshot-1.png',
-              sizes: '1200x630',
+              sizes: '1280x720',
               type: 'image/png',
               form_factor: 'wide'
             },
             {
               src: '/screenshot-2.png',
-              sizes: '1200x630',
+              sizes: '750x1334',
               type: 'image/png',
               form_factor: 'narrow'
             }
