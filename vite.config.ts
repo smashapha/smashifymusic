@@ -19,7 +19,7 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: null,
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg', 'sw-custom.js'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'smashify-icon.svg', 'sw-custom.js', 'offline.html'],
         manifest: {
           name: 'Smashify',
           short_name: 'Smashify',
