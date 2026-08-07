@@ -116,6 +116,12 @@ export default defineConfig(() => {
               }
             }
           ],
+          tab_strip: {
+            home_tab: 'auto',
+            new_tab_button: {
+              url: '/'
+            }
+          },
           icons: [
             {
               src: '/pwa-192x192.png',
@@ -154,6 +160,7 @@ export default defineConfig(() => {
         workbox: {
           importScripts: ['/sw-custom.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          navigateFallback: '/index.html',
           runtimeCaching: [
             {
               // Stale-While-Revalidate for Supabase API / database rest requests
