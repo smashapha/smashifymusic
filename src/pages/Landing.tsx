@@ -203,13 +203,25 @@ const Landing: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.6 }}
               className="flex flex-col items-center lg:items-start gap-4 mt-8 mb-16"
             >
-              <button
-                onClick={() => navigate('/home')}
-                className="h-14 px-10 bg-smash-orange text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-xl shadow-smash-orange/20 flex items-center justify-center gap-3 w-full sm:w-auto"
-              >
-                <Headphones size={20} />
-                Start Listening
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                <button
+                  onClick={() => navigate('/home')}
+                  className="h-14 px-10 bg-smash-orange text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-xl shadow-smash-orange/20 flex items-center justify-center gap-3 w-full sm:w-auto"
+                >
+                  <Headphones size={20} />
+                  Start Listening
+                </button>
+                
+                <a
+                  href="/smashify.apk"
+                  download="smashify.apk"
+                  className="h-14 px-8 bg-white/5 border border-white/10 text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:bg-white/10 transition-all flex items-center justify-center gap-3 w-full sm:w-auto"
+                >
+                  <Smartphone size={20} />
+                  Download Android App
+                </a>
+              </div>
+              
               <button
                 onClick={() => navigate('/artists')}
                 className="flex items-center justify-center gap-2 text-smash-purple hover:text-smash-purple/80 transition-colors font-display font-bold uppercase tracking-widest text-xs pt-2"

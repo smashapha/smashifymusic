@@ -27,17 +27,32 @@ export default defineConfig(() => {
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
+          orientation: 'portrait',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            }
+          ],
+          screenshots: [
+            {
+              src: '/screenshot-1.png',
+              sizes: '1200x630',
+              type: 'image/png',
+              form_factor: 'wide'
+            },
+            {
+              src: '/screenshot-2.png',
+              sizes: '1200x630',
+              type: 'image/png',
+              form_factor: 'narrow'
             }
           ]
         },
