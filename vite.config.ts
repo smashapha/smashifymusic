@@ -116,6 +116,14 @@ export default defineConfig(() => {
               }
             }
           ],
+          scope_extensions: [
+            {
+              origin: '*.supabase.co'
+            },
+            {
+              origin: '*.vercel.app'
+            }
+          ],
           tab_strip: {
             home_tab: 'auto',
             new_tab_button: {
