@@ -1,4 +1,7 @@
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="41" stroke="#0EA5E9" strokeWidth="18" fill="none" />
-  <circle cx="50" cy="50" r="14.5" stroke="#0EA5E9" strokeWidth="13" fill="none" />
-</svg>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    
+    <circle cx="256" cy="256" r="218.88" fill="#00A6FF"/>
+    <circle cx="256" cy="256" r="175.104" fill="#FFFFFF"/>
+    <circle cx="256" cy="256" r="124.41600000000001" fill="#00A6FF"/>
+    <circle cx="256" cy="256" r="64.51200000000001" fill="#FFFFFF"/>
+  </svg>
