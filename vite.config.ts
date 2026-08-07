@@ -122,6 +122,14 @@ export default defineConfig(() => {
           scope_extensions: [
             {
               type: 'origin',
+              origin: 'smashifymusic.vercel.app'
+            },
+            {
+              type: 'origin',
+              origin: 'https://smashifymusic.vercel.app'
+            },
+            {
+              type: 'origin',
               origin: '*.supabase.co'
             },
             {
