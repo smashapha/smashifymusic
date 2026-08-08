@@ -131,6 +131,15 @@ export default defineConfig(() => {
             }
           ],
           // @ts-ignore
+          scope_extensions: [
+            {
+              origin: '*.smashifymusic.vercel.app'
+            },
+            {
+              origin: '*.supabase.co'
+            }
+          ],
+          // @ts-ignore
           tab_strip: {
             home_tab: 'auto',
             new_tab_button: {
@@ -148,7 +157,13 @@ export default defineConfig(() => {
               src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ],
           screenshots: [
