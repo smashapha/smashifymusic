@@ -755,26 +755,23 @@ const GlobalPlayer = () => {
 
   return (
     <>
-      <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 md:px-0 md:pb-0 md:pl-[var(--sidebar-width,240px)] pointer-events-none transition-all duration-300">
-        <motion.div 
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          className="bg-bg-surface/90 backdrop-blur-[12px] rounded-[14px] md:rounded-none border border-border-subtle md:border-x-0 md:border-b-0 md:border-t-border-default h-[64px] md:h-[80px] w-full flex items-center px-3 md:px-6 pointer-events-auto shadow-[0px_4px_24px_rgba(0,0,0,0.1)] md:shadow-none"
-        >
-          {/* Top Progress Line for Mobile (Desktop uses different layout) */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-border-default md:hidden touch-none"
-             onMouseDown={(e) => {
-               if (adPlaying) return;
-               const rect = e.currentTarget.getBoundingClientRect();
-               const percent = (e.clientX - rect.left) / rect.width;
-               seek(percent * displayDuration);
-             }}
-          >
-            <motion.div 
-              className={`h-full ${accentColor.replace('text-', 'bg-')} opacity-80`}
-              style={{ width: `${(currentTime / displayDuration) * 100}%` }}
-            />
-          </div>
+      {!isExpanded && (
+        <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 md:px-0 md:pb-0 md:pl-[var(--sidebar-width,240px)] pointer-events-none transition-all duration-300">
+          <div className="bg-bg-surface rounded-[14px] md:rounded-none border border-border-subtle md:border-x-0 md:border-b-0 md:border-t-border-default h-[64px] md:h-[80px] w-full flex items-center px-3 md:px-6 pointer-events-auto shadow-[0px_4px_24px_rgba(0,0,0,0.1)] md:shadow-none">
+            {/* Top Progress Line for Mobile (Desktop uses different layout) */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-border-default md:hidden touch-none"
+               onMouseDown={(e) => {
+                 if (adPlaying) return;
+                 const rect = e.currentTarget.getBoundingClientRect();
+                 const percent = (e.clientX - rect.left) / rect.width;
+                 seek(percent * displayDuration);
+               }}
+            >
+              <div 
+                className={`h-full ${accentColor.replace('text-', 'bg-')} opacity-80`}
+                style={{ width: `${(currentTime / displayDuration) * 100}%` }}
+              />
+            </div>
 
           <div className="flex items-center justify-between w-full gap-4 relative">
             {/* [art 48px | title+artist flex] */}
@@ -930,8 +927,9 @@ const GlobalPlayer = () => {
                 </button>
             </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {isExpanded && <ExpandedPlayer onClose={() => setIsExpanded(false)} isLiked={isLiked} handleLike={handleLike} />}

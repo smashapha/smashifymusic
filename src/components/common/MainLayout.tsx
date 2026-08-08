@@ -392,7 +392,10 @@ const MainLayout: React.FC = () => {
         <TopBar unreadCount={unreadCount} />
         
         {/* Content container with padding for sticky player and mobile tab bar */}
-        <main className="flex-1 w-full pb-[148px] md:pb-[96px] overflow-x-hidden">
+        <main 
+          className="flex-1 w-full overflow-x-hidden md:pb-[88px]" 
+          style={{ paddingBottom: 'calc(152px + env(safe-area-inset-bottom))' }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

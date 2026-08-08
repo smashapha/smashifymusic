@@ -506,22 +506,19 @@ const Discover: React.FC = () => {
                   </p>
                 </div>
                 {results.songs.length > 0 ? (
-                  <div
-                    className={
-                      viewMode === "grid"
-                        ? GRID_SONG_CARDS
-                        : "flex flex-col gap-2"
-                    }
-                  >
-                    {results.songs.map((song, i) => (
-                      <SongCard
-                        key={`discover-song-${song.id}-${i}`}
-                        song={song}
-                        queue={results.songs}
-                        layout={viewMode}
-                      />
-                    ))}
-                  </div>
+                  viewMode === 'grid' ? (
+                    <div className={GRID_SONG_CARDS}>
+                      {results.songs.map((song, i) => (
+                        <SongCard key={`grid-discover-song-${song.id}-${i}`} song={song} queue={results.songs} layout="grid" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {results.songs.map((song, i) => (
+                        <SongCard key={`list-discover-song-${song.id}-${i}`} song={song} queue={results.songs} layout="list" />
+                      ))}
+                    </div>
+                  )
                 ) : (
                   <div className="p-10 bg-white/5 rounded-[24px] border border-white/5 text-center">
                     <Music2
@@ -597,22 +594,19 @@ const Discover: React.FC = () => {
               <h2 className="text-[20px] font-studio font-bold text-text-primary">
                 Trending Hits
               </h2>
-              <div
-                className={
-                  viewMode === "grid"
-                    ? GRID_SONG_CARDS
-                    : "flex flex-col gap-2"
-                }
-              >
-                {trending.map((song, i) => (
-                  <SongCard
-                    key={`discover-trending-${song.id}-${i}`}
-                    song={song}
-                    queue={trending}
-                    layout={viewMode}
-                  />
-                ))}
-              </div>
+              {viewMode === 'grid' ? (
+                <div className={GRID_SONG_CARDS}>
+                  {trending.map((song, i) => (
+                    <SongCard key={`grid-discover-trending-${song.id}-${i}`} song={song} queue={trending} layout="grid" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {trending.map((song, i) => (
+                    <SongCard key={`list-discover-trending-${song.id}-${i}`} song={song} queue={trending} layout="list" />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* AI Recommendations Section */}
@@ -635,22 +629,19 @@ const Discover: React.FC = () => {
                   </button>
                 </div>
 
-                <div
-                  className={
-                    viewMode === "grid"
-                      ? GRID_SONG_CARDS
-                      : "flex flex-col gap-2"
-                  }
-                >
-                  {recommendedSongs.map((song, i) => (
-                    <SongCard
-                      key={`discover-rec-${song.id}-${i}`}
-                      song={song}
-                      queue={recommendedSongs}
-                      layout={viewMode}
-                    />
-                  ))}
-                </div>
+                {viewMode === 'grid' ? (
+                  <div className={GRID_SONG_CARDS}>
+                    {recommendedSongs.map((song, i) => (
+                      <SongCard key={`grid-discover-rec-${song.id}-${i}`} song={song} queue={recommendedSongs} layout="grid" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {recommendedSongs.map((song, i) => (
+                      <SongCard key={`list-discover-rec-${song.id}-${i}`} song={song} queue={recommendedSongs} layout="list" />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -693,22 +684,19 @@ const Discover: React.FC = () => {
                   <h2 className="text-[20px] font-studio font-bold text-text-primary">
                     All Songs
                   </h2>
-                  <div
-                    className={
-                      viewMode === "grid"
-                        ? GRID_SONG_CARDS
-                        : "flex flex-col gap-2"
-                    }
-                  >
-                    {songs.map((song, i) => (
-                      <SongCard
-                        key={`discover-all-${song.id}-${i}`}
-                        song={song}
-                        queue={songs}
-                        layout={viewMode}
-                      />
-                    ))}
-                  </div>
+                  {viewMode === 'grid' ? (
+                    <div className={GRID_SONG_CARDS}>
+                      {songs.map((song, i) => (
+                        <SongCard key={`grid-discover-all-${song.id}-${i}`} song={song} queue={songs} layout="grid" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {songs.map((song, i) => (
+                        <SongCard key={`list-discover-all-${song.id}-${i}`} song={song} queue={songs} layout="list" />
+                      ))}
+                    </div>
+                  )}
                   {hasMoreSongs && (
                     <div className="flex justify-center pt-6">
                       <button
