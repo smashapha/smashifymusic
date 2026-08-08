@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.smashifymusic.twa",
+    "sha256_cert_fingerprints": ["13:72:C0:2D:C0:6B:16:F9:C8:84:57:2F:9F:CE:14:BE:09:31:2C:47:A2:61:DD:1B:15:F7:8C:26:A2:D7:AD:DE"]
+  }
+}]
