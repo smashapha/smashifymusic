@@ -1,7 +1,7 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
     
-    <circle cx="256" cy="256" r="218.88" fill="#00A6FF"/>
-    <circle cx="256" cy="256" r="175.104" fill="#FFFFFF"/>
-    <circle cx="256" cy="256" r="124.41600000000001" fill="#00A6FF"/>
-    <circle cx="256" cy="256" r="64.51200000000001" fill="#FFFFFF"/>
+    <circle cx="256" cy="256" r="243.2" fill="#00A6FF"/>
+    <circle cx="256" cy="256" r="184.832" fill="#FFFFFF"/>
+    <circle cx="256" cy="256" r="131.328" fill="#00A6FF"/>
+    <circle cx="256" cy="256" r="68.096" fill="#FFFFFF"/>
   </svg>

@@ -85,14 +85,26 @@ export default defineConfig(() => {
               short_name: 'Discover',
               description: 'Discover new music',
               url: '/discover',
-              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+              icons: [
+                {
+                  src: '/pwa-192x192.png',
+                  sizes: '192x192',
+                  type: 'image/png'
+                }
+              ]
             },
             {
               name: 'Library',
               short_name: 'Library',
               description: 'Your music library',
               url: '/library',
-              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+              icons: [
+                {
+                  src: '/pwa-192x192.png',
+                  sizes: '192x192',
+                  type: 'image/png'
+                }
+              ]
             }
           ],
           // @ts-ignore
@@ -119,15 +131,6 @@ export default defineConfig(() => {
             }
           ],
           // @ts-ignore
-          scope_extensions: [
-            {
-              origin: '*.smashifymusic.vercel.app'
-            },
-            {
-              origin: '*.supabase.co'
-            }
-          ],
-          // @ts-ignore
           tab_strip: {
             home_tab: 'auto',
             new_tab_button: {
@@ -145,13 +148,7 @@ export default defineConfig(() => {
               src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'any maskable'
             }
           ],
           screenshots: [
@@ -159,13 +156,15 @@ export default defineConfig(() => {
               src: '/screenshot-1.png',
               sizes: '1280x720',
               type: 'image/png',
-              form_factor: 'wide'
+              form_factor: 'wide',
+              label: 'Smashify desktop experience'
             },
             {
               src: '/screenshot-2.png',
               sizes: '750x1334',
               type: 'image/png',
-              form_factor: 'narrow'
+              form_factor: 'narrow',
+              label: 'Smashify mobile experience'
             }
           ]
         },
