@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('dist/manifest.webmanifest')) fs.copyFileSync('dist/manifest.webmanifest', 'dist/manifest.json')\" && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs",
+    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('dist/manifest.webmanifest')) { fs.copyFileSync('dist/manifest.webmanifest', 'dist/manifest.json'); fs.copyFileSync('dist/manifest.webmanifest', 'public/manifest.json'); fs.copyFileSync('dist/manifest.webmanifest', 'public/manifest.webmanifest'); }\" && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

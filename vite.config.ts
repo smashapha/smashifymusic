@@ -89,7 +89,8 @@ export default defineConfig(() => {
                 {
                   src: '/pwa-192x192.png',
                   sizes: '192x192',
-                  type: 'image/png'
+                  type: 'image/png',
+                  purpose: 'any'
                 }
               ]
             },
@@ -102,7 +103,8 @@ export default defineConfig(() => {
                 {
                   src: '/pwa-192x192.png',
                   sizes: '192x192',
-                  type: 'image/png'
+                  type: 'image/png',
+                  purpose: 'any'
                 }
               ]
             }
@@ -133,6 +135,9 @@ export default defineConfig(() => {
           // @ts-ignore
           scope_extensions: [
             {
+              origin: 'smashifymusic.vercel.app'
+            },
+            {
               origin: '*.smashifymusic.vercel.app'
             },
             {
@@ -152,6 +157,12 @@ export default defineConfig(() => {
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
+            },
+            {
+              src: '/pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable'
             },
             {
               src: '/pwa-512x512.png',
