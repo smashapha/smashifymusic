@@ -37,8 +37,8 @@ export default defineConfig(() => {
           related_applications: [
             {
               platform: 'play',
-              url: 'https://play.google.com/store/apps/details?id=com.smashify',
-              id: 'com.smashify'
+              url: 'https://play.google.com/store/apps/details?id=app.vercel.smashifymusic.twa',
+              id: 'app.vercel.smashifymusic.twa'
             }
           ],
           // @ts-ignore

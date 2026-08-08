@@ -213,8 +213,8 @@ const Landing: React.FC = () => {
                 </button>
                 
                 <a
-                  href="/smashify.apk"
-                  download="smashify.apk"
+                  href="/downloads/Smashify.apk"
+                  download="Smashify.apk"
                   className="h-14 px-8 bg-white/5 border border-white/10 text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:bg-white/10 transition-all flex items-center justify-center gap-3 w-full sm:w-auto"
                 >
                   <Smartphone size={20} />

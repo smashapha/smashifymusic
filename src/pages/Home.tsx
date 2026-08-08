@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
@@ -863,19 +863,18 @@ const Home: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Contextual links banner for SEO internal linking */}
-      <div className="bg-white/5 border border-white/10 rounded-[24px] p-6 mt-16 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h3 className="font-bold text-lg text-white mb-1">Discover &amp; Explore</h3>
-          <p className="text-sm text-smash-gray font-medium">Explore the newest tracks on the platform or keep up with the trending hits across Africa.</p>
+      {/* App Download Banner */}
+      <div className="bg-gradient-to-r from-smash-purple/20 to-smash-cyan/20 border border-white/10 rounded-[24px] p-6 mt-16 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/music.png')] opacity-10 pointer-events-none group-hover:scale-105 transition-transform duration-700" />
+        <div className="relative z-10">
+          <h3 className="font-bold text-lg text-white mb-1">Get the Smashify App</h3>
+          <p className="text-sm text-white/80 font-medium">Download the official Android app for the best streaming experience and offline listening.</p>
         </div>
-        <div className="flex gap-4">
-          <Link to="/discover" className="px-5 py-2.5 bg-smash-orange text-white rounded-full text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-smash-orange/20">
-            Explore Music
-          </Link>
-          <Link to="/trending" className="px-5 py-2.5 bg-white/10 text-white rounded-full text-xs font-black uppercase tracking-widest hover:bg-white/20 transition-all">
-            Trending Charts
-          </Link>
+        <div className="flex gap-4 relative z-10 w-full md:w-auto">
+          <a href="/downloads/Smashify.apk" download="Smashify.apk" className="w-full md:w-auto px-6 py-3 bg-white text-black rounded-full text-xs font-black uppercase tracking-widest hover:brightness-90 transition-all shadow-lg flex items-center justify-center gap-2">
+            <Download size={16} />
+            Download APK
+          </a>
         </div>
       </div>
 
