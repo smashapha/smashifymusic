@@ -84,6 +84,22 @@ async function startServer() {
     next();
   });
 
+  // Force download for APK
+  app.get('/downloads/Smashify.apk', (req, res) => {
+    let apkPath = path.resolve(process.cwd(), 'dist/downloads/Smashify.apk');
+    if (!fs.existsSync(apkPath)) {
+       apkPath = path.resolve(process.cwd(), 'public/downloads/Smashify.apk');
+    }
+    
+    if (fs.existsSync(apkPath)) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="Smashify.apk"');
+      res.sendFile(apkPath);
+    } else {
+      res.status(404).send('APK not found');
+    }
+  });
+
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({ 

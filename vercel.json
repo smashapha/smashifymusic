@@ -1,29 +1,12 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "cleanUrls": true,
-  "rewrites": [
+  "version": 2,
+  "routes": [
     {
-      "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|svg|ico|json|webmanifest|js|css|woff2?|ttf|eot)).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
+      "handle": "filesystem"
     },
     {
-      "source": "/(manifest.webmanifest|manifest.json|pwa-192x192.png|pwa-512x512.png|screenshot-1.png|screenshot-2.png|apple-touch-icon.png|smashify-icon.svg|mask-icon.svg|sw-custom.js|sw.js)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
-      ]
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
