@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   BarChart3, BarChart2, Music2, Upload, Wallet, UserCircle, Settings, 
   TrendingUp, Users, Play, DollarSign, Plus, Trash2, 
-  Edit3, CircleCheck, AlertCircle, AlertTriangle, Sparkles, ChevronRight,
+  Edit3, Edit2, CircleCheck, AlertCircle, AlertTriangle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
   ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
-  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt, BookOpen, Loader2, RefreshCw, Save
+  Calendar, Globe2, UserPlus, Info as InfoIcon, UploadCloud, Receipt, BookOpen, Loader2, RefreshCw, Save, Archive, ArchiveRestore, Tag
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -1279,6 +1279,11 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
   const [promoPercent, setPromoPercent] = useState(20);
   const [promoEndsAt, setPromoEndsAt] = useState("");
 
+  const [editModalSong, setEditModalSong] = useState<any>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editGenre, setEditGenre] = useState('');
+  const [editLyrics, setEditLyrics] = useState('');
+
   const [filter, setFilter] = useState<'all' | 'live' | 'pending' | 'for_sale' | 'draft'>('all');
   const [catalogStats, setCatalogStats] = useState<any[] | null>(null);
   const { checkUpload, setGuardResult } = useUploadGuard();
@@ -1341,6 +1346,40 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
     setPromoModalSong(song);
     setPromoPercent(song.discount_percent || 20);
     setPromoEndsAt(song.sale_ends_at ? song.sale_ends_at.slice(0, 16) : '');
+  };
+
+  const openEditModal = (song: any) => {
+    setEditModalSong(song);
+    setEditTitle(song.title || '');
+    setEditGenre(song.genre || '');
+    setEditLyrics(song.lyrics || '');
+  };
+
+  const saveEdit = async () => {
+    if (!editModalSong) return;
+    
+    if (!editTitle.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('songs')
+      .update({
+        title: editTitle.trim(),
+        genre: editGenre.trim(),
+        lyrics: editLyrics.trim()
+      })
+      .eq('id', editModalSong.id);
+      
+    if (error) {
+      toast.error('Failed to update song details');
+      console.error(error);
+    } else {
+      toast.success('Song details updated');
+      setEditModalSong(null);
+      onRefresh();
+    }
   };
 
   const savePromo = async () => {
@@ -1426,6 +1465,54 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
 
   return (
     <div className="space-y-8">
+      {editModalSong && (
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setEditModalSong(null); }}>
+          <div className="w-full max-w-md bg-bg-surface border border-border-default rounded-[24px] p-6">
+            <h3 className="text-base font-studio font-black uppercase tracking-wider text-white mb-6">Edit Song details</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Title</label>
+                <input 
+                  type="text" 
+                  value={editTitle} 
+                  onChange={e => setEditTitle(e.target.value)} 
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all"
+                  placeholder="Song title"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Genre</label>
+                <input 
+                  type="text" 
+                  value={editGenre} 
+                  onChange={e => setEditGenre(e.target.value)} 
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all"
+                  placeholder="e.g. Hip Hop, Afrobeat"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Lyrics</label>
+                <textarea 
+                  value={editLyrics} 
+                  onChange={e => setEditLyrics(e.target.value)} 
+                  rows={4}
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all resize-y"
+                  placeholder="Optional lyrics..."
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-8">
+              <button onClick={() => setEditModalSong(null)} className="flex-1 px-4 py-3 bg-bg-elevated text-text-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">Cancel</button>
+              <button onClick={saveEdit} className="flex-1 px-4 py-3 bg-smash-purple text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-smash-purple/90 transition-colors">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {promoModalSong && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setPromoModalSong(null); }}>
           <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[24px] p-6">
@@ -1573,33 +1660,34 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                          {song.is_for_sale ? 'Processing' : '—'}
                        </span>
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2 last:pr-6 cursor-default whitespace-nowrap">
+                    <td className="px-4 py-3 text-right space-x-2 last:pr-6 cursor-default whitespace-nowrap flex items-center justify-end">
                        <button
                          onClick={(e) => { e.stopPropagation(); toggleSongArchive(song.id, song.slot_mode); }}
                          title={song.slot_mode === 'archive' ? 'Restore from Archive' : 'Move to Archive'}
-                         className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 ${
+                         className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 inline-flex items-center justify-center gap-1.5 ${
                            song.slot_mode === 'archive'
                              ? 'bg-smash-green/10 text-smash-green hover:bg-smash-green/20 border-smash-green/20'
                              : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
                          }`}
                        >
-                         {song.slot_mode === 'archive' ? '↑ Restore' : '📦 Archive'}
+                         {song.slot_mode === 'archive' ? <><ArchiveRestore size={14} /> Restore</> : <><Archive size={14} /> Archive</>}
                        </button>
-                                              {song.is_for_sale && (
+                       
+                       {song.is_for_sale && (
                          <button
                            onClick={(e) => { e.stopPropagation(); openPromoModal(song); }}
                            title={song.discount_percent > 0 ? 'Edit promotion' : 'Run a promotion'}
-                           className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 ${
+                           className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 inline-flex items-center justify-center gap-1.5 ${
                              song.discount_percent > 0
                                ? 'bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 border-smash-orange/20'
                                : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
                            }`}
                          >
-                           🏷️ {song.discount_percent > 0 ? `${song.discount_percent}% off` : 'Promo'}
+                           <Tag size={14} /> {song.discount_percent > 0 ? `${song.discount_percent}% off` : 'Promo'}
                          </button>
                        )}
-                       <button onClick={(e) => { e.stopPropagation(); toast('Edit feature coming soon'); }} className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
-                       <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); openEditModal(song); }} title="Edit Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} title="Delete Song" className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
                     </td>
                   </tr>
                 ))}
@@ -1635,25 +1723,36 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSongArchive(song.id, song.slot_mode); }}
                         title={song.slot_mode === 'archive' ? 'Restore' : 'Archive'}
-                        className={`w-6 h-6 inline-flex items-center justify-center rounded transition-colors ${
+                        className={`w-7 h-7 inline-flex items-center justify-center rounded transition-colors ${
                           song.slot_mode === 'archive'
                             ? 'bg-smash-green/10 text-smash-green'
                             : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
                         }`}
                       >
-                        {song.slot_mode === 'archive' ? '↑' : '📦'}
+                        {song.slot_mode === 'archive' ? <ArchiveRestore size={14} /> : <Archive size={14} />}
                       </button>
-                                            {song.is_for_sale && (
+                      
+                      {song.is_for_sale && (
                         <button
                           onClick={(e) => { e.stopPropagation(); openPromoModal(song); }}
-                          className={`w-6 h-6 inline-flex items-center justify-center rounded disabled:opacity-50 transition-colors ${
+                          title={song.discount_percent > 0 ? 'Edit promotion' : 'Run a promotion'}
+                          className={`w-7 h-7 inline-flex items-center justify-center rounded disabled:opacity-50 transition-colors ${
                             song.discount_percent > 0 ? 'bg-smash-orange/10 text-smash-orange' : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
                           }`}
                         >
-                          🏷️
+                          <Tag size={14} />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-6 h-6 inline-flex items-center justify-center bg-red-500/10 text-red-400 rounded disabled:opacity-50 transition-colors"><Trash2 size={12} /></button>
+                      
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEditModal(song); }}
+                        title="Edit Song"
+                        className="w-7 h-7 inline-flex items-center justify-center rounded transition-colors bg-bg-elevated text-text-secondary hover:text-text-primary hover:bg-border-default"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} className="w-7 h-7 inline-flex items-center justify-center bg-red-500/10 text-red-400 rounded disabled:opacity-50 transition-colors hover:bg-red-500 hover:text-white"><Trash2 size={14} /></button>
                    </div>
                 </div>
               </div>

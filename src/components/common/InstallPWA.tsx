@@ -50,39 +50,30 @@ export default function InstallPWA() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-20 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-96 z-50 bg-[#111] border border-white/10 rounded-2xl p-4 shadow-2xl flex items-start gap-4"
+          className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+8px)] left-2 right-2 md:bottom-6 md:left-auto md:right-6 md:w-96 z-[60] bg-bg-elevated border border-border-subtle rounded-xl p-3 shadow-2xl flex items-center gap-3"
         >
-          <div className="w-12 h-12 bg-smash-purple/20 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Download className="text-smash-purple" size={24} />
+          <div className="w-8 h-8 bg-smash-purple/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Download className="text-smash-purple" size={16} />
           </div>
           
-          <div className="flex-1">
-            <h3 className="text-white font-bold mb-1">Install Smashify App</h3>
-            <p className="text-smash-gray text-xs mb-3">
-              Add Smashify to your home screen for a faster, app-like experience.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleInstallClick}
-                className="px-4 py-2 bg-smash-purple text-white text-xs font-bold rounded-lg hover:bg-smash-purple/90 transition-colors"
-              >
-                Install
-              </button>
-              <button
-                onClick={() => setShowPrompt(false)}
-                className="px-4 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/20 transition-colors"
-              >
-                Not Now
-              </button>
-            </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-medium text-sm truncate">Install Smashify App</h3>
           </div>
-
-          <button
-            onClick={() => setShowPrompt(false)}
-            className="text-smash-gray hover:text-white transition-colors absolute top-3 right-3"
-          >
-            <X size={16} />
-          </button>
+          
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={handleInstallClick}
+              className="px-3 py-1.5 bg-smash-purple text-white text-xs font-bold rounded-lg hover:bg-smash-purple/90 transition-colors"
+            >
+              Install
+            </button>
+            <button
+              onClick={() => setShowPrompt(false)}
+              className="text-text-muted hover:text-white p-1 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
