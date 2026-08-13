@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from "motion/react";
@@ -547,7 +548,7 @@ const ArtistProfile: React.FC = () => {
                       </div>
                       {/* Cover */}
                       <img
-                        src={song.cover_url}
+                        src={optimizeImage(song.cover_url, 120, 120)}
                         className="w-10 h-10 rounded-lg object-cover shrink-0"
                         alt={song.title}
                       loading="lazy" decoding="async" />
@@ -649,7 +650,7 @@ const ArtistProfile: React.FC = () => {
                        return (
                          <div key={`a-${item.data.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer" onClick={() => navigate(`/album/${item.data.id}`)}>
                             <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
-                               <img src={item.data.cover_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+                               <img src={optimizeImage(item.data.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                  <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
                                    <Play size={18} fill="white" className="text-white ml-0.5" />
@@ -694,7 +695,7 @@ const ArtistProfile: React.FC = () => {
                    {fansAlsoLike.map(fanArtist => (
                      <div key={`fan-${fanArtist.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer text-center" onClick={() => navigate(`/artist/${fanArtist.id}`)}>
                        <div className="aspect-[1/1] w-full rounded-full overflow-hidden mb-3 relative shadow-lg mx-auto">
-                          <img src={fanArtist.avatar_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+                          <img src={optimizeImage(fanArtist.avatar_url, 120, 120)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                        </div>
                        <p className="text-white text-sm font-bold truncate">{fanArtist.stage_name || fanArtist.full_name}</p>
                        <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mt-1">Artist</p>
@@ -743,7 +744,7 @@ const ArtistProfile: React.FC = () => {
                   >
                     <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
                       <img
-                        src={al.cover_url || 'https://placehold.co/400'}
+                        src={optimizeImage(al.cover_url, 300, 300)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

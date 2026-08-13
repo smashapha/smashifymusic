@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, HelpCircle } from 'lucide-react';
@@ -169,7 +170,7 @@ const AlbumDetails: React.FC = () => {
       />
       {/* Dynamic Glowing Banner Header - Matching Playlist Layout */}
       <div className="h-[42vh] min-h-[340px] relative bg-gradient-to-b from-[#9B5DE5]/20 to-[#0b0a0e] pt-12">
-        <img src={album.cover_url} className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20 pointer-events-none" alt="" loading="lazy" decoding="async" />
+        <img src={optimizeImage(album.cover_url, 400, 400)} className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20 pointer-events-none" alt="" loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-[#0b0a0e]/60" />
         
         <div className="relative h-full max-w-[1400px] mx-auto px-6 md:px-12 flex items-end pb-12 z-10">
@@ -184,7 +185,7 @@ const AlbumDetails: React.FC = () => {
           <div className="flex flex-col md:flex-row items-start md:items-end gap-8 w-full mt-10 md:mt-0">
             {/* Album Artwork Cover */}
             <div className="w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative border border-white/10 group">
-              <img src={album.cover_url} className="w-full h-full object-cover" alt={album.title} loading="lazy" decoding="async" />
+              <img src={optimizeImage(album.cover_url, 400, 400)} className="w-full h-full object-cover" alt={album.title} loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <PlayCircle size={48} className="text-white drop-shadow-md" />
               </div>
@@ -354,7 +355,7 @@ const AlbumDetails: React.FC = () => {
                   {/* Thumbnail / Title & Artist */}
                   <div className="flex-1 flex items-center gap-3.5 min-w-0">
                     <div className="w-11 h-11 rounded-lg overflow-hidden relative shadow-md shrink-0 bg-white/5">
-                      <img src={song.cover_url} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} loading="lazy" decoding="async" />
+                      <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Play fill="white" size={14} className="text-white" />
                       </div>

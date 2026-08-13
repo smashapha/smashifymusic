@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -417,11 +418,11 @@ const Library: React.FC = () => {
                  >
                     <div className="aspect-square bg-smash-dark rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/5 relative shadow-lg md:shadow-xl">
                        {pl.cover_url ? (
-                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} loading="lazy" decoding="async" />
+                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} loading="lazy" decoding="async" />
                        ) : (
                           <div className="grid grid-cols-2 h-full w-full opacity-40">
                           {pl.playlist_songs?.slice(0, 4).map((ps: any, i: number) => (
-                             <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                             <img key={i} src={optimizeImage(ps.songs?.cover_url, 150, 150)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ))}
                        </div>
                        )}

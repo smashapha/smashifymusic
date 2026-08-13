@@ -1,3 +1,4 @@
+import { optimizeImage } from "../../lib/imageUtils";
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { Lock as AppLockIcon, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, VolumeX, Maximize2, Minimize2, Radio, Heart, Mic2, X, Share2, AlertCircle, Coins, Gift, RefreshCw, Crown, Info, Lock, ChevronDown, ListMusic, MoreVertical, Search, Plus, Trash2, CheckCircle, Loader2, ShoppingBag, Gauge, Clock, Zap, Download, Headphones, SlidersHorizontal, Sparkles } from 'lucide-react';
@@ -111,7 +112,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
       {/* Background ambient glow matching current artwork */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
         <img 
-          src={currentSong.cover_url} 
+          src={optimizeImage(currentSong.cover_url, 120, 120)} 
           className="w-full h-full object-cover blur-[120px] scale-125" 
           alt="" 
         loading="lazy" decoding="async" />
@@ -151,7 +152,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
         {/* Large Artwork */}
         <div className="w-full max-w-[320px] sm:max-w-[360px] aspect-square rounded-[32px] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-white/10 relative group mb-6 transition-transform duration-500 hover:scale-[1.02]">
           <img 
-            src={currentSong.cover_url} 
+            src={optimizeImage(currentSong.cover_url, 120, 120)} 
             className="w-full h-full object-cover" 
             alt={currentSong.title} 
             referrerPolicy="no-referrer" 
@@ -572,7 +573,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 <div className="w-12 h-1.5 bg-white/20 rounded-full mb-3" />
                 <div className="flex items-center justify-between w-full px-4">
                   <div className="flex items-center gap-3">
-                    <img src={currentSong.cover_url} className="w-10 h-10 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
+                    <img src={optimizeImage(currentSong.cover_url, 120, 120)} className="w-10 h-10 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                     <div>
                       <h4 className="font-studio font-bold text-sm text-white">{formatDisplayTitle(currentSong.title)}</h4>
                       <p className="text-xs text-white/50">{currentSong.artist_name}</p>
@@ -641,7 +642,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                       onClick={() => playSong(song)}
                       className={`p-3 rounded-2xl flex items-center gap-3 cursor-pointer transition-colors ${currentSong.id === song.id ? 'bg-blue-600/20 border border-blue-500/30' : 'hover:bg-white/5'}`}
                     >
-                      <img src={song.cover_url} className="w-12 h-12 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
+                      <img src={optimizeImage(song.cover_url, 120, 120)} className="w-12 h-12 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                       <div className="flex-1 min-w-0">
                         <p className={`font-studio font-bold text-sm truncate ${currentSong.id === song.id ? 'text-blue-400' : 'text-white'}`}>
                           {formatDisplayTitle(song.title)}
@@ -777,7 +778,7 @@ const GlobalPlayer = () => {
             {/* [art 48px | title+artist flex] */}
             <div className="flex items-center gap-3 flex-shrink-0 cursor-pointer w-auto lg:w-1/4" onClick={() => setIsExpanded(true)}>
               <div className="relative w-[48px] h-[48px] rounded-[10px] overflow-hidden flex-shrink-0 group">
-                <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+                <img src={optimizeImage(currentSong.cover_url, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
                   <Maximize2 size={16} />
                 </div>
@@ -970,7 +971,7 @@ const GlobalPlayer = () => {
                     onClick={() => playSong(song)}
                   >
                     <div className="w-10 h-10 rounded-[8px] overflow-hidden flex-shrink-0 relative">
-                       <img src={song.cover_url} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
+                       <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                        {currentSong?.id === song.id && (
                          <div className={`absolute inset-0 ${accentColor.replace('text-', 'bg-')}/40 flex items-center justify-center`}>
                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}>
