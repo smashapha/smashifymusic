@@ -122,7 +122,7 @@ import { WithdrawTab } from '../components/artist/WithdrawTab';
 import { MobileHubNav } from "../components/artist/MobileHubNav";
 import { OverviewCards } from "../components/artist/OverviewCards";
 import { SlotUsageCard } from "../components/artist/SlotUsageCard";
-import { OnboardingChecklist } from "../components/artist/OnboardingChecklist";
+import { OnboardingChecklist } from "../components/artist/ArtistOnboarding";
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
