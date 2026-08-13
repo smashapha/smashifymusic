@@ -4,7 +4,7 @@ import {
   Mic2, Headphones, TrendingUp, 
   Check, ChevronDown, ChevronUp, Compass, Heart,
   ShieldCheck, Infinity, Download, LayoutDashboard,
-  Smartphone, User, Info, Star, Play, MapPin, Wallet, PieChart
+  Smartphone, User, Info, Star, Play, MapPin, Wallet, PieChart, UploadCloud, Briefcase, Handshake, Banknote, Music2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
@@ -103,6 +103,12 @@ const Nav = () => {
               >
                 Sign Up Free
               </button>
+              <button 
+                onClick={() => { navigate('/auth/artist'); setMobileMenuOpen(false); }}
+                className="h-16 w-full border border-smash-purple/30 text-smash-purple bg-smash-purple/10 rounded-2xl font-display font-black uppercase tracking-widest hover:bg-smash-purple/20 transition-colors"
+              >
+                Artist Studio
+              </button>
             </div>
           </motion.div>
         )}
@@ -149,6 +155,7 @@ const Landing: React.FC = () => {
   const [artists, setArtists] = useState<any[]>([]);
   const [topSongs, setTopSongs] = useState<any[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
+  const [platformStats, setPlatformStats] = useState({ artists: 0, songs: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,6 +168,10 @@ const Landing: React.FC = () => {
 
       const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTrendingSongs(trendingData || []);
+
+      const { count: artistCount } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'artist').eq('is_approved', true);
+      const { count: songCount } = await supabase.from('songs').select('id', { count: 'exact', head: true }).eq('approved', true);
+      setPlatformStats({ artists: artistCount || 0, songs: songCount || 0 });
     };
     fetchData();
   }, []);
@@ -176,7 +187,7 @@ const Landing: React.FC = () => {
       <Nav />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-[72px] px-6 md:px-12 overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/music.png')] bg-[length:100px_100px] bg-repeat">
+      <section className="relative min-h-screen flex items-center pt-[72px] px-6 md:px-12 overflow-hidden bg-[#0A0A0D]">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-smash-orange/10 rounded-full blur-[140px] -mr-32 -mt-32 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-smash-purple/5 rounded-full blur-[140px] -ml-32 -mb-32 pointer-events-none" />
 
@@ -235,46 +246,41 @@ const Landing: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 pt-10 mt-10 border-t border-white/5 w-full"
+              className="pt-10 mt-10 border-t border-white/5 w-full flex flex-col md:flex-row items-start md:items-center justify-start gap-6 lg:gap-10"
             >
-              {[
-                { 
-                  value: 'Malawi & Africa', 
-                  label: 'Proudly Built For',
-                  color: 'text-white',
-                  bgColor: 'bg-white/10',
-                  icon: MapPin
-                },
-                { 
-                  value: 'Direct Payouts', 
-                  label: 'Airtel Money · TNM',
-                  color: 'text-smash-orange',
-                  bgColor: 'bg-smash-orange/10',
-                  icon: Wallet
-                },
-                { 
-                  value: '95% to Artists', 
-                  label: 'No Middlemen',
-                  color: 'text-smash-green',
-                  bgColor: 'bg-smash-green/10',
-                  icon: PieChart
-                }
-              ].map((stat, i) => (
-                <div key={i} className="group relative flex flex-col items-center lg:items-start text-center lg:text-left p-6 lg:p-8 rounded-[32px] bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-500 overflow-hidden shadow-2xl shadow-black/20 hover:-translate-y-1">
-                  <div className={`absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[50px] ${stat.bgColor} pointer-events-none translate-x-1/2 -translate-y-1/2`} />
-                  
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${stat.bgColor} border border-white/5 group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner`}>
-                    <stat.icon size={20} className={stat.color} />
-                  </div>
-                  
-                  <span className={`text-[clamp(1.1rem,2vw,1.4rem)] font-studio font-bold leading-tight mb-2 ${stat.color} relative z-10`}>
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px] lg:text-[11px] font-display text-white/50 uppercase tracking-[0.2em] font-semibold relative z-10">
-                    {stat.label}
-                  </span>
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 shrink-0 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors shadow-inner">
+                  <Mic2 size={20} className="text-white" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-white font-studio font-bold text-[15px] tracking-wide mb-0.5">Direct to Artist</p>
+                  <p className="text-text-secondary text-[13px] font-sans">Keep up to 95% of royalties</p>
+                </div>
+              </div>
+              
+              <div className="hidden md:block w-px h-10 bg-white/10" />
+
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 shrink-0 rounded-2xl bg-smash-green/10 flex items-center justify-center border border-smash-green/20 group-hover:bg-smash-green/20 transition-colors shadow-inner">
+                  <Banknote size={20} className="text-smash-green" />
+                </div>
+                <div>
+                  <p className="text-white font-studio font-bold text-[15px] tracking-wide mb-0.5">Local Mobile Money</p>
+                  <p className="text-text-secondary text-[13px] font-sans">Airtel Money & TNM Mpamba</p>
+                </div>
+              </div>
+              
+              <div className="hidden lg:block w-px h-10 bg-white/10" />
+
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 shrink-0 rounded-2xl bg-smash-cyan/10 flex items-center justify-center border border-smash-cyan/20 group-hover:bg-smash-cyan/20 transition-colors shadow-inner">
+                  <Smartphone size={20} className="text-smash-cyan" />
+                </div>
+                <div>
+                  <p className="text-white font-studio font-bold text-[15px] tracking-wide mb-0.5">Listen Anywhere</p>
+                  <p className="text-text-secondary text-[13px] font-sans">Offline saves & high quality</p>
+                </div>
+              </div>
             </motion.div>
           </div>
 
@@ -288,7 +294,7 @@ const Landing: React.FC = () => {
                          <Star size={32} />
                       </div>
                       <p className="font-studio font-black text-xl uppercase italic leading-none mb-2">Exclusive</p>
-                      <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Only on Smashify</p>
+                      <p className="text-[10px] text-text-secondary uppercase font-black tracking-widest">Only on Smashify</p>
                    </div>
                 </div>
 
@@ -329,14 +335,16 @@ const Landing: React.FC = () => {
                 })}
 
                 {/* Now Playing Mini Card */}
-                <div className="absolute bottom-10 right-0 w-[200px] h-[100px] bg-[#141418]/85 backdrop-blur-xl border border-white/8 rounded-[16px] p-4 flex items-center gap-3 shadow-2xl animate-fade-in">
-                   <img src={optimizeImage("https://images.unsplash.com/photo-1514525253361-bee8718a300a?w=100", 120, 120)} className="w-[60px] h-[60px] rounded-[10px] object-cover" alt="Listen" loading="lazy" decoding="async" />
+                {topSongs.length > 0 && (
+                <div className="absolute bottom-10 right-0 w-[200px] h-[100px] bg-[#141418] border border-white/10 rounded-[16px] p-4 flex items-center gap-3 shadow-2xl animate-fade-in z-20">
+                   <img src={optimizeImage(topSongs[0].cover_url || "https://placehold.co/120x120/18162C/9B5DE5?text=♪", 120, 120)} className="w-[60px] h-[60px] rounded-[10px] object-cover" alt={topSongs[0].title} loading="lazy" decoding="async" />
                    <div className="flex-1 min-w-0">
-                      <p className="text-[8px] font-black text-smash-orange uppercase tracking-widest mb-1">Live Now</p>
-                      <p className="text-[13px] font-display font-bold text-white truncate">Top Hits 2024</p>
-                      <p className="text-[10px] text-white/40 uppercase font-medium">Smashify Radio</p>
+                      <p className="text-[8px] font-black text-smash-orange uppercase tracking-widest mb-1">Top Track</p>
+                      <p className="text-[13px] font-display font-bold text-white truncate">{topSongs[0].title}</p>
+                      <p className="text-[10px] text-white/50 uppercase font-medium truncate">{topSongs[0].artists?.stage_name || 'Various'}</p>
                    </div>
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -352,7 +360,7 @@ const Landing: React.FC = () => {
           {[...trendingSongs, ...trendingSongs].map((song, i) => (
             <div key={`${song.id}-${i}`} className="flex items-center gap-3">
               <span className="text-white font-studio font-bold uppercase text-[12px]">{song.title}</span>
-              <span className="text-white/40 font-display text-[11px] uppercase tracking-widest">{song.artists?.stage_name || 'Various'}</span>
+              <span className="text-text-secondary font-display text-[11px] uppercase tracking-widest">{song.artists?.stage_name || 'Various'}</span>
               <span className="w-1 h-1 rounded-full bg-white/20 mx-2" />
             </div>
           ))}
@@ -362,45 +370,45 @@ const Landing: React.FC = () => {
       {/* How It Works */}
       <section className="py-20 px-6 md:px-12 border-b border-white/5">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-center text-[10px] font-display font-medium text-white/40 uppercase tracking-[0.4em] mb-12">
+          <h2 className="text-center text-[10px] font-display font-medium text-text-secondary uppercase tracking-[0.4em] mb-12">
             How Smashify Works
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               {
                 step: '01',
-                icon: '🎵',
+                icon: <UploadCloud size={32} className="mx-auto text-white/80" />,
                 title: 'Artist Uploads',
                 desc: 'Upload your music and set your own prices'
               },
               {
                 step: '02',
-                icon: '❤️',
+                icon: <Headphones size={32} className="mx-auto text-white/80" />,
                 title: 'Fans Discover',
                 desc: 'Fans stream, buy tracks, and send tips directly'
               },
               {
                 step: '03',
-                icon: '💰',
+                icon: <Wallet size={32} className="mx-auto text-white/80" />,
                 title: 'You Earn',
                 desc: 'Money goes straight to your Smashify wallet instantly'
               },
               {
                 step: '04',
-                icon: '📱',
+                icon: <Smartphone size={32} className="mx-auto text-white/80" />,
                 title: 'You Withdraw',
                 desc: 'Request a payout to your Airtel Money or TNM anytime'
               }
             ].map((item, i) => (
               <div key={i} className="text-center p-6 bg-white/[0.02] rounded-[20px] border border-white/5 hover:border-smash-orange/20 transition-all">
-                <div className="text-3xl mb-4">{item.icon}</div>
+                <div className="mb-6">{item.icon}</div>
                 <div className="text-[10px] font-black text-smash-orange mb-2 tracking-widest">
                   STEP {item.step}
                 </div>
                 <h3 className="font-display font-bold text-sm uppercase mb-2 text-white">
                   {item.title}
                 </h3>
-                <p className="text-white/40 text-xs leading-relaxed">
+                <p className="text-white/60 text-xs leading-relaxed font-sans">
                   {item.desc}
                 </p>
               </div>
@@ -414,7 +422,7 @@ const Landing: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-smash-green/10 border border-smash-green/20 rounded-full mb-6">
             <span className="text-smash-green text-xs font-black uppercase tracking-widest">
-              💼 Earn With Smashify
+              <Briefcase size={14} className="inline-block" /> Earn With Smashify
             </span>
           </div>
           <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-studio font-black uppercase italic mb-4">
@@ -426,25 +434,25 @@ const Landing: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             {[
               {
-                emoji: '🤝',
+                emoji: <Handshake size={24} className="text-smash-green" />,
                 title: 'Refer an Artist',
                 desc: 'Share your unique agent link with any artist who needs to monetize their music'
               },
               {
-                emoji: '💰',
+                emoji: <Banknote size={24} className="text-smash-green" />,
                 title: 'They Subscribe',
                 desc: 'When they pay their first Rising Star, Standard or Elite plan — you earn 5%'
               },
               {
-                emoji: '📱',
+                emoji: <Smartphone size={24} className="text-smash-green" />,
                 title: 'You Get Paid',
                 desc: 'Your commission goes straight to your Airtel Money or TNM Mpamba number'
               }
             ].map((item, i) => (
-              <div key={i} className="p-6 bg-white/5 rounded-3xl border border-white/10 text-left">
-                <div className="text-3xl mb-4">{item.emoji}</div>
-                <h3 className="font-bold text-sm mb-2">{item.title}</h3>
-                <p className="text-white/40 text-xs leading-relaxed">{item.desc}</p>
+              <div key={i} className="p-8 bg-white/[0.02] rounded-[32px] border border-white/10 text-left hover:border-smash-green/30 hover:bg-white/[0.04] transition-all group shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-smash-green/10 flex items-center justify-center mb-6 shadow-inner border border-smash-green/20 group-hover:scale-110 transition-transform">{item.emoji}</div>
+                <h3 className="font-studio font-bold text-lg mb-2 text-white">{item.title}</h3>
+                <p className="text-white/60 text-sm leading-relaxed font-sans">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -453,7 +461,7 @@ const Landing: React.FC = () => {
               Example: You refer 10 artists who each pay MK 8,000 Rising Star
             </p>
             <p className="text-2xl font-black mt-1">You earn MK 4,000 💚</p>
-            <p className="text-white/40 text-xs mt-1">5% × MK 8,000 × 10 artists</p>
+            <p className="text-text-secondary text-xs mt-1">5% × MK 8,000 × 10 artists</p>
           </div>
           <br />
           <a
@@ -471,7 +479,7 @@ const Landing: React.FC = () => {
       <section className="pt-24 pb-12 px-6 md:px-12 relative">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-12">
-            <h2 className="font-display font-medium text-[10px] uppercase tracking-[0.3em] text-white/40">Featured Artists</h2>
+            <h2 className="font-display font-medium text-[10px] uppercase tracking-[0.3em] text-text-secondary">Featured Artists</h2>
             <Link to="/auth/artist" className="font-display font-semibold text-[10px] uppercase tracking-widest text-smash-orange hover:underline">See All</Link>
           </div>
           <div className="flex gap-10 overflow-x-auto pb-8 hide-scrollbar scroll-smooth" style={{ maskImage: 'linear-gradient(to right, black 90%, transparent 100%)' }}>
@@ -481,7 +489,7 @@ const Landing: React.FC = () => {
                   <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-full h-full object-cover" alt={artist.stage_name} loading="lazy" decoding="async" />
                 </div>
                 <p className="font-display font-semibold text-[13px] text-center mt-3 truncate w-full group-hover:text-smash-orange transition-colors">{artist.stage_name || artist.full_name}</p>
-                <p className="font-display text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{artist.genre || 'Afro'}</p>
+                <p className="font-display text-[10px] text-text-secondary uppercase tracking-widest mt-0.5">{artist.genre || 'Afro'}</p>
               </div>
             ))}
           </div>
@@ -493,12 +501,12 @@ const Landing: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
             <div>
-              <p className="font-studio font-bold text-[14px] text-white/40 uppercase tracking-widest mb-2">This Week's</p>
+              <p className="font-studio font-bold text-[14px] text-text-secondary uppercase tracking-widest mb-2">This Week's</p>
               <h2 className="text-[clamp(3rem,6vw,5rem)] font-studio font-extrabold text-white leading-none uppercase">Top Songs</h2>
             </div>
-            <div className="flex items-center gap-2 text-white/40 mb-2">
+            <div className="flex items-center gap-2 text-text-secondary mb-2">
               <div className="w-2 h-2 rounded-full bg-smash-green shadow-[0_0_8px_rgba(0,214,143,0.5)]" />
-              <span className="font-display font-medium text-[11px] uppercase tracking-widest">Updated Weekly</span>
+              <span className="font-display font-medium text-[11px] uppercase tracking-widest">Live Chart</span>
             </div>
           </div>
 
@@ -597,7 +605,7 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-smash-orange/8 border-t border-b border-smash-orange/15 py-24 px-6 rounded-[40px] mb-20 text-center">
              <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-studio font-black uppercase text-white leading-tight mb-4">Stream free forever.</h2>
-             <p className="text-[18px] font-sans text-white/60 mb-10 max-w-xl mx-auto">Or go Premium for MK 2,000/month to unlock the full potential of Smahify.</p>
+             <p className="text-[18px] font-sans text-white/60 mb-10 max-w-xl mx-auto">Or go Premium for MK 2,000/month to unlock the full potential of Smashify.</p>
              <div className="flex flex-wrap items-center justify-center gap-4">
                 <button className="h-[52px] px-10 bg-smash-orange text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest shadow-xl shadow-smash-orange/20">Upgrade Now</button>
                 <button className="h-[52px] px-10 bg-transparent border-2 border-white text-white rounded-full font-display font-semibold text-[13px] uppercase tracking-widest hover:bg-white hover:text-black transition-colors">Compare Plans</button>
@@ -651,9 +659,22 @@ const Landing: React.FC = () => {
       {/* Artist CTA Section */}
       <section className="py-32 px-6 md:px-12 relative overflow-hidden bg-bg-surface">
          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
-            <div className="hidden lg:block w-[40%] h-[500px] relative rounded-[32px] overflow-hidden group">
-               <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Artist Performing" loading="lazy" decoding="async" />
-               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#141418] pointer-events-none" />
+            <div className="hidden lg:block w-[40%] h-[500px] relative rounded-[32px] overflow-hidden group bg-[#0A0A0D] border border-white/5 shadow-2xl">
+               {artists.length > 0 ? (
+                 <>
+                   <img src={optimizeImage(artists[0].avatar_url, 800, 800)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s] opacity-60" alt={artists[0].stage_name || 'Featured Artist'} loading="lazy" decoding="async" />
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0D] via-[#0A0A0D]/50 to-transparent pointer-events-none" />
+                   <div className="absolute bottom-10 left-10 right-10 text-left z-10">
+                     <p className="text-[10px] font-black text-smash-orange uppercase tracking-[0.3em] mb-2 flex items-center gap-2"><Star size={12} fill="currentColor" /> Featured Artist</p>
+                     <p className="font-studio font-black italic text-4xl text-white truncate">{artists[0].stage_name || artists[0].full_name}</p>
+                   </div>
+                 </>
+               ) : (
+                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-smash-purple/20 to-smash-orange/10 p-12 text-center">
+                   <Mic2 size={80} className="text-white/20 mb-6" />
+                   <p className="font-studio font-black italic text-3xl text-text-secondary uppercase">Your Stage</p>
+                 </div>
+               )}
             </div>
             <div className="flex-1 text-center lg:text-left">
                <p className="font-display font-medium text-[10px] text-smash-orange uppercase tracking-[0.4em] mb-4">For Content Creators</p>

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   BarChart3, BarChart2, Music2, Upload, Wallet, UserCircle, Settings, 
   TrendingUp, Users, Play, DollarSign, Plus, Trash2, 
-  Edit3, Edit2, CircleCheck, AlertCircle, AlertTriangle, Sparkles, ChevronRight,
+  Edit3, Share2,  Edit2, CircleCheck, AlertCircle, AlertTriangle, Sparkles, ChevronRight,
   Smartphone, Image as ImageIcon, FileAudio, Info, Flame,
   Disc, LogOut, ArrowLeft, ArrowRight, Menu, Clock, ExternalLink, ShieldCheck,
   ShoppingBag, Heart, Lock as AppLockIcon, X, Bell, Rocket, Star,
@@ -119,6 +119,10 @@ const NotificationsTab = ({ userProfile }: any) => {
 
 import { TransactionsTab } from '../components/artist/TransactionsTab';
 import { WithdrawTab } from '../components/artist/WithdrawTab';
+import { MobileHubNav } from "../components/artist/MobileHubNav";
+import { OverviewCards } from "../components/artist/OverviewCards";
+import { SlotUsageCard } from "../components/artist/SlotUsageCard";
+import { OnboardingChecklist } from "../components/artist/OnboardingChecklist";
 
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
@@ -537,6 +541,7 @@ export default function ArtistHub() {
                 </button>
               </div>
             )}
+            <MobileHubNav activeTab={activeTab} setActiveTab={handleTabChange} />
             <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -545,10 +550,10 @@ export default function ArtistHub() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} setActiveTab={handleTabChange} />}
+                  {activeTab === 'dashboard' && <DashboardTab stats={stats} balance={userProfile?.wallet_balance || 0} userProfile={userProfile} songs={songs} setActiveTab={handleTabChange} />}
                   {activeTab === 'analytics' && <AnalyticsTab userProfile={userProfile} />}
                   {activeTab === 'fans' && <FansTab userProfile={userProfile} />}
-                  {activeTab === 'withdraw' && <WithdrawTab setActiveTab={handleTabChange} />}
+                  {activeTab === 'withdraw' && <WithdrawTab setActiveTab={handleTabChange} stats={stats} />}
                   {activeTab === 'music' && (
                     <div className="space-y-12">
                       <SongsTab songs={songs} onRefresh={fetchData} setActiveTab={handleTabChange} userProfile={userProfile} />
@@ -648,7 +653,7 @@ const MotoAnalytics = ({ limits }: { limits: any }) => {
   );
 };
 
-const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
+const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any) => {
   const [history, setHistory] = useState<any[]>([]);
   const limits = useMemo(() => getTierLimits(userProfile), [
     userProfile?.artist_tier,
@@ -672,6 +677,7 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
 
   return (
     <div className="space-y-10 max-w-6xl">
+      <OnboardingChecklist userProfile={userProfile} songs={songs} setActiveTab={setActiveTab} />
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="flex-1 min-w-0">
            <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><TrendingUp className="text-smash-purple shrink-0" /> Artist <span className="text-smash-purple">Growth</span></h2>
@@ -684,15 +690,15 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="flex flex-col gap-4 md:gap-6">
         {userProfile?.is_admin && (
            <Link 
              to="/admin" 
-             className="col-span-full p-6 bg-gradient-to-r from-red-500/20 via-smash-purple/20 to-transparent border border-red-500/30 rounded-[30px] flex items-center justify-between group hover:border-red-500 transition-all shadow-2xl shadow-red-500/10"
+             className="w-full p-6 bg-gradient-to-r from-red-500/20 via-smash-purple/20 to-transparent border border-red-500/30 rounded-[30px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group hover:border-red-500 transition-all shadow-2xl shadow-red-500/10"
            >
               <div className="flex items-center gap-6">
-                 <div className="w-16 h-16 rounded-2xl bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
-                    <ShieldCheck size={32} />
+                 <div className="w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-2xl bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
+                    <ShieldCheck className="w-6 h-6 md:w-8 md:h-8" />
                  </div>
                  <div>
                     <h3 className="text-xl font-studio font-black uppercase italic text-white leading-tight">Terminal Control</h3>
@@ -705,34 +711,10 @@ const DashboardTab = ({ stats, balance, userProfile, setActiveTab }: any) => {
               </div>
            </Link>
         )}
-         <MetricCard
-            label="TOTAL STREAMS"
-            value={stats.streams.toLocaleString()}
-            icon={<Play size={20} />}
-            color="text-smash-cyan"
-            sub="NOT tied to earnings"
-         />
-         <MetricCard
-            label="TOTAL EARNINGS"
-            value={`MK ${(stats.revenue || 0).toLocaleString()}`}
-            icon={<DollarSign size={20} />}
-            color="text-smash-green"
-            sub="Lifetime earnings"
-         />
-         <MetricCard
-            label="TOTAL FANS"
-            value={(stats.followers || 0).toLocaleString()}
-            icon={<Heart size={20} />}
-            color="text-smash-purple"
-            sub="Followers on Smashify"
-         />
-         <MetricCard
-            label="ACTIVE TRACKS"
-            value={stats.songs || 0}
-            icon={<Music2 size={20} />}
-            color="text-white"
-            sub="Currently distributed"
-         />
+         <OverviewCards stats={stats} balance={balance} songs={songs} />
+      </div>
+      <SlotUsageCard songs={songs} userProfile={userProfile} />
+      <div>
       </div>
 
       <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 shadow-sm">
@@ -1686,6 +1668,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                            <Tag size={14} /> {song.discount_percent > 0 ? `${song.discount_percent}% off` : 'Promo'}
                          </button>
                        )}
+                       <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(window.location.origin + '/song/' + song.id); toast.success('Link copied'); }} title="Share Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Share2 size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); openEditModal(song); }} title="Edit Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} title="Delete Song" className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
                     </td>
@@ -1792,7 +1775,7 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="flex flex-col gap-4 md:gap-6">
         {albums.map((al:any) => (
           <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-smash-purple/50 transition-all group shadow-sm flex flex-col">
             <div className="aspect-square rounded-[10px] overflow-hidden relative mb-4">

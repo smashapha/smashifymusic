@@ -11,10 +11,13 @@ import toast from 'react-hot-toast';
 import { getListenerTier, getListenerLimits } from '../lib/tierUtils'
 
 const Profile: React.FC = () => {
-  const { user, userProfile, signOut, refreshProfile, role } = useAuth();
+  const { user, userProfile, signOut, refreshProfile, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState('');
+  const [phoneSuccess, setPhoneSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tier = useMemo(() => getListenerTier(userProfile), [
@@ -29,20 +32,31 @@ const Profile: React.FC = () => {
   const [phone, setPhone] = useState(() => userProfile?.phone_number || '')
   const [savingPhone, setSavingPhone] = useState(false)
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(e.target.value);
+    setPhoneError('');
+    setPhoneSuccess(false);
+  };
+
   const handleUpdatePhone = async () => {
-    if (!phone.trim()) return toast.error('Enter a valid phone number')
-    setSavingPhone(true)
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    if (!cleanPhone || cleanPhone.length < 9) {
+      return setPhoneError('Enter a valid phone number (e.g. +265...)');
+    }
+    setSavingPhone(true);
     try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ phone_number: phone })
+        .update({ phone_number: cleanPhone })
         .eq('id', userProfile?.id)
-      if (error) throw error
-      toast.success('Phone number updated!')
+      if (error) throw error;
+      setPhoneSuccess(true);
+      toast.success('Phone number updated!');
+      setTimeout(() => setPhoneSuccess(false), 3000);
     } catch (err: any) {
-      toast.error(err.message)
+      toast.error(err.message);
     } finally {
-      setSavingPhone(false)
+      setSavingPhone(false);
     }
   }
 
@@ -100,6 +114,15 @@ const Profile: React.FC = () => {
     }
   };
 
+  if (authLoading || (!userProfile && user)) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-12 text-center">
+        <div className="w-8 h-8 border-4 border-smash-orange border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-text-muted font-display uppercase tracking-widest text-xs">Loading Profile...</p>
+      </div>
+    );
+  }
+
   if (!userProfile) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-12 text-center">
@@ -115,8 +138,7 @@ const Profile: React.FC = () => {
       {/* Profile Header */}
       <div className="relative group mb-20 md:mb-16">
          <div 
-           className="w-full h-[120px] md:h-[160px] rounded-b-[14px] md:rounded-[14px] overflow-hidden" 
-           style={{ background: 'linear-gradient(135deg, rgba(255,95,0,0.2), rgba(124,58,237,0.1))' }} 
+           className="w-full h-[120px] md:h-[160px] rounded-b-[14px] md:rounded-[14px] overflow-hidden relative bg-gradient-to-br from-smash-orange/20 via-smash-purple/20 to-bg-page animate-pulse" style={{ animationDuration: '4s' }} 
          />
          
          <div className="absolute -bottom-12 left-1/2 md:left-12 -translate-x-1/2 md:translate-x-0 z-20 flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 w-full px-4 md:px-0">
@@ -124,14 +146,17 @@ const Profile: React.FC = () => {
               className="w-[100px] h-[100px] md:w-[110px] md:h-[110px] rounded-full border-[4px] border-bg-page overflow-hidden relative group cursor-pointer shadow-xl bg-bg-surface"
               onClick={() => fileInputRef.current?.click()}
             >
-               <Avatar src={userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full rounded-full" />
+               <Avatar src={avatarPreview || userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full rounded-full" />
                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
                   <Camera className="text-white" size={24} />
                </div>
             </div>
             <div className="md:pb-2 space-y-1 text-center md:text-left">
                <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3">
-                  <h1 className="text-[20px] md:text-[28px] font-studio font-bold text-text-primary uppercase tracking-tight">{userProfile.full_name || 'Listener'}</h1>
+                  <h1 className="text-[20px] md:text-[28px] font-studio font-bold text-text-primary uppercase tracking-tight flex items-center gap-2">
+                     {userProfile.full_name || 'Listener'}
+                     {userProfile.verified && <BadgeCheck className="text-smash-purple fill-white/10" size={24} />}
+                  </h1>
                   {role === 'artist' && (
                     <span className="px-2.5 py-0.5 bg-smash-purple text-white text-[9px] md:text-[11px] font-display font-medium rounded-full uppercase tracking-wide">
                       Artist Account
@@ -161,7 +186,7 @@ const Profile: React.FC = () => {
                            className="flex items-center gap-4 p-4 bg-bg-elevated border border-border-default rounded-[10px] group hover:border-smash-orange/40 transition-all cursor-pointer min-h-[70px]"
                          >
                             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden shrink-0">
-                               <Avatar src={userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full" />
+                               <Avatar src={avatarPreview || userProfile.avatar_url} name={userProfile.full_name} className="w-full h-full" />
                             </div>
                             <div className="flex-1">
                                <p className="text-xs md:text-[14px] font-display font-semibold text-text-primary mb-0.5">Change Avatar</p>
@@ -172,6 +197,10 @@ const Profile: React.FC = () => {
                                  type="file" 
                                  accept="image/*"
                                  className="hidden" 
+                                 onChange={(e) => {
+                                   const file = e.target.files?.[0];
+                                   if (file) setAvatarPreview(URL.createObjectURL(file));
+                                 }}
                                />
                             </div>
                             <Upload size={18} className="text-text-muted group-hover:text-smash-orange transition-colors mr-1" />
@@ -192,13 +221,7 @@ const Profile: React.FC = () => {
                            {user?.email}
                         </div>
                      </div>
-                     <div className="space-y-2">
-                        <label className="block text-[10px] md:text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-1 md:mb-2">Subscription Plan</label>
-                        <div className="w-full h-[40px] md:h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-xs md:text-[14px] font-display font-semibold text-text-primary flex items-center gap-2">
-                           <Sparkles size={14} className="text-smash-orange" />
-                           {userProfile.subscription_tier || 'Free'}
-                        </div>
-                     </div>
+                     
                      <div className="space-y-2">
                         <label className="block text-[10px] md:text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-1 md:mb-2">Account Type</label>
                         <div className="w-full h-[40px] md:h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 text-xs md:text-[14px] font-display text-text-primary flex items-center gap-2">
@@ -223,7 +246,7 @@ const Profile: React.FC = () => {
                   <button 
                     key="action-collection" 
                     onClick={() => navigate('/library')} 
-                    className="w-full p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
+                    className="w-full p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-smash-orange/50"
                   >
                      <div className="flex items-center gap-3">
                         <ShoppingBag className="text-smash-orange shrink-0" size={18} />
@@ -236,7 +259,7 @@ const Profile: React.FC = () => {
                      <button 
                        key="action-artist-hub" 
                        onClick={() => navigate('/artist-hub')} 
-                       className="w-full p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
+                       className="w-full p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-smash-purple/50"
                      >
                         <div className="flex items-center gap-3">
                            <Sparkles className="text-smash-purple shrink-0" size={18} />
@@ -250,7 +273,7 @@ const Profile: React.FC = () => {
                      <button 
                        key="action-admin-main" 
                        onClick={() => navigate('/admin')} 
-                       className="w-full p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left"
+                       className="w-full p-3 md:p-4 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px] flex items-center justify-between group hover:bg-smash-purple/20 transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-smash-purple/50"
                      >
                         <div className="flex items-center gap-3">
                            <ShieldCheck className="text-smash-purple shrink-0" size={18} />
@@ -263,7 +286,7 @@ const Profile: React.FC = () => {
                   <button 
                     key="action-billing" 
                     onClick={() => navigate('/pricing')}
-                    className="w-full p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left"
+                    className="w-full p-3 md:p-4 bg-bg-elevated border border-border-default rounded-[10px] flex items-center justify-between group hover:border-smash-orange/30 transition-all text-left outline-none focus-visible:ring-2 focus-visible:ring-smash-orange/50"
                   >
                      <div className="flex items-center gap-3">
                         <CreditCard className="text-smash-green shrink-0" size={18} />
@@ -278,12 +301,12 @@ const Profile: React.FC = () => {
          {/* Sidebar Controls */}
          <div className="space-y-6">
             {/* Subscription Status */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+            <div className="bg-bg-surface border border-border-default rounded-[14px] p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Crown size={20} className={tier === 'free' ? 'text-white/30' : 'text-smash-orange'} />
+                  <Crown size={20} className={tier === 'free' ? 'text-text-muted' : 'text-smash-orange'} />
                   <div>
-                    <p className="text-white font-black uppercase text-sm tracking-widest">
+                    <p className="text-text-primary font-black uppercase text-sm tracking-widest">
                       {(() => {
                         const tierLabels: Record<string, string> = {
                           free:       'Free Plan',
@@ -295,7 +318,7 @@ const Profile: React.FC = () => {
                         return tierLabels[tier?.toLowerCase()] || 'Free Plan';
                       })()}
                     </p>
-                    <p className="text-white/40 text-xs font-bold mt-0.5">
+                    <p className="text-text-secondary text-xs font-bold mt-0.5">
                       {(!tier || tier === 'free')
                         ? 'Upgrade to remove ads and unlock HD audio'
                         : userProfile?.subscription_expires_at
@@ -320,7 +343,7 @@ const Profile: React.FC = () => {
               </div>
 
               {/* Feature list */}
-              <div className="pt-2 space-y-2 border-t border-white/5">
+              <div className="pt-2 space-y-2 border-t border-border-subtle">
                 {[
                   { label: 'Ad-free listening', enabled: !limits.hasAds },
                   { label: 'HD audio quality', enabled: limits.hdAudio },
@@ -328,54 +351,57 @@ const Profile: React.FC = () => {
                   { label: 'Exclusive snippets', enabled: limits.canAccessSnippets },
                 ].map(f => (
                   <div key={f.label} className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${f.enabled ? 'bg-smash-orange/20' : 'bg-white/5'}`}>
-                      <Check size={10} className={f.enabled ? 'text-smash-orange' : 'text-white/20'} />
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${f.enabled ? 'bg-smash-orange/20' : 'bg-bg-elevated'}`}>
+                      <Check size={10} className={f.enabled ? 'text-smash-orange' : 'text-text-muted'} />
                     </div>
-                    <span className={`text-xs font-bold ${f.enabled ? 'text-white' : 'text-white/30'}`}>{f.label}</span>
+                    <span className={`text-xs font-bold ${f.enabled ? 'text-text-primary' : 'text-text-muted'}`}>{f.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Phone number */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+            <div className="bg-bg-surface border border-border-default rounded-[14px] p-5">
+              <p className="text-text-muted text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
                 <Phone size={12} /> Phone Number
               </p>
-              <div className="flex gap-3">
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="+265 XXX XXX XXX"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-smash-orange/60 transition-colors"
-                />
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    placeholder="+265 XXX XXX XXX"
+                    className={`w-full bg-bg-elevated border ${phoneError ? 'border-red-500/50 focus:border-red-500' : 'border-border-default focus:border-smash-orange/60'} rounded-[10px] px-4 py-3 text-text-primary text-sm font-bold outline-none transition-colors`}
+                  />
+                  {phoneError && <p className="text-red-400 text-[10px] mt-1.5 font-sans">{phoneError}</p>}
+                </div>
                 <button
                   onClick={handleUpdatePhone}
                   disabled={savingPhone}
-                  className="px-4 py-3 bg-smash-orange text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform disabled:opacity-50"
+                  className={`px-4 h-[44px] ${phoneSuccess ? 'bg-smash-green' : 'bg-smash-orange'} text-white rounded-[10px] text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform disabled:opacity-50 flex outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface items-center justify-center min-w-[70px]`}
                 >
-                  {savingPhone ? '...' : 'Save'}
+                  {savingPhone ? '...' : phoneSuccess ? <Check size={16} /> : 'Save'}
                 </button>
               </div>
             </div>
 
             {/* Account info */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
-              <p className="text-white/40 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-bg-surface border border-border-default rounded-[14px] p-5 space-y-3">
+              <p className="text-text-muted text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Shield size={12} /> Account
               </p>
-              <div className="flex items-center gap-3 py-2 border-b border-white/5">
-                <Mail size={14} className="text-white/30 shrink-0" />
-                <p className="text-white text-sm font-bold truncate">{user?.email || 'No email'}</p>
+              <div className="flex items-center gap-3 py-2 border-b border-border-subtle">
+                <Mail size={14} className="text-text-muted shrink-0" />
+                <p className="text-text-primary text-sm font-bold truncate">{user?.email || 'No email'}</p>
               </div>
               <button
                 onClick={() => navigate('/pricing')}
-                className="w-full flex items-center justify-between py-2"
+                className="w-full flex items-center justify-between py-2 group hover:opacity-80 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-smash-orange rounded-md"
               >
                 <div className="flex items-center gap-3">
-                  <CreditCard size={14} className="text-white/30" />
-                  <p className="text-white text-sm font-bold">Manage Subscription</p>
+                  <CreditCard size={14} className="text-text-muted" />
+                  <p className="text-text-primary text-sm font-bold group-hover:text-smash-orange transition-colors">Manage Subscription</p>
                 </div>
                 <ChevronRight size={14} className="text-white/30" />
               </button>
