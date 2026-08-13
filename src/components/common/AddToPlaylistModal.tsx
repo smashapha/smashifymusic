@@ -194,7 +194,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
         <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
           {/* Song Preview */}
           <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/5">
-            <img src={song.cover_url} alt={song.title} className="w-12 h-12 rounded-lg object-cover" />
+            <img src={song.cover_url} alt={song.title} className="w-12 h-12 rounded-lg object-cover" loading="lazy" decoding="async" />
             <div className="min-w-0">
               <p className="font-display font-black italic uppercase text-sm truncate leading-none mb-1">{song.title}</p>
               <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest truncate">{song.artist_name}</p>
@@ -226,7 +226,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden">
                           {playlist.cover_url ? (
-                            <img src={playlist.cover_url} className="w-full h-full object-cover" alt="" />
+                            <img src={playlist.cover_url} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                           ) : (
                             <Music2 size={24} className="text-smash-gray" />
                           )}

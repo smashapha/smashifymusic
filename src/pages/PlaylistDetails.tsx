@@ -410,7 +410,7 @@ const PlaylistDetails: React.FC = () => {
             {/* Playlist Dynamic Cover Design (Spotify/Smashify styled) */}
             {displayInfo.cover_url ? (
               <div className="w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative border border-white/10 group">
-                <img src={displayInfo.cover_url} className="w-full h-full object-cover" alt={displayInfo.title} />
+                <img src={displayInfo.cover_url} className="w-full h-full object-cover" alt={displayInfo.title} loading="lazy" decoding="async" />
               </div>
             ) : (
               <div className={`w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-2xl bg-gradient-to-br ${displayInfo.style} shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative flex flex-col justify-between p-5 border border-white/10 group`}>
@@ -660,7 +660,7 @@ const PlaylistDetails: React.FC = () => {
                   {/* Thumbnail / Title & Artist */}
                   <div className="flex-1 flex items-center gap-3.5 min-w-0">
                     <div className="w-11 h-11 rounded-lg overflow-hidden relative shadow-md shrink-0 bg-white/5">
-                      <img src={song.cover_url} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} />
+                      <img src={song.cover_url} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Play fill="white" size={14} className="text-white" />
                       </div>

@@ -506,7 +506,7 @@ const Home: React.FC = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[8s]"
                   alt=""
                   referrerPolicy="no-referrer"
-                />
+                loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-bg-surface via-bg-surface/80 to-transparent" />
               </div>
 
@@ -578,7 +578,7 @@ const Home: React.FC = () => {
             {trendingSongs.map((song) => (
               <div key={`quick-${song.id}`} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-white/5 snap-start group cursor-pointer transition-colors" onClick={() => playSong(song)}>
                 <div className="relative w-[48px] h-[48px] md:w-[54px] md:h-[54px] rounded-[6px] overflow-hidden flex-shrink-0">
-                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" />
+                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Play size={20} className="fill-white text-white ml-0.5" />
                    </div>
@@ -645,7 +645,7 @@ const Home: React.FC = () => {
             {albums.length > 0 ? albums.map((al: any) => (
                <div key={al.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
                   <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
-                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async" />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{al.title}</h4>
@@ -667,11 +667,11 @@ const Home: React.FC = () => {
                  <div key={pl.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/playlist/${pl.id}`)}>
                     <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
                        {pl.cover_url && !pl.cover_url.includes('images.unsplash.com') ? (
-                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async" />
                        ) : (
                           <div className="w-full h-full grid grid-cols-2 grid-rows-2">
                              {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
-                                <img key={i} src={optimizeImage(ps.songs?.cover_url || pl.cover_url, 150, 150)} className="w-full h-full object-cover" />
+                                <img key={i} src={optimizeImage(ps.songs?.cover_url || pl.cover_url, 150, 150)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                              ))}
                              {/* Fill empty spots if less than 4 songs */}
                              {Array.from({ length: Math.max(0, 4 - (pl.playlist_songs?.length || 0)) }).map((_, i) => (

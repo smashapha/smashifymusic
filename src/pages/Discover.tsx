@@ -660,11 +660,11 @@ const Discover: React.FC = () => {
                     >
                       <div className="aspect-square bg-smash-dark rounded-2xl overflow-hidden border border-white/5 relative mb-2">
                         {pl.cover_url ? (
-                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={pl.name} />
+                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={pl.name} loading="lazy" decoding="async" />
                         ) : (
                           <div className="grid grid-cols-2 h-full w-full">
                             {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
-                              <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" alt="" />
+                              <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                             ))}
                           </div>
                         )}

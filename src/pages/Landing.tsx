@@ -163,13 +163,13 @@ const Landing: React.FC = () => {
       setArtists(artistsData || []);
 
       const today = new Date().toISOString().split('T')[0];
-      const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
+      const { data: topSongsData } = await supabase.from('songs').select('id, title, plays, cover_url, profiles:artist_id(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTopSongs(topSongsData || []);
 
-      const { data: trendingData } = await supabase.from('songs').select('id, title, artists(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
+      const { data: trendingData } = await supabase.from('songs').select('id, title, profiles:artist_id(stage_name, full_name)').eq('approved', true).lte('release_date', today).order('plays', { ascending: false }).limit(10);
       setTrendingSongs(trendingData || []);
 
-      const { count: artistCount } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'artist').eq('is_approved', true);
+      const { count: artistCount } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'artist').eq('approved', true);
       const { count: songCount } = await supabase.from('songs').select('id', { count: 'exact', head: true }).eq('approved', true);
       setPlatformStats({ artists: artistCount || 0, songs: songCount || 0 });
     };

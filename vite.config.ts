@@ -195,6 +195,7 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
+          cleanupOutdatedCaches: true,
           importScripts: ['/sw-custom.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           navigateFallback: '/index.html',
@@ -207,7 +208,7 @@ export default defineConfig(() => {
                 cacheName: 'supabase-api-cache',
                 expiration: {
                   maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                  maxAgeSeconds: 300 // 5 minutes
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -216,7 +217,7 @@ export default defineConfig(() => {
             },
             {
               // Cache-First strategy for Supabase storage (audio/images)
-              urlPattern: /^https:\/\/akclwguqzeijscftatqp\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+              urlPattern: /^https:\/\/akclwguqzeijscftatqp\.supabase\.co\/storage\/v1\/(object|render\/image)\/public\/.*/i,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'supabase-storage-cache',

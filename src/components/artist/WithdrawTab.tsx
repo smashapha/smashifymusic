@@ -9,7 +9,7 @@ import {
 import toast from 'react-hot-toast';
 import { getTierLimits } from '../../lib/tierUtils';
 
-export const WithdrawTab = ({ setActiveTab }: { setActiveTab: (tab: any) => void }) => {
+export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) => void, stats?: any }) => {
   const { userProfile, refreshProfile } = useAuth();
   
   // States

@@ -257,7 +257,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                     <>
                       <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0">
                          {userProfile?.avatar_url ? (
-                           <img src={userProfile.avatar_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                           <img src={userProfile.avatar_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                          ) : (
                            <User size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
                          )}

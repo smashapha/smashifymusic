@@ -417,11 +417,11 @@ const Library: React.FC = () => {
                  >
                     <div className="aspect-square bg-smash-dark rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/5 relative shadow-lg md:shadow-xl">
                        {pl.cover_url ? (
-                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} />
+                          <img src={pl.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} loading="lazy" decoding="async" />
                        ) : (
                           <div className="grid grid-cols-2 h-full w-full opacity-40">
                           {pl.playlist_songs?.slice(0, 4).map((ps: any, i: number) => (
-                             <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" />
+                             <img key={i} src={ps.songs?.cover_url} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ))}
                        </div>
                        )}
@@ -590,7 +590,7 @@ const Library: React.FC = () => {
                          src={song.cover_url || ''}
                          className="w-12 h-12 rounded-xl object-cover shrink-0"
                          alt={song.title}
-                       />
+                       loading="lazy" decoding="async" />
                        <div className="flex-1 min-w-0">
                          <p className="text-sm font-bold text-white truncate">{song.title}</p>
                          <p className="text-[11px] text-smash-gray truncate">{song.artist_name}</p>

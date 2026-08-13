@@ -365,7 +365,7 @@ export default function ArtistHub() {
               <img 
                 src={userProfile?.avatar_url || "https://placehold.co/42x42/18162C/9B5DE5?text=♪"} 
                 className="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-smash-purple/50 transition-colors" 
-              />
+              loading="lazy" decoding="async" />
               <div className="overflow-hidden">
                 <p className="text-sm font-bold truncate">{userProfile?.stage_name || userProfile?.full_name || 'Artist'}</p>
                 <p className="text-[10px] text-smash-purple uppercase tracking-widest font-bold">{getTierLabel(userProfile?.subscription_tier)}</p>
@@ -502,7 +502,7 @@ export default function ArtistHub() {
               <img 
                 src={userProfile?.avatar_url || "https://placehold.co/34x34/18162C/9B5DE5?text=♪"} 
                 className="w-8 h-8 rounded-full border-2 border-smash-purple object-cover hover:opacity-80 transition-opacity shadow-lg shadow-smash-purple/20"
-              />
+              loading="lazy" decoding="async" />
             </Link>
           </div>
         </header>
@@ -1595,7 +1595,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                   <tr key={song.id} className="hover:bg-bg-elevated transition-colors group">
                     <td className="px-4 py-3 first:pl-6">
                       <div className="flex items-center gap-4">
-                        <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover" />
+                        <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover" loading="lazy" decoding="async" />
                         <div>
                           <p className="text-[14px] font-display font-semibold text-text-primary group-hover:text-smash-purple transition-colors truncate max-w-[200px]">{song.title}</p>
                           <p className="text-[12px] text-text-muted font-sans">{song.genre || 'Afro'} • {new Date(song.created_at).getFullYear()}</p>
@@ -1690,7 +1690,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
           {filteredSongs.length > 0 ? (
             filteredSongs.map((song: any) => (
               <div key={song.id} className="flex items-center gap-3 p-4 hover:bg-bg-elevated transition-colors min-h-[72px]">
-                <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover shrink-0" />
+                <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover shrink-0" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <p className="text-[14px] font-display font-semibold text-text-primary truncate">{song.title}</p>
                   <p className="text-[12px] text-text-muted font-sans truncate">{song.genre || 'Afro'} • {formatCount(song.plays)} plays</p>
@@ -1779,7 +1779,7 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
         {albums.map((al:any) => (
           <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-smash-purple/50 transition-all group shadow-sm flex flex-col">
             <div className="aspect-square rounded-[10px] overflow-hidden relative mb-4">
-              <img src={al.cover_url || "https://placehold.co/300x300/18162C/9B5DE5"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={al.cover_url || "https://placehold.co/300x300/18162C/9B5DE5"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
                 <button className="px-4 py-2 bg-smash-purple text-white text-[11px] font-display font-semibold uppercase tracking-widest rounded-[8px] hover:bg-smash-purple/90 transition-all">View Songs</button>
               </div>
@@ -2568,7 +2568,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        {(mode === 'album' ? albumTracks.length > 0 : songFile) ? (
                          <div className="w-full relative z-10">
                             {coverPreviewUrl && (
-                              <img src={coverPreviewUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-3xl pointer-events-none -z-10" />
+                              <img src={coverPreviewUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-3xl pointer-events-none -z-10" loading="lazy" decoding="async" />
                             )}
                             
                             <div className="flex flex-col items-center max-w-xl mx-auto space-y-6">
@@ -2777,7 +2777,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            >
                               {coverPreviewUrl ? (
                                 <div className="absolute inset-0 w-full h-full group">
-                                  <img src={coverPreviewUrl} className="w-full h-full object-cover" />
+                                  <img src={coverPreviewUrl} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                      <button type="button" className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-white font-display font-black text-[11px] uppercase tracking-widest">Change</button>
                                   </div>
@@ -2848,7 +2848,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                    {featuredArtists.map(f => (
                                      <div key={f.name} className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 border border-smash-purple/30 rounded-full">
                                        {f.avatarUrl ? (
-                                         <img src={f.avatarUrl} className="w-5 h-5 rounded-full object-cover" alt="" />
+                                         <img src={f.avatarUrl} className="w-5 h-5 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
                                        ) : (
                                          <div className="w-5 h-5 rounded-full bg-smash-purple/40 flex items-center justify-center text-[9px] font-black text-white">
                                            {f.name[0]}
@@ -2910,7 +2910,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
                                        >
                                          {artist.avatar_url ? (
-                                           <img src={artist.avatar_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
+                                           <img src={artist.avatar_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                                          ) : (
                                            <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center font-black text-smash-purple shrink-0">
                                              {(artist.stage_name || artist.full_name || '?')[0]}
@@ -3058,7 +3058,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         
                         <div className="bg-bg-elevated border border-white/5 p-4 rounded-3xl flex items-center gap-4">
                            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative">
-                              {coverPreviewUrl ? <img src={coverPreviewUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-white/5" />}
+                              {coverPreviewUrl ? <img src={coverPreviewUrl} className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full bg-white/5" />}
                            </div>
                            <div className="flex-1 min-w-0">
                               <h3 className="font-studio font-black uppercase text-xl text-white truncate">{title}</h3>
@@ -3338,7 +3338,7 @@ const ProfileTab = ({ userProfile }: any) => {
                 <img 
                   src={bannerPreviewUrl || (userProfile?.banner_url || "https://placehold.co/1200x300")} 
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500" 
-                />
+                loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload size={24} className="text-white mb-2" />
                   <span className="text-[11px] font-display font-semibold uppercase tracking-widest text-white">Change Banner</span>
@@ -3361,7 +3361,7 @@ const ProfileTab = ({ userProfile }: any) => {
                 <img 
                   src={avatarPreviewUrl || (userProfile?.avatar_url || "https://placehold.co/160")} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-                />
+                loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload size={20} className="text-white" />
                 </div>
@@ -3732,7 +3732,7 @@ const AnalyticsTab = ({ userProfile }: any) => {
             return (
               <div key={song.id} className="flex items-center gap-4">
                 <span className="text-[10px] font-black text-smash-gray w-4 shrink-0">#{i + 1}</span>
-                <img src={song.cover_url || ''} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" />
+                <img src={song.cover_url || ''} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-bold text-white truncate">{song.title}</p>

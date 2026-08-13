@@ -178,7 +178,7 @@ const ArtistLanding: React.FC = () => {
              >
                 <div className="flex items-center gap-4 mb-4">
                    <div className="w-12 h-12 rounded-full border-2 border-smash-purple p-0.5">
-                      <img src="https://placehold.co/100" className="w-full h-full rounded-full object-cover" />
+                      <img src="https://placehold.co/100" className="w-full h-full rounded-full object-cover" loading="lazy" decoding="async" />
                    </div>
                    <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-black text-smash-purple uppercase tracking-widest mb-0.5">Featured Artist</p>
@@ -224,7 +224,7 @@ const ArtistLanding: React.FC = () => {
                {topEarners.length > 0 ? (
                  topEarners.map((earner, i) => (
                    <div key={earner.id} className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated overflow-hidden hover:z-10 hover:-translate-y-2 transition-all cursor-pointer">
-                      <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} />
+                      <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} loading="lazy" decoding="async" />
                    </div>
                  ))
                ) : (

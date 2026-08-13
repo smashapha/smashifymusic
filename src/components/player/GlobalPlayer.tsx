@@ -114,7 +114,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
           src={currentSong.cover_url} 
           className="w-full h-full object-cover blur-[120px] scale-125" 
           alt="" 
-        />
+        loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0E0E12]/80 via-[#0E0E12]/90 to-[#0E0E12]" />
       </div>
 
@@ -155,7 +155,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
             className="w-full h-full object-cover" 
             alt={currentSong.title} 
             referrerPolicy="no-referrer" 
-          />
+          loading="lazy" decoding="async" />
         </div>
 
         {/* Title & Artist & Sale Status */}
@@ -572,7 +572,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                 <div className="w-12 h-1.5 bg-white/20 rounded-full mb-3" />
                 <div className="flex items-center justify-between w-full px-4">
                   <div className="flex items-center gap-3">
-                    <img src={currentSong.cover_url} className="w-10 h-10 rounded-xl object-cover" alt="" />
+                    <img src={currentSong.cover_url} className="w-10 h-10 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                     <div>
                       <h4 className="font-studio font-bold text-sm text-white">{formatDisplayTitle(currentSong.title)}</h4>
                       <p className="text-xs text-white/50">{currentSong.artist_name}</p>
@@ -641,7 +641,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                       onClick={() => playSong(song)}
                       className={`p-3 rounded-2xl flex items-center gap-3 cursor-pointer transition-colors ${currentSong.id === song.id ? 'bg-blue-600/20 border border-blue-500/30' : 'hover:bg-white/5'}`}
                     >
-                      <img src={song.cover_url} className="w-12 h-12 rounded-xl object-cover" alt="" />
+                      <img src={song.cover_url} className="w-12 h-12 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                       <div className="flex-1 min-w-0">
                         <p className={`font-studio font-bold text-sm truncate ${currentSong.id === song.id ? 'text-blue-400' : 'text-white'}`}>
                           {formatDisplayTitle(song.title)}
@@ -777,7 +777,7 @@ const GlobalPlayer = () => {
             {/* [art 48px | title+artist flex] */}
             <div className="flex items-center gap-3 flex-shrink-0 cursor-pointer w-auto lg:w-1/4" onClick={() => setIsExpanded(true)}>
               <div className="relative w-[48px] h-[48px] rounded-[10px] overflow-hidden flex-shrink-0 group">
-                <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                <img src={currentSong.cover_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
                   <Maximize2 size={16} />
                 </div>
@@ -970,7 +970,7 @@ const GlobalPlayer = () => {
                     onClick={() => playSong(song)}
                   >
                     <div className="w-10 h-10 rounded-[8px] overflow-hidden flex-shrink-0 relative">
-                       <img src={song.cover_url} className="w-full h-full object-cover" alt="" />
+                       <img src={song.cover_url} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                        {currentSong?.id === song.id && (
                          <div className={`absolute inset-0 ${accentColor.replace('text-', 'bg-')}/40 flex items-center justify-center`}>
                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}>

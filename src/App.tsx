@@ -11,9 +11,9 @@ const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
 import { verifyPayment } from './lib/paychangu';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { handleTrackDownload } from './lib/downloads';
 
-import ErrorBoundary from './components/common/ErrorBoundary';
 import InstallPWA from './components/common/InstallPWA';
 
 import { Mail, Phone, MessageSquare, Send, Facebook, Instagram, Youtube, Music } from 'lucide-react';

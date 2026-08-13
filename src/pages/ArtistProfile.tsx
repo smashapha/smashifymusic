@@ -401,7 +401,7 @@ const ArtistProfile: React.FC = () => {
         src={artist.banner_url || artist.avatar_url || 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop'}
         className="absolute inset-0 w-full h-full object-cover scale-110 blur-sm opacity-40"
         alt=""
-      />
+      loading="lazy" decoding="async" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
 
       {/* Artist info pinned to bottom */}
@@ -550,7 +550,7 @@ const ArtistProfile: React.FC = () => {
                         src={song.cover_url}
                         className="w-10 h-10 rounded-lg object-cover shrink-0"
                         alt={song.title}
-                      />
+                      loading="lazy" decoding="async" />
                       {/* Title + genre */}
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-bold truncate">{song.title}</p>
@@ -649,7 +649,7 @@ const ArtistProfile: React.FC = () => {
                        return (
                          <div key={`a-${item.data.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer" onClick={() => navigate(`/album/${item.data.id}`)}>
                             <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
-                               <img src={item.data.cover_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                               <img src={item.data.cover_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                  <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
                                    <Play size={18} fill="white" className="text-white ml-0.5" />
@@ -694,7 +694,7 @@ const ArtistProfile: React.FC = () => {
                    {fansAlsoLike.map(fanArtist => (
                      <div key={`fan-${fanArtist.id}`} className="min-w-[140px] max-w-[140px] md:min-w-[180px] md:max-w-[180px] snap-start flex-shrink-0 group cursor-pointer text-center" onClick={() => navigate(`/artist/${fanArtist.id}`)}>
                        <div className="aspect-[1/1] w-full rounded-full overflow-hidden mb-3 relative shadow-lg mx-auto">
-                          <img src={fanArtist.avatar_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img src={fanArtist.avatar_url || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                        </div>
                        <p className="text-white text-sm font-bold truncate">{fanArtist.stage_name || fanArtist.full_name}</p>
                        <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mt-1">Artist</p>
@@ -708,7 +708,7 @@ const ArtistProfile: React.FC = () => {
             <section className="mb-8 pt-4">
               <h2 className="text-xl md:text-2xl font-bold text-white mb-4">About</h2>
               <div className="relative aspect-[4/3] md:aspect-[2/1] rounded-3xl overflow-hidden group cursor-pointer">
-                 <img src={artist.banner_url || artist.avatar_url || 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="About" />
+                 <img src={artist.banner_url || artist.avatar_url || 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f92e?w=1200&h=800&fit=crop'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="About" loading="lazy" decoding="async" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                  <div className="absolute bottom-0 left-0 p-6 w-full">
                     <p className="text-white font-bold text-lg mb-2">{(artist.followers_count || 0).toLocaleString()} followers</p>
@@ -745,7 +745,7 @@ const ArtistProfile: React.FC = () => {
                       <img
                         src={al.cover_url || 'https://placehold.co/400'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                      loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
                           <Play size={18} fill="white" className="text-white ml-0.5" />

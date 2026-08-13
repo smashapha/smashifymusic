@@ -1292,7 +1292,7 @@ const Admin = () => {
                             <td className="px-8 py-6">
                               <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-smash-purple/30 transition-colors">
-                                  <img src={l.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-full h-full rounded-[10px] object-cover" />
+                                  <img src={l.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-full h-full rounded-[10px] object-cover" loading="lazy" decoding="async" />
                                 </div>
                                 <div>
                                   <p className="font-bold text-sm text-white group-hover:text-smash-purple transition-colors">{l.full_name || 'Anonymous'}</p>
@@ -1349,7 +1349,7 @@ const Admin = () => {
                              <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
                                   <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-smash-purple/30 transition-colors">
-                                    <img src={a.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-full h-full rounded-[10px] object-cover" />
+                                    <img src={a.avatar_url || "https://placehold.co/40x40/18162C/9B5DE5?text=?"} className="w-full h-full rounded-[10px] object-cover" loading="lazy" decoding="async" />
                                   </div>
                                   <div>
                                     <p className="font-bold text-sm text-white group-hover:text-smash-purple transition-colors flex items-center gap-2">
@@ -1881,7 +1881,7 @@ const Admin = () => {
                               <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
                                   <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 shrink-0 group-hover:scale-105 transition-transform">
-                                    <img src={snippet.cover_url || "https://placehold.co/48"} className="w-full h-full object-cover" />
+                                    <img src={snippet.cover_url || "https://placehold.co/48"} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                     {snippet.is_video && <div className="absolute inset-0 flex items-center justify-center bg-black/40"><Radio size={12} className="text-white animate-pulse" /></div>}
                                   </div>
                                   <div>
@@ -2443,7 +2443,7 @@ const Admin = () => {
                     <div className="p-6">
                       <div className="flex gap-4 mb-6">
                         <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-                          <img src={selectedArtist.avatar_url || "https://placehold.co/100x100/18162C/9B5DE5?text=?"} className="w-full h-full object-cover" />
+                          <img src={selectedArtist.avatar_url || "https://placehold.co/100x100/18162C/9B5DE5?text=?"} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                         <div>
                           <div className="font-bold text-xl text-white flex items-center gap-2">

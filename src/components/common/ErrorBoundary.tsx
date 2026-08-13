@@ -1,8 +1,7 @@
-import React, { Component, ErrorInfo } from 'react';
-import { AlertCircle } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-  children?: React.ReactNode;
+  children: ReactNode;
 }
 
 interface State {
@@ -10,11 +9,15 @@ interface State {
   error?: Error;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = { hasError: false };
+export class ErrorBoundary extends Component<Props, State> {
+  public props: Props;
+  public state: State = {
+    hasError: false
+  };
 
   constructor(props: Props) {
     super(props);
+    this.props = props;
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -28,23 +31,29 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-smash-black flex flex-col items-center justify-center text-center px-4">
-          <AlertCircle size={64} className="text-red-400 mb-6" />
-          <h1 className="text-4xl font-black font-display italic tracking-tighter text-white mb-4">Something went wrong</h1>
-          <p className="text-smash-gray font-medium max-w-md mb-8">
-            {this.state.error?.message || "An unexpected error occurred. Our team has been notified."}
-          </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-full hover:bg-smash-orange hover:text-white transition-all shadow-xl active:scale-95"
-          >
-            Refresh Page
-          </button>
+        <div className="min-h-screen bg-bg-page flex items-center justify-center p-4">
+          <div className="bg-bg-surface p-8 rounded-[20px] max-w-md w-full text-center border border-border-default">
+            <h2 className="text-xl font-display font-bold text-white mb-4">Something went wrong</h2>
+            <p className="text-text-secondary text-sm mb-6">
+              We encountered an unexpected error. Please refresh the page to try again.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-smash-orange text-white px-6 py-3 rounded-full font-bold text-sm hover:scale-105 transition-transform"
+            >
+              Reload Page
+            </button>
+            {this.state.error && (
+              <p className="mt-6 text-[10px] text-text-muted text-left p-3 bg-black/20 rounded-md font-mono overflow-auto max-h-32">
+                {this.state.error.toString()}
+              </p>
+            )}
+          </div>
         </div>
       );
     }
 
-    return (this as any).props.children;
+    return this.props.children;
   }
 }
 

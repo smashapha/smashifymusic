@@ -327,7 +327,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
           src={song.cover_url} 
           className="w-full h-full object-cover blur-3xl opacity-40 scale-150" 
           alt="" 
-        />
+        loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90" />
       </div>
 
@@ -349,7 +349,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
               className={`w-full h-full object-cover rounded-[40px] md:rounded-[60px] border-4 border-white/10 ${isPlaying ? 'animate-pulse' : ''}`} 
               alt={formatDisplayTitle(song.title)} 
               referrerPolicy="no-referrer"
-            />
+            loading="lazy" decoding="async" />
             {/* Swipe Indicators */}
             <motion.div style={{ opacity: likeOpacity }} className="absolute inset-0 bg-smash-green/20 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
                <Heart size={80} className="text-white fill-current" />
