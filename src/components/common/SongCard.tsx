@@ -9,6 +9,8 @@ import { purchaseTrack } from '../../lib/paychangu';
 import { getEffectivePrice, isOnSale } from '../../lib/pricing';
 import { downloadPurchasedSong, handleTrackDownload } from '../../lib/downloads';
 import { useNavigate } from 'react-router-dom';
+import { useOfflineSong } from '../../lib/offlineSync';
+import { OfflineButton } from './OfflineButton';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
@@ -30,6 +32,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   const { userProfile } = useAuth();
   const requireAuth = useRequireAuth();
   const [showMenu, setShowMenu] = useState(false);
+  const { isSaved, isCachedLocal, cacheProgress, toggleOffline } = useOfflineSong(song.id, userProfile);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -326,13 +329,15 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                {formatArtistName(song.artist_name, song.featured_artist)}
              </p>
            </div>
-           {/* Like button */}
-           <button
-             onClick={handleLike}
-             className={`shrink-0 p-1 rounded-full transition-colors ${isLiked ? 'text-red-400' : 'text-text-muted opacity-0 group-hover:opacity-100'}`}
-           >
-             <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} />
-           </button>
+           <div className="flex items-center gap-1 shrink-0">
+             <OfflineButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
+             <button
+               onClick={handleLike}
+               className={`p-1 rounded-full transition-colors ${isLiked ? 'text-red-400' : 'text-text-muted opacity-0 group-hover:opacity-100'}`}
+             >
+               <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} />
+             </button>
+           </div>
          </div>
    
          <AnimatePresence>
@@ -427,6 +432,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            >
               <Gift size={16} />
            </button>
+           <OfflineButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
            <button 
              onClick={handleLike}
              className={`p-2 rounded-full hover:bg-bg-elevated transition-colors ${isLiked ? 'text-red-400 opacity-100' : 'text-text-muted opacity-40 group-hover:opacity-100'}`}

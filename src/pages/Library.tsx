@@ -28,6 +28,9 @@ import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
 import { handleTrackDownload } from '../lib/downloads';
+import { fetchSavedSongIds, removeSavedSong } from '../lib/offlineSync';
+import { getStorageInfo, getOfflineLimit, clearAllCached, cacheSong, removeCachedSong, isCached } from '../lib/offlineCache';
+import { OfflineTrackRow } from '../components/common/OfflineTrackRow';
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS } from '../lib/layout';
 import { Skeleton, PlaylistCardSkeleton } from '../components/common/Skeleton';
@@ -230,12 +233,9 @@ const Library: React.FC = () => {
            setLikesCount(formatted.length);
         }
       } else if (activeTab === 'downloads') {
-        let downloadIds: string[] = [];
-        try {
-          downloadIds = JSON.parse(localStorage.getItem('smash_downloads') || '[]');
-        } catch (e) {
-          console.error('Error parsing downloads:', e);
-        }
+        const savedIdsSet = await fetchSavedSongIds(userProfile?.id);
+        const downloadIds = Array.from(savedIdsSet);
+        
         if (downloadIds.length > 0) {
            const { data: downloadSongs, error: dError } = await supabase
               .from('songs')
@@ -256,6 +256,10 @@ const Library: React.FC = () => {
         } else {
            setSongs([]);
         }
+        try {
+          const info = await getStorageInfo();
+          setStorageInfo(info);
+        } catch(e) {}
       } else if (activeTab === 'playlists') {
         let playlistsResult: any[] = [];
         try {

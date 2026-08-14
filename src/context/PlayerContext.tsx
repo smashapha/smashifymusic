@@ -463,12 +463,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastIncrementedSongId.current = null;
     setCurrentSong(song);
     setIsPlaying(true);
-    
-    if (audioRef.current) {
-       const srcToUse = dataSaver && song.snippet_url ? song.snippet_url : song.audio_url;
-       audioRef.current.src = srcToUse;
-       audioRef.current.load();
-    }
   };
   
   const audio = audioRef.current as HTMLAudioElement;
@@ -488,14 +482,40 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Reset limit reached ref when song changes
     previewLimitReached.current = false;
     
-    // Only set src if we have a current song and it differs from the current audio src
-    const srcToUse = dataSaver && currentSong?.snippet_url 
-      ? currentSong.snippet_url 
-      : currentSong?.audio_url;
+    if (currentSong) {
+      if (audio.dataset.songId !== currentSong.id) {
+        audio.dataset.songId = currentSong.id;
+        
+        const setSource = async () => {
+          const networkSrc = dataSaver && currentSong.snippet_url ? currentSong.snippet_url : currentSong.audio_url;
+          let finalSrc = networkSrc;
 
-    if (currentSong && srcToUse && audio.src !== srcToUse) {
-      audio.src = srcToUse;
-      audio.load();
+          if (currentSong.audio_url && !dataSaver) {
+            try {
+              const { isCached, getBlobUrlForSong } = await import('../lib/offlineCache');
+              const cached = await isCached(currentSong.id);
+              if (cached) {
+                const blobUrl = await getBlobUrlForSong(currentSong.id, currentSong.audio_url);
+                if (blobUrl) finalSrc = blobUrl;
+              }
+            } catch (e) {
+              console.error('Error loading offline cache:', e);
+            }
+          }
+
+          if (audioRef.current && audioRef.current.dataset.songId === currentSong.id) {
+            audioRef.current.src = finalSrc || '';
+            audioRef.current.load();
+            if (isPlaying) {
+              audioRef.current.play().catch(e => {
+                if (e.name !== 'AbortError') console.error(e);
+              });
+            }
+          }
+        };
+        
+        setSource();
+      }
     }
 
     if (!fadeInInterval.current) {
@@ -724,16 +744,42 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     };
 
+    const handleError = async (e: Event) => {
+      if (audio.error && audio.error.code === 4 || audio.error?.code === 2) { // 4 is MEDIA_ERR_SRC_NOT_SUPPORTED/Network
+        if (currentSong) {
+          try {
+            const { fetchSavedSongIds } = await import('../lib/offlineSync');
+            const { isCached } = await import('../lib/offlineCache');
+            const savedIds = await fetchSavedSongIds(userProfile?.id);
+            if (savedIds.has(currentSong.id)) {
+              const cached = await isCached(currentSong.id);
+              if (!cached) {
+                toast.error('Song is saved for offline but not downloaded on this device. Go to Library → Offline.');
+              } else {
+                toast.error('Offline song failed to play.');
+              }
+            } else {
+              toast.error('Network error. Check your connection.');
+            }
+          } catch (err) {
+            toast.error('Network error. Check your connection.');
+          }
+        }
+      }
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
-  }, [currentSong, userProfile?.subscription_tier, userProfile?.user_type]);
+  }, [currentSong, userProfile?.subscription_tier, userProfile?.user_type, userProfile?.id]);
 
   useEffect(() => {
     if (audioRef.current) {
