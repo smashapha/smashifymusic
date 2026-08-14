@@ -1,3 +1,4 @@
+import { formatArtistName } from './formatting';
 import { supabase } from './supabase';
 import { getListenerLimits } from './tierUtils';
 
@@ -97,7 +98,7 @@ export async function handleTrackDownload(
   }
 
   const artistName = song.artist_name || song.profiles?.stage_name || song.profiles?.full_name || 'Artist';
-  const displayArtist = song.featured_artist ? `${artistName} ft. ${song.featured_artist}` : artistName;
+  const displayArtist = formatArtistName(artistName, song.featured_artist);
   const displayTitle = song.title || 'Track';
   const fileName = `${displayTitle} - ${displayArtist}.mp3`;
 

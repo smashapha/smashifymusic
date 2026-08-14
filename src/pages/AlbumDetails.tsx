@@ -8,7 +8,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
-import { formatDisplayTitle } from '../lib/formatting';
+import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
@@ -323,7 +323,7 @@ const AlbumDetails: React.FC = () => {
           ) : (
             songs.map((song, index) => {
               const isCurrent = checkCurrentlyPlaying(song.id);
-              const displayArtist = (song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name;
+              const displayArtist = formatArtistName(song.artist_name, (song as any).featured_artist);
 
               return (
                 <div 

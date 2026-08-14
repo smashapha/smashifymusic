@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
 import { optimizeImage } from '../../lib/imageUtils';
-import { formatDisplayTitle } from '../../lib/formatting';
+import { formatDisplayTitle, formatArtistName } from '../../lib/formatting';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 
@@ -323,7 +323,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                {formatDisplayTitle(song.title) || "Unknown Title"}
              </h3>
              <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
-               {song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}
+               {formatArtistName(song.artist_name, song.featured_artist)}
              </p>
            </div>
            {/* Like button */}
@@ -377,7 +377,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
             {formatDisplayTitle(song.title) || "Unknown Title"}
           </h4>
           <div className="flex items-center gap-2">
-            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{song.featured_artist ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}` : (song.artist_name || "Unknown Artist")}</p>
+            <p className="text-[12px] md:text-[13px] text-text-muted font-sans font-medium truncate">{formatArtistName(song.artist_name, song.featured_artist)}</p>
             {song.plays != null && (
               <span className="text-[11px] text-text-secondary font-sans font-medium flex items-center gap-1">
                 <Play size={10} fill="currentColor" /> {Number(song.plays || 0).toLocaleString()}
@@ -459,9 +459,7 @@ const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCan
   const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['Elite', 'elite', 'Label', 'label'].includes((song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || '').toLowerCase());
   
   const handleShare = async () => {
-    const displayArtist = song.featured_artist
-      ? `${song.artist_name || 'Unknown'} ft. ${song.featured_artist}`
-      : (song.artist_name || 'Unknown Artist');
+    const displayArtist = formatArtistName(song.artist_name, song.featured_artist);
     const shareData = {
       title: song.title,
       text: `Listen to ${song.title} by ${displayArtist} on Smashify!`,

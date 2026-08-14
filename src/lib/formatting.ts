@@ -7,3 +7,16 @@ export function formatDisplayTitle(rawTitle: string | undefined | null): string 
     .replace(/\s{2,}/g, ' ')           // collapse repeated spaces
     .trim();
 }
+
+export function formatArtistName(artistName: string | undefined | null, featuredArtist: string | undefined | null): string {
+  const baseName = artistName?.trim() || 'Unknown Artist';
+  const feat = featuredArtist?.trim();
+  
+  if (!feat) return baseName;
+  
+  if (feat.toLowerCase() === baseName.toLowerCase()) {
+    return baseName;
+  }
+  
+  return `${baseName} ft. ${feat}`;
+}

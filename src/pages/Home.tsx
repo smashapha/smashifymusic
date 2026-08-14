@@ -12,6 +12,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
+import { formatArtistName } from '../lib/formatting';
 import SEO from '../components/common/SEO';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import { Skeleton, SongCardSkeleton, SectionHeaderSkeleton } from '../components/common/Skeleton';
@@ -555,9 +556,7 @@ const Home: React.FC = () => {
                   {featured.title}
                 </h2>
                 <p className="text-[14px] text-[#B0B0B0] mb-6 line-clamp-1">
-                  {featured.featured_artist
-                    ? `${featured.artist_name} ft. ${featured.featured_artist}`
-                    : featured.artist_name}
+                  {formatArtistName(featured.artist_name, featured.featured_artist)}
                 </p>
                 <div className="flex">
                   <button

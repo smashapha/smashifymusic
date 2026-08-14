@@ -10,7 +10,7 @@ import { EQPreset } from '../../types';
 import { purchaseTrack } from '../../lib/paychangu';
 import { getEffectivePrice, isOnSale, getSaleTimeRemaining } from '../../lib/pricing';
 import { downloadPurchasedSong, handleTrackDownload, checkDownloadPermission } from '../../lib/downloads';
-import { formatDisplayTitle } from '../../lib/formatting';
+import { formatDisplayTitle, formatArtistName } from '../../lib/formatting';
 import toast from 'react-hot-toast';
 
 import { getListenerTier, getListenerLimits } from '../../lib/tierUtils';
@@ -165,7 +165,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
             {formatDisplayTitle(currentSong.title)}
           </h2>
           <p className="text-white/60 text-base sm:text-lg font-medium truncate mb-2">
-            {(currentSong as any).featured_artist ? `${currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : currentSong.artist_name}
+            {formatArtistName(currentSong.artist_name, (currentSong as any).featured_artist)}
           </p>
 
           {/* Sale / Pricing / Purchase Status Banner */}
@@ -797,7 +797,7 @@ const GlobalPlayer = () => {
                     </button>
                   )}
                 </div>
-                <p className="font-sans text-xs text-text-secondary truncate">{((currentSong as any).featured_artist ? `${currentSong.profiles?.stage_name || currentSong.artist_name} ft. ${(currentSong as any).featured_artist}` : (currentSong.profiles?.stage_name || currentSong.artist_name))}</p>
+                <p className="font-sans text-xs text-text-secondary truncate">{formatArtistName(currentSong.profiles?.stage_name || currentSong.artist_name, (currentSong as any).featured_artist)}</p>
               </div>
             </div>
 
@@ -983,7 +983,7 @@ const GlobalPlayer = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`font-studio font-semibold text-sm truncate ${currentSong?.id === song.id ? accentColor : 'text-text-primary'}`}>{formatDisplayTitle(song.title)}</p>
-                      <p className="text-xs text-text-secondary font-medium truncate">{(song as any).featured_artist ? `${song.artist_name} ft. ${(song as any).featured_artist}` : song.artist_name}</p>
+                      <p className="text-xs text-text-secondary font-medium truncate">{formatArtistName(song.artist_name, (song as any).featured_artist)}</p>
                     </div>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
