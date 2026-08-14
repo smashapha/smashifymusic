@@ -62,7 +62,7 @@ const Discover: React.FC = () => {
   const [hasMoreSongs, setHasMoreSongs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 20;
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
@@ -550,43 +550,85 @@ const Discover: React.FC = () => {
                 </p>
               </div>
 
-              {/* Segmented control: Songs / Artists */}
-              <div className="flex p-1 bg-white/5 rounded-full border border-white/10 w-fit">
-                <button
-                  onClick={() => setActiveTab("songs")}
-                  className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
-                    activeTab === "songs"
-                      ? "bg-white text-black shadow-sm"
-                      : "text-[#B0B0B0] hover:text-white"
-                  }`}
-                >
-                  Songs ({results.songs.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("artists")}
-                  className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
-                    activeTab === "artists"
-                      ? "bg-white text-black shadow-sm"
-                      : "text-[#B0B0B0] hover:text-white"
-                  }`}
-                >
-                  Artists ({results.artists.length})
-                </button>
+              {/* Controls: Songs/Artists Tab + View Toggle (for Songs) */}
+              <div className="flex items-center gap-2">
+                <div className="flex p-1 bg-white/5 rounded-full border border-white/10 w-fit">
+                  <button
+                    onClick={() => setActiveTab("songs")}
+                    className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
+                      activeTab === "songs"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[#B0B0B0] hover:text-white"
+                    }`}
+                  >
+                    Songs ({results.songs.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("artists")}
+                    className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
+                      activeTab === "artists"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[#B0B0B0] hover:text-white"
+                    }`}
+                  >
+                    Artists ({results.artists.length})
+                  </button>
+                </div>
+
+                {activeTab === "songs" && (
+                  <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-[10px]">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      aria-label="Grid view"
+                      className={`p-1.5 rounded-[8px] transition-colors ${
+                        viewMode === "grid"
+                          ? "bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30"
+                          : "text-[#B0B0B0] hover:text-white"
+                      }`}
+                    >
+                      <LayoutGrid size={15} />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      aria-label="List view"
+                      className={`p-1.5 rounded-[8px] transition-colors ${
+                        viewMode === "list"
+                          ? "bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30"
+                          : "text-[#B0B0B0] hover:text-white"
+                      }`}
+                    >
+                      <List size={15} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
             {activeTab === "songs" ? (
               results.songs.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {results.songs.map((song, i) => (
-                    <SongCard
-                      key={`search-song-${song.id}-${i}`}
-                      song={song}
-                      queue={results.songs}
-                      layout="list"
-                    />
-                  ))}
-                </div>
+                viewMode === "grid" ? (
+                  <div className={GRID_SONG_CARDS}>
+                    {results.songs.map((song, i) => (
+                      <SongCard
+                        key={`search-song-grid-${song.id}-${i}`}
+                        song={song}
+                        queue={results.songs}
+                        layout="grid"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {results.songs.map((song, i) => (
+                      <SongCard
+                        key={`search-song-list-${song.id}-${i}`}
+                        song={song}
+                        queue={results.songs}
+                        layout="list"
+                      />
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="p-12 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
                   <Music2 size={32} className="mx-auto mb-3 text-[#737373]" />
@@ -830,11 +872,11 @@ const Discover: React.FC = () => {
                 </div>
 
                 {/* Horizontal snap rail of SongCards */}
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4 md:-mx-0 md:px-0 snap-x">
+                <div className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4 md:-mx-0 md:px-0 snap-x">
                   {recommendedSongs.map((song, i) => (
                     <div
                       key={`snap-rec-${song.id}-${i}`}
-                      className="w-[180px] md:w-[200px] shrink-0 snap-start"
+                      className="w-[135px] sm:w-[150px] md:w-[165px] shrink-0 snap-start"
                     >
                       <SongCard
                         song={song}
