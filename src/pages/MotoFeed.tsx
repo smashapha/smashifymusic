@@ -858,20 +858,20 @@ const LiveActivity = () => {
           
           let message = '';
           try {
-             if (type === 'tip') {
-                 const { data } = await supabase.from('transactions').select('gross_amount, profiles:artist_id(stage_name, full_name)').eq('type', 'donation').order('created_at', { ascending: false }).limit(1).maybeSingle();
-                 if (data) {
-                     const d = data as any;
-                     message = `Someone just tipped ${d.profiles?.stage_name || d.profiles?.full_name} MK ${d.gross_amount}`;
-                 }
-             } else if (type === 'sale') {
-                 const { count } = await supabase.from('transactions').select('id', { count: 'exact' }).eq('type', 'sale').limit(100);
-                 if (count) {
-                     message = `${count} tracks bought on Smashify today`;
-                 }
-             } else {
-                 message = `${Math.floor(Math.random() * 50) + 10} people are listening right now`;
-             }
+          if (type === 'tip' || type === 'sale') {
+              const { data } = await supabase.rpc('moto_feed_stats') as { 
+                data: { total_sales?: number; latest_donation?: { gross_amount: number; artist_name: string } | null } | null 
+              };
+              if (type === 'tip' && data?.latest_donation) {
+                  message = `Someone just tipped ${data.latest_donation.artist_name} MK ${data.latest_donation.gross_amount}`;
+              } else if (type === 'sale' && data?.total_sales) {
+                  message = `${data.total_sales} tracks bought on Smashify today`;
+              }
+          }
+          
+          if (!message) {
+              message = `${Math.floor(Math.random() * 50) + 10} people are listening right now`;
+          }
           } catch (e) {}
 
           if (message) {
