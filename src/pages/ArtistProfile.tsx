@@ -20,6 +20,7 @@ import SEO from '../components/common/SEO';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING, GRID_ARTIST_CARDS } from '../lib/layout';
+import BrandLoader from '../components/common/BrandLoader';
 
 const ArtistProfile: React.FC = () => {
    const { id: paramId } = useParams<{ id: string }>();
@@ -370,7 +371,7 @@ const ArtistProfile: React.FC = () => {
  
    if (loading) return (
       <div className="min-h-screen bg-smash-black flex justify-center items-center">
-         <div className="w-10 h-10 border-4 border-smash-purple border-t-transparent rounded-full animate-spin"></div>
+         <BrandLoader label="Loading artist profile" />
       </div>
    );
 
@@ -766,9 +767,7 @@ const ArtistProfile: React.FC = () => {
         {activeTab === 'community' && (
           <motion.div key="community" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
             {communityLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-8 h-8 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
-              </div>
+              <BrandLoader label="Loading community" />
             ) : (
               <>
                 <div>

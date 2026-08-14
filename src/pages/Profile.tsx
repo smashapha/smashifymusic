@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { getListenerTier, getListenerLimits } from '../lib/tierUtils';
+import BrandLoader from '../components/common/BrandLoader';
 
 const Profile: React.FC = () => {
   const { user, userProfile, signOut, refreshProfile, role, loading: authLoading } = useAuth();
@@ -118,9 +119,8 @@ const Profile: React.FC = () => {
   // e) Loading state
   if (authLoading || (!userProfile && user)) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-12 text-center">
-        <div className="w-8 h-8 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-[#B0B0B0] text-[13px]">Loading profile…</p>
+      <div className="min-h-[60vh] flex items-center justify-center p-12">
+        <BrandLoader label="Loading your profile" />
       </div>
     );
   }

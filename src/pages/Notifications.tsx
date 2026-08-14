@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import BrandLoader from '../components/common/BrandLoader';
 
 export default function Notifications() {
   const { userProfile, role } = useAuth();
@@ -44,8 +45,8 @@ export default function Notifications() {
       
       <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-smash-gray font-bold uppercase tracking-widest animate-pulse italic">
-            Loading alerts...
+          <div className="p-8">
+            <BrandLoader label="Loading alerts" />
           </div>
         ) : notifications.length > 0 ? (
           <div className="divide-y divide-white/5">

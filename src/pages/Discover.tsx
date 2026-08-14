@@ -26,6 +26,7 @@ import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
 import SEO from "../components/common/SEO";
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_ARTIST_CARDS, GRID_LIST_CARDS } from "../lib/layout";
+import { Skeleton, SongCardSkeleton, ListRowSkeleton, SectionHeaderSkeleton } from "../components/common/Skeleton";
 
 const GENRES = [
   { name: "Afropop", icon: Music2 },
@@ -494,15 +495,37 @@ const Discover: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`${GRID_SONG_CARDS} animate-pulse mt-4`}
+            role="status"
+            aria-live="polite"
+            className="space-y-8 mt-4"
           >
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="flex flex-col gap-3">
-                <div className="w-full aspect-square bg-[#1A1A1A] rounded-[16px] border border-white/5"></div>
-                <div className="h-4 w-3/4 bg-[#1A1A1A] rounded-md"></div>
-                <div className="h-3 w-1/2 bg-[#1A1A1A] rounded-md"></div>
+            <span className="sr-only">Loading discover music...</span>
+            {/* Chip row skeleton */}
+            <div className="flex items-center gap-2 overflow-x-hidden no-scrollbar py-1">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <Skeleton key={n} className="h-8 w-20 rounded-full shrink-0" />
+              ))}
+            </div>
+
+            {/* Trending chart skeleton: 5 ListRowSkeletons with ghost numeral */}
+            <div className="space-y-3">
+              <SectionHeaderSkeleton />
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <ListRowSkeleton key={n} showGhostNumber={true} />
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Section header skeleton + grid of 6 SongCardSkeleton */}
+            <div className="space-y-4 pt-4">
+              <SectionHeaderSkeleton />
+              <div className={GRID_SONG_CARDS}>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <SongCardSkeleton key={n} />
+                ))}
+              </div>
+            </div>
           </motion.div>
         ) : isSearchActive ? (
           /* c) SEARCH RESULTS VIEW */

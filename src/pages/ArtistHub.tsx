@@ -21,6 +21,7 @@ import { useUploadGuard } from '../hooks/useUploadGuard';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
 import { uploadFileWithProgress, formatSpeed, formatEta } from '../lib/uploadWithProgress';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
+import BrandLoader from '../components/common/BrandLoader';
 
 type TabType = 'dashboard' | 'music' | 'upload' | 'promotion' | 'profile' | 'subscription' | 'notifications' | 'transactions' | 'withdraw' | 'analytics' | 'fans';
 
@@ -87,7 +88,9 @@ const NotificationsTab = ({ userProfile }: any) => {
       
       <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-smash-gray font-bold uppercase tracking-widest animate-pulse italic">Loading alerts...</div>
+          <div className="p-8">
+            <BrandLoader label="Loading alerts" />
+          </div>
         ) : notifications.length > 0 ? (
           <div className="divide-y divide-white/5">
             {notifications.map(n => (
@@ -1192,7 +1195,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
              [...Array(3)].map((_, i) => (
-                <div key={i} className="h-64 bg-bg-surface animate-pulse rounded-[14px]" />
+                <div key={i} className="h-64 skeleton-shimmer rounded-[14px] border border-white/5" />
              ))
           ) : ads.length > 0 ? (
             ads.map(ad => (

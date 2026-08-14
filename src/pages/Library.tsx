@@ -30,6 +30,7 @@ import SongCard from '../components/common/SongCard';
 import { handleTrackDownload } from '../lib/downloads';
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS } from '../lib/layout';
+import { Skeleton, PlaylistCardSkeleton } from '../components/common/Skeleton';
 
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
@@ -389,6 +390,44 @@ const Library: React.FC = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-10 pt-4 md:pt-6`}
+      >
+        <span className="sr-only">Loading your library...</span>
+        {/* Header bar skeleton + stats strip */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-28 rounded" />
+            <Skeleton className="h-8 md:h-10 w-56 rounded-md" />
+            <Skeleton className="h-3 w-72 max-w-full rounded" />
+          </div>
+          <div className="h-14 w-full md:w-64 max-w-sm rounded-[14px] bg-[#1A1A1A] border border-white/5 p-2 flex items-center justify-around">
+            <Skeleton className="h-8 w-14 rounded" />
+            <Skeleton className="h-8 w-14 rounded" />
+            <Skeleton className="h-8 w-14 rounded" />
+          </div>
+        </div>
+
+        {/* Tab bar & search skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-full rounded-[12px]" />
+          <Skeleton className="h-10 w-full max-w-md rounded-full" />
+        </div>
+
+        {/* Grid of 6 playlist-card skeletons */}
+        <div className={GRID_SONG_CARDS}>
+          {[...Array(6)].map((_, i) => (
+            <PlaylistCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-10 pt-4 md:pt-6`}>
       {/* a) HEADER & STATS STRIP */}
@@ -538,7 +577,7 @@ const Library: React.FC = () => {
         {loading ? (
           <div className={GRID_SONG_CARDS}>
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-square bg-[#1A1A1A] rounded-[16px] border border-white/5 animate-pulse" />
+              <PlaylistCardSkeleton key={i} />
             ))}
           </div>
         ) : activeTab === 'playlists' ? (

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getTierLimits } from '../../lib/tierUtils';
+import BrandLoader from '../common/BrandLoader';
 
 export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) => void, stats?: any }) => {
   const { userProfile, refreshProfile } = useAuth();
@@ -442,9 +443,8 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
             <h3 className="text-[18px] font-studio font-semibold uppercase tracking-tight text-white mb-6">Recent <span className="text-smash-purple">Payouts</span></h3>
             
             {loadingHistory ? (
-              <div className="py-12 text-center text-text-muted animate-pulse">
-                <Loader2 className="w-5 h-5 animate-spin mx-auto text-smash-purple mb-2" />
-                <p className="text-[11px] font-display font-medium uppercase tracking-widest">Inquiring ledger...</p>
+              <div className="py-6">
+                <BrandLoader label="Loading payouts history" />
               </div>
             ) : history.length === 0 ? (
               <div className="py-12 text-center text-text-muted">

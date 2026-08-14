@@ -7,6 +7,7 @@ import SongCard from '../components/common/SongCard';
 import { useAuth } from '../context/AuthContext';
 import { getListenerLimits } from '../lib/tierUtils';
 import SEO from '../components/common/SEO';
+import { ListRowSkeleton } from '../components/common/Skeleton';
 
 const Trending: React.FC = () => {
    const { userProfile } = useAuth();
@@ -80,7 +81,7 @@ const Trending: React.FC = () => {
          />
          {refreshing && (
            <div className="flex justify-center -mt-8 pt-8">
-             <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+             <div className="w-6 h-6 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
            </div>
          )}
          {/* Hero Header */}
@@ -119,9 +120,10 @@ const Trending: React.FC = () => {
                </div>
 
                {loading ? (
-                  <div className="space-y-4">
+                  <div role="status" aria-live="polite" className="space-y-3">
+                     <span className="sr-only">Loading trending charts...</span>
                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-24 bg-white/5 rounded-3xl animate-pulse" />
+                        <ListRowSkeleton key={i} showGhostNumber={true} />
                      ))}
                   </div>
                ) : (

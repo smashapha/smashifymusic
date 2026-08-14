@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 import ScrollToTop from './components/common/ScrollToTop';
 import Maintenance from './pages/Maintenance';
 import Landing from './pages/Landing';
+import BrandLoader from './components/common/BrandLoader';
 const AuthListener = lazy(() => import('./pages/AuthListener'));
 const AuthArtist = lazy(() => import('./pages/AuthArtist'));
 const Home = lazy(() => import('./pages/Home'));
@@ -86,8 +87,7 @@ const PaymentRedirect = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white">
-      <div className="w-12 h-12 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin mb-4" />
-      <h2 className="text-xl font-bold">{status}</h2>
+      <BrandLoader label={status || 'Verifying transaction'} />
     </div>
   );
 };
@@ -364,7 +364,7 @@ function AppContent() {
   if (maintenanceLoading || authLoading) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin"></div>
+        <BrandLoader label="Connecting to Smashify" />
       </div>
     );
   }
@@ -382,7 +382,7 @@ function AppContent() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
+        <BrandLoader label="Loading" />
       </div>
     }>
       <Routes>

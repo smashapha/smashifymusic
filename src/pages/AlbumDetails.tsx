@@ -12,6 +12,7 @@ import { formatDisplayTitle } from '../lib/formatting';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
+import BrandLoader from '../components/common/BrandLoader';
 
 const AlbumDetails: React.FC = () => {
   const { id } = useParams();
@@ -145,7 +146,7 @@ const AlbumDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="pb-32 min-h-screen bg-bg-page flex items-center justify-center">
-        <div className="w-[48px] h-[48px] border-4 border-smash-purple border-t-transparent rounded-full animate-spin"></div>
+        <BrandLoader label="Loading album" />
       </div>
     );
   }

@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import Logo from '../components/common/Logo';
+import BrandLoader from '../components/common/BrandLoader';
 
 type AuthMode = 'login' | 'signup';
 type ArtistStep = 1 | 2 | 3 | 4;
@@ -68,9 +69,9 @@ const AuthArtist: React.FC = () => {
 
   if (loading && !user) {
     return (
-       <div className="min-h-screen bg-[#0a0a0d] flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
-       </div>
+      <div className="min-h-screen bg-[#0a0a0d] flex items-center justify-center">
+        <BrandLoader label="Accessing Studio" />
+      </div>
     );
   }
 
@@ -347,7 +348,7 @@ const AuthArtist: React.FC = () => {
 
       {loadingState && (
         <div className="absolute inset-0 z-[100] bg-[#0a0a0d]/80 backdrop-blur-md flex flex-col items-center justify-center">
-           <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
+          <BrandLoader label="Please wait" />
         </div>
       )}
 

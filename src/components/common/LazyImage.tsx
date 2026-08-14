@@ -44,7 +44,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
       {/* Skeleton placeholder during load */}
       {!loaded && (
         <div 
-          className={`absolute inset-0 bg-zinc-900/60 animate-pulse flex items-center justify-center ${placeholderClassName}`}
+          aria-hidden="true"
+          className={`absolute inset-0 skeleton-shimmer flex items-center justify-center ${placeholderClassName}`}
         />
       )}
       

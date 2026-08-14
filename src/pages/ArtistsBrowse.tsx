@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { optimizeImage } from '../lib/imageUtils';
 import SEO from '../components/common/SEO';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
+import { Skeleton } from '../components/common/Skeleton';
 
 interface ArtistProfile {
   id: string;
@@ -203,18 +204,22 @@ const ArtistsBrowse: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse"
+            role="status"
+            aria-live="polite"
+            className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
           >
+            <span className="sr-only">Loading artists...</span>
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
-                className="bg-[#1A1A1A] border border-white/8 rounded-[16px] p-3 md:p-4 flex flex-col"
+                aria-hidden="true"
+                className="bg-[#1A1A1A] border border-white/5 rounded-[16px] p-3 md:p-4 flex flex-col"
               >
-                <div className="aspect-square w-full rounded-[12px] bg-white/5 mb-3" />
-                <div className="h-4 bg-white/5 rounded w-3/4 mb-2" />
+                <div className="aspect-square w-full rounded-[12px] skeleton-shimmer mb-3" />
+                <Skeleton className="h-4 w-3/4 mb-2 rounded" />
                 <div className="flex justify-between items-center mt-auto pt-1">
-                  <div className="h-3 bg-white/5 rounded w-1/3" />
-                  <div className="h-3 bg-white/5 rounded w-1/4" />
+                  <Skeleton className="h-3 w-1/3 rounded" />
+                  <Skeleton className="h-3 w-1/4 rounded" />
                 </div>
               </div>
             ))}

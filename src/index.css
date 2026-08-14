@@ -134,6 +134,35 @@
 }
 
 
+@keyframes smash-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    100deg,
+    #1A1A1A 40%,
+    #232323 50%,
+    #1A1A1A 60%
+  );
+  background-size: 200% 100%;
+  animation: smash-shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: #1A1A1A;
+  }
+}
+
+@keyframes smash-eq {
+  0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
+  50%      { transform: scaleY(1);   opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smash-eq, [style*="smash-eq"] { animation: none !important; opacity: 0.8; }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

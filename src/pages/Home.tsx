@@ -14,6 +14,7 @@ import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
 import SEO from '../components/common/SEO';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
+import { Skeleton, SongCardSkeleton, SectionHeaderSkeleton } from '../components/common/Skeleton';
 
 const FEATURED_CHARTS = [
   {
@@ -389,21 +390,38 @@ const Home: React.FC = () => {
 
   if (loading) {
      return (
-        <div className="pb-32 px-4 md:px-8 pt-6 animate-pulse bg-bg-page min-h-screen">
-           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-              <div className="h-[28px] w-48 bg-white/5 rounded-md"></div>
-              <div className="w-full md:w-[400px] h-[48px] bg-white/5 rounded-[14px]"></div>
+       <div
+         role="status"
+         aria-live="polite"
+         className="pb-32 px-4 md:px-8 pt-6 bg-bg-page min-h-screen"
+       >
+         <span className="sr-only">Loading home feed...</span>
+         {/* Row 1: greeting bar + search bar */}
+         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+           <Skeleton className="h-7 w-48 rounded-md" />
+           <Skeleton className="w-full md:w-[400px] h-12 rounded-[14px]" />
+         </div>
+
+         {/* Hero: big rounded-[24px] block h-[300px] with border border-white/5 */}
+         <div className="h-[300px] w-full rounded-[24px] border border-white/5 overflow-hidden mb-12">
+           <Skeleton className="w-full h-full rounded-[24px]" />
+         </div>
+
+         {/* 4 sections: SectionHeaderSkeleton + horizontal row of 4-5 SongCardSkeleton */}
+         {[1, 2, 3, 4].map((sectionIndex) => (
+           <div key={sectionIndex} className="space-y-4 mb-12">
+             <SectionHeaderSkeleton />
+             <div className="flex gap-4 overflow-x-hidden no-scrollbar py-1">
+               {[1, 2, 3, 4, 5].map((cardIndex) => (
+                 <SongCardSkeleton
+                   key={cardIndex}
+                   className="min-w-[140px] md:min-w-[170px] max-w-[170px]"
+                 />
+               ))}
+             </div>
            </div>
-           <div className="h-[320px] w-full bg-white/5 rounded-[24px] mb-12"></div>
-           <div className="space-y-4 mb-20">
-              <div className="h-[24px] w-40 bg-white/5 rounded-md mb-2"></div>
-              <div className="flex gap-4 overflow-hidden">
-                 <div className="min-w-[160px] h-40 bg-white/5 rounded-[16px]"></div>
-                 <div className="min-w-[160px] h-40 bg-white/5 rounded-[16px]"></div>
-                 <div className="min-w-[160px] h-40 bg-white/5 rounded-[16px]"></div>
-              </div>
-           </div>
-        </div>
+         ))}
+       </div>
      );
   }
 

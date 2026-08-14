@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { verifyPayment } from '../../lib/paychangu';
 import { Loader2, Receipt, Music2, Heart, Sparkles, DollarSign, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import BrandLoader from '../common/BrandLoader';
 
 export const TransactionsTab = ({ userProfile }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -85,7 +86,7 @@ export const TransactionsTab = ({ userProfile }: any) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0EA5E9]" />
+        <BrandLoader label="Loading transactions" />
       </div>
     );
   }

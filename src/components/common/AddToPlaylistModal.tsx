@@ -213,7 +213,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
               <div className="space-y-2">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="animate-spin text-smash-orange" size={24} />
+                    <Loader2 className="animate-spin text-[#00A3FF]" size={24} />
                   </div>
                 ) : playlists.length > 0 ? (
                   playlists.map((playlist) => (
@@ -245,7 +245,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                           <Check size={16} />
                         </div>
                       ) : addingTo === playlist.id ? (
-                        <Loader2 className="animate-spin text-smash-orange" size={20} />
+                        <Loader2 className="animate-spin text-[#00A3FF]" size={20} />
                       ) : (
                         <div className="w-8 h-8 rounded-full border border-white/10 group-hover:border-smash-orange/50 flex items-center justify-center transition-all">
                           <Plus size={16} className="text-smash-gray group-hover:text-smash-orange" />
