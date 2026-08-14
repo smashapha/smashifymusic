@@ -84,8 +84,8 @@ const PaymentRedirect = () => {
   }, [navigate, userProfile]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-bg-base text-text-primary">
-      <div className="w-12 h-12 border-4 border-smash-purple border-t-transparent rounded-full animate-spin mb-4" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white">
+      <div className="w-12 h-12 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin mb-4" />
       <h2 className="text-xl font-bold">{status}</h2>
     </div>
   );
@@ -130,84 +130,84 @@ const Contact = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-20">
-      <h1 className="text-6xl font-black font-studio italic uppercase tracking-tighter mb-4">Contact <span className="text-smash-purple">US</span></h1>
-      <p className="text-smash-gray text-xl mb-12">Have questions? We're here to help you amplify your music.</p>
+      <h1 className="text-4xl md:text-5xl font-bold font-studio tracking-tight mb-4 text-white">Contact <span className="text-[#00A3FF]">Us</span></h1>
+      <p className="text-[#B0B0B0] text-lg mb-12">Have questions? We're here to help you get the most out of Smashify.</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="space-y-8">
-          <div className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5">
-            <div className="w-12 h-12 bg-smash-purple/20 rounded-2xl flex items-center justify-center text-smash-purple">
-              <Mail size={24} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div className="flex items-center gap-5 p-6 bg-[#1A1A1A] rounded-[20px] border border-white/8">
+            <div className="w-12 h-12 bg-[#00A3FF]/15 border border-[#00A3FF]/30 rounded-[14px] flex items-center justify-center text-[#00A3FF]">
+              <Mail size={22} />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray mb-1">Email Us</p>
-              <p className="font-bold text-lg">smashfymusic@gmail.com</p>
+              <p className="text-[11px] uppercase font-bold tracking-wider text-[#B0B0B0] mb-0.5">Email Us</p>
+              <p className="font-semibold text-base text-white">smashfymusic@gmail.com</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5">
-            <div className="w-12 h-12 bg-smash-cyan/20 rounded-2xl flex items-center justify-center text-smash-cyan">
-              <Phone size={24} />
+          <div className="flex items-center gap-5 p-6 bg-[#1A1A1A] rounded-[20px] border border-white/8">
+            <div className="w-12 h-12 bg-[#22C55E]/15 border border-[#22C55E]/30 rounded-[14px] flex items-center justify-center text-[#22C55E]">
+              <Phone size={22} />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-smash-gray mb-1">WhatsApp & Call</p>
-              <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="font-bold text-lg hover:text-smash-cyan transition-colors">+265 88 372 88 68</a>
+              <p className="text-[11px] uppercase font-bold tracking-wider text-[#B0B0B0] mb-0.5">WhatsApp & Phone</p>
+              <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="font-semibold text-base text-white hover:text-[#00A3FF] transition-colors">+265 88 372 88 68</a>
             </div>
           </div>
 
-          <div className="p-8 bg-smash-purple/10 rounded-3xl border border-smash-purple/20">
-            <h3 className="text-lg font-black uppercase italic mb-2 text-smash-purple">Social Media</h3>
-            <div className="space-y-4 mt-4">
-              <a href="https://facebook.com/Smashify" aria-label="Facebook" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
-                <Facebook size={18} className="text-blue-500" />
-                <span className="font-bold">Smashify</span>
+          <div className="p-6 bg-[#1A1A1A] rounded-[20px] border border-white/8">
+            <h3 className="text-base font-bold text-white mb-4">Connect on Social</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <a href="https://facebook.com/Smashify" aria-label="Facebook" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[#B0B0B0] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
+                <Facebook size={18} className="text-[#1877F2]" />
+                <span className="font-medium text-[13px]">Facebook</span>
               </a>
-              <a href="https://instagram.com/Smashify" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
-                <Instagram size={18} className="text-pink-500" />
-                <span className="font-bold">Smashify</span>
+              <a href="https://instagram.com/Smashify" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[#B0B0B0] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
+                <Instagram size={18} className="text-[#E4405F]" />
+                <span className="font-medium text-[13px]">Instagram</span>
               </a>
-              <a href="https://tiktok.com/@Smashify" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
+              <a href="https://tiktok.com/@Smashify" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[#B0B0B0] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
                 <Music size={18} className="text-white" />
-                <span className="font-bold">Smashify</span>
+                <span className="font-medium text-[13px]">TikTok</span>
               </a>
-              <a href="https://youtube.com/@Smashify" aria-label="YouTube" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-smash-gray hover:text-white transition-colors">
-                <Youtube size={18} className="text-red-500" />
-                <span className="font-bold">Smashify</span>
+              <a href="https://youtube.com/@Smashify" aria-label="YouTube" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[#B0B0B0] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
+                <Youtube size={18} className="text-[#FF0000]" />
+                <span className="font-medium text-[13px]">YouTube</span>
               </a>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-black tracking-widest text-smash-gray ml-2">Name</label>
+        <form onSubmit={handleSubmit} className="space-y-4 bg-[#1A1A1A] p-6 rounded-[20px] border border-white/8">
+          <div>
+            <label className="text-[12px] font-medium text-[#B0B0B0] block mb-1.5">Name</label>
             <input 
               required
               type="text" 
               placeholder="Your Name" 
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:outline-none focus:border-smash-purple transition-all"
+              className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[10px] text-white text-[14px] focus:outline-none focus:border-[#00A3FF]/50 transition-all placeholder:text-[#666]"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-black tracking-widest text-smash-gray ml-2">Email</label>
+          <div>
+            <label className="text-[12px] font-medium text-[#B0B0B0] block mb-1.5">Email</label>
             <input 
               required
               type="email" 
               placeholder="Email Address" 
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:outline-none focus:border-smash-purple transition-all"
+              className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[10px] text-white text-[14px] focus:outline-none focus:border-[#00A3FF]/50 transition-all placeholder:text-[#666]"
               value={formData.email}
               onChange={e => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-black tracking-widest text-smash-gray ml-2">Message</label>
+          <div>
+            <label className="text-[12px] font-medium text-[#B0B0B0] block mb-1.5">Message</label>
             <textarea 
               required
               rows={4}
               placeholder="How can we help?" 
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:outline-none focus:border-smash-purple transition-all resize-none"
+              className="w-full bg-[#0A0A0A] border border-white/10 p-3.5 rounded-[10px] text-white text-[14px] focus:outline-none focus:border-[#00A3FF]/50 transition-all resize-none placeholder:text-[#666]"
               value={formData.message}
               onChange={e => setFormData({ ...formData, message: e.target.value })}
             />
@@ -215,9 +215,9 @@ const Contact = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-4 bg-smash-purple text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] transition-all disabled:opacity-50"
+            className="w-full h-11 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[10px] font-semibold text-[13px] flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 shadow-md"
           >
-            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Send size={18} /> Send Message</>}
+            {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Send size={15} /> Send Message</>}
           </button>
         </form>
       </div>
@@ -228,41 +228,36 @@ const Contact = () => {
 const NotFound = () => {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center text-center px-4">
-      <h1 className="text-9xl font-black font-display italic tracking-tighter text-smash-purple mb-4 drop-shadow-2xl">404</h1>
-      <h2 className="text-3xl font-bold uppercase tracking-widest mb-6">Track Not Found</h2>
-      <p className="text-smash-gray font-medium max-w-md mb-8">
-        Looks like you've skipped too far. The page you're looking for doesn't exist or has been removed.
+      <h1 className="text-8xl font-black font-studio tracking-tighter text-[#00A3FF] mb-2 drop-shadow-2xl">404</h1>
+      <h2 className="text-2xl font-bold uppercase tracking-wider mb-4 text-white">Track Not Found</h2>
+      <p className="text-[#B0B0B0] font-normal max-w-md mb-8 text-[14px]">
+        Looks like you've navigated off the playlist. The page you're looking for doesn't exist or has moved.
       </p>
-      <a href="/" className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-full hover:bg-smash-orange hover:text-white transition-all shadow-xl active:scale-95">
-        Go Back Home
+      <a href="/" className="h-11 px-8 bg-white hover:bg-white/90 text-black font-semibold rounded-[10px] transition-all shadow-xl flex items-center justify-center text-[13px]">
+        Back to Home
       </a>
     </div>
   );
 };
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-bg-page flex flex-col items-center justify-center gap-6 relative overflow-hidden">
+  <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-6 relative overflow-hidden">
     {/* Ambient Background Glow */}
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.16, 0.08] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="w-64 h-64 bg-smash-orange rounded-full blur-[80px]"
-      />
-      <motion.div 
-        animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="w-64 h-64 bg-smash-purple rounded-full blur-[80px] absolute translate-x-12 translate-y-12"
+        className="w-64 h-64 bg-[#00A3FF] rounded-full blur-[90px]"
       />
     </div>
 
     {/* Equalizer */}
     <div className="relative z-10 flex flex-col items-center">
-      <div className="flex items-end gap-1.5 h-12">
+      <div className="flex items-end gap-1.5 h-10">
         {[...Array(5)].map((_, i) => (
           <motion.div
             key={i}
-            className="w-2.5 bg-gradient-to-t from-smash-orange to-smash-purple rounded-full"
+            className="w-2 bg-[#00A3FF] rounded-full"
             animate={{ height: ["20%", "100%", "20%"] }}
             transition={{
               duration: 0.8,
@@ -367,8 +362,8 @@ function AppContent() {
 
   if (maintenanceLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-bg-page flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-smash-orange border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -385,8 +380,8 @@ function AppContent() {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-bg-page flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-smash-orange border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <Routes>

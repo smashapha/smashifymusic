@@ -5,14 +5,15 @@ import {
   Search,
   Music2,
   Disc,
-  User,
   Sparkles,
-  Filter,
   ChevronRight,
   X,
-  Zap,
   LayoutGrid,
   List,
+  Play,
+  Pause,
+  RefreshCw,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Song, UserProfile } from "../types";
@@ -20,24 +21,26 @@ import SongCard from "../components/common/SongCard";
 import Avatar from "../components/common/Avatar";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { usePlayer } from "../context/PlayerContext";
 import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
 import SEO from "../components/common/SEO";
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_ARTIST_CARDS, GRID_LIST_CARDS } from "../lib/layout";
 
 const GENRES = [
-  { name: "Afropop", icon: Music2, color: "text-smash-orange" },
-  { name: "Hip Hop", icon: Sparkles, color: "text-smash-purple" },
-  { name: "Amapiano", icon: Disc, color: "text-smash-green" },
-  { name: "Gospel", icon: Music2, color: "text-text-primary" },
-  { name: "Reggae", icon: Music2, color: "text-text-primary" },
-  { name: "R&B", icon: Music2, color: "text-text-primary" },
+  { name: "Afropop", icon: Music2 },
+  { name: "Hip Hop", icon: Sparkles },
+  { name: "Amapiano", icon: Disc },
+  { name: "Gospel", icon: Music2 },
+  { name: "Reggae", icon: Music2 },
+  { name: "R&B", icon: Music2 },
 ];
 
 const Discover: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
+  const { currentSong, isPlaying, playSong, togglePlay } = usePlayer();
   const initialQuery = searchParams.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -48,6 +51,7 @@ const Discover: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Song[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
+  const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
   const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"songs" | "artists">("songs");
 
@@ -111,7 +115,6 @@ const Discover: React.FC = () => {
           .limit(12);
           
         if (fallbackData) {
-          // fetch all unique song_ids
           const allSongIds = new Set<string>();
           fallbackData.forEach(pl => {
             (pl.playlist_songs || []).forEach((ps: any) => {
@@ -223,6 +226,7 @@ const Discover: React.FC = () => {
   };
 
   const fetchRecommendations = async () => {
+    setIsRefreshingRecs(true);
     try {
       const today = new Date().toISOString().split("T")[0];
       const { data: allSongs } = await supabase
@@ -265,6 +269,8 @@ const Discover: React.FC = () => {
       }
     } catch (err) {
       console.error("Recommendations error:", err);
+    } finally {
+      setIsRefreshingRecs(false);
     }
   };
 
@@ -275,7 +281,7 @@ const Discover: React.FC = () => {
       } else {
         setResults({ songs: [], artists: [] });
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, selectedGenre]);
@@ -376,9 +382,11 @@ const Discover: React.FC = () => {
     }
   };
 
+  const isSearchActive = Boolean(searchQuery || selectedGenre);
+
   return (
     <div
-      className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-6 md:space-y-8 pt-4 md:pt-6`}
+      className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-10 pt-4 md:pt-6`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -388,72 +396,84 @@ const Discover: React.FC = () => {
       />
 
       {refreshing && (
-        <div className="flex justify-center -mt-8 pt-8">
-          <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+        <div className="flex justify-center -mt-6 pt-2">
+          <div className="w-5 h-5 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
-      {/* Header & Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative group flex-1 max-w-2xl">
+      {/* a) PAGE HERO */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1.5">
+            EXPLORE THE CATALOGUE
+          </p>
+          <h1 className="text-4xl md:text-[56px] font-studio font-bold text-white tracking-tight leading-none">
+            Discover<span className="text-[#00A3FF]">.</span>
+          </h1>
+          <p className="text-[13px] md:text-[14px] text-[#B0B0B0] mt-2">
+            The latest African sounds, charting anthems, and personalized selections.
+          </p>
+        </div>
+
+        {/* Full-width search command bar */}
+        <div className="relative w-full">
           <Search
-            className="absolute left-[16px] top-1/2 -translate-y-1/2 text-text-muted transition-colors opacity-70"
-            size={16}
-            strokeWidth={2.5}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#B0B0B0] transition-colors"
+            size={18}
           />
           <input
             type="text"
-            placeholder="Artists, tracks, genres..."
+            placeholder="Search artists, tracks or genres…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-[40px] md:h-[44px] bg-white/5 border border-white/10 rounded-full md:rounded-[14px] pl-11 pr-10 text-[13px] md:text-[14px] font-display text-text-primary placeholder:text-text-muted focus:outline-none focus:border-smash-orange/40 transition-all focus:bg-white/10"
+            className="w-full h-12 bg-[#1A1A1A] border border-white/10 rounded-[12px] pl-11 pr-10 text-[14px] text-white placeholder:text-[#737373] focus:outline-none focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] transition-all"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-[14px] top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-white transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[#B0B0B0] hover:text-white transition-colors"
+              aria-label="Clear search"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           )}
         </div>
-
-        {/* View Toggle */}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${viewMode === "grid" ? "bg-smash-orange text-white" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}
-          >
-            <LayoutGrid size={16} />
-          </button>
-          <button
-            onClick={() => setViewMode("list")}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${viewMode === "list" ? "bg-smash-orange text-white" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}
-          >
-            <List size={16} />
-          </button>
-        </div>
       </div>
 
-      {/* Genres Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 md:-mx-0 md:px-0">
-        <button
-          onClick={() => setSelectedGenre(null)}
-          className={`px-4 py-1.5 md:py-2 rounded-full text-[10px] md:text-[11px] font-display font-bold uppercase tracking-widest transition-all whitespace-nowrap border ${!selectedGenre ? "bg-smash-purple text-white border-transparent" : "bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10"}`}
-        >
-          All
-        </button>
-        {GENRES.map((genre) => (
+      {/* b) STICKY FILTER ROW */}
+      <div className="sticky top-0 z-30 bg-[#0A0A0A]/90 backdrop-blur-md py-2.5 -mx-4 px-4 md:-mx-0 md:px-0 border-b border-white/5">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
           <button
-            key={genre.name}
-            onClick={() =>
-              setSelectedGenre(genre.name === selectedGenre ? null : genre.name)
-            }
-            className={`px-4 py-1.5 md:py-2 rounded-full text-[10px] md:text-[11px] font-display font-bold uppercase tracking-widest transition-all whitespace-nowrap border ${selectedGenre === genre.name ? "bg-smash-purple text-white border-transparent" : "bg-white/5 text-text-muted hover:text-white border-white/10 hover:bg-white/10"}`}
+            onClick={() => setSelectedGenre(null)}
+            className={`h-8 px-4 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center ${
+              !selectedGenre
+                ? "bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold"
+                : "bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20"
+            }`}
           >
-            {genre.name}
+            All
           </button>
-        ))}
+          {GENRES.map((genre) => {
+            const Icon = genre.icon;
+            const isSelected = selectedGenre === genre.name;
+            return (
+              <button
+                key={genre.name}
+                onClick={() =>
+                  setSelectedGenre(isSelected ? null : genre.name)
+                }
+                className={`h-8 px-3.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold"
+                    : "bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20"
+                }`}
+              >
+                <Icon size={14} className={isSelected ? "text-[#00A3FF]" : "text-[#B0B0B0]"} />
+                <span>{genre.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -463,303 +483,523 @@ const Discover: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`${GRID_SONG_CARDS} animate-pulse mt-8`}
+            className={`${GRID_SONG_CARDS} animate-pulse mt-4`}
           >
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div key={n} className="flex flex-col gap-3">
-                <div className="w-full aspect-square bg-white/5 rounded-[16px]"></div>
-                <div className="h-4 w-3/4 bg-white/5 rounded-md"></div>
-                <div className="h-3 w-1/2 bg-white/5 rounded-md"></div>
+                <div className="w-full aspect-square bg-[#1A1A1A] rounded-[16px] border border-white/5"></div>
+                <div className="h-4 w-3/4 bg-[#1A1A1A] rounded-md"></div>
+                <div className="h-3 w-1/2 bg-[#1A1A1A] rounded-md"></div>
               </div>
             ))}
           </motion.div>
-        ) : searchQuery || selectedGenre ? (
+        ) : isSearchActive ? (
+          /* c) SEARCH RESULTS VIEW */
           <motion.div
             key="results"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-8"
+            className="space-y-6"
           >
-            {/* iOS Segmented Control equivalent */}
-            <div className="flex p-1 bg-white/5 rounded-full max-w-[240px]">
-              <button
-                onClick={() => setActiveTab("songs")}
-                className={`flex-1 text-[11px] font-display font-semibold uppercase tracking-widest py-2 rounded-full transition-all ${activeTab === "songs" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"}`}
-              >
-                Songs
-              </button>
-              <button
-                onClick={() => setActiveTab("artists")}
-                className={`flex-1 text-[11px] font-display font-semibold uppercase tracking-widest py-2 rounded-full transition-all ${activeTab === "artists" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"}`}
-              >
-                Artists
-              </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-1">
+                  RESULTS
+                </p>
+                <h2 className="text-2xl font-studio font-bold text-white">
+                  {selectedGenre ? selectedGenre : `“${searchQuery}”`}
+                </h2>
+                <p className="text-[13px] text-[#B0B0B0] mt-0.5">
+                  {activeTab === "songs"
+                    ? `${results.songs.length} track${results.songs.length === 1 ? "" : "s"} found`
+                    : `${results.artists.length} artist${results.artists.length === 1 ? "" : "s"} found`}
+                </p>
+              </div>
+
+              {/* Segmented control: Songs / Artists */}
+              <div className="flex p-1 bg-white/5 rounded-full border border-white/10 w-fit">
+                <button
+                  onClick={() => setActiveTab("songs")}
+                  className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
+                    activeTab === "songs"
+                      ? "bg-white text-black shadow-sm"
+                      : "text-[#B0B0B0] hover:text-white"
+                  }`}
+                >
+                  Songs ({results.songs.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("artists")}
+                  className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
+                    activeTab === "artists"
+                      ? "bg-white text-black shadow-sm"
+                      : "text-[#B0B0B0] hover:text-white"
+                  }`}
+                >
+                  Artists ({results.artists.length})
+                </button>
+              </div>
             </div>
 
             {activeTab === "songs" ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                    Tracks Found
-                  </h2>
-                  <p className="text-[12px] font-display font-medium text-text-muted">
-                    {results.songs.length} results
-                  </p>
-                </div>
-                {results.songs.length > 0 ? (
-                  viewMode === 'grid' ? (
-                    <div className={GRID_SONG_CARDS}>
-                      {results.songs.map((song, i) => (
-                        <SongCard key={`grid-discover-song-${song.id}-${i}`} song={song} queue={results.songs} layout="grid" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {results.songs.map((song, i) => (
-                        <SongCard key={`list-discover-song-${song.id}-${i}`} song={song} queue={results.songs} layout="list" />
-                      ))}
-                    </div>
-                  )
-                ) : (
-                  <div className="p-10 bg-white/5 rounded-[24px] border border-white/5 text-center">
-                    <Music2
-                      size={32}
-                      className="mx-auto mb-3 text-text-muted/40"
+              results.songs.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {results.songs.map((song, i) => (
+                    <SongCard
+                      key={`search-song-${song.id}-${i}`}
+                      song={song}
+                      queue={results.songs}
+                      layout="list"
                     />
-                    <p className="text-text-muted font-display font-medium text-[13px]">
-                      No tracks match your search
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                    Artists Found
-                  </h2>
-                  <p className="text-[12px] font-display font-medium text-text-muted">
-                    {results.artists.length} results
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                  <Music2 size={32} className="mx-auto mb-3 text-[#737373]" />
+                  <h3 className="text-white font-semibold text-[15px]">No tracks found</h3>
+                  <p className="text-[#B0B0B0] text-[13px] mt-1">
+                    Try searching for a different keyword or genre.
                   </p>
                 </div>
+              )
+            ) : (
+              results.artists.length > 0 ? (
                 <div className={GRID_LIST_CARDS}>
                   {results.artists.map((artist, i) => (
                     <div
-                      key={`discover-artist-${artist.id}-${i}`}
+                      key={`search-artist-${artist.id}-${i}`}
                       onClick={() => navigate(`/artist/${artist.id}`)}
-                      className="p-3 bg-bg-surface border border-white/5 rounded-[16px] flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-all shadow-sm"
+                      className="p-3.5 bg-[#1A1A1A] border border-white/10 rounded-[14px] flex items-center justify-between cursor-pointer hover:border-white/20 transition-all group"
                     >
-                      <Avatar
-                        src={artist.avatar_url}
-                        name={artist.stage_name || artist.full_name}
-                        className="w-12 h-12 rounded-full border border-white/10"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-display font-bold text-[14px] text-text-primary truncate mb-0.5">
-                          {artist.stage_name || artist.full_name}
-                        </h4>
-                        <p className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider">
-                          {artist.genre || "Artist"}
-                        </p>
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-white/10">
+                          <Avatar
+                            src={artist.avatar_url}
+                            name={artist.stage_name || artist.full_name}
+                            className="w-full h-full"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-[14px] text-white truncate">
+                            {artist.stage_name || artist.full_name}
+                          </h4>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mt-0.5">
+                            {artist.genre || "Artist"}
+                          </p>
+                        </div>
                       </div>
                       <ChevronRight
-                        className="text-smash-purple/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                        size={16}
+                        size={18}
+                        className="text-[#00A3FF] opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0 ml-2"
                       />
                     </div>
                   ))}
-                  {results.artists.length === 0 && (
-                    <div className="col-span-full p-10 bg-white/5 rounded-[24px] border border-white/5 text-center">
-                      <User
-                        size={32}
-                        className="mx-auto mb-3 text-text-muted/40"
-                      />
-                      <p className="text-text-muted font-display font-medium text-[13px]">
-                        No artists match your search
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="p-12 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                  <Avatar name="Artist" className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <h3 className="text-white font-semibold text-[15px]">No artists found</h3>
+                  <p className="text-[#B0B0B0] text-[13px] mt-1">
+                    Try checking the spelling or browse all artists.
+                  </p>
+                </div>
+              )
             )}
           </motion.div>
         ) : (
+          /* DEFAULT DISCOVER VIEW */
           <motion.div
             key="initial"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="space-y-12"
           >
-            {/* Featured / Trending Section */}
-            <div className="space-y-5">
-              <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                Trending Hits
-              </h2>
-              {viewMode === 'grid' ? (
+            {/* d) TRENDING NOW — Flagship Section */}
+            <section className="space-y-4">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-1">
+                    TRENDING
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-studio font-bold text-white tracking-tight">
+                    Trending Now
+                  </h2>
+                  <p className="text-[13px] text-[#B0B0B0] mt-0.5">
+                    The most played anthems lighting up the streets this week.
+                  </p>
+                </div>
+
+                {/* List / Grid toggle ONLY in this section header */}
+                <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/10 rounded-[10px] shrink-0">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    aria-label="List view"
+                    className={`p-1.5 rounded-[8px] transition-colors ${
+                      viewMode === "list"
+                        ? "bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30"
+                        : "text-[#B0B0B0] hover:text-white"
+                    }`}
+                  >
+                    <List size={16} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    aria-label="Grid view"
+                    className={`p-1.5 rounded-[8px] transition-colors ${
+                      viewMode === "grid"
+                        ? "bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30"
+                        : "text-[#B0B0B0] hover:text-white"
+                    }`}
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {viewMode === "grid" ? (
                 <div className={GRID_SONG_CARDS}>
                   {trending.map((song, i) => (
-                    <SongCard key={`grid-discover-trending-${song.id}-${i}`} song={song} queue={trending} layout="grid" />
+                    <SongCard
+                      key={`grid-trending-${song.id}-${i}`}
+                      song={song}
+                      queue={trending}
+                      layout="grid"
+                    />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {trending.map((song, i) => (
-                    <SongCard key={`list-discover-trending-${song.id}-${i}`} song={song} queue={trending} layout="list" />
-                  ))}
+                  {trending.slice(0, 5).map((song, i) => {
+                    const isCurrent = currentSong?.id === song.id;
+                    const isTrackPlaying = isCurrent && isPlaying;
+                    const rankNum = i + 1;
+                    return (
+                      <div
+                        key={`trending-chart-row-${song.id}`}
+                        onClick={() => {
+                          if (isCurrent) {
+                            togglePlay();
+                          } else {
+                            playSong(song, trending);
+                          }
+                        }}
+                        className="group bg-[#1A1A1A] border border-white/10 hover:border-[#00A3FF]/30 rounded-[14px] p-3 flex items-center justify-between transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                          {/* Big Ghost Numeral */}
+                          <span
+                            className={`font-studio text-[28px] md:text-[36px] font-bold w-8 text-center shrink-0 leading-none select-none ${
+                              rankNum === 1 ? "text-[#00A3FF]" : "text-white/20"
+                            }`}
+                          >
+                            {rankNum}
+                          </span>
+
+                          {/* 56px Cover with Play Hover */}
+                          <div className="relative w-14 h-14 rounded-[10px] overflow-hidden shrink-0 bg-black/40 border border-white/10">
+                            <img
+                              src={optimizeImage(song.cover_url, 120, 120)}
+                              alt={song.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                            <div
+                              className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
+                                isCurrent ? "opacity-100 bg-[#00A3FF]/40" : "opacity-0 group-hover:opacity-100"
+                              }`}
+                            >
+                              {isTrackPlaying ? (
+                                <Pause size={18} fill="white" className="text-white" />
+                              ) : (
+                                <Play size={18} fill="white" className="text-white ml-0.5" />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="min-w-0 flex-1 pr-3">
+                            <h4 className={`text-[14px] font-semibold truncate ${isCurrent ? "text-[#00A3FF]" : "text-white"}`}>
+                              {song.title}
+                            </h4>
+                            <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">
+                              {song.artist_name}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Play count & Trend indicator */}
+                        <div className="flex items-center gap-4 shrink-0 pr-2">
+                          <div className="text-right hidden sm:block">
+                            <p className="text-[12px] font-medium text-white font-mono">
+                              {Number(song.plays || 0) > 1000
+                                ? `${(Number(song.plays || 0) / 1000).toFixed(1)}K plays`
+                                : `${Number(song.plays || 0)} plays`}
+                            </p>
+                            <p className="text-[11px] text-[#B0B0B0]">This week</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isCurrent) {
+                                togglePlay();
+                              } else {
+                                playSong(song, trending);
+                              }
+                            }}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                              isCurrent
+                                ? "bg-[#00A3FF] text-white"
+                                : "bg-white/5 group-hover:bg-[#00A3FF] text-white/60 group-hover:text-white"
+                            }`}
+                            aria-label="Play song"
+                          >
+                            {isTrackPlaying ? (
+                              <Pause size={15} fill="currentColor" />
+                            ) : (
+                              <Play size={15} fill="currentColor" className="ml-0.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* AI Recommendations Section */}
+            {/* e) FOR YOU — Personalized Section */}
             {recommendedSongs.length > 0 && (
-              <div className="space-y-5">
+              <section className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                      For You
-                    </h2>
-                    <span className="bg-smash-orange/10 text-smash-orange text-[10px] font-display font-bold px-2 py-0.5 rounded-[6px] uppercase tracking-wider">
-                      AI Pick
-                    </span>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1">
+                      PERSONALIZED
+                    </p>
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="text-2xl font-studio font-bold text-white tracking-tight">
+                        For You
+                      </h2>
+                      <span className="bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                        AI Pick
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={fetchRecommendations}
-                    className="text-[11px] font-display font-semibold uppercase tracking-widest text-text-muted hover:text-smash-orange transition-colors"
+                    disabled={isRefreshingRecs}
+                    className="text-[13px] font-semibold text-[#B0B0B0] hover:text-[#00A3FF] transition-colors flex items-center gap-1.5 py-1 px-2.5 rounded-md hover:bg-white/5 disabled:opacity-50"
                   >
-                    Refresh
+                    <RefreshCw size={13} className={isRefreshingRecs ? "animate-spin" : ""} />
+                    <span>Refresh</span>
                   </button>
                 </div>
 
-                {viewMode === 'grid' ? (
-                  <div className={GRID_SONG_CARDS}>
-                    {recommendedSongs.map((song, i) => (
-                      <SongCard key={`grid-discover-rec-${song.id}-${i}`} song={song} queue={recommendedSongs} layout="grid" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {recommendedSongs.map((song, i) => (
-                      <SongCard key={`list-discover-rec-${song.id}-${i}`} song={song} queue={recommendedSongs} layout="list" />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Community Playlists Section */}
-            {publicPlaylists.length > 0 && (
-              <section className="mb-12">
-                <h2 className="text-xl md:text-2xl font-studio font-black italic uppercase text-white mb-6">
-                  Community Playlists
-                </h2>
-                <div className={GRID_SONG_CARDS}>
-                  {publicPlaylists.map(pl => (
+                {/* Horizontal snap rail of SongCards */}
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4 md:-mx-0 md:px-0 snap-x">
+                  {recommendedSongs.map((song, i) => (
                     <div
-                      key={pl.id}
-                      onClick={() => navigate(`/playlist/${pl.id}`)}
-                      className="cursor-pointer group"
+                      key={`snap-rec-${song.id}-${i}`}
+                      className="w-[180px] md:w-[200px] shrink-0 snap-start"
                     >
-                      <div className="aspect-square bg-smash-dark rounded-2xl overflow-hidden border border-white/5 relative mb-2">
-                        {pl.cover_url ? (
-                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={pl.name} loading="lazy" decoding="async" />
-                        ) : (
-                          <div className="grid grid-cols-2 h-full w-full">
-                            {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
-                              <img key={i} src={optimizeImage(ps.songs?.cover_url, 150, 150)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm font-bold text-white truncate">{pl.name}</p>
-                      <p className="text-[10px] text-smash-gray truncate">By {pl.profiles?.full_name || 'Smashify User'}</p>
+                      <SongCard
+                        song={song}
+                        queue={recommendedSongs}
+                        layout="grid"
+                      />
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Browse Categories */}
-            <div className="space-y-5">
-              {songs.length > 0 && (
-                <div className="space-y-5 mb-12">
-                  <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                    All Songs
-                  </h2>
-                  {viewMode === 'grid' ? (
-                    <div className={GRID_SONG_CARDS}>
-                      {songs.map((song, i) => (
-                        <SongCard key={`grid-discover-all-${song.id}-${i}`} song={song} queue={songs} layout="grid" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {songs.map((song, i) => (
-                        <SongCard key={`list-discover-all-${song.id}-${i}`} song={song} queue={songs} layout="list" />
-                      ))}
-                    </div>
-                  )}
-                  {hasMoreSongs && (
-                    <div className="flex justify-center pt-6">
-                      <button
-                        onClick={loadMoreSongs}
-                        disabled={loadingMore}
-                        className="px-6 py-2.5 bg-white/5 border border-white/10 text-[12px] font-display font-medium text-white transition-all uppercase tracking-widest rounded-full hover:bg-white/10 hover:border-white/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                      >
-                        {loadingMore ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          "Load More"
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* f) BROWSE GENRES — 6 Editorial Tiles */}
+            <section className="space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1">
+                  CATEGORIES
+                </p>
+                <h2 className="text-2xl font-studio font-bold text-white tracking-tight">
+                  Browse Genres
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                {GENRES.map((genre) => {
+                  const Icon = genre.icon;
+                  // Find first song matching this genre from songs list
+                  const genreSong = songs.find(
+                    (s) => s.genre?.toLowerCase() === genre.name.toLowerCase(),
+                  );
+                  const coverUrl = genreSong?.cover_url;
 
-              <h2 className="text-[20px] font-studio font-bold text-text-primary">
-                Browse Categories
-              </h2>
-              <div className={GRID_ARTIST_CARDS}>
-                {GENRES.map((cat) => (
-                  <div
-                    key={`cat-grid-${cat.name}`}
-                    onClick={() => setSelectedGenre(cat.name)}
-                    className="bg-bg-surface border border-white/5 rounded-[16px] p-5 cursor-pointer hover:border-white/10 hover:bg-white/5 transition-all flex flex-col items-start gap-4 shadow-sm"
-                  >
+                  return (
                     <div
-                      className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${cat.color}`}
+                      key={`genre-tile-${genre.name}`}
+                      onClick={() => setSelectedGenre(genre.name)}
+                      className="group relative aspect-[2/1] bg-[#1A1A1A] border border-white/10 rounded-[16px] overflow-hidden cursor-pointer hover:border-[#00A3FF]/40 transition-all p-4 flex flex-col justify-end"
                     >
-                      {React.createElement(cat.icon, { size: 20 })}
+                      {coverUrl ? (
+                        <img
+                          src={optimizeImage(coverUrl, 400, 200)}
+                          alt={genre.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-[#1A1A1A] flex items-center justify-center">
+                          <Icon size={32} className="text-[#00A3FF]/40" />
+                        </div>
+                      )}
+
+                      {/* 65% Scrim Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A]/90 via-[#0A0A0A]/60 to-transparent" />
+
+                      <div className="relative z-10">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-0.5">
+                          GENRE
+                        </p>
+                        <h3 className="text-lg font-bold text-white leading-tight group-hover:text-[#00A3FF] transition-colors">
+                          {genre.name}
+                        </h3>
+                      </div>
                     </div>
-                    <h3 className="text-[14px] font-display font-bold text-text-primary">
-                      {cat.name}
-                    </h3>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* g) COMMUNITY PLAYLISTS */}
+            {publicPlaylists.length > 0 && (
+              <section className="space-y-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1">
+                    CURATED
+                  </p>
+                  <h2 className="text-2xl font-studio font-bold text-white tracking-tight">
+                    Community Playlists
+                  </h2>
+                </div>
+                <div className={GRID_SONG_CARDS}>
+                  {publicPlaylists.map((pl) => (
+                    <div
+                      key={pl.id}
+                      onClick={() => navigate(`/playlist/${pl.id}`)}
+                      className="group cursor-pointer bg-[#1A1A1A] border border-white/10 hover:border-white/20 rounded-[16px] p-3 transition-all"
+                    >
+                      <div className="aspect-square bg-black/40 rounded-[12px] overflow-hidden border border-white/5 relative mb-2.5">
+                        {pl.cover_url ? (
+                          <img
+                            src={optimizeImage(pl.cover_url, 300, 300)}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            alt={pl.name}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div className="grid grid-cols-2 h-full w-full">
+                            {(pl.playlist_songs || [])
+                              .slice(0, 4)
+                              .map((ps: any, i: number) => (
+                                <img
+                                  key={i}
+                                  src={optimizeImage(
+                                    ps.songs?.cover_url ||
+                                      "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=200&h=200&fit=crop",
+                                    150,
+                                    150,
+                                  )}
+                                  className="w-full h-full object-cover"
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[14px] font-semibold text-white truncate">
+                        {pl.name}
+                      </p>
+                      <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">
+                        By {pl.profiles?.full_name || "Smashify User"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* h) ALL SONGS */}
+            {songs.length > 0 && (
+              <section className="space-y-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1">
+                    ALL TRACKS
+                  </p>
+                  <h2 className="text-2xl font-studio font-bold text-white tracking-tight">
+                    Full Catalogue
+                  </h2>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {songs.map((song, i) => (
+                    <SongCard
+                      key={`all-songs-row-${song.id}-${i}`}
+                      song={song}
+                      queue={songs}
+                      layout="list"
+                    />
+                  ))}
+                </div>
+                {hasMoreSongs && (
+                  <div className="pt-2">
+                    <button
+                      onClick={loadMoreSongs}
+                      disabled={loadingMore}
+                      className="w-full py-3.5 bg-[#1A1A1A] hover:bg-white/5 border border-white/10 rounded-[12px] text-white text-[13px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
+                          <span>Loading more tracks…</span>
+                        </>
+                      ) : (
+                        "Load More"
+                      )}
+                    </button>
                   </div>
-                ))}
+                )}
+              </section>
+            )}
+
+            {/* i) BOTTOM CTA */}
+            <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div>
+                <h4 className="text-lg font-bold text-white mb-1">
+                  Looking for more?
+                </h4>
+                <p className="text-[13px] text-[#B0B0B0]">
+                  Explore our registered artists or dive into the hottest trending chart.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/artists"
+                  className="px-5 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 hover:text-[#00A3FF] text-white rounded-[10px] text-[13px] font-semibold transition-all"
+                >
+                  Browse Artists
+                </Link>
+                <Link
+                  to="/trending"
+                  className="px-5 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 hover:text-[#00A3FF] text-white rounded-[10px] text-[13px] font-semibold transition-all"
+                >
+                  Trending Hits
+                </Link>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Discover page contextual links */}
-      <div className="bg-bg-surface border border-white/5 p-6 rounded-[24px] mt-12 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h4 className="font-bold text-base text-text-primary mb-1">Looking for more?</h4>
-          <p className="text-xs text-text-muted">Explore our registered artists or listen to the hottest trending tracks.</p>
-        </div>
-        <div className="flex gap-3">
-          <Link to="/artists" className="px-5 py-2.5 bg-smash-purple/20 border border-smash-purple/30 text-smash-purple rounded-full text-xs font-bold uppercase tracking-widest hover:bg-smash-purple/30 transition-all">
-            Browse Artists
-          </Link>
-          <Link to="/trending" className="px-5 py-2.5 bg-smash-orange/20 border border-smash-orange/30 text-smash-orange rounded-full text-xs font-bold uppercase tracking-widest hover:bg-smash-orange/30 transition-all">
-            Trending Hits
-          </Link>
-        </div>
-      </div>
     </div>
   );
 };

@@ -82,7 +82,7 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
           className="w-full h-full md:h-auto md:max-w-3xl md:max-h-[95vh] bg-[#0a0a0a] border border-white/10 rounded-none md:rounded-[40px] p-4 md:p-8 shadow-2xl relative overflow-hidden flex flex-col"
         >
           {/* Subtle cosmic background glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-smash-orange/10 blur-[80px] -z-10" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#00A3FF]/10 blur-[80px] -z-10" />
 
           {/* Close button */}
           <button
@@ -94,13 +94,13 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
 
           {/* Header */}
           <div className="flex flex-col items-center text-center mt-6 md:mt-2 mb-4">
-            <div className="w-10 h-10 bg-smash-orange/10 border border-smash-orange/20 rounded-2xl flex items-center justify-center mb-2">
-              <Shield size={16} className="text-smash-orange" />
+            <div className="w-10 h-10 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-2xl flex items-center justify-center mb-2">
+              <Shield size={16} className="text-[#00A3FF]" />
             </div>
-            <h3 className="text-base font-studio font-black italic uppercase tracking-wider text-white">
+            <h3 className="text-base font-studio font-bold tracking-wider text-white">
               Secure Cashier Gateway
             </h3>
-            <p className="text-[9px] text-smash-gray font-bold tracking-widest uppercase mt-1">
+            <p className="text-[10px] text-[#B0B0B0] font-medium tracking-wider uppercase mt-1">
               Powered by PayChangu · SSL Encrypted
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function PaymentModal({ checkoutUrl, txRef, onSuccess, onClose }:
           <div className="flex flex-col items-center text-center w-full flex-1 min-h-0">
             <div className="w-full bg-white/5 rounded-2xl overflow-hidden border border-white/10 flex-1 min-h-[70vh] md:min-h-[600px] relative">
               <div className="absolute inset-0 flex items-center justify-center -z-10">
-                <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-6 h-6 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <iframe 
                 src={checkoutUrl} 

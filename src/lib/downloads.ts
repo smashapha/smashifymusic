@@ -96,26 +96,40 @@ export async function handleTrackDownload(
     throw new Error('Song audio URL is missing.');
   }
 
-  const response = await fetch(song.audio_url);
-  if (!response.ok) {
-    throw new Error('Failed to fetch audio file for download.');
-  }
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-
-  const link = document.createElement('a');
-  link.href = objectUrl;
   const artistName = song.artist_name || song.profiles?.stage_name || song.profiles?.full_name || 'Artist';
   const displayArtist = song.featured_artist ? `${artistName} ft. ${song.featured_artist}` : artistName;
   const displayTitle = song.title || 'Track';
-  link.download = `${displayTitle} - ${displayArtist}.mp3`;
+  const fileName = `${displayTitle} - ${displayArtist}.mp3`;
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    const response = await fetch(song.audio_url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch audio file for download.');
+    }
 
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+  } catch (fetchErr: any) {
+    console.warn('Direct blob fetch failed, falling back to window download link:', fetchErr?.message);
+    const link = document.createElement('a');
+    link.href = song.audio_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 export async function downloadPurchasedSong(
@@ -146,22 +160,36 @@ export async function downloadPurchasedSong(
       throw new Error('Song file not available for download.');
     }
 
-    // 3. Fetch the file as a blob to force browser download
-    const response = await fetch(song.audio_url);
-    if (!response.ok) throw new Error('Failed to fetch audio file.');
+    const fileName = `${song.artist_name || 'Artist'} - ${song.title || 'Track'}.mp3`;
 
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
+    // 3. Fetch the file as a blob to force browser download, with fallback
+    try {
+      const response = await fetch(song.audio_url);
+      if (!response.ok) throw new Error('Failed to fetch audio file.');
 
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = `${song.artist_name || 'Artist'} - ${song.title || 'Track'}.mp3`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
 
-    // Clean up object URL after download starts
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up object URL after download starts
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+    } catch (fetchErr: any) {
+      console.warn('Blob fetch failed for purchased track, using direct link:', fetchErr?.message);
+      const link = document.createElement('a');
+      link.href = song.audio_url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   } catch (err: any) {
     throw new Error(err.message || 'Download failed. Please try again.');
   }

@@ -17,46 +17,46 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
 
-  --color-smash-orange: #0ea5e9;
+  --color-smash-orange: #00A3FF;
   --color-smash-red: #ef4444;
-  --color-smash-purple: #38bdf8;
-  --color-smash-green: #10b981;
-  --color-smash-cyan: #0ea5e9;
-  --color-smash-black: #121824;
-  --color-smash-dark: #1a2232;
-  --color-smash-gray: #64748b;
+  --color-smash-purple: #8B5CF6;
+  --color-smash-green: #22C55E;
+  --color-smash-cyan: #00A3FF;
+  --color-smash-black: #0A0A0A;
+  --color-smash-dark: #1A1A1A;
+  --color-smash-gray: #B0B0B0;
   --color-smash-pink: #ec4899;
 }
 
 @layer base {
   :root {
-    /* DEFAULT ALWAYS DARK MODE */
-    --bg-page: #121824;
-    --bg-surface: #1a2232;
-    --bg-elevated: #242f44;
-    --bg-modal: #2a374e;
-    --border-subtle: rgba(100, 116, 139, 0.15);
-    --border-default: rgba(100, 116, 139, 0.3);
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    /* DEFAULT ALWAYS DARK MODE - Midnight Black & Charcoal Gray */
+    --bg-page: #0A0A0A;
+    --bg-surface: #1A1A1A;
+    --bg-elevated: #262626;
+    --bg-modal: #1A1A1A;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.15);
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0B0B0;
+    --text-muted: #737373;
   }
 
   /* FOR EXPLICIT .dark class TOGGLE IF NEEDED */
   .dark {
-      --bg-page: #121824;
-      --bg-surface: #1a2232;
-      --bg-elevated: #242f44;
-      --bg-modal: #2a374e;
-      --border-subtle: rgba(100, 116, 139, 0.15);
-      --border-default: rgba(100, 116, 139, 0.3);
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-muted: #94a3b8;
+    --bg-page: #0A0A0A;
+    --bg-surface: #1A1A1A;
+    --bg-elevated: #262626;
+    --bg-modal: #1A1A1A;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.15);
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0B0B0;
+    --text-muted: #737373;
   }
 
   body {
-    @apply bg-bg-page text-text-primary font-sans antialiased selection:bg-smash-orange/30;
+    @apply bg-bg-page text-text-primary font-sans antialiased selection:bg-[#00A3FF]/30;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -111,7 +111,7 @@
   appearance: none;
   width: 20px;
   height: 20px;
-  background: var(--color-smash-purple);
+  background: #00A3FF;
   border-radius: 50%;
   cursor: pointer;
 }

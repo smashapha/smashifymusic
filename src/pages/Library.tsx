@@ -2,16 +2,34 @@ import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Music2, Heart, ShoppingBag, Clock, Disc, PlayCircle, Search, Info, Download, Plus, Lock as AppLockIcon, Loader2, Trash2, Globe, Lock, Pencil } from 'lucide-react';
+import {
+  Music2,
+  Heart,
+  ShoppingBag,
+  Clock,
+  Search,
+  Info,
+  Download,
+  Plus,
+  Lock as AppLockIcon,
+  Loader2,
+  Trash2,
+  Globe,
+  Lock,
+  Pencil,
+  Crown,
+  ChevronRight,
+  X,
+  Compass,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
-import { downloadPurchasedSong, handleTrackDownload } from '../lib/downloads';
-
+import { handleTrackDownload } from '../lib/downloads';
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
-import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_LIST_CARDS } from '../lib/layout';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS } from '../lib/layout';
 
 const Library: React.FC = () => {
   const { userProfile } = useAuth();
@@ -43,6 +61,7 @@ const Library: React.FC = () => {
   const [editPublic, setEditPublic] = useState(false);
   const [purchasedSongs, setPurchasedSongs] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [likesCount, setLikesCount] = useState<number>(0);
 
   useEffect(() => {
     if (tabParam && ['purchased', 'likes', 'downloads', 'playlists'].includes(tabParam) && tabParam !== activeTab) {
@@ -54,6 +73,19 @@ const Library: React.FC = () => {
     setActiveTab(tab);
     setSearchParams({ tab }, { replace: true });
   };
+
+  // Fetch count of likes for stats strip
+  useEffect(() => {
+    const fetchLikesCount = async () => {
+      if (!userProfile?.id) return;
+      const { count } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('profile_id', userProfile.id);
+      setLikesCount(count || 0);
+    };
+    fetchLikesCount();
+  }, [userProfile?.id]);
 
   useEffect(() => {
     const fetchPurchased = async () => {
@@ -71,7 +103,6 @@ const Library: React.FC = () => {
 
   const handlePlaylistClick = async (pl: any) => {
     try {
-      // Find if this playlist actually corresponds to a saved album
       const { data: albumData, error } = await supabase
         .from('albums')
         .select('id')
@@ -101,13 +132,11 @@ const Library: React.FC = () => {
     const handleLikesUpdate = (e: any) => {
       if (activeTab === 'likes') {
         if (!e.detail.isLiked) {
-          // If unliked, remove from library list
           setSongs(prev => prev.filter(s => s.id !== e.detail.songId));
+          setLikesCount(prev => Math.max(0, prev - 1));
         } else {
-          // If liked, we might want to refresh to get the full song data, 
-          // but usually likes are added from other screens, so an optimistic local add is hard without the full song object.
-          // For now, let's just re-fetch if they are on the likes tab and something was liked.
           fetchLibrary();
+          setLikesCount(prev => prev + 1);
         }
       }
     };
@@ -154,6 +183,7 @@ const Library: React.FC = () => {
               url: l.songs?.audio_url
            }));
            setSongs(formatted as any);
+           setLikesCount(formatted.length);
         }
       } else if (activeTab === 'downloads') {
         let downloadIds: string[] = [];
@@ -202,7 +232,6 @@ const Library: React.FC = () => {
               .order('created_at', { ascending: false });
 
             if (!simpleErr && simpleData) {
-              // fetch unique song covers for mosaic
               const allSongIds = new Set<string>();
               simpleData.forEach((pl: any) => {
                 (pl.playlist_songs || []).forEach((ps: any) => {
@@ -271,7 +300,7 @@ const Library: React.FC = () => {
         is_public: newPlaylistIsPublic
       });
       if (error) throw error;
-      toast.success(newPlaylistIsPublic ? 'Public Playlist created!' : 'Private Playlist created!');
+      toast.success(newPlaylistIsPublic ? 'Public playlist created' : 'Private playlist created');
       setNewPlaylistName('');
       setNewPlaylistIsPublic(false);
       setShowCreatePlaylist(false);
@@ -294,7 +323,7 @@ const Library: React.FC = () => {
         .eq('id', editingPlaylist.id);
 
       if (error) throw error;
-      toast.success(`Playlist updated to ${editPublic ? 'Public' : 'Private'}!`);
+      toast.success(`Playlist updated to ${editPublic ? 'Public' : 'Private'}`);
       setPlaylists(prev => prev.map(p => p.id === editingPlaylist.id ? { ...p, name: editName.trim(), is_public: editPublic } : p));
       setEditingPlaylist(null);
     } catch (err: any) {
@@ -302,429 +331,697 @@ const Library: React.FC = () => {
     }
   };
 
+  // g) SIGN-IN GATE (no user logged in)
   if (!userProfile) {
-     return (
-        <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 p-12 text-center">
-           <div className="relative">
-              <div className="absolute inset-0 bg-smash-orange/20 blur-3xl rounded-full" />
-              <div className="relative w-32 h-32 rounded-full border-4 border-dashed border-smash-gray/30 flex items-center justify-center">
-                 <ShoppingBag size={48} className="text-smash-gray/30" />
-              </div>
-           </div>
-           <div className="space-y-4">
-              <h1 className="text-[28px] font-studio font-bold uppercase tracking-tight text-text-primary">Your Collection</h1>
-              <p className="max-w-md text-smash-gray font-medium">Elevate your experience. Sign in to access your purchased beats and favorite slaps.</p>
-           </div>
-           <button onClick={() => window.location.href = '/auth'} className="px-12 py-5 bg-smash-orange text-white rounded-full font-black uppercase tracking-widest text-sm shadow-xl shadow-smash-orange/20 hover:scale-105 transition-all">
-              Sign In To Access
-           </button>
+    return (
+      <div className="min-h-[65vh] flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
+        <div className="w-20 h-20 rounded-full bg-[#00A3FF]/10 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] mb-6 shadow-xl shadow-[#00A3FF]/10">
+          <ShoppingBag size={32} />
         </div>
-     );
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-1.5">
+          YOUR COLLECTION
+        </p>
+        <h1 className="text-3xl font-studio font-bold text-white tracking-tight mb-2">
+          Your Library<span className="text-[#00A3FF]">.</span>
+        </h1>
+        <p className="text-[#B0B0B0] text-[14px] leading-relaxed mb-8">
+          Sign in to access your purchased tracks, favorites, offline downloads, and custom playlists.
+        </p>
+        <button
+          onClick={() => navigate('/auth/listener')}
+          className="w-full max-w-xs h-12 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[10px] font-semibold text-[14px] shadow-lg shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all"
+        >
+          Sign in
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-12 pt-6`}>
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
-        <div className="space-y-4 md:space-y-6">
-           <h1 className="text-[32px] md:text-[64px] font-studio font-black uppercase tracking-tighter leading-none text-text-primary">
-             YOUR <span className="text-smash-orange">LIBRARY</span>
-           </h1>
-           {/* Horizontally Scrollable Tabs */}
-           <div className="flex items-center gap-5 md:gap-6 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 md:-mx-0 md:px-0">
-              <button 
-                onClick={() => handleTabChange('purchased')}
-                className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'purchased' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
-              >
-                <ShoppingBag size={16} className="md:w-[18px] md:h-[18px]" /> Purchased ({songs.length})
-              </button>
-              <button 
-                onClick={() => handleTabChange('likes')}
-                className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'likes' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
-              >
-                <Heart size={16} className="md:w-[18px] md:h-[18px]" /> Liked
-              </button>
-              <button 
-                onClick={() => {
-                  if (!limits.canDownload && purchasedSongs.length === 0) {
-                    toast.error('Offline saves require Weekly Pass or higher. Buy tracks to access your purchases here.');
-                    return;
-                  }
-                  handleTabChange('downloads');
-                }}
-                className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'downloads' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
-              >
-                <Download size={16} className="md:w-[18px] md:h-[18px]" /> Offline
-              </button>
-              <button 
-                onClick={() => handleTabChange('playlists')}
-                className={`flex items-center gap-2 md:gap-3 text-[10px] md:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${activeTab === 'playlists' ? 'text-smash-orange' : 'text-smash-gray hover:text-white'}`}
-              >
-                <Music2 size={16} className="md:w-[18px] md:h-[18px]" /> Playlists ({playlists.length})
-              </button>
-           </div>
+    <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} space-y-8 md:space-y-10 pt-4 md:pt-6`}>
+      {/* a) HEADER & STATS STRIP */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-1.5">
+            YOUR COLLECTION
+          </p>
+          <h1 className="text-3xl md:text-[48px] font-studio font-bold text-white tracking-tight leading-none">
+            Your Library<span className="text-[#00A3FF]">.</span>
+          </h1>
+          <p className="text-[13px] md:text-[14px] text-[#B0B0B0] mt-2">
+            Manage your purchased tracks, saved favorites, and playlists.
+          </p>
         </div>
 
-        <div className="relative w-full md:w-80 group">
-           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-smash-gray group-focus-within:text-smash-orange transition-colors" size={18} />
-           <input 
-             type="text" 
-             placeholder="Find in library..."
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-white/5 border border-white/10 rounded-full md:rounded-[24px] pl-14 pr-6 py-3 md:py-4 text-xs md:text-sm font-medium outline-none focus:border-smash-orange transition-all"
-           />
+        {/* Small stats strip — hairline divided */}
+        <div className="flex items-center divide-x divide-white/10 bg-[#1A1A1A] border border-white/10 rounded-[14px] p-2 md:p-2.5 self-start md:self-auto shrink-0">
+          <div className="px-3 md:px-4 text-center">
+            <p className="font-bold text-white text-[16px] md:text-[18px] font-mono leading-none">
+              {purchasedSongs.length}
+            </p>
+            <p className="text-[#B0B0B0] text-[11px] font-medium mt-1">
+              Purchased
+            </p>
+          </div>
+          <div className="px-3 md:px-4 text-center">
+            <p className="font-bold text-white text-[16px] md:text-[18px] font-mono leading-none">
+              {likesCount}
+            </p>
+            <p className="text-[#B0B0B0] text-[11px] font-medium mt-1">
+              Liked
+            </p>
+          </div>
+          <div className="px-3 md:px-4 text-center">
+            <p className="font-bold text-white text-[16px] md:text-[18px] font-mono leading-none">
+              {playlists.length}
+            </p>
+            <p className="text-[#B0B0B0] text-[11px] font-medium mt-1">
+              Playlists
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="relative">
-        <div className="absolute top-0 right-0 -translate-y-1/2 opacity-10 pointer-events-none hidden md:block">
-           <Disc size={300} strokeWidth={0.5} className="animate-spin-slow" />
+      {/* b) SEARCH + TABS */}
+      <div className="space-y-4">
+        {/* Search bar */}
+        <div className="relative w-full">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#B0B0B0] transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search within your library…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-11 md:h-12 bg-[#1A1A1A] border border-white/10 rounded-[12px] pl-11 pr-10 text-[14px] text-white placeholder:text-[#737373] focus:outline-none focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[#B0B0B0] hover:text-white transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
+        {/* Segmented Pill Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-white/5 border border-white/10 rounded-full w-full sm:w-fit overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => handleTabChange('purchased')}
+            className={`flex items-center gap-2 text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all whitespace-nowrap ${
+              activeTab === 'purchased'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
+          >
+            <ShoppingBag size={14} />
+            <span>Purchased</span>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === 'purchased' ? 'bg-black/10 text-black' : 'bg-white/10 text-[#B0B0B0]'
+            }`}>
+              {purchasedSongs.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('likes')}
+            className={`flex items-center gap-2 text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all whitespace-nowrap ${
+              activeTab === 'likes'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
+          >
+            <Heart size={14} />
+            <span>Liked</span>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === 'likes' ? 'bg-black/10 text-black' : 'bg-white/10 text-[#B0B0B0]'
+            }`}>
+              {likesCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!limits.canDownload && purchasedSongs.length === 0) {
+                toast.error('Offline saves require Weekly Pass or higher. Buy tracks to access your purchases here.');
+                return;
+              }
+              handleTabChange('downloads');
+            }}
+            className={`flex items-center gap-2 text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all whitespace-nowrap ${
+              activeTab === 'downloads'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
+          >
+            <Download size={14} />
+            <span>Offline</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('playlists')}
+            className={`flex items-center gap-2 text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all whitespace-nowrap ${
+              activeTab === 'playlists'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
+          >
+            <Music2 size={14} />
+            <span>Playlists</span>
+            <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === 'playlists' ? 'bg-black/10 text-black' : 'bg-white/10 text-[#B0B0B0]'
+            }`}>
+              {playlists.length}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* TAB CONTENT AREA */}
+      <div>
         {loading ? (
-           <div className={GRID_SONG_CARDS}>
-             {[...Array(5)].map((_, i) => (
-                <div key={i} className="aspect-square bg-white/5 rounded-[20px] md:rounded-[24px] animate-pulse" />
-             ))}
-           </div>
+          <div className={GRID_SONG_CARDS}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-square bg-[#1A1A1A] rounded-[16px] border border-white/5 animate-pulse" />
+            ))}
+          </div>
         ) : activeTab === 'playlists' ? (
-          <div className="space-y-8">
-           <div className={GRID_SONG_CARDS}>
-               <motion.div 
-                 whileHover={{ y: -5 }}
-                 onClick={() => {
-                   if (playlists.length >= limits.maxPlaylists) {
-                     toast.error(`Free tier allows up to ${limits.maxPlaylists} playlists. Upgrade to Premium for units.`);
-                     return;
-                   }
-                   setShowCreatePlaylist(true);
-                 }}
-                 className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-[24px] md:rounded-[32px] flex flex-col items-center justify-center cursor-pointer hover:border-smash-orange transition-all group relative"
-               >
-                  <Plus size={32} className="text-white/20 group-hover:text-smash-orange transition-colors md:w-10 md:h-10" />
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mt-3 md:mt-4">Create New</p>
-                  {playlists.length >= limits.maxPlaylists && (
-                     <div className="absolute top-3 right-3 md:top-4 md:right-4 text-red-400"><AppLockIcon size={14} className="md:w-4 md:h-4" /></div>
-                  )}
-               </motion.div>
+          /* c) PLAYLISTS TAB */
+          <div className="space-y-6">
+            <div className={GRID_SONG_CARDS}>
+              {/* New Playlist Tile */}
+              <div
+                onClick={() => {
+                  if (playlists.length >= limits.maxPlaylists) {
+                    toast.error(`Free tier allows up to ${limits.maxPlaylists} playlists. Upgrade to Premium for unlimited playlists.`);
+                    return;
+                  }
+                  setShowCreatePlaylist(true);
+                }}
+                className="aspect-square bg-[#1A1A1A] border-2 border-dashed border-white/15 hover:border-[#00A3FF]/60 rounded-[16px] flex flex-col items-center justify-center cursor-pointer transition-all group relative p-4"
+              >
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-[#00A3FF] group-hover:bg-[#00A3FF]/15 transition-all">
+                  <Plus size={24} />
+                </div>
+                <p className="text-[13px] font-semibold text-white mt-3">
+                  New Playlist
+                </p>
+                {playlists.length >= limits.maxPlaylists && (
+                  <div className="absolute top-3.5 right-3.5 text-red-400">
+                    <AppLockIcon size={14} />
+                  </div>
+                )}
+              </div>
 
-               {filteredPlaylists.map(pl => (
-                 <motion.div 
-                   key={pl.id}
-                   whileHover={{ y: -5 }}
-                   onClick={() => handlePlaylistClick(pl)}
-                   className="flex flex-col gap-2 md:gap-3 group cursor-pointer relative"
-                 >
-                    <div className="aspect-square bg-smash-dark rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/5 relative shadow-lg md:shadow-xl">
-                       {pl.cover_url ? (
-                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={pl.name} loading="lazy" decoding="async" />
-                       ) : (
-                          <div className="grid grid-cols-2 h-full w-full opacity-40">
-                          {pl.playlist_songs?.slice(0, 4).map((ps: any, i: number) => (
-                             <img key={i} src={optimizeImage(ps.songs?.cover_url, 150, 150)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                          ))}
-                       </div>
-                       )}
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                       <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 p-2 bg-black/40 rounded-lg">
-                          <Music2 size={14} className="md:w-4 md:h-4 text-white" />
-                       </div>
-
-                       {/* Public / Private Badge */}
-                       <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-white border border-white/10 z-10">
-                         {pl.is_public ? <Globe size={10} className="text-smash-orange" /> : <Lock size={10} className="text-smash-gray" />}
-                         <span>{pl.is_public ? 'Public' : 'Private'}</span>
-                       </div>
-
-                       {/* Edit & Delete Action Buttons */}
-                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                         <button
-                           type="button"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             setEditingPlaylist(pl);
-                             setEditName(pl.name);
-                             setEditPublic(!!pl.is_public);
-                           }}
-                           title="Edit playlist name & privacy"
-                           className="p-2 bg-black/60 hover:bg-smash-orange rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                         >
-                           <Pencil size={13} />
-                         </button>
-                         <button
-                           type="button"
-                           onClick={(e) => deletePlaylist(pl.id, e)}
-                           title="Delete playlist"
-                           className="p-2 bg-black/60 hover:bg-red-600 rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                         >
-                           <Trash2 size={13} />
-                         </button>
-                       </div>
-                    </div>
-                    <div>
-                       <h4 className="font-studio font-bold uppercase text-sm md:text-[18px] truncate tracking-tight text-white">{pl.name}</h4>
-                       <p className="text-[8px] md:text-[10px] font-black text-smash-gray uppercase tracking-widest">{pl.playlist_songs?.length || 0} Tracks • {pl.is_public ? 'Public' : 'Private'}</p>
-                    </div>
-                 </motion.div>
-               ))}
-            </div>
-
-            {/* Create Playlist Modal */}
-            {showCreatePlaylist && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                 <motion.div 
-                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                   className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] md:rounded-[40px] max-w-md w-full shadow-2xl space-y-5"
-                 >
-                    <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary">NEW PLAYLIST</h3>
-                    
-                    <div>
-                      <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
-                      <input 
-                        autoFocus
-                        type="text" 
-                        placeholder="My Summer Mix 24"
-                        value={newPlaylistName}
-                        onChange={e => setNewPlaylistName(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:border-smash-orange outline-none text-sm text-white"
+              {/* Playlist Cards */}
+              {filteredPlaylists.map(pl => (
+                <div
+                  key={pl.id}
+                  onClick={() => handlePlaylistClick(pl)}
+                  className="bg-[#1A1A1A] border border-white/10 hover:border-white/20 rounded-[16px] p-3 transition-all cursor-pointer group flex flex-col gap-2.5 relative"
+                >
+                  <div className="aspect-square bg-black/40 rounded-[12px] overflow-hidden border border-white/5 relative">
+                    {pl.cover_url ? (
+                      <img
+                        src={optimizeImage(pl.cover_url, 300, 300)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        alt={pl.name}
+                        loading="lazy"
+                        decoding="async"
                       />
+                    ) : (
+                      <div className="grid grid-cols-2 h-full w-full">
+                        {pl.playlist_songs?.slice(0, 4).map((ps: any, i: number) => (
+                          <img
+                            key={i}
+                            src={optimizeImage(
+                              ps.songs?.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=200&h=200&fit=crop',
+                              150,
+                              150
+                            )}
+                            className="w-full h-full object-cover"
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                    {/* Public / Private Chip Top-Left */}
+                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-full flex items-center gap-1 text-[10px] font-semibold border border-white/10 z-10">
+                      {pl.is_public ? (
+                        <Globe size={10} className="text-[#00A3FF]" />
+                      ) : (
+                        <Lock size={10} className="text-[#B0B0B0]" />
+                      )}
+                      <span className={pl.is_public ? 'text-[#00A3FF]' : 'text-[#B0B0B0]'}>
+                        {pl.is_public ? 'Public' : 'Private'}
+                      </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
-                      <div className="flex items-center gap-3">
-                        {newPlaylistIsPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-wider text-white">{newPlaylistIsPublic ? 'Public Playlist' : 'Private Playlist'}</p>
-                          <p className="text-[10px] text-smash-gray">{newPlaylistIsPublic ? 'Visible to everyone on Discover & Search' : 'Only visible to you in your Library'}</p>
-                        </div>
-                      </div>
+                    {/* Edit & Delete Action Buttons */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
                       <button
                         type="button"
-                        onClick={() => setNewPlaylistIsPublic(!newPlaylistIsPublic)}
-                        className={`w-12 h-6 rounded-full transition-all relative ${newPlaylistIsPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPlaylist(pl);
+                          setEditName(pl.name);
+                          setEditPublic(!!pl.is_public);
+                        }}
+                        title="Edit playlist"
+                        className="w-7 h-7 bg-black/70 hover:bg-[#00A3FF] rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
                       >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${newPlaylistIsPublic ? 'translate-x-7' : 'translate-x-1'}`} />
+                        <Pencil size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => deletePlaylist(pl.id, e)}
+                        title="Delete playlist"
+                        className="w-7 h-7 bg-black/70 hover:bg-red-600 rounded-full text-white/80 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                      >
+                        <Trash2 size={12} />
                       </button>
                     </div>
+                  </div>
 
-                    <div className="flex gap-3 pt-2">
-                       <button onClick={() => setShowCreatePlaylist(false)} className="flex-1 py-3.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-smash-gray hover:bg-white/5 rounded-2xl transition-all">Cancel</button>
-                       <button onClick={createPlaylist} className="flex-1 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-smash-orange hover:text-white transition-all">Create</button>
+                  <div>
+                    <h4 className="font-semibold text-[14px] text-white truncate">
+                      {pl.name}
+                    </h4>
+                    <p className="text-[12px] text-[#B0B0B0] mt-0.5">
+                      {pl.playlist_songs?.length || 0} track{pl.playlist_songs?.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* h) Create Playlist Modal */}
+            {showCreatePlaylist && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  className="bg-[#1A1A1A] border border-white/10 p-6 md:p-8 rounded-[24px] max-w-md w-full shadow-2xl space-y-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-studio font-bold text-white">
+                      Create playlist
+                    </h3>
+                    <button
+                      onClick={() => setShowCreatePlaylist(false)}
+                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-[#B0B0B0] hover:text-white flex items-center justify-center transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                      Playlist Name
+                    </label>
+                    <input 
+                      autoFocus
+                      type="text" 
+                      placeholder="My Summer Anthems"
+                      value={newPlaylistName}
+                      onChange={e => setNewPlaylistName(e.target.value)}
+                      className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[12px] text-[14px] text-white focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 bg-[#0A0A0A] border border-white/5 rounded-[12px]">
+                    <div className="flex items-center gap-3">
+                      {newPlaylistIsPublic ? (
+                        <Globe size={18} className="text-[#00A3FF]" />
+                      ) : (
+                        <Lock size={18} className="text-[#B0B0B0]" />
+                      )}
+                      <div>
+                        <p className="text-[13px] font-semibold text-white">
+                          {newPlaylistIsPublic ? 'Public playlist' : 'Private playlist'}
+                        </p>
+                        <p className="text-[11px] text-[#B0B0B0]">
+                          {newPlaylistIsPublic ? 'Visible to everyone on Discover' : 'Only visible to you in your Library'}
+                        </p>
+                      </div>
                     </div>
-                 </motion.div>
+                    <button
+                      type="button"
+                      onClick={() => setNewPlaylistIsPublic(!newPlaylistIsPublic)}
+                      className={`w-11 h-6 rounded-full transition-all relative ${newPlaylistIsPublic ? 'bg-[#00A3FF]' : 'bg-white/10'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${newPlaylistIsPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2.5 pt-2">
+                    <button
+                      onClick={() => setShowCreatePlaylist(false)}
+                      className="flex-1 h-11 bg-white/5 border border-white/10 text-[#B0B0B0] hover:text-white rounded-[10px] font-medium text-[13px] hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={createPlaylist}
+                      className="flex-1 h-11 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white font-semibold text-[13px] rounded-[10px] shadow-lg shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all"
+                    >
+                      Create
+                    </button>
+                  </div>
+                </motion.div>
               </div>
             )}
 
             {/* Edit Playlist Modal */}
             {editingPlaylist && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setEditingPlaylist(null)}>
-                 <motion.div 
-                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                   onClick={(e) => e.stopPropagation()}
-                   className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] md:rounded-[40px] max-w-md w-full shadow-2xl space-y-5"
-                 >
-                    <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary">EDIT PLAYLIST</h3>
-                    
-                    <div>
-                      <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
-                      <input 
-                        type="text" 
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-bold focus:border-smash-orange outline-none text-sm text-white"
-                      />
-                    </div>
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#1A1A1A] border border-white/10 p-6 md:p-8 rounded-[24px] max-w-md w-full shadow-2xl space-y-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-studio font-bold text-white">
+                      Edit playlist
+                    </h3>
+                    <button
+                      onClick={() => setEditingPlaylist(null)}
+                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-[#B0B0B0] hover:text-white flex items-center justify-center transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                      Playlist Name
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[12px] text-[14px] text-white focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] outline-none"
+                    />
+                  </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
-                      <div className="flex items-center gap-3">
-                        {editPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-wider text-white">{editPublic ? 'Public Playlist' : 'Private Playlist'}</p>
-                          <p className="text-[10px] text-smash-gray">{editPublic ? 'Visible to everyone on Discover & Search' : 'Only visible to you in your Library'}</p>
-                        </div>
+                  <div className="flex items-center justify-between p-3.5 bg-[#0A0A0A] border border-white/5 rounded-[12px]">
+                    <div className="flex items-center gap-3">
+                      {editPublic ? (
+                        <Globe size={18} className="text-[#00A3FF]" />
+                      ) : (
+                        <Lock size={18} className="text-[#B0B0B0]" />
+                      )}
+                      <div>
+                        <p className="text-[13px] font-semibold text-white">
+                          {editPublic ? 'Public playlist' : 'Private playlist'}
+                        </p>
+                        <p className="text-[11px] text-[#B0B0B0]">
+                          {editPublic ? 'Visible to everyone on Discover' : 'Only visible to you in your Library'}
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditPublic(!editPublic)}
-                        className={`w-12 h-6 rounded-full transition-all relative ${editPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
-                      >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${editPublic ? 'translate-x-7' : 'translate-x-1'}`} />
-                      </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditPublic(!editPublic)}
+                      className={`w-11 h-6 rounded-full transition-all relative ${editPublic ? 'bg-[#00A3FF]' : 'bg-white/10'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${editPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
 
-                    <div className="flex gap-3 pt-2">
-                       <button onClick={() => setEditingPlaylist(null)} className="flex-1 py-3.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-smash-gray hover:bg-white/5 rounded-2xl transition-all">Cancel</button>
-                       <button onClick={handleSaveEditPlaylist} className="flex-1 py-3.5 bg-white text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl hover:bg-smash-orange hover:text-white transition-all">Save Changes</button>
-                    </div>
-                 </motion.div>
+                  <div className="flex gap-2.5 pt-2">
+                    <button
+                      onClick={() => setEditingPlaylist(null)}
+                      className="flex-1 h-11 bg-white/5 border border-white/10 text-[#B0B0B0] hover:text-white rounded-[10px] font-medium text-[13px] hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveEditPlaylist}
+                      className="flex-1 h-11 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white font-semibold text-[13px] rounded-[10px] shadow-lg shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all"
+                    >
+                      Save changes
+                    </button>
+                  </div>
+                </motion.div>
               </div>
             )}
           </div>
         ) : activeTab === 'downloads' ? (
-           <div className="space-y-8">
-             {/* Purchased Songs — always visible, no subscription required */}
-             <div className="mb-8">
-               <div className="flex items-center gap-2 mb-4">
-                 <ShoppingBag size={16} className="text-smash-orange" />
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white">
-                   Purchased Songs
-                 </h3>
-                 <span className="text-[10px] font-black text-smash-gray bg-white/5 px-2 py-0.5 rounded-full">
-                   {purchasedSongs.length}
-                 </span>
-               </div>
+          /* e) OFFLINE TAB */
+          <div className="space-y-8">
+            {/* 1. Purchased Songs (always downloadable with green button) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                    PURCHASED
+                  </p>
+                  <h3 className="text-xl font-studio font-bold text-white">
+                    Direct Downloads
+                  </h3>
+                </div>
+                <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                  {purchasedSongs.length} track{purchasedSongs.length === 1 ? '' : 's'}
+                </span>
+              </div>
 
-               {purchasedSongs.length === 0 ? (
-                 <div className="text-center py-8 bg-white/5 rounded-2xl border border-white/10">
-                   <p className="text-3xl mb-3">🛒</p>
-                   <p className="text-sm font-bold text-white">No purchased songs yet</p>
-                   <p className="text-xs text-smash-gray mt-1">
-                     Buy tracks from artists to own them forever and download anytime.
-                   </p>
-                 </div>
-               ) : (
-                 <div className="space-y-2">
-                   {purchasedSongs.map(song => (
-                     <div key={song.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
-                       <img
-                         src={optimizeImage(song.cover_url, 120, 120)}
-                         className="w-12 h-12 rounded-xl object-cover shrink-0"
-                         alt={song.title}
-                       loading="lazy" decoding="async" />
-                       <div className="flex-1 min-w-0">
-                         <p className="text-sm font-bold text-white truncate">{song.title}</p>
-                         <p className="text-[11px] text-smash-gray truncate">{song.artist_name}</p>
-                         <p className="text-[9px] text-smash-gray/60 mt-0.5">
-                           Purchased {new Date(song.purchasedAt).toLocaleDateString('en-GB')}
-                         </p>
-                       </div>
-                       <button
-                         onClick={async () => {
-                           setDownloadingId(song.id);
-                           try {
-                             await handleTrackDownload(song, userProfile);
-                             toast.success('Download started!');
-                           } catch (err: any) {
-                             toast.error(err.message);
-                           } finally {
-                             setDownloadingId(null);
-                           }
-                         }}
-                         disabled={downloadingId === song.id}
-                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-smash-green/10 border border-smash-green/20 text-smash-green rounded-xl font-bold text-xs hover:bg-smash-green/20 transition-all disabled:opacity-50"
-                       >
-                         {downloadingId === song.id ? (
-                           <Loader2 size={12} className="animate-spin" />
-                         ) : (
-                           <Download size={12} />
-                         )}
-                         {downloadingId === song.id ? 'Downloading...' : 'Download'}
-                       </button>
-                     </div>
-                   ))}
-                 </div>
-               )}
-             </div>
+              {purchasedSongs.length === 0 ? (
+                <div className="p-8 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3 text-[#B0B0B0]">
+                    <ShoppingBag size={22} />
+                  </div>
+                  <h4 className="text-white font-semibold text-[15px]">No purchased songs yet</h4>
+                  <p className="text-[#B0B0B0] text-[13px] mt-1 max-w-sm mx-auto">
+                    Buy tracks directly from creators to own them permanently and download anytime.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {purchasedSongs.map(song => (
+                    <div
+                      key={song.id}
+                      className="flex items-center justify-between gap-3 p-3 bg-[#1A1A1A] border border-white/10 rounded-[14px]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <img
+                          src={optimizeImage(song.cover_url, 120, 120)}
+                          className="w-12 h-12 rounded-[10px] object-cover shrink-0 border border-white/10"
+                          alt={song.title}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="text-[14px] font-semibold text-white truncate">{song.title}</p>
+                          <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">{song.artist_name}</p>
+                          <p className="text-[10px] text-[#737373] mt-0.5 font-mono">
+                            Purchased {new Date(song.purchasedAt).toLocaleDateString('en-GB')}
+                          </p>
+                        </div>
+                      </div>
 
-             {!limits.canDownload && (
-               <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
-                 <p className="text-sm font-bold text-white">Offline Saves</p>
-                 <p className="text-xs text-smash-gray mt-1">
-                   Save songs for offline listening with Weekly Pass or higher.
-                 </p>
-                 <button
-                   onClick={() => navigate('/profile#billing')}
-                   className="mt-3 px-4 py-2 bg-smash-orange text-white rounded-xl font-bold text-xs"
-                 >
-                   Upgrade Plan
-                 </button>
-               </div>
-             )}
+                      <button
+                        onClick={async () => {
+                          setDownloadingId(song.id);
+                          try {
+                            await handleTrackDownload(song, userProfile);
+                            toast.success('Download started');
+                          } catch (err: any) {
+                            toast.error(err.message);
+                          } finally {
+                            setDownloadingId(null);
+                          }
+                        }}
+                        disabled={downloadingId === song.id}
+                        className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] hover:bg-[#22C55E]/25 rounded-[10px] font-semibold text-[12px] transition-all disabled:opacity-50"
+                      >
+                        {downloadingId === song.id ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Download size={13} />
+                        )}
+                        <span>{downloadingId === song.id ? 'Downloading…' : 'Download'}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-             {limits.canDownload && (
-                filteredSongs.length > 0 ? (
-                   <div className="space-y-3 md:space-y-4">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">Saved Offline</h3>
-                      {filteredSongs.map((song, i) => (
-                         <SongCard key={`library-${song.id}-${i}`} song={song} queue={filteredSongs} />
-                      ))}
-                   </div>
+            {/* 2. Premium Offline Saves Upgrade Card (if non-premium) */}
+            {!limits.canDownload && (
+              <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
+                    <Crown size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold text-[15px]">
+                      Offline saves are a Premium feature
+                    </h4>
+                    <p className="text-[#B0B0B0] text-[13px] mt-0.5">
+                      Upgrade to Weekly Pass or Premium to cache unlimited songs for offline playback.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="h-10 px-5 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[10px] font-semibold text-[13px] shadow-md shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all shrink-0"
+                >
+                  Upgrade
+                </button>
+              </div>
+            )}
+
+            {/* 3. Saved Offline Tracks list */}
+            {limits.canDownload && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                    CACHED
+                  </p>
+                  <h3 className="text-xl font-studio font-bold text-white">
+                    Saved Offline
+                  </h3>
+                </div>
+                {filteredSongs.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {filteredSongs.map((song, i) => (
+                      <SongCard key={`library-offline-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
+                    ))}
+                  </div>
                 ) : (
-                   <div className="text-center py-8">
-                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 border border-white/10">
-                        <Download size={24} className="text-smash-gray" />
-                     </div>
-                     <p className="text-sm font-bold text-white">No offline saved songs</p>
-                     <p className="text-xs text-smash-gray mt-1">Download songs to listen offline without data.</p>
-                   </div>
-                )
-             )}
-           </div>
+                  <div className="p-8 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3 text-[#B0B0B0]">
+                      <Download size={22} />
+                    </div>
+                    <h4 className="text-white font-semibold text-[15px]">No offline saved songs</h4>
+                    <p className="text-[#B0B0B0] text-[13px] mt-1">
+                      Download songs using the download button on track menus to listen offline without internet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ) : filteredSongs.length > 0 ? (
-           <div className="space-y-3 md:space-y-4">
+          /* d) PURCHASED / LIKED TABS — List Rows */
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                  {activeTab === 'purchased' ? 'PURCHASED' : 'LIKES'}
+                </p>
+                <h3 className="text-xl font-studio font-bold text-white">
+                  {activeTab === 'purchased' ? 'Purchased Tracks' : 'Liked Songs'}
+                </h3>
+              </div>
+              <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                {filteredSongs.length} track{filteredSongs.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
               {filteredSongs.map((song, i) => (
-                 <SongCard key={`library-${song.id}-${i}`} song={song} queue={filteredSongs} />
+                <SongCard key={`library-song-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
               ))}
-           </div>
+            </div>
+          </div>
         ) : (
-           <div className="bento-card p-12 md:p-20 text-center space-y-5 md:space-y-6">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 border border-white/10">
-                 {activeTab === 'purchased' ? <ShoppingBag size={32} className="text-smash-gray md:w-10 md:h-10" /> : <Heart size={32} className="text-smash-gray md:w-10 md:h-10" />}
-              </div>
-              <div className="space-y-2">
-                 <h3 className="text-xl md:text-[24px] font-studio font-bold uppercase tracking-tight text-text-primary">Nothing Here Yet</h3>
-                 <p className="text-smash-gray text-xs md:text-base font-medium max-w-sm mx-auto">
-                    {activeTab === 'purchased' 
-                       ? "You haven't purchased any tracks yet. Support artists and own your favorite slaps!" 
-                       : "Save your favorite tracks to access them quickly later."}
-                 </p>
-              </div>
-              <button 
-                onClick={() => window.location.href = '/discover'}
-                className="px-6 py-3 md:px-8 md:py-4 bg-white text-smash-black rounded-full font-black uppercase tracking-widest text-[10px] md:text-xs hover:bg-smash-orange hover:text-white transition-all shadow-xl"
+          /* EMPTY STATE */
+          <div className="p-12 md:p-16 bg-[#1A1A1A] border border-white/10 rounded-[16px] text-center space-y-4 max-w-lg mx-auto">
+            <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-[#B0B0B0]">
+              {activeTab === 'purchased' ? <ShoppingBag size={28} /> : <Heart size={28} />}
+            </div>
+            <div>
+              <h3 className="text-xl font-studio font-bold text-white">
+                {activeTab === 'purchased' ? 'No purchases yet' : 'No liked songs yet'}
+              </h3>
+              <p className="text-[#B0B0B0] text-[13px] mt-1.5 leading-relaxed">
+                {activeTab === 'purchased'
+                  ? 'You have not purchased any tracks yet. Support African creators and own your favorite tracks permanently.'
+                  : 'Tap the heart icon on any song to save it to your collection for quick access.'}
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={() => navigate('/discover')}
+                className="px-6 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 text-white hover:text-[#00A3FF] rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2"
               >
-                Go Exploring
+                <Compass size={15} />
+                <span>Explore catalogue</span>
               </button>
-           </div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Suggested for You Column (Only if space allows or at bottom) */}
-      <div className="pt-12 md:pt-20 border-t border-white/5 p-6 md:p-8 bg-gradient-to-r from-smash-orange/5 to-transparent rounded-[32px] md:rounded-[40px]">
-         <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
-            <PlayCircle className="text-smash-orange w-6 h-6 md:w-7 md:h-7" />
-            <h2 className="text-lg md:text-[22px] font-studio font-bold uppercase tracking-tight text-text-primary">Quick Play</h2>
-         </div>
-         <div className={GRID_LIST_CARDS}>
-            <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
-               <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-smash-orange flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Clock size={20} fill="white" className="md:w-6 md:h-6" />
-               </div>
-               <div>
-                  <h4 className="font-studio font-bold uppercase text-sm md:text-[16px] leading-none mb-1 text-white">Recently Played</h4>
-                  <p className="text-[8px] md:text-[10px] text-smash-gray font-black uppercase tracking-widest leading-none">Jump back in</p>
-               </div>
+      {/* f) QUICK PLAY — Single "Recently Played" Hairline Panel */}
+      <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 md:p-6 space-y-4">
+        <div className="flex items-center gap-2.5">
+          <Clock className="text-[#00A3FF]" size={18} />
+          <h3 className="text-base font-studio font-bold text-white">
+            Quick Navigation
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div
+            onClick={() => navigate('/discover')}
+            className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#00A3FF]/40 rounded-[12px] transition-all cursor-pointer flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
+                <Clock size={18} />
+              </div>
+              <div>
+                <h4 className="font-semibold text-[13px] text-white">Recently Played</h4>
+                <p className="text-[11px] text-[#B0B0B0]">Resume where you left off</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group" onClick={() => setActiveTab('playlists')}>
-               <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-smash-purple flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Music2 size={20} fill="white" className="md:w-6 md:h-6" />
-               </div>
-               <div>
-                  <h4 className="font-studio font-bold uppercase text-sm md:text-[16px] leading-none mb-1 text-white">Playlists</h4>
-                  <p className="text-[8px] md:text-[10px] text-smash-gray font-black uppercase tracking-widest leading-none">Collections you love</p>
-               </div>
+            <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:translate-x-0.5 transition-all" />
+          </div>
+
+          <div
+            onClick={() => handleTabChange('playlists')}
+            className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#00A3FF]/40 rounded-[12px] transition-all cursor-pointer flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
+                <Music2 size={18} />
+              </div>
+              <div>
+                <h4 className="font-semibold text-[13px] text-white">Your Playlists</h4>
+                <p className="text-[11px] text-[#B0B0B0]">Browse custom collections</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 md:gap-4 bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
-               <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-smash-gray flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Info size={20} fill="white" className="md:w-6 md:h-6" />
-               </div>
-               <div>
-                  <h4 className="font-studio font-bold uppercase text-sm md:text-[16px] leading-none mb-1 text-white">Library Help</h4>
-                  <p className="text-[8px] md:text-[10px] text-smash-gray font-black uppercase tracking-widest leading-none">Learn to manage</p>
-               </div>
+            <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:translate-x-0.5 transition-all" />
+          </div>
+
+          <div
+            onClick={() => navigate('/pricing')}
+            className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#00A3FF]/40 rounded-[12px] transition-all cursor-pointer flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
+                <Info size={18} />
+              </div>
+              <div>
+                <h4 className="font-semibold text-[13px] text-white">Library Guide</h4>
+                <p className="text-[11px] text-[#B0B0B0]">Learn how downloads work</p>
+              </div>
             </div>
-         </div>
+            <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:translate-x-0.5 transition-all" />
+          </div>
+        </div>
       </div>
     </div>
   );

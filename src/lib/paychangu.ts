@@ -34,7 +34,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
- * Common function to initiate payment via Supabase Edge Functions
+ * Common function to initiate payment via local Express backend API or Supabase Edge Functions
  */
 export async function initiatePayment(params: InitiatePaymentParams) {
   const toastId = toast.loading('Initializing secure payment...');
@@ -42,33 +42,58 @@ export async function initiatePayment(params: InitiatePaymentParams) {
   try {
     const randomHex = Array.from(crypto.getRandomValues(new Uint8Array(6)))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
+      .join('');
     const tx_ref = `SMA-${randomHex}-${Date.now()}`;
     
     const session = (await supabase.auth.getSession()).data.session;
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-payment`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          ...params,
-          tx_ref,
-          currency: 'MWK',
-          cancel_url: `${APP_URL}/payment-failed?type=${params.type.toUpperCase()}&tx_ref=${tx_ref}`
-        })
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+      'apikey': SUPABASE_ANON_KEY || ''
+    };
+
+    const body = JSON.stringify({
+      ...params,
+      tx_ref,
+      currency: 'MWK',
+      cancel_url: `${APP_URL}/payment-failed?type=${params.type.toUpperCase()}&tx_ref=${tx_ref}`
+    });
+
+    const endpoints = [
+      '/api/functions/v1/create-payment',
+      '/api/pay/create-payment',
+      SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/create-payment` : null
+    ].filter(Boolean) as string[];
+
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body
+        });
+        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403) {
+          response = res;
+          break;
+        }
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`[Payment] Fetch to ${endpoint} failed:`, e?.message || e);
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error('Network error: Unable to reach payment gateway. Please check your connection.');
+    }
     
     const textToLog = await response.text();
     let data: any;
     try {
       data = JSON.parse(textToLog);
-    } catch(e) {
+    } catch (e) {
       console.error("Failed to parse edge function response:", textToLog);
       throw new Error(`API returned non-JSON. Status: ${response.status}`);
     }
@@ -272,7 +297,7 @@ export async function payForAdCampaign({
 }
 
 /**
- * Withdraw funds (Payout) via Supabase Edge Functions
+ * Withdraw funds (Payout) via local Express backend API or Supabase Edge Functions
  */
 export async function requestPayout({ 
   amount, 
@@ -287,19 +312,42 @@ export async function requestPayout({
   
   try {
     const session = (await supabase.auth.getSession()).data.session;
-    
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/process-payout`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ amount, phone, network })
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+      'apikey': SUPABASE_ANON_KEY || ''
+    };
+    const body = JSON.stringify({ amount, phone, network });
+
+    const endpoints = [
+      '/api/functions/v1/process-payout',
+      '/api/pay/process-payout',
+      SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/process-payout` : null
+    ].filter(Boolean) as string[];
+
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body
+        });
+        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403) {
+          response = res;
+          break;
+        }
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`[Payout] Fetch to ${endpoint} failed:`, e?.message || e);
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error('Network error: Unable to reach payout service.');
+    }
     
     const textToLog = await response.text();
     let data: any;
@@ -339,18 +387,43 @@ export async function verifyPayment(tx_ref: string) {
         if (session) break;
       }
     }
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/verify-payment`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-          'apikey': SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ tx_ref: sanitizedRef })
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+      'apikey': SUPABASE_ANON_KEY || ''
+    };
+    const body = JSON.stringify({ tx_ref: sanitizedRef });
+
+    const endpoints = [
+      '/api/functions/v1/verify-payment',
+      '/api/pay/verify-payment',
+      SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/verify-payment` : null
+    ].filter(Boolean) as string[];
+
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body
+        });
+        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403) {
+          response = res;
+          break;
+        }
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`[VerifyPayment] Fetch to ${endpoint} failed:`, e?.message || e);
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error('Network error: Unable to reach payment verification service.');
+    }
     
     const resText = await response.text();
     let resData;

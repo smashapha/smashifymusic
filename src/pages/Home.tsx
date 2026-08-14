@@ -20,8 +20,7 @@ const FEATURED_CHARTS = [
     id: 'top-songs-global',
     title: 'Top Songs Global',
     subtitle: 'Your weekly update of the most played tracks right now - Global.',
-    style: 'from-smash-purple to-smash-black',
-    type: 'weekly',
+    type: 'Weekly',
     cardTitle: 'Top Songs',
     cardSub: 'Global',
     iconText: 'Weekly Music Charts'
@@ -30,8 +29,7 @@ const FEATURED_CHARTS = [
     id: 'top-songs-malawi',
     title: 'Top Songs Malawi',
     subtitle: 'Your weekly update of the most played tracks right now - Malawi.',
-    style: 'from-smash-orange to-smash-black',
-    type: 'weekly',
+    type: 'Weekly',
     cardTitle: 'Top Songs',
     cardSub: 'Malawi',
     iconText: 'Weekly Music Charts'
@@ -40,20 +38,18 @@ const FEATURED_CHARTS = [
     id: 'top-50-global',
     title: 'Top 50 - Global',
     subtitle: 'Your daily update of the most played tracks right now - Global.',
-    style: 'from-smash-cyan to-smash-black',
-    type: 'daily',
+    type: 'Daily',
     cardTitle: 'Top 50',
-    cardSub: 'GLOBAL',
+    cardSub: 'Global',
     iconText: 'Daily Music Charts'
   },
   {
     id: 'top-50-malawi',
     title: 'Top 50 - Malawi',
     subtitle: 'Your daily update of the most played tracks right now - Malawi.',
-    style: 'from-smash-pink to-smash-black',
-    type: 'daily',
+    type: 'Daily',
     cardTitle: 'Top 50',
-    cardSub: 'MALAŴI',
+    cardSub: 'Malawi',
     iconText: 'Daily Music Charts'
   }
 ];
@@ -138,7 +134,7 @@ const Home: React.FC = () => {
             .then(() => {});
         } else {
           // Panel closed — show toast alert
-          toast(`🔔 ${payload.new.message}`, { duration: 4000 });
+          toast(payload.new.message, { duration: 4000 });
         }
       })
       .subscribe();
@@ -422,7 +418,7 @@ const Home: React.FC = () => {
 
       {refreshing && (
         <div className="flex justify-center -mt-4 mb-4">
-          <div className="w-6 h-6 border-2 border-smash-orange border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       
@@ -431,58 +427,62 @@ const Home: React.FC = () => {
         <div>
           {userProfile ? (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
-               <h1 className="text-[24px] font-studio font-bold text-text-primary mb-0 leading-tight">
-                  {getGreeting()}, <span className="text-smash-orange">{userProfile.full_name?.split(' ')[0] || 'Listener'}</span>.
+               <h1 className="text-[28px] md:text-[34px] font-studio font-bold text-white mb-0 leading-tight tracking-[-0.01em]">
+                  {getGreeting()}, <span className="text-[#00A3FF]">{userProfile.full_name?.split(' ')[0] || 'Listener'}</span>
                </h1>
+               <p className="text-[13px] text-[#B0B0B0] mt-1 font-sans">Ready for today's top music and freshest drops?</p>
             </motion.div>
           ) : (
             <div>
-               <h1 className="text-[24px] font-studio font-bold text-text-primary mb-0 leading-tight">
-                  Welcome to <span className="text-smash-orange">Smashify</span>
+               <h1 className="text-[28px] md:text-[34px] font-studio font-bold text-white mb-0 leading-tight tracking-[-0.01em]">
+                  Welcome to <span className="text-[#00A3FF]">Smashify</span>
                </h1>
+               <p className="text-[13px] text-[#B0B0B0] mt-1 font-sans">Discover, stream, and support African music creators.</p>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-4 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-[400px] group">
-            <Search size={16} className="absolute left-[16px] top-1/2 -translate-y-1/2 text-text-muted transition-colors opacity-70" strokeWidth={2} />
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <div className="relative flex-1 lg:w-[380px] group">
+            <Search size={16} className="absolute left-[16px] top-1/2 -translate-y-1/2 text-[#B0B0B0] transition-colors" strokeWidth={2} />
             <input 
               type="text" 
-              placeholder="Search artists or tracks..."
+              placeholder="Search artists, tracks, albums..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && searchQuery.trim().length > 0) {
-                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`)
-                  setSearchQuery('')
+                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+                  setSearchQuery('');
                 }
               }}
-              className="w-full h-[44px] bg-white/5 border border-white/10 rounded-[14px] pl-10 pr-12 text-[14px] font-display text-text-primary placeholder:text-text-muted focus:outline-none focus:border-white/20 transition-all focus:bg-white/10"
+              className="w-full h-[44px] bg-[#1A1A1A] border border-white/10 rounded-[12px] pl-10 pr-12 text-[14px] text-white placeholder:text-[#B0B0B0] focus:outline-none focus:border-[#00A3FF]/50 transition-all"
             />
             <button
               onClick={() => {
                 if (searchQuery.trim().length > 0) {
-                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`)
-                  setSearchQuery('')
+                  navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+                  setSearchQuery('');
                 }
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-smash-orange rounded-lg flex items-center justify-center hover:scale-105 transition-transform"
+              aria-label="Search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0084D6] hover:brightness-110 rounded-[8px] flex items-center justify-center transition-all shadow-sm"
             >
               <Search size={14} className="text-white" />
             </button>
           </div>
           <button
-          onClick={() => { setShowNotifications(true); markAllRead(); }}
-          className="relative w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors"
-        >
-          <Bell size={20} className="text-white" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-smash-orange rounded-full text-[10px] font-black text-white flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+            onClick={() => { setShowNotifications(true); markAllRead(); }}
+            aria-label="Notifications"
+            className="relative w-11 h-11 rounded-[12px] bg-[#1A1A1A] border border-white/10 flex items-center justify-center shrink-0 hover:border-white/20 transition-colors"
+          >
+            <Bell size={18} className="text-white" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A3FF] rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-sm">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -495,37 +495,39 @@ const Home: React.FC = () => {
               key={featuredIndex}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="relative h-[300px] bg-bg-surface rounded-[20px] overflow-hidden group cursor-pointer border border-white/5 flex flex-col md:flex-row"
+              transition={{ duration: 0.4 }}
+              className="relative min-h-[280px] md:h-[300px] bg-[#1A1A1A] rounded-[24px] overflow-hidden group cursor-pointer border border-white/10 flex flex-col md:flex-row shadow-xl"
               onClick={() => navigate(`/artist/${featured.artist_id}`)}
             >
               {/* Image */}
               <div className="absolute inset-0 md:left-1/2">
                 <img
                   src={optimizeImage(featured.cover_url, 600, 600)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[8s]"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   alt=""
                   referrerPolicy="no-referrer"
-                loading="lazy" decoding="async" />
-                <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-bg-surface via-bg-surface/80 to-transparent" />
+                  loading="lazy" 
+                  decoding="async" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#1A1A1A] via-[#1A1A1A]/85 to-transparent" />
               </div>
 
               {/* Content */}
               <div className="relative z-10 w-full md:w-1/2 h-full flex flex-col justify-center p-6 md:p-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="px-2.5 py-1 bg-smash-purple text-white text-[9px] font-display font-semibold rounded-sm uppercase tracking-widest shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="px-2.5 py-0.5 bg-[#00A3FF]/15 border border-[#00A3FF]/30 text-[#00A3FF] text-[10px] font-semibold rounded-full uppercase tracking-wider">
                     Featured
                   </div>
                   {featured.profiles?.artist_tier === 'Elite' && (
-                    <div className="px-2.5 py-1 bg-smash-orange/20 text-smash-orange text-[9px] font-display font-semibold rounded-sm uppercase tracking-widest border border-smash-orange/30">
+                    <div className="px-2.5 py-0.5 bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#8B5CF6] text-[10px] font-semibold rounded-full uppercase tracking-wider">
                       Elite
                     </div>
                   )}
                 </div>
-                <h1 className="text-[28px] md:text-[44px] font-studio font-extrabold tracking-tight leading-[1.1] mb-2 text-white line-clamp-2 uppercase">
+                <h2 className="text-[26px] md:text-[38px] font-studio font-bold tracking-[-0.01em] leading-[1.15] mb-2 text-white line-clamp-2">
                   {featured.title}
-                </h1>
-                <p className="text-[13px] md:text-[14px] font-display text-text-muted mb-6 md:mb-8 line-clamp-1 uppercase tracking-wider">
+                </h2>
+                <p className="text-[14px] text-[#B0B0B0] mb-6 line-clamp-1">
                   {featured.featured_artist
                     ? `${featured.artist_name} ft. ${featured.featured_artist}`
                     : featured.artist_name}
@@ -533,9 +535,9 @@ const Home: React.FC = () => {
                 <div className="flex">
                   <button
                     onClick={(e) => { e.stopPropagation(); playSong(featured, featuredItems); }}
-                    className="px-5 md:px-6 py-2.5 md:py-3 bg-white text-black text-[11px] md:text-[12px] font-display font-bold uppercase tracking-widest rounded-full hover:bg-white/90 transition-all flex items-center gap-2"
+                    className="h-10 px-6 bg-white hover:bg-white/90 text-black text-[13px] font-semibold rounded-[10px] transition-all flex items-center gap-2 shadow-sm"
                   >
-                    <Flame size={16} /> Play Now
+                    <Play size={15} className="fill-current" /> Play Now
                   </button>
                 </div>
               </div>
@@ -548,9 +550,10 @@ const Home: React.FC = () => {
                   <button
                     key={i}
                     onClick={() => setFeaturedIndex(i)}
+                    aria-label={`Slide ${i + 1}`}
                     className={`h-1.5 rounded-full transition-all ${
                       i === featuredIndex
-                        ? 'w-6 bg-smash-purple'
+                        ? 'w-6 bg-[#00A3FF]'
                         : 'w-1.5 bg-white/20 hover:bg-white/40'
                     }`}
                   />
@@ -566,31 +569,38 @@ const Home: React.FC = () => {
         <section className={SECTION_SPACING}>
           <div className="flex items-end justify-between mb-4">
             <div>
-              <p className="text-[13px] font-display font-medium text-text-muted mb-1">Start radio from a song</p>
-              <h2 className="text-[26px] font-studio font-bold tracking-tight text-white leading-none">Quick picks</h2>
+              <p className="text-[11px] font-semibold text-[#00A3FF] uppercase tracking-[0.18em] mb-1">RECOMMENDED</p>
+              <h2 className="text-[22px] font-studio font-bold tracking-[-0.01em] text-white leading-none">Quick Picks</h2>
             </div>
-            <button onClick={() => playQueue(trendingSongs)} className="px-4 py-1.5 border border-white/20 text-white font-display font-semibold text-[12px] rounded-full hover:bg-white/10 transition-all flex items-center gap-2">
-               <Play size={12} className="fill-white" /> Play all
+            <button 
+              onClick={() => playQueue(trendingSongs)} 
+              className="h-9 px-4 border border-white/10 hover:border-white/30 text-white font-semibold text-[12px] rounded-[10px] transition-all flex items-center gap-2"
+            >
+               <Play size={12} className="fill-white" /> Play All
             </button>
           </div>
           
           <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2 overflow-x-auto snap-x no-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0 auto-cols-[85vw] md:auto-cols-[340px]">
             {trendingSongs.map((song) => (
-              <div key={`quick-${song.id}`} className="flex items-center gap-3 p-2 rounded-[10px] hover:bg-white/5 snap-start group cursor-pointer transition-colors" onClick={() => playSong(song)}>
-                <div className="relative w-[48px] h-[48px] md:w-[54px] md:h-[54px] rounded-[6px] overflow-hidden flex-shrink-0">
+              <div 
+                key={`quick-${song.id}`} 
+                className="flex items-center gap-3 p-2 rounded-[12px] bg-[#1A1A1A]/40 border border-white/5 hover:border-white/15 hover:bg-[#1A1A1A] snap-start group cursor-pointer transition-colors" 
+                onClick={() => playSong(song)}
+              >
+                <div className="relative w-[48px] h-[48px] md:w-[52px] md:h-[52px] rounded-[8px] overflow-hidden flex-shrink-0 bg-black/40">
                    <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Play size={20} className="fill-white text-white ml-0.5" />
+                      <Play size={18} className="fill-white text-white ml-0.5" />
                    </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] md:text-[15px] font-sans font-bold text-white truncate mb-0.5 group-hover:text-smash-orange transition-colors">{song.title}</h4>
+                  <h4 className="text-[14px] font-semibold text-white truncate mb-0.5 group-hover:text-[#00A3FF] transition-colors">{song.title}</h4>
                   <div className="flex items-center gap-1.5">
-                    {(song as any).is_explicit && <span className="px-1 bg-white/20 text-white rounded-[2px] text-[8px] font-bold">E</span>}
-                    <span className="text-[13px] font-sans text-text-muted truncate">{song.artist_name}</span>
+                    {(song as any).is_explicit && <span className="px-1 bg-white/10 text-white rounded-[3px] text-[8px] font-bold">E</span>}
+                    <span className="text-[12px] text-[#B0B0B0] truncate">{song.artist_name}</span>
                   </div>
                 </div>
-                <button className="p-2 text-white/50 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); }}>
+                <button className="p-2 text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); }}>
                   <MoreVertical size={16} />
                 </button>
               </div>
@@ -601,7 +611,11 @@ const Home: React.FC = () => {
 
       {/* Sections */}
       {recentSongs.length > 0 && (
-        <HomeSection title="Recently Played" subtitle="Jump back into your recent jams.">
+        <HomeSection 
+          title="Recently Played" 
+          subtitle="Jump back into your recent listens."
+          onViewAll={() => navigate('/library?tab=recent')}
+        >
            <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
               {recentSongs.map((song, i) => (
                 <SongCard key={`recent-${song.id}-${i}`} song={song} queue={recentSongs} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
@@ -611,7 +625,11 @@ const Home: React.FC = () => {
       )}
 
       {aiPicks.length > 0 && (
-        <HomeSection title="AI Picks For You" subtitle="Tracks you'll love based on your listening history.">
+        <HomeSection 
+          title="AI Picks For You" 
+          subtitle="Tracks tailored to your listening history."
+          onViewAll={() => navigate('/discover?filter=ai')}
+        >
            <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
               {aiPicks.map((song, i) => (
                 <SongCard key={`aipicks-${song.id}-${i}`} song={song} queue={aiPicks} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
@@ -620,74 +638,89 @@ const Home: React.FC = () => {
         </HomeSection>
       )}
 
-      <HomeSection title="Trending Hits" subtitle="The biggest tracks right now.">
+      <HomeSection 
+        title="Trending Hits" 
+        subtitle="The most popular songs across the platform right now."
+        onViewAll={() => navigate('/discover?filter=trending')}
+      >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {trendingSongs.length > 0 ? trendingSongs.map((song, i) => (
               <SongCard key={`trending-${song.id}-${i}`} song={song} queue={trendingSongs} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
             )) : (
-              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No trending tracks yet</div>
+              <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No trending tracks yet</div>
             )}
          </div>
       </HomeSection>
 
-      <HomeSection title="New Releases" subtitle="Fresh drops from your favorite local artists.">
+      <HomeSection 
+        title="New Releases" 
+        subtitle="Fresh drops from your favorite African artists."
+        onViewAll={() => navigate('/discover?filter=new')}
+      >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {newReleases.length > 0 ? newReleases.map((song, i) => (
               <SongCard key={`new-${song.id}-${i}`} song={song} queue={newReleases} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
             )) : (
-              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No new releases yet</div>
+              <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No new releases yet</div>
             )}
          </div>
       </HomeSection>
 
-      <HomeSection title="Albums & EPs" subtitle="Dive deeper into complete projects.">
+      <HomeSection 
+        title="Albums & EPs" 
+        subtitle="Dive deeper into full-length projects and compilations."
+        onViewAll={() => navigate('/discover?filter=albums')}
+      >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {albums.length > 0 ? albums.map((al: any) => (
                <div key={al.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
-                  <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
-                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async" />
+                  <div className="aspect-square rounded-[12px] overflow-hidden mb-3 relative shadow-sm border border-white/8 bg-[#1A1A1A]">
+                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{al.title}</h4>
-                  <div className="flex items-center gap-1.5 opacity-80">
-                     <span className="font-display font-black text-[9px] uppercase tracking-widest text-text-muted">{al.release_year} • Album</span>
+                  <h4 className="font-semibold text-white text-[14px] truncate group-hover:text-[#00A3FF] transition-colors mb-0.5">{al.title}</h4>
+                  <div className="flex items-center gap-1.5">
+                     <span className="text-[11px] text-[#B0B0B0]">{al.release_year ? `${al.release_year} • ` : ''}Album</span>
                   </div>
-                  <p className="font-sans text-[12px] text-text-muted truncate mt-0.5">{al.profiles?.stage_name || al.profiles?.full_name}</p>
+                  <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">{al.profiles?.stage_name || al.profiles?.full_name}</p>
                </div>
             )) : (
-              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No albums yet</div>
+              <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No albums yet</div>
             )}
          </div>
       </HomeSection>
 
       {publicPlaylists.length > 0 && (
-        <HomeSection title="Public Playlists" subtitle="Discover what others are listening to.">
+        <HomeSection 
+          title="Public Playlists" 
+          subtitle="Curated collections from creators and music lovers."
+          onViewAll={() => navigate('/discover?filter=playlists')}
+        >
            <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
               {publicPlaylists.map((pl: any) => (
                  <div key={pl.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/playlist/${pl.id}`)}>
-                    <div className="aspect-square rounded-[10px] overflow-hidden mb-3 relative shadow-sm border border-border-default">
+                    <div className="aspect-square rounded-[12px] overflow-hidden mb-3 relative shadow-sm border border-white/8 bg-[#1A1A1A]">
                        {pl.cover_url && !pl.cover_url.includes('images.unsplash.com') ? (
-                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async" />
+                          <img src={optimizeImage(pl.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                        ) : (
                           <div className="w-full h-full grid grid-cols-2 grid-rows-2">
                              {(pl.playlist_songs || []).slice(0, 4).map((ps: any, i: number) => (
                                 <img key={i} src={optimizeImage(ps.songs?.cover_url || pl.cover_url, 150, 150)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                              ))}
-                             {/* Fill empty spots if less than 4 songs */}
                              {Array.from({ length: Math.max(0, 4 - (pl.playlist_songs?.length || 0)) }).map((_, i) => (
                                 <div key={`empty-${i}`} className="w-full h-full bg-white/5" />
                              ))}
                           </div>
                        )}
                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="w-10 h-10 rounded-full bg-smash-orange flex items-center justify-center text-white transform translate-y-4 group-hover:translate-y-0 transition-all">
-                             <Play size={18} className="ml-1" />
+                          <div className="w-10 h-10 rounded-full bg-[#00A3FF] flex items-center justify-center text-white shadow-lg">
+                             <Play size={16} className="ml-0.5 fill-current" />
                           </div>
                        </div>
                     </div>
-                    <h4 className="font-sans font-bold text-white text-[14px] truncate group-hover:text-smash-purple transition-colors mb-0.5">{pl.name}</h4>
-                    <div className="flex items-center gap-1.5 opacity-80">
-                       <span className="font-display font-black text-[9px] uppercase tracking-widest text-text-muted">By {pl.profiles?.full_name || 'User'}</span>
+                    <h4 className="font-semibold text-white text-[14px] truncate group-hover:text-[#00A3FF] transition-colors mb-0.5">{pl.name}</h4>
+                    <div className="flex items-center gap-1.5">
+                       <span className="text-[11px] text-[#B0B0B0]">By {pl.profiles?.full_name || 'User'}</span>
                     </div>
                  </div>
               ))}
@@ -695,80 +728,92 @@ const Home: React.FC = () => {
         </HomeSection>
       )}
 
-      <HomeSection title="For Sale" subtitle="Support artists directly by owning their music.">
+      <HomeSection 
+        title="For Sale" 
+        subtitle="Support artists directly by purchasing and owning their music."
+        onViewAll={() => navigate('/discover?filter=sale')}
+      >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {forSaleSongs.length > 0 ? forSaleSongs.map((song, i) => (
               <SongCard key={`sale-${song.id}-${i}`} song={song} queue={forSaleSongs} layout="grid" className="min-w-[140px] md:min-w-[170px] snap-start" />
             )) : (
-              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No tracks for sale yet</div>
+              <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No tracks for sale yet</div>
             )}
          </div>
       </HomeSection>
 
-      <HomeSection title="Featured Artists" subtitle="The visionaries shaping Malawian culture.">
+      <HomeSection 
+        title="Featured Artists" 
+        subtitle="Visionary artists shaping African music culture."
+        onViewAll={() => navigate('/discover?filter=artists')}
+      >
          <div className="flex overflow-x-auto gap-6 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {topArtists.length > 0 ? topArtists.map((artist, i) => (
-              <motion.div 
+              <div 
                 key={`artist-${artist.id}-${i}`}
-                whileHover={{ y: -4 }}
                 onClick={() => navigate(`/artist/${artist.id}`)}
                 className="flex flex-col items-center gap-3 min-w-[120px] cursor-pointer snap-start group"
               >
-                 <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-smash-orange to-smash-purple group-hover:p-[3px] transition-all">
-                    <div className="w-[100px] h-[100px] rounded-full overflow-hidden border-[3px] border-[#0a0a0d]">
-                       <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full transform group-hover:scale-105 transition-transform" />
+                 <div className="relative p-[2px] rounded-full border border-white/15 group-hover:border-[#00A3FF] transition-all">
+                    <div className="w-[96px] h-[96px] rounded-full overflow-hidden border-2 border-[#0A0A0A]">
+                       <Avatar src={artist.avatar_url} name={artist.stage_name || artist.full_name} className="w-full h-full group-hover:scale-105 transition-transform" />
                     </div>
                     {artist.verified && (
-                       <div className="absolute bottom-1 right-1 w-6 h-6 bg-smash-purple rounded-full border-[3px] border-[#0a0a0d] flex items-center justify-center">
-                          <Check className="text-white w-3 h-3" />
+                       <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#00A3FF] rounded-full border-2 border-[#0A0A0A] flex items-center justify-center shadow-sm">
+                          <Check className="text-white w-2.5 h-2.5" />
                        </div>
                     )}
                  </div>
                  <div className="text-center">
-                    <p className="font-display font-bold text-[14px] truncate text-text-primary group-hover:text-smash-orange transition-colors">{artist.stage_name || (artist as any).full_name || artist.name}</p>
+                    <p className="font-semibold text-[14px] truncate text-white group-hover:text-[#00A3FF] transition-colors">{artist.stage_name || (artist as any).full_name || artist.name}</p>
+                    <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">{artist.genre || 'Artist'}</p>
                  </div>
-              </motion.div>
+              </div>
             )) : (
-              <div className="w-full py-8 text-center text-[13px] font-sans text-text-muted bg-white/5 border border-white/5 rounded-[16px]">No featured artists yet</div>
+              <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No featured artists yet</div>
             )}
          </div>
       </HomeSection>
 
       {/* Featured Charts Section */}
-      <HomeSection title="Featured Charts" subtitle="Your daily and weekly update of the most played local and global hits.">
+      <HomeSection 
+        title="Featured Charts" 
+        subtitle="Daily and weekly updates of top streaming music."
+        onViewAll={() => navigate('/discover?filter=charts')}
+      >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {FEATURED_CHARTS.map((chart) => (
                <div 
                   key={chart.id}
                   onClick={() => navigate(`/playlist/${chart.id}`)}
-                  className={`min-w-[145px] max-w-[145px] md:min-w-[180px] md:max-w-[180px] aspect-square rounded-2xl bg-gradient-to-br ${chart.style} shadow-lg relative p-4 flex flex-col justify-between cursor-pointer border border-white/10 group hover:scale-[1.03] transition-all shrink-0 snap-start`}
+                  className="min-w-[150px] max-w-[150px] md:min-w-[180px] md:max-w-[180px] aspect-square rounded-[16px] bg-[#1A1A1A] border border-white/8 hover:border-white/20 p-4 flex flex-col justify-between cursor-pointer group hover:-translate-y-1 transition-all duration-200 shrink-0 snap-start"
                >
                   <div className="flex justify-between items-start">
-                     <div className="w-6 h-6 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center">
-                        <Headphones size={11} className="text-smash-cyan animate-pulse" />
+                     <div className="w-7 h-7 rounded-[8px] bg-white/[0.04] border border-white/8 flex items-center justify-center">
+                        <Headphones size={13} className="text-[#00A3FF]" />
                      </div>
-                     <span className="text-[8px] font-display font-black tracking-widest text-white/40 uppercase">
+                     <span className="text-[10px] font-semibold text-[#00A3FF] uppercase tracking-wider">
                         {chart.type}
                      </span>
                   </div>
                   
                   <div>
-                     <h3 className="text-lg md:text-xl font-studio font-black italic tracking-tighter leading-none mb-0.5 text-white">
+                     <h3 className="text-[17px] font-bold text-white mb-0.5 leading-tight font-studio">
                         {chart.cardTitle}
                      </h3>
-                     <h4 className="text-xs font-display font-black tracking-widest text-[#1db954] uppercase leading-none">
+                     <h4 className="text-[12px] font-medium text-[#B0B0B0]">
                         {chart.cardSub}
                      </h4>
                   </div>
                   
                   <div className="flex items-center justify-between mt-1">
-                     <div className="flex items-center gap-1">
-                        <TrendingUp size={10} className="text-white/60" />
-                        <span className="text-[8px] font-sans font-black tracking-widest uppercase text-white/50">
+                     <div className="flex items-center gap-1.5">
+                        <TrendingUp size={11} className="text-[#B0B0B0]" />
+                        <span className="text-[10px] text-[#B0B0B0]">
                            {chart.iconText}
                         </span>
                      </div>
-                     <ArrowUpRight size={14} className="text-white/40 opacity-0 group-hover:opacity-100 group-hover:text-white transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                     <ArrowUpRight size={14} className="text-[#B0B0B0] group-hover:text-[#00A3FF] transition-colors" />
                   </div>
                </div>
             ))}
@@ -776,69 +821,81 @@ const Home: React.FC = () => {
       </HomeSection>
 
       {/* Support Artists Banner */}
-      <div className="mt-12 bg-gradient-to-r from-[#1E1E24] to-[#111118] border border-white/5 rounded-[20px] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden group">
-         <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-smash-orange/5 rounded-full blur-[60px] -mt-10 -mr-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
+      <div className="mt-12 bg-[#1A1A1A] border border-white/8 rounded-[20px] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden group">
          <div className="relative z-10 flex-1 text-center md:text-left flex flex-col md:flex-row md:items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0 mx-auto md:mx-0 border border-yellow-500/30 shadow-sm">
-               <Trophy className="text-yellow-500" size={24} />
+            <div className="w-12 h-12 rounded-[12px] bg-white/[0.04] border border-white/8 flex items-center justify-center shrink-0 mx-auto md:mx-0 text-[#00A3FF]">
+               <Trophy size={22} />
             </div>
             <div>
-               <h3 className="text-[20px] font-studio font-bold mb-1 text-white">
-                  Support Local Artists
+               <h3 className="text-[18px] md:text-[20px] font-bold text-white mb-1 font-studio">
+                  Support Local Creators
                </h3>
-               <p className="text-[14px] font-sans text-text-muted max-w-lg">
-                  Direct purchases go directly to artists via mobile money. Buy tracks, build the industry.
+               <p className="text-[14px] text-[#B0B0B0] max-w-lg leading-relaxed">
+                  Direct purchases go straight to artist wallets via mobile money. Buy tracks and empower African talent.
                </p>
             </div>
          </div>
          <div className="relative z-10">
-            <button onClick={() => navigate('/pricing')} className="px-6 py-3 bg-smash-orange text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-orange/90 transition-all shadow-sm">
-               Support your favorites directly
+            <button 
+              onClick={() => navigate('/pricing')} 
+              className="h-11 px-6 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] hover:brightness-110 text-white font-semibold text-[13px] rounded-[10px] transition-all shadow-[0_4px_16px_rgba(0,163,255,0.25)]"
+            >
+               Support Artists Directly
             </button>
          </div>
       </div>
 
+      {/* Notification Drawer with 200ms ease */}
       <AnimatePresence>
         {showNotifications && (
           <div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowNotifications(false)}
           >
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-[#111] border-l border-white/10 flex flex-col"
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-[#0A0A0A] border-l border-white/10 flex flex-col shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Notifications</h2>
-                <button onClick={() => setShowNotifications(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <X size={16} className="text-white" />
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
+                <div>
+                  <h2 className="text-[16px] font-bold text-white">Notifications</h2>
+                  <p className="text-[12px] text-[#B0B0B0]">Updates and new release alerts</p>
+                </div>
+                <button 
+                  onClick={() => setShowNotifications(false)} 
+                  aria-label="Close notifications"
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-[#B0B0B0] hover:text-white"
+                >
+                  <X size={16} />
                 </button>
               </div>
 
               {/* List */}
               <div className="flex-1 overflow-y-auto divide-y divide-white/5">
                 {notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-                    <Bell size={40} className="text-white/10" />
-                    <p className="text-smash-gray font-bold text-sm uppercase tracking-widest">No notifications yet</p>
-                    <p className="text-white/20 text-xs">When artists you follow drop new music or you get updates, they'll appear here.</p>
+                  <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
+                    <div className="w-14 h-14 rounded-full bg-white/[0.04] border border-white/8 flex items-center justify-center text-[#B0B0B0]">
+                      <Bell size={24} />
+                    </div>
+                    <p className="text-white font-semibold text-[14px]">No notifications yet</p>
+                    <p className="text-[#B0B0B0] text-[12px] max-w-xs leading-relaxed">When artists you follow drop new music or send updates, you will see them here.</p>
                   </div>
                 ) : (
                   notifications.map(n => (
                     <div
                       key={n.id}
                       onClick={() => { if (n.link) navigate(n.link); setShowNotifications(false); }}
-                      className={`flex items-start gap-4 px-6 py-4 transition-colors cursor-pointer hover:bg-white/5 ${!n.read ? 'bg-smash-orange/5 border-l-2 border-smash-orange' : ''}`}
+                      className={`flex items-start gap-3.5 px-6 py-4 transition-colors cursor-pointer hover:bg-white/5 ${!n.read ? 'bg-[#00A3FF]/5 border-l-2 border-[#00A3FF]' : ''}`}
                     >
-                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-smash-orange' : 'bg-white/10'}`} />
+                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-[#00A3FF]' : 'bg-white/20'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-bold leading-snug">{n.message}</p>
-                        <p className="text-white/30 text-[11px] font-bold mt-1 uppercase tracking-widest">
+                        <p className="text-white text-[13px] font-medium leading-snug">{n.message}</p>
+                        <p className="text-[#B0B0B0] text-[11px] mt-1">
                           {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -849,10 +906,10 @@ const Home: React.FC = () => {
 
               {/* Footer */}
               {notifications.length > 0 && (
-                <div className="px-6 py-4 border-t border-white/10">
+                <div className="px-6 py-4 border-t border-white/8">
                   <button
                     onClick={() => setNotifications([])}
-                    className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 text-xs font-black uppercase tracking-widest transition-colors"
+                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-[10px] text-[#B0B0B0] hover:text-white text-[12px] font-semibold transition-colors"
                   >
                     Clear All
                   </button>
@@ -864,14 +921,17 @@ const Home: React.FC = () => {
       </AnimatePresence>
 
       {/* App Download Banner */}
-      <div className="bg-gradient-to-r from-smash-purple/20 to-smash-cyan/20 border border-white/10 rounded-[24px] p-6 mt-16 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden group">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/music.png')] opacity-10 pointer-events-none group-hover:scale-105 transition-transform duration-700" />
-        <div className="relative z-10">
-          <h3 className="font-bold text-lg text-white mb-1">Get the Smashify App</h3>
-          <p className="text-sm text-white/80 font-medium">Download the official Android app for the best streaming experience and offline listening.</p>
+      <div className="bg-[#1A1A1A] border border-white/8 rounded-[20px] p-6 md:p-8 mt-16 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
+        <div>
+          <h3 className="font-bold text-[18px] text-white mb-1 font-studio">Get the Smashify App</h3>
+          <p className="text-[13px] text-[#B0B0B0]">Download the official Android APK for the best streaming and offline listening experience.</p>
         </div>
-        <div className="flex gap-4 relative z-10 w-full md:w-auto">
-          <a href="/downloads/Smashify.apk" download="Smashify.apk" className="w-full md:w-auto px-6 py-3 bg-white text-black rounded-full text-xs font-black uppercase tracking-widest hover:brightness-90 transition-all shadow-lg flex items-center justify-center gap-2">
+        <div className="flex gap-4 w-full md:w-auto">
+          <a 
+            href="/downloads/Smashify.apk" 
+            download="Smashify.apk" 
+            className="w-full md:w-auto h-11 px-6 bg-white hover:bg-white/90 text-black rounded-[10px] text-[13px] font-semibold transition-all shadow-md flex items-center justify-center gap-2"
+          >
             <Download size={16} />
             Download APK
           </a>
@@ -882,16 +942,31 @@ const Home: React.FC = () => {
   );
 };
 
-const HomeSection = ({ title, subtitle, children }: { title: string, subtitle: string, children: React.ReactNode }) => (
+const HomeSection = ({ 
+  title, 
+  subtitle, 
+  onViewAll, 
+  children 
+}: { 
+  title: string; 
+  subtitle: string; 
+  onViewAll?: () => void; 
+  children: React.ReactNode; 
+}) => (
   <section className={SECTION_SPACING}>
     <div className="flex items-end justify-between mb-4">
       <div>
-        <h2 className="text-[22px] font-studio font-bold tracking-tight text-white leading-none mb-1">{title}</h2>
-        <p className="text-[13px] font-display font-normal text-text-muted">{subtitle}</p>
+        <h2 className="text-[20px] md:text-[22px] font-studio font-bold tracking-[-0.01em] text-white leading-none mb-1">{title}</h2>
+        <p className="text-[13px] text-[#B0B0B0]">{subtitle}</p>
       </div>
-      <button className="text-[12px] font-display font-medium uppercase tracking-widest text-text-muted hover:text-white transition-all">
-         View All
-      </button>
+      {onViewAll && (
+        <button 
+          onClick={onViewAll}
+          className="text-[12px] font-semibold text-[#00A3FF] hover:underline transition-all"
+        >
+           View All
+        </button>
+      )}
     </div>
     {children}
   </section>

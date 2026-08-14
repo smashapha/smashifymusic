@@ -45,7 +45,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
   const { role, userProfile } = useAuth();
   const requireAuth = useRequireAuth();
   
-  const accentBg = role === 'artist' ? 'bg-smash-purple' : 'bg-blue-600';
+  const accentBg = role === 'artist' ? 'bg-[#8B5CF6]' : 'bg-[#00A3FF]';
   const displayDuration = adPlaying ? Math.min(30, duration || 30) : duration;
   const [showQueue, setShowQueue] = useState(false);
   const [showPlayerMenu, setShowPlayerMenu] = useState(false);
@@ -682,7 +682,8 @@ const GlobalPlayer = () => {
   const { role, userProfile } = useAuth();
   const requireAuth = useRequireAuth();
   
-  const accentColor = role === 'artist' ? 'smash-purple' : 'smash-orange';
+  const accentColor = role === 'artist' ? 'text-[#8B5CF6]' : 'text-[#00A3FF]';
+  const accentBgClass = role === 'artist' ? 'bg-[#8B5CF6]' : 'bg-[#00A3FF]';
   const displayDuration = adPlaying ? Math.min(30, duration || 30) : duration;
   
   const [isExpanded, setIsExpanded] = useState(false);
@@ -760,7 +761,7 @@ const GlobalPlayer = () => {
         <div className="fixed bottom-[calc(64px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 md:px-0 md:pb-0 md:pl-[var(--sidebar-width,240px)] pointer-events-none transition-all duration-300">
           <div className="bg-bg-surface rounded-[14px] md:rounded-none border border-border-subtle md:border-x-0 md:border-b-0 md:border-t-border-default h-[64px] md:h-[80px] w-full flex items-center px-3 md:px-6 pointer-events-auto shadow-[0px_4px_24px_rgba(0,0,0,0.1)] md:shadow-none">
             {/* Top Progress Line for Mobile (Desktop uses different layout) */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-border-default md:hidden touch-none"
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/10 md:hidden touch-none"
                onMouseDown={(e) => {
                  if (adPlaying) return;
                  const rect = e.currentTarget.getBoundingClientRect();
@@ -769,7 +770,7 @@ const GlobalPlayer = () => {
                }}
             >
               <div 
-                className={`h-full ${accentColor.replace('text-', 'bg-')} opacity-80`}
+                className={`h-full ${accentBgClass} opacity-90`}
                 style={{ width: `${(currentTime / displayDuration) * 100}%` }}
               />
             </div>
@@ -789,7 +790,7 @@ const GlobalPlayer = () => {
                   {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) && (
                     <button
                       onClick={handleBuy}
-                      className={`px-2 py-0.5 rounded-full ${isOnSale(currentSong) ? 'bg-gradient-to-r from-red-500/20 to-amber-500/20 text-red-400 border border-red-500/30 animate-pulse' : `${accentColor.replace('text-', 'bg-')}/10 ${accentColor}`} text-[9px] font-display font-bold uppercase tracking-wide flex items-center gap-1 hover:scale-105 transition-transform`}
+                      className={`px-2 py-0.5 rounded-full ${isOnSale(currentSong) ? 'bg-gradient-to-r from-red-500/20 to-amber-500/20 text-red-400 border border-red-500/30 animate-pulse' : 'bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30'} text-[9px] font-bold uppercase tracking-wide flex items-center gap-1 hover:scale-105 transition-transform`}
                     >
                       {isOnSale(currentSong) && <Zap size={10} className="text-amber-400 fill-amber-400" />}
                       <FormattedPrice song={currentSong} />
@@ -809,14 +810,14 @@ const GlobalPlayer = () => {
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white ${accentColor.replace('text-', 'bg-')} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')}`}
+                className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white ${accentBgClass} focus:outline-none shadow-md`}
               >
                 {isBuffering && isPlaying ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : isPlaying ? (
                   <Pause size={18} fill="currentColor" />
                 ) : (
-                  <Play size={18} fill="currentColor" className="ml-1" />
+                  <Play size={18} fill="currentColor" className="ml-0.5" />
                 )}
               </button>
             </div>
@@ -836,14 +837,14 @@ const GlobalPlayer = () => {
                 </button>
                 <button 
                   onClick={togglePlay}
-                  className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-surface focus:ring-${accentColor.replace('text-', '')} ${accentColor.replace('text-', 'bg-')}`}
+                  className={`w-[44px] h-[44px] rounded-full flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none ${accentBgClass} shadow-md`}
                 >
                   {isBuffering && isPlaying ? (
                   <Loader2 size={20} className="animate-spin" />
                 ) : isPlaying ? (
                   <Pause size={20} fill="currentColor" />
                 ) : (
-                  <Play size={20} fill="currentColor" className="ml-1" />
+                  <Play size={20} fill="currentColor" className="ml-0.5" />
                 )}
                 </button>
                 <button onClick={nextTrack} aria-label="Next track" disabled={adPlaying} className="text-text-muted hover:text-text-primary focus:outline-none rounded-sm">
@@ -868,15 +869,15 @@ const GlobalPlayer = () => {
                    seek(percent * displayDuration);
                  }}
               >
-                <span className="text-[10px] font-display text-text-muted w-8 text-right">{formatTime(currentTime)}</span>
-                <div className="flex-1 h-1 bg-border-default rounded-full relative overflow-visible flex items-center">
+                <span className="text-[10px] font-mono text-[#B0B0B0] w-8 text-right">{formatTime(currentTime)}</span>
+                <div className="flex-1 h-1 bg-white/10 rounded-full relative overflow-visible flex items-center">
                    <motion.div 
-                     className={`h-full ${accentColor.replace('text-', 'bg-')} rounded-full`}
+                     className={`h-full ${accentBgClass} rounded-full`}
                      style={{ width: `${(currentTime / displayDuration) * 100}%` }}
                    />
-                   <div className="absolute w-3 h-3 bg-white rounded-full shadow border border-border-default opacity-0 group-hover:opacity-100 transition-opacity -ml-1.5" style={{ left: `${(currentTime / displayDuration) * 100}%` }} />
+                   <div className="absolute w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity -ml-1.5" style={{ left: `${(currentTime / displayDuration) * 100}%` }} />
                 </div>
-                <span className="text-[10px] font-display text-text-muted w-8">{formatTime(displayDuration)}</span>
+                <span className="text-[10px] font-mono text-[#B0B0B0] w-8">{formatTime(displayDuration)}</span>
               </div>
             </div>
 
@@ -967,13 +968,13 @@ const GlobalPlayer = () => {
                   <div 
                     key={`${song.id}-${i}`}
                     ref={currentSong?.id === song.id ? currentSongRef : null}
-                    className={`p-3 rounded-[12px] flex items-center gap-3 group transition-colors cursor-pointer ${currentSong?.id === song.id ? `${accentColor.replace('text-', 'bg-')}/10 border border-${accentColor.replace('text-', '')}/20` : 'hover:bg-bg-hover'}`}
+                    className={`p-3 rounded-[12px] flex items-center gap-3 group transition-colors cursor-pointer ${currentSong?.id === song.id ? `${accentBgClass}/15 border border-white/10` : 'hover:bg-bg-hover'}`}
                     onClick={() => playSong(song)}
                   >
                     <div className="w-10 h-10 rounded-[8px] overflow-hidden flex-shrink-0 relative">
                        <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                        {currentSong?.id === song.id && (
-                         <div className={`absolute inset-0 ${accentColor.replace('text-', 'bg-')}/40 flex items-center justify-center`}>
+                         <div className={`absolute inset-0 ${accentBgClass}/40 flex items-center justify-center`}>
                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1 }}>
                              <Play size={16} fill="white" />
                            </motion.div>
@@ -1056,25 +1057,25 @@ const PreviewModal = () => {
       <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
          <motion.div 
            initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
-           className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+           className="absolute inset-0 bg-black/80 backdrop-blur-md"
            onClick={() => setSong(null)}
          />
          <motion.div 
-            initial={{ scale: 0.9, y: 20 }}
+            initial={{ scale: 0.95, y: 15 }}
             animate={{ scale: 1, y: 0 }}
-            className="relative z-10 bento-card max-w-md w-full bg-smash-dark p-12 text-center border-smash-orange/20 shadow-[0_0_100px_rgba(255,95,0,0.2)]"
+            className="relative z-10 max-w-md w-full bg-[#1A1A1A] border border-white/10 rounded-[24px] p-8 text-center shadow-2xl"
          >
-            <div className="w-20 h-20 bg-smash-orange/10 rounded-full flex items-center justify-center mx-auto mb-8">
-               <Headphones size={40} className="text-smash-orange" />
+            <div className="w-16 h-16 bg-[#00A3FF]/15 border border-[#00A3FF]/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-[#00A3FF]">
+               <Headphones size={32} />
             </div>
-            <h2 className="text-4xl font-black font-display italic uppercase tracking-tighter mb-4 leading-none">Enjoying the <span className="text-smash-orange">vibe?</span></h2>
-            <p className="text-text-secondary text-lg mb-10 font-medium tracking-tight">Buy the full track to support the artist and hear the rest of this anthem.</p>
+            <h2 className="text-2xl font-bold font-studio tracking-tight text-white mb-2 leading-snug">Enjoying the <span className="text-[#00A3FF]">Track?</span></h2>
+            <p className="text-[#B0B0B0] text-[14px] mb-8 leading-relaxed">Purchase the full track to add it permanently to your collection and support the artist.</p>
             
-            <div className="space-y-4">
-               <button onClick={handleBuy} aria-label="Buy song" className="w-full py-6 bg-smash-orange text-white rounded-[24px] font-black text-xl uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-smash-orange/20">
+            <div className="space-y-3">
+               <button onClick={handleBuy} aria-label="Buy song" className="w-full h-12 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[10px] font-semibold text-[13px] hover:brightness-110 active:scale-98 transition-all shadow-lg shadow-[#00A3FF]/20 flex items-center justify-center gap-1.5">
                   BUY NOW <FormattedPrice song={song} />
                </button>
-               <button onClick={handleDismiss} aria-label="Dismiss ad" className="w-full py-4 text-text-secondary font-display font-bold uppercase text-sm tracking-widest hover:text-text-primary hover:bg-bg-elevated rounded-xl transition-colors">
+               <button onClick={handleDismiss} aria-label="Dismiss ad" className="w-full h-10 text-[#B0B0B0] hover:text-white text-[13px] font-medium hover:bg-white/5 rounded-[10px] transition-colors">
                   Maybe Later
                </button>
             </div>

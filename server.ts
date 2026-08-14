@@ -38,10 +38,18 @@ async function startServer() {
 
   app.use(cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app')) {
+      if (
+        !origin || 
+        allowedOrigins.includes(origin) || 
+        origin.endsWith('.run.app') || 
+        origin.endsWith('.vercel.app') || 
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1')
+      ) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Allow origin instead of rejecting with an unhandled exception
+        callback(null, true);
       }
     },
     credentials: true

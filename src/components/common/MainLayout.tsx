@@ -88,7 +88,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
         {user && (
           <button aria-label="Sign out" 
             onClick={() => signOut()}
-            className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
+            className="p-2.5 bg-[#1A1A1A] border border-white/10 rounded-[8px] text-[#B0B0B0] hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#00A3FF] focus:ring-offset-2 focus:ring-offset-[#0A0A0A]"
             title="Sign Out"
           >
             <LogOut size={16} />
@@ -112,14 +112,14 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
     { icon: TrendingUp, label: 'Trending', path: '/trending' },
   ];
 
-  const activeStyle = "bg-smash-orange/10 text-smash-orange border-l-[4px] border-smash-orange";
-  const inactiveStyle = "text-text-secondary hover:bg-bg-elevated hover:text-text-primary border-l-[4px] border-transparent";
+  const activeStyle = "bg-[#00A3FF]/10 text-[#00A3FF] border-l-[3px] border-[#00A3FF]";
+  const inactiveStyle = "text-[#B0B0B0] hover:bg-white/5 hover:text-white border-l-[3px] border-transparent";
 
   return (
     <motion.aside 
       animate={{ width: isCollapsed ? 72 : 240 }} 
       transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-      className="flex flex-col h-full bg-bg-surface border-r border-border-subtle py-6 relative overflow-hidden"
+      className="flex flex-col h-full bg-[#0A0A0A] border-r border-white/10 py-6 relative overflow-hidden"
     >
       <div className="flex items-center justify-center h-8 mb-8 px-4">
         {isCollapsed ? (
@@ -127,13 +127,13 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
         ) : (
           <div className="flex w-full items-center justify-between">
             <Logo size="sm" />
-            <span className="text-[9px] uppercase font-display tracking-widest text-text-muted">{role === 'artist' ? 'ARTIST' : 'LISTENER'}</span>
+            <span className="text-[9px] uppercase font-bold tracking-widest text-[#B0B0B0]">{role === 'artist' ? 'ARTIST' : 'LISTENER'}</span>
           </div>
         )}
       </div>
 
       <nav className="flex-1 overflow-y-auto no-scrollbar pb-4">
-        {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-display font-medium uppercase tracking-widest text-text-muted">NAVIGATE</div>}
+        {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-bold uppercase tracking-widest text-[#B0B0B0]">NAVIGATE</div>}
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isItemActive = item.path.includes('?') 
@@ -144,12 +144,12 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
               <li key={item.path}>
                 <NavLink
                   to={item.path}
-                  className={`flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
+                  className={`flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
                     isItemActive ? activeStyle : inactiveStyle
-                  } ${isCollapsed && isItemActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`}
+                  } ${isCollapsed && isItemActive ? 'border-none bg-[#00A3FF]/10 text-[#00A3FF]' : ''}`}
                   title={item.label}
                 >
-                  <item.icon size={20} className={`shrink-0 ${isItemActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                  <item.icon size={20} className={`shrink-0 ${isItemActive ? 'text-[#00A3FF]' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
                   {!isCollapsed && (
                     <motion.span 
                       initial={false}
@@ -168,21 +168,21 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
 
         {user && (
           <div className="mt-8">
-            {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-display font-medium uppercase tracking-widest text-text-muted">ACCOUNT</div>}
+            {!isCollapsed && <div className="px-5 mb-2 text-[9px] font-bold uppercase tracking-widest text-[#B0B0B0]">ACCOUNT</div>}
             <ul className="space-y-1">
               <li className="relative">
                 <NavLink
                   to="/notifications"
                   className={({ isActive }) => 
-                    `w-full flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px] w-auto' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
+                    `w-full flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px] w-auto' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
                       isActive ? activeStyle : inactiveStyle
-                    } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
+                    } ${isCollapsed && isActive ? 'border-none bg-[#00A3FF]/10 text-[#00A3FF]' : ''}`
                   }
                   title="Notifications"
                 >
                   {({ isActive }) => (
                     <>
-                       <Bell size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                       <Bell size={20} className={`shrink-0 ${isActive ? 'text-[#00A3FF]' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
                        {!isCollapsed && <span className="truncate">Notifications</span>}
 
                        <AnimatePresence>
@@ -192,7 +192,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                              animate={{ scale: 1 }}
                              exit={{ scale: 0 }}
                              transition={{ type: 'spring', damping: 14, stiffness: 300 }}
-                             className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-5'} min-w-[18px] h-[18px] rounded-full bg-smash-orange text-white text-[9px] font-semibold flex items-center justify-center px-1`}
+                             className={`absolute ${isCollapsed ? 'top-1 right-1' : 'right-5'} min-w-[18px] h-[18px] rounded-full bg-[#00A3FF] text-white text-[9px] font-semibold flex items-center justify-center px-1`}
                            >
                              {unreadCount > 99 ? '99+' : unreadCount}
                            </motion.div>
@@ -207,15 +207,15 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                 <NavLink
                   to={role === 'artist' || role === 'pending' ? "/artist-hub" : "/artists"}
                   className={({ isActive }) => 
-                    `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
-                      isActive ? activeStyle : inactiveStyle
-                    } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
+                    `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
+                      isActive ? (role === 'artist' ? 'bg-[#8B5CF6]/10 text-[#8B5CF6] border-l-[3px] border-[#8B5CF6]' : activeStyle) : inactiveStyle
+                    } ${isCollapsed && isActive ? 'border-none bg-[#00A3FF]/10 text-[#00A3FF]' : ''}`
                   }
                   title="Artist Portal"
                 >
                   {({ isActive }) => (
                     <>
-                      <Mic2 size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                      <Mic2 size={20} className={`shrink-0 ${isActive ? (role === 'artist' ? 'text-[#8B5CF6]' : 'text-[#00A3FF]') : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
                       {!isCollapsed && <span className="truncate">Artist Portal</span>}
                     </>
                   )}
@@ -227,8 +227,8 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                   <NavLink
                     to="/admin"
                     className={({ isActive }) => 
-                      `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
-                        isActive ? 'text-red-400 bg-red-500/10 border-l-[4px] border-red-500' : 'text-red-400 hover:bg-red-500/10 border-l-[4px] border-transparent'
+                      `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
+                        isActive ? 'text-red-400 bg-red-500/10 border-l-[3px] border-red-500' : 'text-red-400 hover:bg-red-500/10 border-l-[3px] border-transparent'
                       } ${isCollapsed && isActive ? 'border-none text-red-400' : ''}`
                     }
                     title="Admin Panel"
@@ -247,9 +247,9 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                 <NavLink
                   to={user ? "/profile" : "/auth/listener"}
                   className={({ isActive }) => 
-                    `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-display font-medium text-[13px] transition-all group ${
+                    `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
                       isActive ? activeStyle : inactiveStyle
-                    } ${isCollapsed && isActive ? 'border-none bg-smash-orange/10 text-smash-orange' : ''}`
+                    } ${isCollapsed && isActive ? 'border-none bg-[#00A3FF]/10 text-[#00A3FF]' : ''}`
                   }
                   title="Profile"
                 >
@@ -259,7 +259,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
                          {userProfile?.avatar_url ? (
                            <img src={userProfile.avatar_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                          ) : (
-                           <User size={20} className={`shrink-0 ${isActive ? 'text-smash-orange' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
+                           <User size={20} className={`shrink-0 ${isActive ? 'text-[#00A3FF]' : 'opacity-70 group-hover:opacity-100'}`} strokeWidth={1.5} />
                          )}
                       </div>
                       {!isCollapsed && <span className="truncate">Profile</span>}
@@ -303,20 +303,20 @@ export const BottomNav = () => {
     { icon: User, label: 'PROFILE', path: user ? '/profile' : '/auth/listener' }
   ];
 
-  const activeColorClass = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
-  const activeBgClass = role === 'artist' ? 'bg-smash-purple/20' : 'bg-smash-orange/20';
+  const activeColorClass = role === 'artist' ? 'text-[#8B5CF6]' : 'text-[#00A3FF]';
+  const activeBgClass = role === 'artist' ? 'bg-[#8B5CF6]' : 'bg-[#00A3FF]';
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-bg-page border-t border-border-subtle z-40 flex items-center justify-around px-2 shadow-2xl">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-[#0A0A0A] border-t border-white/10 z-40 flex items-center justify-around px-2 shadow-2xl">
       {tabs.map(tab => (
         <NavLink 
           key={tab.path} 
           to={tab.path} aria-label={tab.label} 
-          className={({ isActive }) => `relative flex flex-col items-center justify-center gap-1 w-16 h-full ${isActive ? activeColorClass : 'text-text-muted/50 transition-colors'}`}
+          className={({ isActive }) => `relative flex flex-col items-center justify-center gap-1 w-16 h-full ${isActive ? activeColorClass : 'text-[#B0B0B0]/60 hover:text-white transition-colors'}`}
         >
           {({ isActive }) => (
             <>
-              <div className={`absolute top-1 w-[28px] h-[4px] rounded-full transition-opacity ${isActive ? activeBgClass : 'opacity-0'}`} />
+              <div className={`absolute top-1 w-[28px] h-[3px] rounded-full transition-opacity ${isActive ? activeBgClass : 'opacity-0'}`} />
               <tab.icon size={22} strokeWidth={1.5} className="mt-2" />
               <span className={`text-[9px] font-display font-medium uppercase tracking-wide transition-opacity ${isActive ? 'opacity-100' : 'opacity-50'}`}>
                 {tab.label}
