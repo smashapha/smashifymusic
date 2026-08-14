@@ -1,12 +1,27 @@
 {
-  "version": 2,
-  "routes": [
+  "rewrites": [
+    { "source": "/((?!assets/|sw.js|sw-custom.js|manifest.webmanifest|manifest.json|offline.html|favicon.ico|hero.jpg|og-image.png|pwa-192x192.png|pwa-512x512.png|apple-touch-icon.png|mask-icon.svg|smashify-icon.svg|screenshot-1.png|screenshot-2.png|downloads/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "handle": "filesystem"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(self)" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-XSS-Protection", "value": "0" }
+      ]
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://wsrv.nl https://akclwguqzeijscftatqp.supabase.co; connect-src 'self' https://akclwguqzeijscftatqp.supabase.co wss://akclwguqzeijscftatqp.supabase.co https://www.google-analytics.com https://*.supabase.co; media-src https://akclwguqzeijscftatqp.supabase.co blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        }
+      ]
     }
   ]
 }

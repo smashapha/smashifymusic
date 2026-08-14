@@ -205,7 +205,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, unreadCount }: { isCollap
 
               <li>
                 <NavLink
-                  to={role === 'artist' || role === 'pending' ? "/artist-hub" : "/artists"}
+                  to={role === 'artist' || role === 'pending' ? "/artist-hub" : "/artist-studio"}
                   className={({ isActive }) => 
                     `flex items-center h-[44px] ${isCollapsed ? 'justify-center mx-2 rounded-[10px]' : 'px-5'} gap-3 font-medium text-[13px] transition-all group ${
                       isActive ? (role === 'artist' ? 'bg-[#8B5CF6]/10 text-[#8B5CF6] border-l-[3px] border-[#8B5CF6]' : activeStyle) : inactiveStyle

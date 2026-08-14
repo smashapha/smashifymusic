@@ -170,7 +170,7 @@ const About = () => {
           <Link to="/pricing" className="px-6 py-3 bg-smash-orange text-white font-bold rounded-full hover:brightness-110 transition-all text-sm uppercase tracking-wider">
             View Pricing Plans
           </Link>
-          <Link to="/artists" className="px-6 py-3 bg-smash-purple/20 border border-smash-purple/30 text-smash-purple font-bold rounded-full hover:bg-smash-purple/30 transition-all text-sm uppercase tracking-wider">
+          <Link to="/artist-studio" className="px-6 py-3 bg-smash-purple/20 border border-smash-purple/30 text-smash-purple font-bold rounded-full hover:bg-smash-purple/30 transition-all text-sm uppercase tracking-wider">
             Join as Artist
           </Link>
         </div>
