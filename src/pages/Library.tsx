@@ -588,7 +588,7 @@ const Library: React.FC = () => {
                    {purchasedSongs.map(song => (
                      <div key={song.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
                        <img
-                         src={song.cover_url || ''}
+                         src={optimizeImage(song.cover_url, 120, 120)}
                          className="w-12 h-12 rounded-xl object-cover shrink-0"
                          alt={song.title}
                        loading="lazy" decoding="async" />

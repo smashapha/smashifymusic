@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -1595,7 +1596,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                   <tr key={song.id} className="hover:bg-bg-elevated transition-colors group">
                     <td className="px-4 py-3 first:pl-6">
                       <div className="flex items-center gap-4">
-                        <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover" loading="lazy" decoding="async" />
+                        <img src={optimizeImage(song.cover_url, 120, 120)} className="w-[40px] h-[40px] rounded-[10px] object-cover" loading="lazy" decoding="async" />
                         <div>
                           <p className="text-[14px] font-display font-semibold text-text-primary group-hover:text-smash-purple transition-colors truncate max-w-[200px]">{song.title}</p>
                           <p className="text-[12px] text-text-muted font-sans">{song.genre || 'Afro'} • {new Date(song.created_at).getFullYear()}</p>
@@ -1690,7 +1691,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
           {filteredSongs.length > 0 ? (
             filteredSongs.map((song: any) => (
               <div key={song.id} className="flex items-center gap-3 p-4 hover:bg-bg-elevated transition-colors min-h-[72px]">
-                <img src={song.cover_url || "https://placehold.co/80"} className="w-[40px] h-[40px] rounded-[10px] object-cover shrink-0" loading="lazy" decoding="async" />
+                <img src={optimizeImage(song.cover_url, 120, 120)} className="w-[40px] h-[40px] rounded-[10px] object-cover shrink-0" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                   <p className="text-[14px] font-display font-semibold text-text-primary truncate">{song.title}</p>
                   <p className="text-[12px] text-text-muted font-sans truncate">{song.genre || 'Afro'} • {formatCount(song.plays)} plays</p>
@@ -1779,7 +1780,7 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
         {albums.map((al:any) => (
           <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-smash-purple/50 transition-all group shadow-sm flex flex-col">
             <div className="aspect-square rounded-[10px] overflow-hidden relative mb-4">
-              <img src={al.cover_url || "https://placehold.co/300x300/18162C/9B5DE5"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+              <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
                 <button className="px-4 py-2 bg-smash-purple text-white text-[11px] font-display font-semibold uppercase tracking-widest rounded-[8px] hover:bg-smash-purple/90 transition-all">View Songs</button>
               </div>
@@ -2848,7 +2849,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                    {featuredArtists.map(f => (
                                      <div key={f.name} className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 border border-smash-purple/30 rounded-full">
                                        {f.avatarUrl ? (
-                                         <img src={f.avatarUrl} className="w-5 h-5 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
+                                         <img src={optimizeImage(f.avatarUrl, 80, 80)} className="w-5 h-5 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
                                        ) : (
                                          <div className="w-5 h-5 rounded-full bg-smash-purple/40 flex items-center justify-center text-[9px] font-black text-white">
                                            {f.name[0]}
@@ -2910,7 +2911,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
                                        >
                                          {artist.avatar_url ? (
-                                           <img src={artist.avatar_url} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" loading="lazy" decoding="async" />
+                                           <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                                          ) : (
                                            <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center font-black text-smash-purple shrink-0">
                                              {(artist.stage_name || artist.full_name || '?')[0]}
@@ -3732,7 +3733,7 @@ const AnalyticsTab = ({ userProfile }: any) => {
             return (
               <div key={song.id} className="flex items-center gap-4">
                 <span className="text-[10px] font-black text-smash-gray w-4 shrink-0">#{i + 1}</span>
-                <img src={song.cover_url || ''} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" loading="lazy" decoding="async" />
+                <img src={optimizeImage(song.cover_url, 120, 120)} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-bold text-white truncate">{song.title}</p>

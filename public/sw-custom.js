@@ -6,9 +6,10 @@ const offlineFallbackPage = "/offline.html";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Only cache offline fallback explicitly
+      // Cache offline fallback and root
       return cache.addAll([
-        offlineFallbackPage
+        offlineFallbackPage,
+        "/"
       ]);
     })
   );

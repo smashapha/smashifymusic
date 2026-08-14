@@ -54,13 +54,6 @@ export default defineConfig(() => {
               ms_ac_template: 'widget.json',
               data: 'widget-data.json',
               type: 'application/json',
-              screenshots: [
-                {
-                  src: '/screenshot-1.png',
-                  sizes: '1200x630',
-                  label: 'Smashify Widget'
-                }
-              ],
               icons: [
                 {
                   src: '/pwa-192x192.png',

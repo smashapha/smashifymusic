@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from "motion/react";
 import { 
@@ -324,7 +325,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       {/* Background Layer */}
       <div className="absolute inset-0 bg-smash-black">
         <img 
-          src={song.cover_url} 
+          src={optimizeImage(song.cover_url, 600, 600)} 
           className="w-full h-full object-cover blur-3xl opacity-40 scale-150" 
           alt="" 
         loading="lazy" decoding="async" />
@@ -345,7 +346,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
            className="relative aspect-square w-full max-w-[340px] md:max-w-[400px] shadow-[0_0_80px_rgba(255,95,0,0.3)] group"
          >
             <img 
-              src={song.cover_url} 
+              src={optimizeImage(song.cover_url, 600, 600)} 
               className={`w-full h-full object-cover rounded-[40px] md:rounded-[60px] border-4 border-white/10 ${isPlaying ? 'animate-pulse' : ''}`} 
               alt={formatDisplayTitle(song.title)} 
               referrerPolicy="no-referrer"

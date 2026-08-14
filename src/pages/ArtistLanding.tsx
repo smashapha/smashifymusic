@@ -1,3 +1,4 @@
+import { optimizeImage } from "../lib/imageUtils";
 import React, { useState, useEffect } from 'react';
 import { motion } from "motion/react";
 import { 
@@ -224,7 +225,7 @@ const ArtistLanding: React.FC = () => {
                {topEarners.length > 0 ? (
                  topEarners.map((earner, i) => (
                    <div key={earner.id} className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated overflow-hidden hover:z-10 hover:-translate-y-2 transition-all cursor-pointer">
-                      <img src={earner.avatar_url || "https://placehold.co/100"} className="w-full h-full object-cover" alt="" title={earner.stage_name} loading="lazy" decoding="async" />
+                      <img src={optimizeImage(earner.avatar_url, 150, 150)} className="w-full h-full object-cover" alt="" title={earner.stage_name} loading="lazy" decoding="async" />
                    </div>
                  ))
                ) : (
