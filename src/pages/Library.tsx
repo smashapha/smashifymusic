@@ -94,11 +94,53 @@ const Library: React.FC = () => {
         .from('fan_purchases')
         .select('song_id, purchased_at, songs(id, title, artist_name, cover_url, audio_url, duration_seconds)')
         .eq('fan_id', userProfile.id)
-        .eq('status', 'completed')
         .order('purchased_at', { ascending: false });
       setPurchasedSongs(data?.map(p => ({ ...(p.songs as any), purchasedAt: p.purchased_at })) || []);
     };
     fetchPurchased();
+  }, [userProfile?.id]);
+
+  useEffect(() => {
+    const fetchUserPlaylists = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data: simpleData, error: simpleErr } = await supabase
+          .from('playlists')
+          .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id)')
+          .eq('profile_id', userProfile.id)
+          .order('created_at', { ascending: false });
+
+        if (!simpleErr && simpleData) {
+          const allSongIds = new Set<string>();
+          simpleData.forEach((pl: any) => {
+            (pl.playlist_songs || []).forEach((ps: any) => {
+              if (ps.song_id) allSongIds.add(ps.song_id);
+            });
+          });
+          
+          let fetchedSongs: Record<string, any> = {};
+          if (allSongIds.size > 0) {
+            const { data: sData } = await supabase
+              .from('songs')
+              .select('id, cover_url')
+              .in('id', Array.from(allSongIds));
+            (sData || []).forEach(s => { fetchedSongs[s.id] = s; });
+          }
+          
+          const playlistsResult = simpleData.map((pl: any) => ({
+            ...pl,
+            playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+              ...ps,
+              songs: fetchedSongs[ps.song_id] || null
+            }))
+          }));
+          setPlaylists(playlistsResult);
+        }
+      } catch (err) {
+        console.error('Error fetching playlists initial count:', err);
+      }
+    };
+    fetchUserPlaylists();
   }, [userProfile?.id]);
 
   const handlePlaylistClick = async (pl: any) => {
@@ -167,6 +209,7 @@ const Library: React.FC = () => {
           is_for_sale: false,
         }));
         setSongs(formatted as any);
+        setPurchasedSongs(formatted as any);
       } else if (activeTab === 'likes') {
         const { data: likes, error: lError } = await supabase
           .from('likes')
@@ -215,47 +258,36 @@ const Library: React.FC = () => {
       } else if (activeTab === 'playlists') {
         let playlistsResult: any[] = [];
         try {
-          const { data: playlistsData, error: plError } = await supabase
+          const { data: simpleData, error: simpleErr } = await supabase
             .from('playlists')
-            .select('*, playlist_songs(id, songs(*, profiles:artist_id(full_name, stage_name)))')
+            .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id)')
             .eq('profile_id', userProfile?.id)
             .order('created_at', { ascending: false });
-          
-          if (!plError && playlistsData) {
-            playlistsResult = playlistsData;
-          } else {
-            console.warn('Nested query failed, attempting simple playlist query:', plError);
-            const { data: simpleData, error: simpleErr } = await supabase
-              .from('playlists')
-              .select('*, playlist_songs(id, song_id)')
-              .eq('profile_id', userProfile?.id)
-              .order('created_at', { ascending: false });
 
-            if (!simpleErr && simpleData) {
-              const allSongIds = new Set<string>();
-              simpleData.forEach((pl: any) => {
-                (pl.playlist_songs || []).forEach((ps: any) => {
-                  if (ps.song_id) allSongIds.add(ps.song_id);
-                });
+          if (!simpleErr && simpleData) {
+            const allSongIds = new Set<string>();
+            simpleData.forEach((pl: any) => {
+              (pl.playlist_songs || []).forEach((ps: any) => {
+                if (ps.song_id) allSongIds.add(ps.song_id);
               });
-              
-              let fetchedSongs: Record<string, any> = {};
-              if (allSongIds.size > 0) {
-                const { data: sData } = await supabase
-                  .from('songs')
-                  .select('id, cover_url')
-                  .in('id', Array.from(allSongIds));
-                (sData || []).forEach(s => fetchedSongs[s.id] = s);
-              }
-              
-              playlistsResult = simpleData.map((pl: any) => ({
-                ...pl,
-                playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
-                  ...ps,
-                  songs: fetchedSongs[ps.song_id] || null
-                }))
-              }));
+            });
+            
+            let fetchedSongs: Record<string, any> = {};
+            if (allSongIds.size > 0) {
+              const { data: sData } = await supabase
+                .from('songs')
+                .select('id, cover_url')
+                .in('id', Array.from(allSongIds));
+              (sData || []).forEach(s => { fetchedSongs[s.id] = s; });
             }
+            
+            playlistsResult = simpleData.map((pl: any) => ({
+              ...pl,
+              playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+                ...ps,
+                songs: fetchedSongs[ps.song_id] || null
+              }))
+            }));
           }
         } catch (e) {
           console.error('Error fetching playlists tab:', e);

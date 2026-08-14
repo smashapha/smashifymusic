@@ -97,51 +97,62 @@ const Discover: React.FC = () => {
     fetchAllSongs();
 
     const fetchPublicPlaylists = async () => {
-      let resultData: any[] = [];
-      const { data, error } = await supabase
-        .from('playlists')
-        .select('id, name, cover_url, profile_id, playlist_songs(songs(cover_url)), profiles:profile_id(full_name, avatar_url)')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(12);
-        
-      if (error) {
-        console.warn('Nested query failed in Discover, attempting manual join', error);
-        const { data: fallbackData } = await supabase
+      try {
+        const { data: playlistsData, error } = await supabase
           .from('playlists')
-          .select('id, name, cover_url, profile_id, playlist_songs(song_id), profiles:profile_id(full_name, avatar_url)')
+          .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id)')
           .eq('is_public', true)
           .order('created_at', { ascending: false })
           .limit(12);
-          
-        if (fallbackData) {
-          const allSongIds = new Set<string>();
-          fallbackData.forEach(pl => {
-            (pl.playlist_songs || []).forEach((ps: any) => {
-              if (ps.song_id) allSongIds.add(ps.song_id);
-            });
-          });
-          
-          let fetchedSongs: Record<string, any> = {};
-          if (allSongIds.size > 0) {
-            const { data: sData } = await supabase
-              .from('songs')
-              .select('id, cover_url')
-              .in('id', Array.from(allSongIds));
-            (sData || []).forEach(s => fetchedSongs[s.id] = s);
-          }
-          
-          resultData = fallbackData.map(pl => ({
-            ...pl,
-            playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
-              songs: fetchedSongs[ps.song_id] || null
-            }))
-          }));
+
+        if (error || !playlistsData) {
+          console.error('Error fetching public playlists in Discover:', error);
+          setPublicPlaylists([]);
+          return;
         }
-      } else {
-        resultData = data || [];
+
+        const allSongIds = new Set<string>();
+        const allProfileIds = new Set<string>();
+
+        playlistsData.forEach((pl: any) => {
+          if (pl.profile_id) allProfileIds.add(pl.profile_id);
+          (pl.playlist_songs || []).forEach((ps: any) => {
+            if (ps.song_id) allSongIds.add(ps.song_id);
+          });
+        });
+
+        let songsLookup: Record<string, any> = {};
+        if (allSongIds.size > 0) {
+          const { data: sData } = await supabase
+            .from('songs')
+            .select('id, cover_url')
+            .in('id', Array.from(allSongIds));
+          (sData || []).forEach(s => { songsLookup[s.id] = s; });
+        }
+
+        let profilesLookup: Record<string, any> = {};
+        if (allProfileIds.size > 0) {
+          const { data: pData } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', Array.from(allProfileIds));
+          (pData || []).forEach(p => { profilesLookup[p.id] = p; });
+        }
+
+        const resultData = playlistsData.map((pl: any) => ({
+          ...pl,
+          profiles: pl.profile_id ? (profilesLookup[pl.profile_id] || null) : null,
+          playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+            ...ps,
+            songs: songsLookup[ps.song_id] || null
+          }))
+        }));
+
+        setPublicPlaylists(resultData);
+      } catch (err) {
+        console.error('Error in fetchPublicPlaylists:', err);
+        setPublicPlaylists([]);
       }
-      setPublicPlaylists(resultData);
     };
     fetchPublicPlaylists();
   }, [userProfile]);
@@ -941,16 +952,29 @@ const Discover: React.FC = () => {
                     Full Catalogue
                   </h2>
                 </div>
-                <div className="flex flex-col gap-2">
-                  {songs.map((song, i) => (
-                    <SongCard
-                      key={`all-songs-row-${song.id}-${i}`}
-                      song={song}
-                      queue={songs}
-                      layout="list"
-                    />
-                  ))}
-                </div>
+                {viewMode === "grid" ? (
+                  <div className={GRID_SONG_CARDS}>
+                    {songs.map((song, i) => (
+                      <SongCard
+                        key={`all-songs-grid-${song.id}-${i}`}
+                        song={song}
+                        queue={songs}
+                        layout="grid"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {songs.map((song, i) => (
+                      <SongCard
+                        key={`all-songs-row-${song.id}-${i}`}
+                        song={song}
+                        queue={songs}
+                        layout="list"
+                      />
+                    ))}
+                  </div>
+                )}
                 {hasMoreSongs && (
                   <div className="pt-2">
                     <button

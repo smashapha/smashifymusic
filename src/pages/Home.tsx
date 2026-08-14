@@ -274,26 +274,23 @@ const Home: React.FC = () => {
       }
 
       // Fetch Public Playlists
-      let resultData: any[] = [];
-      const { data: plData, error: plError } = await supabase
-        .from('playlists')
-        .select('id, name, cover_url, profile_id, is_public, playlist_songs(songs(cover_url)), profiles:profile_id(full_name, avatar_url)')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-        
-      if (plError) {
-        console.warn('Nested query failed in Home, attempting manual join', plError);
-        const { data: fallbackData } = await supabase
+      try {
+        const { data: plData, error: plError } = await supabase
           .from('playlists')
-          .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id), profiles:profile_id(full_name, avatar_url)')
+          .select('id, name, cover_url, profile_id, is_public, playlist_songs(song_id)')
           .eq('is_public', true)
           .order('created_at', { ascending: false })
           .limit(10);
           
-        if (fallbackData) {
+        if (plError || !plData) {
+          console.error('Error fetching public playlists in Home:', plError);
+          setPublicPlaylists([]);
+        } else {
           const allSongIds = new Set<string>();
-          fallbackData.forEach(pl => {
+          const allProfileIds = new Set<string>();
+
+          plData.forEach((pl: any) => {
+            if (pl.profile_id) allProfileIds.add(pl.profile_id);
             (pl.playlist_songs || []).forEach((ps: any) => {
               if (ps.song_id) allSongIds.add(ps.song_id);
             });
@@ -305,20 +302,32 @@ const Home: React.FC = () => {
               .from('songs')
               .select('id, cover_url')
               .in('id', Array.from(allSongIds));
-            (sData || []).forEach(s => fetchedSongs[s.id] = s);
+            (sData || []).forEach(s => { fetchedSongs[s.id] = s; });
+          }
+
+          let profilesLookup: Record<string, any> = {};
+          if (allProfileIds.size > 0) {
+            const { data: pData } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', Array.from(allProfileIds));
+            (pData || []).forEach(p => { profilesLookup[p.id] = p; });
           }
           
-          resultData = fallbackData.map(pl => ({
+          const resultData = plData.map((pl: any) => ({
             ...pl,
+            profiles: pl.profile_id ? (profilesLookup[pl.profile_id] || null) : null,
             playlist_songs: (pl.playlist_songs || []).map((ps: any) => ({
+              ...ps,
               songs: fetchedSongs[ps.song_id] || null
             }))
           }));
+          setPublicPlaylists(resultData);
         }
-      } else {
-        resultData = plData || [];
+      } catch (err) {
+        console.error('Error in Home playlists fetch:', err);
+        setPublicPlaylists([]);
       }
-      setPublicPlaylists(resultData);
 
       if (userProfile) {
         const { data: recentData } = await supabase
