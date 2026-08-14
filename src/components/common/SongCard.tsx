@@ -105,7 +105,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
         const { data } = await supabase
           .from('likes')
           .select('id')
-          .eq('user_id', userProfile.id)
+          .eq('profile_id', userProfile.id)
           .eq('song_id', song.id)
           .maybeSingle();
 

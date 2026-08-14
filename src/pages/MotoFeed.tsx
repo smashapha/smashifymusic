@@ -51,14 +51,39 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   useEffect(() => {
     const fetchComments = async () => {
-      const { data, count } = await supabase
-        .from('moto_comments')
-        .select('*, profiles:profile_id(stage_name, full_name, avatar_url)', { count: 'exact' })
-        .eq('song_id', song.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (data) setComments(data.reverse());
-      if (count !== null) setCommentCount(count);
+      try {
+        const { data, count, error } = await supabase
+          .from('moto_comments')
+          .select('id, song_id, profile_id, content, created_at', { count: 'exact' })
+          .eq('song_id', song.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        if (error || !data) {
+          console.error('Error fetching moto_comments:', error);
+          return;
+        }
+
+        const profileIds = Array.from(new Set(data.map((c: any) => c.profile_id).filter(Boolean)));
+        let profilesLookup: Record<string, any> = {};
+        if (profileIds.length > 0) {
+          const { data: pData } = await supabase
+            .from('profiles')
+            .select('id, stage_name, full_name, avatar_url')
+            .in('id', profileIds);
+          (pData || []).forEach((p: any) => { profilesLookup[p.id] = p; });
+        }
+
+        const merged = data.map((c: any) => ({
+          ...c,
+          profiles: c.profile_id ? (profilesLookup[c.profile_id] || null) : null
+        }));
+
+        setComments(merged.reverse());
+        if (count !== null) setCommentCount(count);
+      } catch (err) {
+        console.error('Error in fetchComments:', err);
+      }
     };
     fetchComments();
 
@@ -90,31 +115,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       window.addEventListener('motofeed_like_trigger', handleGlobalLike);
       return () => window.removeEventListener('motofeed_like_trigger', handleGlobalLike);
   }, [active, isLiked, song.id]);
-  
-  const logEvent = async (eventType: string) => {
-    try {
-      if (!song.id || eventType === 'play_started') return; // ignore initial load spam
-      await supabase.from('moto_events').insert({
-         song_id: song.id,
-         profile_id: userProfile?.id,
-         event_type: eventType
-      });
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    if (active) {
-      logEvent('play');
-    }
-  }, [active]);
-
-  const [hasLoggedComplete, setHasLoggedComplete] = useState(false);
-  useEffect(() => {
-    if (active && duration > 0 && currentTime > duration * 0.8 && !hasLoggedComplete) {
-      logEvent('complete');
-      setHasLoggedComplete(true);
-    }
-  }, [currentTime, duration, active, hasLoggedComplete]);
 
   // Sync likes with global events and DB
   useEffect(() => {
@@ -131,7 +131,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       const { data } = await supabase
         .from('likes')
         .select('*')
-        .eq('user_id', userProfile.id)
+        .eq('profile_id', userProfile.id)
         .eq('song_id', song.id)
         .maybeSingle();
       
@@ -166,7 +166,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       handleLike({ stopPropagation: () => {} }); // swipe right = like
     } else if (info.offset.x < -100) {
       // swipe left = skip / pass
-      logEvent('skip');
       onSkip();
     }
   };
@@ -215,7 +214,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
     setIsLiked(!previouslyLiked);
 
     if (!previouslyLiked) {
-       logEvent('like');
        setLikeCount((prev: number) => prev + 1);
     } else {
        setLikeCount((prev: number) => prev > 0 ? prev - 1 : 0);
@@ -273,7 +271,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    logEvent('buy_tap');
     requireAuth(() => {
       purchaseTrack({
          song,
@@ -284,7 +281,6 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    logEvent('share');
     try {
        await supabase.rpc('increment_shares', { song_id: song.id });
     } catch {}
