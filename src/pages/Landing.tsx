@@ -4,7 +4,7 @@ import {
   Headphones, Check, Star, Play, 
   Wallet, UploadCloud, Banknote, Smartphone,
   Infinity as InfinityIcon, Download, ShieldCheck, Heart, LayoutDashboard,
-  ArrowRight, Shield
+  ArrowRight, Shield, Mic2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
@@ -244,7 +244,7 @@ const Landing: React.FC = () => {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start mb-12">
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
               <button
                 id="hero-start-listening-btn"
                 onClick={() => navigate('/home')}
@@ -263,7 +263,24 @@ const Landing: React.FC = () => {
                 <Smartphone size={18} />
                 Download Android App
               </a>
+
+              <button
+                id="hero-artist-cta-btn"
+                onClick={() => navigate('/auth/artist')}
+                className="h-12 px-7 bg-white/[0.04] border border-white/10 hover:border-[#00A3FF]/50 text-white hover:text-[#00A3FF] rounded-[10px] text-[14px] font-semibold transition-all flex items-center justify-center gap-2.5 w-full sm:w-auto"
+              >
+                <Mic2 size={18} className="text-[#00A3FF]" />
+                For Artists
+              </button>
             </div>
+
+            {/* Secondary artist link */}
+            <p className="text-[13px] text-[#B0B0B0] mt-4 mb-12">
+              Are you an artist?{" "}
+              <Link to="/auth/artist" className="text-[#00A3FF] font-medium hover:underline underline-offset-4 transition-all">
+                Apply for the Artist Studio →
+              </Link>
+            </p>
 
             {/* Trust Row */}
             <div className="pt-8 border-t border-white/8 grid grid-cols-3 gap-3 text-left">
