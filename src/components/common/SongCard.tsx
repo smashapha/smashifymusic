@@ -10,7 +10,7 @@ import { getEffectivePrice, isOnSale } from '../../lib/pricing';
 import { downloadPurchasedSong, handleTrackDownload } from '../../lib/downloads';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineSong } from '../../lib/offlineSync';
-import { OfflineButton } from './OfflineButton';
+import { OfflineTrackButton } from './OfflineTrackButton';
 import { supabase } from '../../lib/supabase';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
@@ -330,7 +330,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
              </p>
            </div>
            <div className="flex items-center gap-1 shrink-0">
-             <OfflineButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
+             <OfflineTrackButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
              <button
                onClick={handleLike}
                className={`p-1 rounded-full transition-colors ${isLiked ? 'text-red-400' : 'text-text-muted opacity-0 group-hover:opacity-100'}`}
@@ -432,7 +432,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            >
               <Gift size={16} />
            </button>
-           <OfflineButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
+           <OfflineTrackButton isSaved={isSaved} isCachedLocal={isCachedLocal} cacheProgress={cacheProgress} toggleOffline={toggleOffline} song={song} navigate={navigate} />
            <button 
              onClick={handleLike}
              className={`p-2 rounded-full hover:bg-bg-elevated transition-colors ${isLiked ? 'text-red-400 opacity-100' : 'text-text-muted opacity-40 group-hover:opacity-100'}`}
