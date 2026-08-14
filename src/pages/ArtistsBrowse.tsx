@@ -84,11 +84,11 @@ const ArtistsBrowse: React.FC = () => {
 
   // Filter artists by search query (stage_name, full_name, genre) and selected genre
   const filteredArtists = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return artists.filter((a) => {
       const stageName = (a.stage_name || '').toLowerCase();
       const fullName = (a.full_name || '').toLowerCase();
       const genre = (a.genre || '').toLowerCase();
-      const q = searchQuery.toLowerCase().trim();
 
       const matchesSearch =
         !q ||
@@ -150,39 +150,50 @@ const ArtistsBrowse: React.FC = () => {
         </div>
       </div>
 
-      {/* Dynamic Genre Chips Row */}
-      {genres.length > 0 && (
-        <div className="sticky top-0 z-30 bg-[#0A0A0A]/90 backdrop-blur-md py-2.5 -mx-4 px-4 md:-mx-0 md:px-0 border-b border-white/5">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <button
-              onClick={() => setSelectedGenre(null)}
-              className={`h-8 px-4 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center ${
-                !selectedGenre
-                  ? 'bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold'
-                  : 'bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20'
-              }`}
-            >
-              All
-            </button>
-            {genres.map((genre) => {
-              const isSelected = selectedGenre === genre;
-              return (
-                <button
-                  key={genre}
-                  onClick={() => setSelectedGenre(isSelected ? null : genre)}
-                  className={`h-8 px-3.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold'
-                      : 'bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20'
-                  }`}
-                >
-                  <span>{genre}</span>
-                </button>
-              );
-            })}
+      {/* Dynamic Genre Chips Row & Results Count */}
+      <div className="space-y-3">
+        {genres.length > 0 && (
+          <div className="sticky top-0 z-30 bg-[#0A0A0A]/90 backdrop-blur-md py-2.5 -mx-4 px-4 md:-mx-0 md:px-0 border-b border-white/5">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+              <button
+                onClick={() => setSelectedGenre(null)}
+                className={`h-8 px-4 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center ${
+                  !selectedGenre
+                    ? 'bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold'
+                    : 'bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20'
+                }`}
+              >
+                All
+              </button>
+              {genres.map((genre) => {
+                const isSelected = selectedGenre === genre;
+                return (
+                  <button
+                    key={genre}
+                    onClick={() => setSelectedGenre(isSelected ? null : genre)}
+                    className={`h-8 px-3.5 rounded-full text-[13px] font-medium transition-all whitespace-nowrap border shrink-0 flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF]/40 font-semibold'
+                        : 'bg-[#1A1A1A] text-[#B0B0B0] border-white/10 hover:text-white hover:border-white/20'
+                    }`}
+                  >
+                    <span>{genre}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {!loading && (
+          <div className="flex items-center justify-between px-0.5">
+            <p className="text-[12px] font-mono text-[#737373]">
+              {filteredArtists.length} {filteredArtists.length === 1 ? 'artist' : 'artists'}
+              {selectedGenre ? ` in ${selectedGenre}` : ''}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Content Section */}
       <AnimatePresence mode="wait">
@@ -246,6 +257,7 @@ const ArtistsBrowse: React.FC = () => {
               const displayName = artist.stage_name || artist.full_name || 'Artist';
               const genreLabel = artist.genre || 'Afrobeats';
               const isElite = artist.artist_tier === 'Elite' || artist.artist_tier === 'Label';
+              const songCountLabel = count === 0 ? 'New artist' : `${count} ${count === 1 ? 'song' : 'songs'}`;
 
               return (
                 <div
@@ -292,7 +304,7 @@ const ArtistsBrowse: React.FC = () => {
                       {genreLabel}
                     </p>
                     <span className="text-[12px] text-[#737373] font-mono shrink-0">
-                      {count} {count === 1 ? 'song' : 'songs'}
+                      {songCountLabel}
                     </span>
                   </div>
                 </div>
