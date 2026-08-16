@@ -10,6 +10,7 @@ import { upgradeListenerPlan } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import Logo from '../components/common/Logo';
 import BrandLoader from '../components/common/BrandLoader';
+import { migrateLegacyDownloads } from '../lib/offlineCache';
 
 type AuthMode = 'login' | 'signup';
 type PlanChoice = 'Free' | 'Premium' | 'Family';
@@ -68,8 +69,11 @@ const AuthListener: React.FC = () => {
     setLoadingState(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.user) {
+        migrateLegacyDownloads(data.user.id).catch(console.error);
+      }
       toast.success('Welcome back!');
     } catch (err: any) {
       setError(err.message);
@@ -157,6 +161,8 @@ const AuthListener: React.FC = () => {
         user_type: 'listener'
       }, { onConflict: 'id' });
       if (profileError) throw profileError;
+      
+      migrateLegacyDownloads(data.user.id).catch(console.error);
       
       const userProfileObj = { id: data.user.id, email, full_name: fullName, is_artist: false };
 

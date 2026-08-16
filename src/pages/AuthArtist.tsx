@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import Logo from '../components/common/Logo';
+import { migrateLegacyDownloads } from '../lib/offlineCache';
 import BrandLoader from '../components/common/BrandLoader';
 
 type AuthMode = 'login' | 'signup';
@@ -83,8 +84,11 @@ const AuthArtist: React.FC = () => {
     setLoadingState(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.user) {
+        migrateLegacyDownloads(data.user.id).catch(console.error);
+      }
       toast.success('Studio unlocked!');
     } catch (err: any) {
       setError(err.message);
@@ -230,6 +234,8 @@ const AuthArtist: React.FC = () => {
       if (profileError) {
         console.error('profiles insert failed:', profileError.message);
       }
+      
+      migrateLegacyDownloads(userId).catch(console.error);
 
       toast.success('Application submitted! We will review within 48 hours.');
       setArtistStep(4);

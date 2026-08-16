@@ -29,7 +29,7 @@ import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
 import { handleTrackDownload } from '../lib/downloads';
 import { fetchSavedSongIds, removeSavedSong } from '../lib/offlineSync';
-import { getStorageInfo, getOfflineLimit, clearAllCached, cacheSong, removeCachedSong, isCached } from '../lib/offlineCache';
+import { getStorageInfo, getOfflineLimit, clearAllCached, cacheSong, removeCachedSong, isCached, migrateLegacyDownloads } from '../lib/offlineCache';
 import { OfflineTrackRow } from '../components/common/OfflineTrackRow';
 import { getListenerLimits, getListenerTier } from '../lib/tierUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS } from '../lib/layout';
@@ -66,6 +66,13 @@ const Library: React.FC = () => {
   const [purchasedSongs, setPurchasedSongs] = useState<any[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState<number>(0);
+  const [storageInfo, setStorageInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (userProfile?.id) {
+      migrateLegacyDownloads(userProfile.id).catch(console.error);
+    }
+  }, [userProfile?.id]);
 
   useEffect(() => {
     if (tabParam && ['purchased', 'likes', 'downloads', 'playlists'].includes(tabParam) && tabParam !== activeTab) {
@@ -540,13 +547,7 @@ const Library: React.FC = () => {
           </button>
 
           <button
-            onClick={() => {
-              if (!limits.canDownload && purchasedSongs.length === 0) {
-                toast.error('Offline saves require Weekly Pass or higher. Buy tracks to access your purchases here.');
-                return;
-              }
-              handleTabChange('downloads');
-            }}
+            onClick={() => handleTabChange('downloads')}
             className={`flex items-center gap-2 text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all whitespace-nowrap ${
               activeTab === 'downloads'
                 ? 'bg-white text-black shadow-sm'
@@ -932,8 +933,42 @@ const Library: React.FC = () => {
               )}
             </div>
 
-            {/* 2. Premium Offline Saves Upgrade Card (if non-premium) */}
-            {!limits.canDownload && (
+            {/* 2. Storage Info Card */}
+            <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white font-semibold text-[15px]">Offline storage</h4>
+                <span className="text-[#B0B0B0] text-[13px] font-mono">
+                  {songs.length} of {getOfflineLimit(userProfile)} songs · {storageInfo ? (storageInfo.usage / (1024 * 1024)).toFixed(1) : '0.0'}MB
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-full bg-[#00A3FF]" style={{ width: `${Math.min(100, (songs.length / getOfflineLimit(userProfile)) * 100)}%` }} />
+              </div>
+              <div className="flex items-center justify-between">
+                {getOfflineLimit(userProfile) === 5 ? (
+                   <button onClick={() => navigate('/pricing')} className="text-[#00A3FF] hover:underline text-[13px] font-medium transition-all">
+                     Upgrade for 50
+                   </button>
+                ) : <div />}
+                <button
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to clear all offline songs?')) {
+                      await clearAllCached();
+                      setSongs([]);
+                      toast.success('Cleared all offline songs');
+                      const info = await getStorageInfo();
+                      setStorageInfo(info);
+                    }
+                  }}
+                  className="text-[#FF453A] hover:bg-[#FF453A]/10 px-3 py-1.5 rounded-[10px] text-[13px] font-semibold transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Premium Offline Saves Upgrade Card (if non-premium AND reached limit) */}
+            {!limits.canDownload && songs.length >= 5 && (
               <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
@@ -941,10 +976,10 @@ const Library: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold text-[15px]">
-                      Offline saves are a Premium feature
+                      Offline limit reached
                     </h4>
                     <p className="text-[#B0B0B0] text-[13px] mt-0.5">
-                      Upgrade to Weekly Pass or Premium to cache unlimited songs for offline playback.
+                      Upgrade to Weekly Pass or Premium to cache up to 50 songs for offline playback.
                     </p>
                   </div>
                 </div>
@@ -957,36 +992,34 @@ const Library: React.FC = () => {
               </div>
             )}
 
-            {/* 3. Saved Offline Tracks list */}
-            {limits.canDownload && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
-                    CACHED
-                  </p>
-                  <h3 className="text-xl font-studio font-bold text-white">
-                    Saved Offline
-                  </h3>
-                </div>
-                {filteredSongs.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {filteredSongs.map((song, i) => (
-                      <SongCard key={`library-offline-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
-                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3 text-[#B0B0B0]">
-                      <Download size={22} />
-                    </div>
-                    <h4 className="text-white font-semibold text-[15px]">No offline saved songs</h4>
-                    <p className="text-[#B0B0B0] text-[13px] mt-1">
-                      Download songs using the download button on track menus to listen offline without internet.
-                    </p>
-                  </div>
-                )}
+            {/* 4. Saved Offline Tracks list */}
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                  CACHED
+                </p>
+                <h3 className="text-xl font-studio font-bold text-white">
+                  Saved Offline
+                </h3>
               </div>
-            )}
+              {filteredSongs.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {filteredSongs.map((song, i) => (
+                    <OfflineTrackRow key={`library-offline-${song.id}-${i}`} song={song} userProfile={userProfile} queue={filteredSongs} />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3 text-[#B0B0B0]">
+                    <Download size={22} />
+                  </div>
+                  <h4 className="text-white font-semibold text-[15px]">No offline saved songs</h4>
+                  <p className="text-[#B0B0B0] text-[13px] mt-1 max-w-sm mx-auto">
+                    Download songs using the download button on track menus to listen offline without internet.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ) : filteredSongs.length > 0 ? (
           /* d) PURCHASED / LIKED TABS — List Rows */

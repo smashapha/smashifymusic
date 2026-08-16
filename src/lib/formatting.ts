@@ -17,6 +17,10 @@ export function formatArtistName(artistName: string | undefined | null, featured
   if (feat.toLowerCase() === baseName.toLowerCase()) {
     return baseName;
   }
+
+  if (baseName.toLowerCase().includes(`ft. ${feat.toLowerCase()}`)) {
+    return baseName;
+  }
   
   return `${baseName} ft. ${feat}`;
 }
