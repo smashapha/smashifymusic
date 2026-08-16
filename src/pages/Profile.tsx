@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { 
-  User, CreditCard, ShoppingBag, LogOut, 
+  User, CreditCard, ShoppingBag, LogOut, Users,
   ChevronRight, BadgeCheck, Shield, ShieldCheck, Sparkles, Mail, Phone, Camera, Upload, Crown, Check, ExternalLink, Loader2
 } from 'lucide-react';
 import Avatar from '../components/common/Avatar';
@@ -315,6 +315,25 @@ const Profile: React.FC = () => {
                       My Collection
                     </span>
                     <p className="text-[11px] text-[#B0B0B0]">View purchases, likes and offline tracks</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:translate-x-0.5 transition-all" />
+              </div>
+              
+              {/* Agent Programme */}
+              <div 
+                onClick={() => navigate('/agent')}
+                className="py-3.5 px-3 flex items-center justify-between hover:bg-white/5 transition-all rounded-[10px] cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF]">
+                    <Users size={16} />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[14px] text-white group-hover:text-[#00A3FF] transition-colors">
+                      Agent Programme
+                    </span>
+                    <p className="text-[11px] text-[#B0B0B0]">Refer artists and earn commissions</p>
                   </div>
                 </div>
                 <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:translate-x-0.5 transition-all" />

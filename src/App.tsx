@@ -46,6 +46,7 @@ const Trending = lazy(() => import('./pages/Trending'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const ApplicationPending = lazy(() => import('./pages/ApplicationPending'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Agent = lazy(() => import('./pages/Agent'));
 const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 
 const PaymentRedirect = () => {
@@ -463,6 +464,14 @@ function AppContent() {
           <Route path="privacy-policy" element={<Navigate to="/privacy" replace />} />
           <Route path="contact" element={<Contact />} />
           <Route path="admin" element={<Admin />} />
+          <Route 
+            path="agent" 
+            element={
+              <ListenerRoute>
+                <Agent />
+              </ListenerRoute>
+            } 
+          />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

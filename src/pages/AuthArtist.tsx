@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Mail, Lock as AppLockIcon, User, Check, ArrowRight, ShieldCheck, 
   Mic2, AlertCircle, Phone, MapPin, 
-  Music, ChevronLeft, Disc, Chrome, Eye, EyeOff, Headphones
+  Music, ChevronLeft, Disc, Chrome, Eye, EyeOff, Headphones, Handshake
 } from 'lucide-react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -61,11 +61,20 @@ const AuthArtist: React.FC = () => {
     }
   }, [user, loading, role, navigate, mode, artistStep]);
 
+  const [refCode, setRefCode] = useState<string | null>(null);
+
   useEffect(() => {
     localStorage.removeItem('smashify_auth_intent'); // Clear any stale intent on entry
     const qMode = searchParams.get('mode');
     if (qMode === 'signup') setMode('signup');
     else setMode('login');
+
+    const ref = searchParams.get('ref');
+    if (ref) {
+      localStorage.setItem('smash_agent_ref', ref);
+      setRefCode(ref);
+      setMode('signup'); // Force signup if referred
+    }
   }, [searchParams]);
 
   if (loading && !user) {
@@ -237,6 +246,13 @@ const AuthArtist: React.FC = () => {
       
       migrateLegacyDownloads(userId).catch(console.error);
 
+      // Check for agent referral
+      const agentRef = localStorage.getItem('smash_agent_ref');
+      if (agentRef) {
+        supabase.rpc('claim_referral', { p_code: agentRef }).catch(() => {});
+        localStorage.removeItem('smash_agent_ref');
+      }
+
       toast.success('Application submitted! We will review within 48 hours.');
       setArtistStep(4);
 
@@ -381,6 +397,15 @@ const AuthArtist: React.FC = () => {
            <button onClick={() => { setMode('login'); setArtistStep(1); }} className={`flex-1 py-2 rounded-[8px] font-sans font-medium text-[13px] transition-all ${mode === 'login' ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>Log In</button>
            <button onClick={() => setMode('signup')} className={`flex-1 py-2 rounded-[8px] font-sans font-medium text-[13px] transition-all ${mode === 'signup' ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>Apply</button>
         </div>
+
+        {mode === 'signup' && refCode && (
+          <div className="mb-4 text-center">
+            <span className="text-[12px] font-medium text-white/60 bg-white/5 px-3 py-1 rounded-full inline-flex items-center gap-1">
+              <Handshake size={14} className="text-[#00A3FF]" />
+              Referred by Smashify Agent {refCode}
+            </span>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
            {mode === 'login' ? (

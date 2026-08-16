@@ -637,15 +637,22 @@ const Landing: React.FC = () => {
           </FadeIn>
 
           <div>
-            <a
-              id="become-agent-whatsapp-btn"
-              href="https://wa.me/265883728868?text=I%20want%20to%20become%20a%20Smashify%20Agent"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/agent"
               className="inline-flex items-center gap-2 h-12 px-8 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] hover:brightness-110 text-white rounded-[10px] text-[14px] font-semibold transition-all shadow-[0_4px_20px_rgba(0,163,255,0.25)]"
             >
-              Become an Agent <ArrowRight size={16} />
-            </a>
+              Apply to become an agent <ArrowRight size={16} />
+            </Link>
+            <div className="mt-4">
+              <a
+                href="https://wa.me/265883728868"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] text-[#B0B0B0] hover:text-white transition-colors"
+              >
+                Questions? WhatsApp +265 88 372 88 68
+              </a>
+            </div>
           </div>
         </div>
       </section>

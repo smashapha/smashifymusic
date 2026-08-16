@@ -15,21 +15,24 @@ import { useAuth } from '../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'maintenance' | 'notifications' | 'expiry-monitor'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'agents' | 'maintenance' | 'notifications' | 'expiry-monitor'>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab') as any;
-    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'maintenance', 'notifications', 'expiry-monitor'].includes(tab)) {
+    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'agents', 'maintenance', 'notifications', 'expiry-monitor'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
+
   const [artists, setArtists] = useState<any[]>([]); 
   const [listeners, setListeners] = useState<any[]>([]); 
   const [allSongs, setAllSongs] = useState<any[]>([]); 
   const [applications, setApplications] = useState<any[]>([]); 
+  const [agentApplications, setAgentApplications] = useState<any[]>([]);
+  const [approvedAgents, setApprovedAgents] = useState<any[]>([]);
   const [pendingSongs, setPendingSongs] = useState<any[]>([]); 
   const [pendingSnippets, setPendingSnippets] = useState<any[]>([]); 
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
@@ -116,6 +119,42 @@ const Admin = () => {
     setExpiringArtists(data || []);
   };
 
+  const fetchAgents = async () => {
+    try {
+      const { data: pending } = await supabase
+        .from('agents')
+        .select('*, user_profiles!user_id(full_name)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      setAgentApplications(pending || []);
+
+      const { data: approved } = await supabase
+        .from('agents')
+        .select('*, user_profiles!user_id(full_name)')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+      
+      if (approved) {
+        // Also fetch pending commissions for them
+        const { data: comms } = await supabase
+          .from('agent_commissions')
+          .select('agent_id, status');
+          
+        const agentsWithCounts = approved.map(a => {
+          const aComms = comms?.filter(c => c.agent_id === a.user_id) || [];
+          return {
+            ...a,
+            referred_count: aComms.length,
+            has_processing: aComms.some(c => c.status === 'processing')
+          };
+        });
+        setApprovedAgents(agentsWithCounts);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const fetchAllData = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
     setIsRefreshing(true);
@@ -130,7 +169,8 @@ const Admin = () => {
       fetchPayoutRequests(),
       fetchPlatformStats(),
       fetchMaintenance(),
-      fetchExpiringArtists()
+      fetchExpiringArtists(),
+      fetchAgents()
     ]);
     if (showSpinner) setLoading(false);
     setIsRefreshing(false);
@@ -328,6 +368,39 @@ const Admin = () => {
   const fetchAds = async () => {
     const { data } = await supabase.from('audio_ads').select('*').order('created_at', { ascending: false });
     setAds(data || []);
+  };
+
+  const adminApproveAgent = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('admin_approve_agent', { p_user_id: userId });
+      if (error) throw error;
+      toast.success('Agent approved! Code: ' + data);
+      fetchAgents();
+    } catch (e: any) {
+      toast.error('Approval failed: ' + e.message);
+    }
+  };
+
+  const adminRejectAgent = async (userId: string) => {
+    try {
+      const { error } = await supabase.rpc('admin_reject_agent', { p_user_id: userId });
+      if (error) throw error;
+      toast.success('Agent rejected.');
+      fetchAgents();
+    } catch (e: any) {
+      toast.error('Rejection failed: ' + e.message);
+    }
+  };
+
+  const adminCompleteAgentPayout = async (agentId: string) => {
+    try {
+      const { error } = await supabase.rpc('admin_complete_agent_payout', { p_agent_id: agentId });
+      if (error) throw error;
+      toast.success('Payout marked as paid.');
+      fetchAgents();
+    } catch (e: any) {
+      toast.error('Payout completion failed: ' + e.message);
+    }
   };
 
   const fetchPayoutRequests = async () => {
@@ -881,6 +954,7 @@ const Admin = () => {
             <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSongs.length} />
             <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSnippets.length} />
             <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={payoutRequests.filter(p => p.status === 'pending').length} />
+            <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={agentApplications.length} />
             
             <div className="h-px bg-white/5 my-4 mx-3" />
             <p className={`text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Directory</p>
@@ -1001,6 +1075,7 @@ const Admin = () => {
                   <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSongs.length} />
                   <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSnippets.length} />
                   <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={payoutRequests.filter(p => p.status === 'pending').length} />
+                  <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={agentApplications.length} />
                   
                   <div className="h-px bg-white/5 my-4 mx-3" />
                   <p className="text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3">Directory</p>
@@ -1686,6 +1761,115 @@ const Admin = () => {
                     </table>
                   </div>
                 </motion.div>
+              )}
+
+              {activeTab === 'agents' && (
+                <div className="space-y-6">
+                  {/* Agents Pipeline */}
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+                    <div className="p-8 border-b border-white/5">
+                       <h3 className="font-studio font-black italic uppercase text-lg">Agent Applications</h3>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Pending approvals</p>
+                    </div>
+                    {agentApplications.length === 0 ? (
+                      <div className="p-8 text-center border-t border-white/5">
+                        <p className="text-smash-gray text-xs font-black tracking-widest uppercase">No pending agent applications</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-white/5">
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">User</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">Phone</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">Date</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 text-right w-1/4">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {agentApplications.map((app) => (
+                              <tr key={app.user_id} className="hover:bg-white/[0.02] transition-colors">
+                                <td className="px-8 py-6 text-sm font-bold text-white">{app.user_profiles?.full_name || 'Unknown'}</td>
+                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{app.phone}</td>
+                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{new Date(app.created_at).toLocaleDateString()}</td>
+                                <td className="px-8 py-6 text-right">
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => adminApproveAgent(app.user_id)}
+                                      className="px-4 py-2 bg-[#00A3FF] hover:bg-[#0084D6] text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => adminRejectAgent(app.user_id)}
+                                      className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* Approved Agents Roster */}
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+                    <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                       <div>
+                         <h3 className="font-studio font-black italic uppercase text-lg">Approved Agents</h3>
+                         <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Active roster & payouts</p>
+                       </div>
+                    </div>
+                    {approvedAgents.length === 0 ? (
+                      <div className="p-8 text-center border-t border-white/5">
+                        <p className="text-smash-gray text-xs font-black tracking-widest uppercase">No approved agents</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-white/5">
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Agent</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Phone</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Referred</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Total Earned</th>
+                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {approvedAgents.map((agent) => (
+                              <tr key={agent.user_id} className="hover:bg-white/[0.02] transition-colors">
+                                <td className="px-8 py-6">
+                                  <p className="text-sm font-bold text-white">{agent.user_profiles?.full_name || 'Unknown'}</p>
+                                  <p className="text-xs text-[#00A3FF] font-mono">{agent.agent_code}</p>
+                                </td>
+                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{agent.phone}</td>
+                                <td className="px-8 py-6 text-sm text-white font-bold">{agent.referred_count}</td>
+                                <td className="px-8 py-6 text-sm text-white font-mono font-bold">MK {(agent.total_earned || 0).toLocaleString()}</td>
+                                <td className="px-8 py-6 text-right">
+                                  {agent.has_processing ? (
+                                    <button
+                                      onClick={() => adminCompleteAgentPayout(agent.user_id)}
+                                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                      Mark Payout Paid
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Clear</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
               )}
 
               {activeTab === 'applications' && (
