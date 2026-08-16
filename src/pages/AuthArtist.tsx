@@ -96,7 +96,7 @@ const AuthArtist: React.FC = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       if (data.user) {
-        migrateLegacyDownloads(data.user.id).catch(console.error);
+        migrateLegacyDownloads(data.user.id);
       }
       toast.success('Studio unlocked!');
     } catch (err: any) {
@@ -244,12 +244,12 @@ const AuthArtist: React.FC = () => {
         console.error('profiles insert failed:', profileError.message);
       }
       
-      migrateLegacyDownloads(userId).catch(console.error);
+      migrateLegacyDownloads(userId);
 
       // Check for agent referral
       const agentRef = localStorage.getItem('smash_agent_ref');
       if (agentRef) {
-        supabase.rpc('claim_referral', { p_code: agentRef }).catch(() => {});
+        supabase.rpc('claim_referral', { p_code: agentRef });
         localStorage.removeItem('smash_agent_ref');
       }
 

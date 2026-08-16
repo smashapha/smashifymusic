@@ -59,7 +59,7 @@ export async function isCached(songId: string): Promise<boolean> {
 
 export function getOfflineLimit(userProfile?: any): number {
   const limits = getListenerLimits(userProfile);
-  return limits.maxOfflineSaves || 5;
+  return limits.maxOfflineSongs || 5;
 }
 
 export async function cacheSong(

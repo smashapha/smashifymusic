@@ -327,13 +327,13 @@ const Admin = () => {
          else splits.events += tx.platform_fee || 0;
       });
       setRevenueSplits([
-        { name: 'Subscriptions', value: splits.subscriptions, color: '#0ea5e9' },
+        { name: 'Subscriptions', value: splits.subscriptions, color: '#00A3FF' },
         { name: 'Tips', value: splits.tips, color: '#10b981' },
-        { name: 'Sales', value: splits.sales, color: '#38bdf8' },
+        { name: 'Sales', value: splits.sales, color: '#00A3FF' },
       ].filter(s => s.value > 0).length ? [
-        { name: 'Subscriptions', value: splits.subscriptions, color: '#0ea5e9' },
+        { name: 'Subscriptions', value: splits.subscriptions, color: '#00A3FF' },
         { name: 'Tips', value: splits.tips, color: '#10b981' },
-        { name: 'Sales', value: splits.sales, color: '#38bdf8' },
+        { name: 'Sales', value: splits.sales, color: '#00A3FF' },
       ] : [{ name: 'No Data', value: 1, color: 'rgba(100, 116, 139, 0.2)' }]);
 
       // Process monthly trend
@@ -908,40 +908,39 @@ const Admin = () => {
   const TabButton = ({ id, label, icon: Icon, count }: { id: typeof activeTab, label: string, icon: any, count?: number }) => (
     <button
       onClick={() => setActiveTab(id)}
-      className={`relative flex items-center gap-2 px-6 py-4 transition-all uppercase font-black text-[10px] tracking-[0.15em] shrink-0 ${
+      className={`relative flex items-center gap-2 px-4 py-3 transition-all  font-bold text-[13px] tracking-[0.15em] shrink-0 ${
         activeTab === id 
           ? 'text-white' 
-          : 'text-smash-gray hover:text-white'
+          : 'text-[#B0B0B0] hover:text-white'
       }`}
     >
-      <Icon size={14} className={activeTab === id ? 'text-smash-purple' : ''} />
+      <Icon size={14} className={activeTab === id ? 'text-[#00A3FF]' : ''} />
       {label}
       {count !== undefined && count > 0 && (
-        <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white rounded text-[8px] font-black animate-pulse">
+        <span className="ml-1 px-1.5 py-0.5 bg-[#FF453A] text-white rounded text-[13px] font-bold animate-pulse">
           {count}
         </span>
       )}
       {activeTab === id && (
         <motion.div 
           layoutId="tab-active"
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-smash-purple shadow-[0_0_10px_rgba(155,93,229,0.5)]"
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0084D6] shadow-[0_0_10px_rgba(155,93,229,0.5)]"
         />
       )}
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-[#060608] text-white flex overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-white flex overflow-hidden">
       {/* Admin Sidebar */}
-      <aside className={`bg-[#0c0c10] border-r border-white/5 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'} hidden lg:flex`}>
-         <div className="h-16 flex items-center px-6 border-b border-white/5 gap-3">
-            <div className="w-8 h-8 rounded-lg bg-smash-purple flex items-center justify-center text-white shrink-0">
-               <ShieldCheck size={20} />
+      <aside className={`bg-[#0A0A0A] border-r border-white/10 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'} hidden lg:flex`}>
+         <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3">
+            <div className="w-8 h-8 rounded-[10px] bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF] shrink-0">
+               <ShieldCheck size={18} />
             </div>
             {!sidebarCollapsed && (
               <div className="leading-tight">
-                <h1 className="font-studio font-black text-sm uppercase tracking-tighter">Admin <span className="text-white/40">HQ</span></h1>
-                <p className="text-[8px] text-smash-purple uppercase font-bold tracking-widest leading-none">Terminal v2.4</p>
+                <h1 className="font-studio font-semibold text-[14px]">Smashify Admin</h1>
               </div>
             )}
          </div>
@@ -949,7 +948,7 @@ const Admin = () => {
          <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto no-scrollbar">
             <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <div className="h-px bg-white/5 my-4 mx-3" />
-            <p className={`text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Governance</p>
+            <p className={`text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Governance</p>
             <AdminSidebarItem id="applications" label="Applicants" icon={CircleCheck} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={applications.length} />
             <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSongs.length} />
             <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSnippets.length} />
@@ -957,7 +956,7 @@ const Admin = () => {
             <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={agentApplications.length} />
             
             <div className="h-px bg-white/5 my-4 mx-3" />
-            <p className={`text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Directory</p>
+            <p className={`text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Directory</p>
             <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
@@ -981,9 +980,9 @@ const Admin = () => {
          <div className="p-4 border-t border-white/5">
             <button 
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full h-10 flex items-center justify-center text-smash-gray hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              className="w-full h-10 flex items-center justify-center text-[#B0B0B0] hover:text-white hover:bg-white/5 rounded-lg transition-colors"
             >
-               {sidebarCollapsed ? <Plus className="rotate-45" size={18} /> : <div className="text-[10px] font-bold uppercase tracking-widest">Collapse Menu</div>}
+               {sidebarCollapsed ? <Plus className="rotate-45" size={18} /> : <div className="text-[13px] font-bold  ">Collapse Menu</div>}
             </button>
          </div>
       </aside>
@@ -991,15 +990,15 @@ const Admin = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 bg-[#0c0c10]/80 backdrop-blur-xl border-b border-white/5 px-4 lg:px-8 flex items-center justify-between shrink-0 z-30">
+        <header className="h-16 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5 px-4 lg:px-8 flex items-center justify-between shrink-0 z-30">
           <div className="flex items-center gap-2 lg:gap-4">
-             <button onClick={() => navigate('/')} className="p-2 -ml-2 text-smash-gray hover:text-white transition-colors lg:hidden">
+             <button onClick={() => navigate('/')} className="p-2 -ml-2 text-[#B0B0B0] hover:text-white transition-colors lg:hidden">
                 <ArrowLeft size={18} />
              </button>
-             <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-smash-gray hover:text-white transition-colors lg:hidden">
+             <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-[#B0B0B0] hover:text-white transition-colors lg:hidden">
                 <Menu size={18} />
              </button>
-             <h2 className="text-sm font-studio font-black uppercase tracking-widest italic">{activeTab.replace('-', ' ')}</h2>
+             <h2 className="text-[13px] font-studio font-bold   italic">{activeTab.replace('-', ' ')}</h2>
           </div>
 
           <div className="flex items-center gap-4">
@@ -1009,27 +1008,27 @@ const Admin = () => {
                   fetchAllData(false);
                 }}
                 disabled={isRefreshing}
-                className="p-2 text-smash-gray hover:text-white transition-colors disabled:opacity-50"
+                className="p-2 text-[#B0B0B0] hover:text-white transition-colors disabled:opacity-50"
                 title="Refresh Data"
              >
                 <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
              </button>
              <div className="relative group w-64 hidden md:block">
-                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-smash-gray" />
+                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#B0B0B0]" />
                 <input 
                   type="text"
                   placeholder="Universal Audit..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#16161e] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[11px] font-bold focus:outline-none focus:border-smash-purple transition-all"
+                  className="w-full bg-[#16161e] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[11px] font-bold focus:outline-none focus:border-[#00A3FF] transition-all"
                 />
              </div>
              <div className="hidden md:block h-4 w-px bg-white/10 mx-2" />
              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#4c9aff]/10 flex items-center justify-center text-[#4c9aff] font-black text-xs">{userProfile?.full_name?.[0] || 'A'}</div>
+                <div className="w-8 h-8 rounded-lg bg-[#4c9aff]/10 flex items-center justify-center text-[#4c9aff] font-bold text-[13px]">{userProfile?.full_name?.[0] || 'A'}</div>
                 <div className="hidden sm:block">
-                   <p className="text-[10px] font-black uppercase tracking-tighter leading-none">{userProfile?.full_name?.split(' ')[0]}</p>
-                   <p className="text-[8px] text-smash-gray uppercase font-bold tracking-widest mt-0.5">Administrator</p>
+                   <p className="text-[13px] font-bold  tracking-tighter leading-none">{userProfile?.full_name?.split(' ')[0]}</p>
+                   <p className="text-[13px] text-[#B0B0B0]  font-bold  mt-0.5">Administrator</p>
                 </div>
              </div>
           </div>
@@ -1050,19 +1049,19 @@ const Admin = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="w-64 h-full bg-[#0c0c10] border-r border-white/5 flex flex-col"
+                className="w-64 h-full bg-[#0A0A0A] border-r border-white/5 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-smash-purple flex items-center justify-center text-white shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#0084D6] flex items-center justify-center text-white shrink-0">
                        <ShieldCheck size={20} />
                     </div>
                     <div className="leading-tight">
-                      <h1 className="font-studio font-black text-sm uppercase tracking-tighter">Admin <span className="text-white/40">HQ</span></h1>
+                      <h1 className="font-studio font-bold text-[13px]  tracking-tighter">Admin <span className="text-white/40">HQ</span></h1>
                     </div>
                   </div>
-                  <button onClick={() => setMobileMenuOpen(false)} className="text-smash-gray hover:text-white">
+                  <button onClick={() => setMobileMenuOpen(false)} className="text-[#B0B0B0] hover:text-white">
                     <X size={20} />
                   </button>
                 </div>
@@ -1070,7 +1069,7 @@ const Admin = () => {
                 <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto no-scrollbar">
                   <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <div className="h-px bg-white/5 my-4 mx-3" />
-                  <p className="text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3">Governance</p>
+                  <p className="text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3">Governance</p>
                   <AdminSidebarItem id="applications" label="Applicants" icon={CircleCheck} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={applications.length} />
                   <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSongs.length} />
                   <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSnippets.length} />
@@ -1078,7 +1077,7 @@ const Admin = () => {
                   <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={agentApplications.length} />
                   
                   <div className="h-px bg-white/5 my-4 mx-3" />
-                  <p className="text-[9px] font-black text-smash-gray uppercase tracking-widest mb-2 px-3">Directory</p>
+                  <p className="text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3">Directory</p>
                   <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
@@ -1133,7 +1132,7 @@ const Admin = () => {
                    value={platformStats.totalSongs.toLocaleString()} 
                    trend="Catalog" 
                    icon={Music2} 
-                   color="text-[#FFAA00]" 
+                   color="text-[#F59E0B]" 
                  />
                  <KpiCard 
                    title="Review Queue" 
@@ -1147,14 +1146,14 @@ const Admin = () => {
                    value={payoutRequests.filter(p => p.status === 'processing').length} 
                    trend="Action Req" 
                    icon={Wallet} 
-                   color="text-[#00D68F]" 
+                   color="text-[#22C55E]" 
                  />
               </div>
 
               {loading ? (
                  <div className="flex flex-col items-center justify-center p-20 gap-4">
-                    <div className="w-10 h-10 border-2 border-smash-purple border-t-transparent rounded-full animate-spin" />
-                    <p className="text-smash-gray font-black uppercase text-[10px] tracking-widest">Hydrating Terminal...</p>
+                    <div className="w-10 h-10 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[#B0B0B0] font-bold  text-[13px] ">Hydrating Terminal...</p>
                  </div>
               ) : (
                 <AnimatePresence mode="wait">
@@ -1196,23 +1195,23 @@ const Admin = () => {
                       <button
                         key={action.tab}
                         onClick={() => setActiveTab(action.tab as any)}
-                        className="p-4 bg-white/5 border border-white/10 rounded-2xl text-left hover:border-smash-purple/30 transition-all group"
+                        className="p-4 bg-white/5 border border-white/10 rounded-2xl text-left hover:border-[#00A3FF]/30 transition-all group"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-lg">{action.icon}</span>
+                          <span className="text-[15px]">{action.icon}</span>
                           {action.count > 0 && (
-                            <span className="text-xs font-black bg-smash-orange text-white px-2 py-0.5 rounded-full animate-pulse">
+                            <span className="text-[13px] font-bold bg-[#0084D6] text-white px-2 py-0.5 rounded-full animate-pulse">
                               {action.count}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs font-black uppercase tracking-widest text-smash-gray group-hover:text-white transition-colors">
+                        <p className="text-[13px] font-bold   text-[#B0B0B0] group-hover:text-white transition-colors">
                           {action.label}
                         </p>
                         {action.count === 0 ? (
-                          <p className="text-[10px] text-smash-gray/50 mt-1">All clear</p>
+                          <p className="text-[13px] text-[#B0B0B0]/50 mt-1">All clear</p>
                         ) : (
-                          <p className="text-[10px] text-smash-orange mt-1">Needs attention →</p>
+                          <p className="text-[13px] text-[#FF453A] mt-1">Needs attention →</p>
                         )}
                       </button>
                     ))}
@@ -1220,30 +1219,30 @@ const Admin = () => {
 
                   {/* Charts Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/30 transition-all">
+                    <div className="lg:col-span-2 bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6 hover:border-[#00A3FF]/30 transition-all">
                       <h3 className="text-base font-semibold text-white mb-1">Revenue Overview</h3>
-                      <p className="text-xs text-[#7878a0] mb-6">Monthly revenue breakdown by source</p>
+                      <p className="text-[13px] text-[#B0B0B0] mb-6">Monthly revenue breakdown by source</p>
                       <div className="h-[260px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="#00A3FF" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#00A3FF" stopOpacity={0}/>
                               </linearGradient>
                             </defs>
                             <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                             <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `MK${v/1000}k`} />
                             <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100, 116, 139, 0.3)', borderRadius: '8px' }} itemStyle={{ color: '#EAEAF2' }} />
-                            <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorRev)" />
+                            <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#00A3FF" fillOpacity={1} fill="url(#colorRev)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
 
-                    <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/30 transition-all">
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6 hover:border-[#00A3FF]/30 transition-all">
                       <h3 className="text-base font-semibold text-white mb-1">Revenue Split</h3>
-                      <p className="text-xs text-[#7878a0] mb-6">By source this quarter</p>
+                      <p className="text-[13px] text-[#B0B0B0] mb-6">By source this quarter</p>
                       <div className="h-[230px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -1260,7 +1259,7 @@ const Admin = () => {
                         {revenueSplits.filter(s => s.name !== 'No Data').map(s => (
                           <div key={s.name} className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                            <span className="text-[11px] text-[#7878a0] leading-none">{s.name}</span>
+                            <span className="text-[11px] text-[#B0B0B0] leading-none">{s.name}</span>
                           </div>
                         ))}
                       </div>
@@ -1269,70 +1268,70 @@ const Admin = () => {
 
                   {/* Goal + Recent Txs */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6">
                       <h3 className="text-base font-semibold text-white mb-1">Platform Goal</h3>
-                      <p className="text-xs text-[#7878a0] mb-6">Target: MK 5,000,000</p>
+                      <p className="text-[13px] text-[#B0B0B0] mb-6">Target: MK 5,000,000</p>
                       <div className="mt-8">
                         <div className="flex justify-between text-[13px] mb-2">
-                          <span className="text-[#7878a0]">Progress</span>
-                          <span className="font-bold text-[#0ea5e9]">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%</span>
+                          <span className="text-[#B0B0B0]">Progress</span>
+                          <span className="font-bold text-[#00A3FF]">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%</span>
                         </div>
-                        <div className="w-full h-3 bg-bg-elevated rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#0ea5e9] to-[#38bdf8] rounded-full" style={{ width: `${Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%` }} />
+                        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-[#00A3FF] to-[#00A3FF] rounded-full" style={{ width: `${Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%` }} />
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-3 gap-4 mt-8">
                          <div className="text-center">
                             <h4 className="text-xl font-bold text-white">MK {(platformStats.totalRevenue / 1000).toFixed(1)}K</h4>
-                            <p className="text-[11px] text-[#505070] mt-1 uppercase tracking-widest font-bold">Earned</p>
+                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Earned</p>
                          </div>
                          <div className="text-center">
-                            <h4 className="text-xl font-bold text-[#FFAA00]">MK {Math.max(0, (5000000 - platformStats.totalRevenue) / 1000).toFixed(1)}K</h4>
-                            <p className="text-[11px] text-[#505070] mt-1 uppercase tracking-widest font-bold">Remaining</p>
+                            <h4 className="text-xl font-bold text-[#F59E0B]">MK {Math.max(0, (5000000 - platformStats.totalRevenue) / 1000).toFixed(1)}K</h4>
+                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Remaining</p>
                          </div>
                          <div className="text-center">
-                            <h4 className="text-xl font-bold text-[#00D68F]">{platformStats.totalArtists}</h4>
-                            <p className="text-[11px] text-[#505070] mt-1 uppercase tracking-widest font-bold">Active Acts</p>
+                            <h4 className="text-xl font-bold text-[#22C55E]">{platformStats.totalArtists}</h4>
+                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Active Acts</p>
                          </div>
                       </div>
                     </div>
 
-                    <div className="bg-[#141428] border border-[#22223e] rounded-[14px] p-6">
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="text-base font-semibold text-white">Recent Transactions</h3>
                         <button 
                           onClick={handleRefreshStuckTransactions}
                           disabled={fixStuckLoading}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 text-smash-purple hover:bg-smash-purple/30 rounded-lg transition-colors text-xs font-bold"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-[#0084D6]/20 text-[#00A3FF] hover:bg-[#0084D6]/30 rounded-lg transition-colors text-[13px] font-bold"
                         >
                           <RefreshCw size={14} className={fixStuckLoading ? 'animate-spin' : ''} />
                           {fixStuckLoading ? 'Syncing...' : 'Sync Unresolved'}
                         </button>
                       </div>
-                      <p className="text-xs text-[#7878a0] mb-6">Latest platform financial activity</p>
+                      <p className="text-[13px] text-[#B0B0B0] mb-6">Latest platform financial activity</p>
                       <table className="w-full mt-2">
-                        <thead>
-                          <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-[#7878a0] border-b border-[#22223e]">
-                            <th className="pb-3 text-white/50">Artist</th>
-                            <th className="pb-3 text-white/50">Type</th>
-                            <th className="pb-3 text-white/50">Amount</th>
+                        <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
+                          <tr className="text-left text-[11px] font-medium tracking-[0.12em] text-[#737373] uppercase">
+                            <th className="text-white/50 px-4 py-3">Artist</th>
+                            <th className="text-white/50 px-4 py-3">Type</th>
+                            <th className="text-white/50 px-4 py-3">Amount</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#22223e]">
                            {recentActivities.map(tx => (
                              <tr key={tx.id} className="hover:bg-[#1a1a35] transition-colors">
-                               <td className="py-3 text-[13px] font-medium text-white">{tx.profiles?.stage_name || tx.profiles?.full_name || 'System'}</td>
-                               <td className="py-3">
+                               <td className="text-[13px] font-medium text-white px-4 py-3 md:px-5 text-[13px]">{tx.profiles?.stage_name || tx.profiles?.full_name || 'System'}</td>
+                               <td className="px-4 py-3 md:px-5 text-[13px]">
                                  <span className={`px-2 py-1 rounded-md text-[11px] font-semibold capitalize ${tx.type?.includes('sub') ? 'bg-[#ff6b35]/15 text-[#ff6b35]' : tx.type?.includes('tip') || tx.type?.includes('donat') ? 'bg-[#00d68f]/15 text-[#00d68f]' : 'bg-[#4c9aff]/15 text-[#4c9aff]'}`}>
                                    {tx.type || 'tx'}
                                  </span>
                                </td>
-                               <td className="py-3 text-[13px] font-bold font-mono text-[#00d68f]">MK {Math.round(tx.net_amount || tx.platform_fee || 0).toLocaleString()}</td>
+                               <td className="text-[13px] font-bold font-mono text-[#00d68f] px-4 py-3 md:px-5 text-[13px]">MK {Math.round(tx.net_amount || tx.platform_fee || 0).toLocaleString()}</td>
                              </tr>
                            ))}
                            {recentActivities.length === 0 && (
-                             <tr><td colSpan={3} className="py-6 text-center text-[13px] text-[#505070]">No recent transactions</td></tr>
+                             <tr><td colSpan={3} className="py-6 text-center text-[13px] text-[#B0B0B0]">No recent transactions</td></tr>
                            )}
                         </tbody>
                       </table>
@@ -1342,50 +1341,50 @@ const Admin = () => {
               )}
 
               {activeTab === 'listeners' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                  <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                  <div className="p-5 border-b border-white/10 flex items-center justify-between">
                      <div>
-                        <h3 className="font-studio font-black italic uppercase text-lg">Listener Network</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Fanbase Management</p>
+                        <h3 className="font-studio font-bold italic  text-[15px]">Listener Network</h3>
+                        <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Fanbase Management</p>
                      </div>
                      <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-black uppercase text-smash-gray tracking-widest">Global Reach: {listeners.length}</p>
+                        <p className="text-[13px] font-bold  text-[#B0B0B0] ">Global Reach: {listeners.length}</p>
                      </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                      <thead>
-                        <tr className="text-[9px] font-black uppercase tracking-[0.2em] text-smash-gray bg-white/[0.02]">
-                          <th className="px-8 py-5">Full Identity</th>
-                          <th className="px-8 py-5">Subscription</th>
-                          <th className="px-8 py-5">Node Identity</th>
-                          <th className="px-8 py-5 text-right">Moderation</th>
+                      <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
+                        <tr className="text-[13px] font-bold  tracking-[0.2em] text-[#B0B0B0] bg-white/[0.02]">
+                          <th className="px-4 py-3">Full Identity</th>
+                          <th className="px-4 py-3">Subscription</th>
+                          <th className="px-4 py-3">Node Identity</th>
+                          <th className="text-right px-4 py-3">Moderation</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5 text-sm">
+                      <tbody className="divide-y divide-white/5 text-[13px]">
                         {listeners.filter(l => (l.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map(l => (
                           <tr key={l.id} className="hover:bg-white/[0.02] transition-colors group">
-                            <td className="px-8 py-6">
+                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                               <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-smash-purple/30 transition-colors">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-[#00A3FF]/30 transition-colors">
                                   <img src={optimizeImage(l.avatar_url, 80, 80)} className="w-full h-full rounded-[10px] object-cover" loading="lazy" decoding="async" />
                                 </div>
                                 <div>
-                                  <p className="font-bold text-sm text-white group-hover:text-smash-purple transition-colors">{l.full_name || 'Anonymous'}</p>
-                                  <p className="text-[10px] text-smash-gray font-medium tracking-tight truncate max-w-[140px] lowercase">{l.email}</p>
+                                  <p className="font-bold text-[13px] text-white group-hover:text-[#00A3FF] transition-colors">{l.full_name || 'Anonymous'}</p>
+                                  <p className="text-[13px] text-[#B0B0B0] font-medium tracking-tight truncate max-w-[140px] lowercase">{l.email}</p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-6">
-                              <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg ${l.subscription_tier === 'Premium' ? 'bg-smash-orange text-black' : 'bg-white/5 text-smash-gray'}`}>
+                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                              <span className={`px-3 py-1 rounded-lg text-[13px] font-bold   shadow-lg ${l.subscription_tier === 'Premium' ? 'bg-[#0084D6] text-black' : 'bg-white/5 text-[#B0B0B0]'}`}>
                                 {l.subscription_tier || 'Free'}
                               </span>
                             </td>
-                            <td className="px-8 py-6 text-[11px] font-bold text-white/60">
+                            <td className="md:px-5 text-[11px] font-bold text-white/60 px-4 py-3 md:px-5 text-[13px]">
                                {l.phone || '--'}
                             </td>
-                            <td className="px-8 py-6 text-right">
-                              <button onClick={() => deleteUser(l.id, l.full_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-red-500 text-smash-gray hover:text-white rounded-lg transition-all">
+                            <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
+                              <button onClick={() => deleteUser(l.id, l.full_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all">
                                 <Trash2 size={14} />
                               </button>
                             </td>
@@ -1398,94 +1397,94 @@ const Admin = () => {
               )}
 
               {activeTab === 'artists' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                   <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                   <div className="p-5 border-b border-white/10 flex items-center justify-between">
                       <div>
-                         <h3 className="font-studio font-black italic uppercase text-lg">Artist Ecosystem</h3>
-                         <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Verified Talent Management</p>
+                         <h3 className="font-studio font-bold italic  text-[15px]">Artist Ecosystem</h3>
+                         <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Verified Talent Management</p>
                       </div>
                       <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-black uppercase text-smash-gray tracking-widest">Active Pool: {artists.length}</p>
+                        <p className="text-[13px] font-bold  text-[#B0B0B0] ">Active Pool: {artists.length}</p>
                       </div>
                    </div>
                    <div className="overflow-x-auto">
                      <table className="w-full text-left">
-                       <thead>
-                         <tr className="text-[9px] font-black uppercase tracking-[0.2em] text-smash-gray bg-white/[0.02]">
-                           <th className="px-8 py-5">Artist Signature</th>
-                           <th className="px-8 py-5">Studio Wallet</th>
-                           <th className="px-8 py-5">ID Details</th>
-                           <th className="px-8 py-5">Queue</th>
-                           <th className="px-8 py-5 text-right">Gate</th>
+                       <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
+                         <tr className="text-[13px] font-bold  tracking-[0.2em] text-[#B0B0B0] bg-white/[0.02]">
+                           <th className="px-4 py-3">Artist Signature</th>
+                           <th className="px-4 py-3">Studio Wallet</th>
+                           <th className="px-4 py-3">ID Details</th>
+                           <th className="px-4 py-3">Queue</th>
+                           <th className="text-right px-4 py-3">Gate</th>
                          </tr>
                        </thead>
-                       <tbody className="divide-y divide-white/5 text-sm">
+                       <tbody className="divide-y divide-white/5 text-[13px]">
                          {artists.filter(a => !searchQuery || (a.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
                            <tr key={a.id} className="hover:bg-white/[0.02] transition-colors group">
-                             <td className="px-8 py-6">
+                             <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-smash-purple/30 transition-colors">
+                                  <div className="w-10 h-10 rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:border-[#00A3FF]/30 transition-colors">
                                     <img src={optimizeImage(a.avatar_url, 80, 80)} className="w-full h-full rounded-[10px] object-cover" loading="lazy" decoding="async" />
                                   </div>
                                   <div>
-                                    <p className="font-bold text-sm text-white group-hover:text-smash-purple transition-colors flex items-center gap-2">
+                                    <p className="font-bold text-[13px] text-white group-hover:text-[#00A3FF] transition-colors flex items-center gap-2">
                                       {a.stage_name} 
-                                      {(a.verified || a.is_verified) && <ShieldCheck size={14} className="text-smash-cyan" />}
+                                      {(a.verified || a.is_verified) && <ShieldCheck size={14} className="text-[#00A3FF]" />}
                                     </p>
-                                    <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest opacity-60 mb-1">
+                                    <p className="text-[13px] text-[#B0B0B0] font-bold   opacity-60 mb-1">
                                       {a.city} • {a.genre}
                                     </p>
-                                    <p className="text-[10px] text-smash-purple font-medium tracking-tight truncate max-w-[140px] lowercase underline opacity-80">
+                                    <p className="text-[13px] text-[#00A3FF] font-medium tracking-tight truncate max-w-[140px] lowercase underline opacity-80">
                                       {a.email}
                                     </p>
                                   </div>
                                 </div>
                              </td>
-                             <td className="px-8 py-6">
+                             <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="space-y-1">
-                                   <p className="font-studio font-black italic text-smash-green text-lg leading-none">MK {a.wallet_balance?.toLocaleString() || 0}</p>
-                                   <p className="text-[8px] font-black uppercase tracking-widest text-smash-gray">Available Liquidity</p>
+                                   <p className="font-studio font-bold italic text-[#22C55E] text-[15px] leading-none">MK {a.wallet_balance?.toLocaleString() || 0}</p>
+                                   <p className="text-[13px] font-bold   text-[#B0B0B0]">Available Liquidity</p>
                                 </div>
                              </td>
-                             <td className="px-8 py-6">
+                             <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex flex-col gap-2">
-                                   <p className="text-[10px] font-black uppercase text-white/50">{a.id_type || 'ID'}: {a.nrc_number || 'N/A'}</p>
+                                   <p className="text-[13px] font-bold  text-white/50">{a.id_type || 'ID'}: {a.nrc_number || 'N/A'}</p>
                                    <div className="flex gap-2">
                                      {a.id_document_url && (
-                                       <a href={a.id_document_url} target="_blank" rel="noopener noreferrer" className="text-[9px] hover:underline text-smash-cyan">View ID</a>
+                                       <a href={a.id_document_url} target="_blank" rel="noopener noreferrer" className="text-[13px] hover:underline text-[#00A3FF]">View ID</a>
                                      )}
                                      {a.selfie_url && (
-                                       <a href={a.selfie_url} target="_blank" rel="noopener noreferrer" className="text-[9px] hover:underline text-smash-purple">View Selfie</a>
+                                       <a href={a.selfie_url} target="_blank" rel="noopener noreferrer" className="text-[13px] hover:underline text-[#00A3FF]">View Selfie</a>
                                      )}
                                    </div>
                                 </div>
                              </td>
-                             <td className="px-8 py-6">
+                             <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 {a.pending_songs > 0 ? (
-                                   <div onClick={() => setActiveTab('song-reviews')} className="flex items-center gap-2 text-smash-orange font-black text-[10px] uppercase tracking-widest cursor-pointer hover:underline">
-                                      <div className="w-2 h-2 bg-smash-orange rounded-full animate-pulse" />
+                                   <div onClick={() => setActiveTab('song-reviews')} className="flex items-center gap-2 text-[#FF453A] font-bold text-[13px]   cursor-pointer hover:underline">
+                                      <div className="w-2 h-2 bg-[#0084D6] rounded-full animate-pulse" />
                                       {a.pending_songs} items
                                    </div>
                                 ) : (
-                                   <span className="text-smash-gray text-[9px] uppercase font-black italic tracking-widest opacity-40">Clear</span>
+                                   <span className="text-[#B0B0B0] text-[13px]  font-bold italic  opacity-40">Clear</span>
                                 )}
                              </td>
-                             <td className="px-8 py-6 text-right flex items-center justify-end gap-3">
-                                <button onClick={() => setSelectedArtist(a)} className="px-5 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-smash-purple hover:text-smash-purple transition-all flex items-center gap-2">
+                             <td className="md:px-5 text-right flex items-center justify-end gap-3 px-4 py-3 md:px-5 text-[13px]">
+                                <button onClick={() => setSelectedArtist(a)} className="border border-white/10 text-white hover:border-white/30 h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">
                                    <ShieldCheck size={14} /> Profile
                                 </button>
                                 <button 
                                   onClick={() => toggleArtistVerification(a.id, !!(a.verified || a.is_verified))}
-                                  className={`px-4 py-1.5 border rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                  className={`px-4 py-1.5 border rounded-lg text-[13px] font-bold   transition-all ${
                                     (a.verified || a.is_verified)
-                                      ? 'bg-smash-cyan/10 text-smash-cyan border-smash-cyan/20 hover:bg-smash-cyan hover:text-black' 
-                                      : 'bg-white/5 text-smash-gray border-white/5 hover:border-smash-cyan hover:text-smash-cyan'
+                                      ? 'bg-[#0084D6]/10 text-[#00A3FF] border-[#00A3FF]/20 hover:bg-[#0084D6] hover:text-black' 
+                                      : 'bg-white/5 text-[#B0B0B0] border-white/5 hover:border-[#00A3FF] hover:text-[#00A3FF]'
                                   }`}
                                 >
                                   {(a.verified || a.is_verified) ? 'Verified' : 'Verify'}
                                 </button>
                                 
-                                <button onClick={() => deleteArtist(a.id, a.stage_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-red-500 text-smash-gray hover:text-white rounded-lg transition-all">
+                                <button onClick={() => deleteArtist(a.id, a.stage_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all">
                                   <Trash2 size={14} />
                                 </button>
                              </td>
@@ -1500,25 +1499,25 @@ const Admin = () => {
               {activeTab === 'payouts' && (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-black font-display uppercase italic text-white">
+        <h2 className="text-[22px] font-studio font-bold text-white mb-6">
           Payout Requests
         </h2>
-        <div className="flex gap-3 text-sm">
-          <span className="px-3 py-1 bg-yellow-500/10 text-yellow-400 rounded-full font-bold">
+        <div className="flex gap-3 text-[13px]">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize border bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30">
             {payoutRequests.filter(p => p.status === 'pending').length} Pending
           </span>
-          <span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full font-bold">
+          <span className="px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] rounded-full font-bold">
             {payoutRequests.filter(p => p.status === 'paid').length} Paid
           </span>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-smash-gray">
+        <div className="text-center py-12 text-[#B0B0B0]">
           Loading...
         </div>
       ) : payoutRequests.length === 0 ? (
-        <div className="text-center py-12 text-smash-gray">
+        <div className="text-center py-12 text-[#B0B0B0]">
           No payout requests yet
         </div>
       ) : (
@@ -1527,19 +1526,19 @@ const Admin = () => {
             <div key={payout.id}
               className={`p-5 rounded-3xl border transition-all ${
                 payout.status === 'pending'
-                  ? 'bg-yellow-500/5 border-yellow-500/20'
+                  ? 'bg-[#F59E0B]/5 border-[#F59E0B]/20'
                   : payout.status === 'paid'
-                  ? 'bg-smash-green/5 border-smash-green/20'
+                  ? 'bg-[#22C55E]/5 border-[#22C55E]/20'
                   : 'bg-white/5 border-white/10'
               }`}>
 
               {/* Header row */}
               <div className="flex items-start justify-between mb-4 gap-4">
                 <div>
-                  <p className="font-black text-base text-white">
+                  <p className="font-bold text-base text-white">
                     {payout.profiles?.stage_name || payout.artist_name || 'Unknown Artist'}
                   </p>
-                  <p className="text-xs text-smash-gray mt-0.5">
+                  <p className="text-[13px] text-[#B0B0B0] mt-0.5">
                     {payout.profiles?.artist_tier || 'Free'} tier •{' '}
                     {new Date(payout.created_at).toLocaleDateString('en-GB', {
                       day: 'numeric', month: 'short', year: 'numeric',
@@ -1547,7 +1546,7 @@ const Admin = () => {
                     })}
                   </p>
                 </div>
-                <span className="text-2xl font-black text-smash-orange font-display shrink-0">
+                <span className="text-[24px] font-mono text-white shrink-0">
                   MK {Number(payout.amount || payout.requested_amount).toLocaleString()}
                 </span>
               </div>
@@ -1555,18 +1554,18 @@ const Admin = () => {
               {/* Payment details */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="p-3 bg-white/5 rounded-2xl">
-                  <p className="text-[10px] text-smash-gray uppercase tracking-widest mb-1">
+                  <p className="text-[13px] text-[#B0B0B0]   mb-1">
                     Network
                   </p>
-                  <p className="font-bold text-sm text-white">
+                  <p className="font-bold text-[13px] text-white">
                     {payout.network || 'Not specified'}
                   </p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl">
-                  <p className="text-[10px] text-smash-gray uppercase tracking-widest mb-1">
+                  <p className="text-[13px] text-[#B0B0B0]   mb-1">
                     Phone Number
                   </p>
-                  <p className="font-bold text-sm font-mono text-white">
+                  <p className="font-bold text-[13px] font-mono text-white">
                     {payout.artist_phone || payout.phone || payout.profiles?.phone || 'Not set'}
                   </p>
                 </div>
@@ -1575,22 +1574,22 @@ const Admin = () => {
               {/* Status */}
               <div className="mb-4">
                 {(payout.status === 'pending' || payout.status === 'processing') && (
-                  <span className="text-xs font-bold px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize border bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30">
                     ⏳ Awaiting Payment
                   </span>
                 )}
                 {payout.status === 'paid' && (
                   <div>
-                    <span className="text-xs font-bold px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full">
+                    <span className="text-[13px] font-bold px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20 rounded-full">
                       ✅ Paid
                     </span>
                     {payout.paid_at && (
-                      <p className="text-xs text-smash-gray mt-2">
+                      <p className="text-[13px] text-[#B0B0B0] mt-2">
                         Paid on {new Date(payout.paid_at).toLocaleString('en-GB')}
                       </p>
                     )}
                     {payout.admin_note && (
-                      <p className="text-xs text-smash-gray mt-1">
+                      <p className="text-[13px] text-[#B0B0B0] mt-1">
                         Note: {payout.admin_note}
                       </p>
                     )}
@@ -1598,11 +1597,11 @@ const Admin = () => {
                 )}
                 {(payout.status === 'rejected' || payout.status === 'failed') && (
                   <div>
-                    <span className="text-xs font-bold px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full">
+                    <span className="text-[13px] font-bold px-3 py-1 bg-[#FF453A]/10 text-[#FF453A] border border-red-500/20 rounded-full">
                       ✗ Rejected
                     </span>
                     {payout.admin_note && (
-                      <p className="text-xs text-red-400 mt-2">
+                      <p className="text-[13px] text-[#FF453A] mt-2">
                         Reason: {payout.admin_note}
                       </p>
                     )}
@@ -1613,18 +1612,18 @@ const Admin = () => {
               {/* Admin actions — only for pending */}
               {(payout.status === 'pending' || payout.status === 'processing') && (
                 <div className="space-y-3 pt-3 border-t border-white/10">
-                  <div className="bg-smash-orange/10 border border-smash-orange/20 rounded-2xl p-3">
-                    <p className="text-xs font-bold text-smash-orange mb-1">
+                  <div className="bg-[#0084D6]/10 border border-[#00A3FF]/20 rounded-2xl p-3">
+                    <p className="text-[13px] font-bold text-[#FF453A] mb-1">
                       📱 Action Required
                     </p>
-                    <p className="text-xs text-smash-green/80">
-                      Send <span className="text-white font-black">MK {Math.round(Number(payout.amount || payout.requested_amount) * 0.97).toLocaleString()}</span> (Net of 3% Fee) to{' '}
+                    <p className="text-[13px] text-[#22C55E]/80">
+                      Send <span className="text-white font-bold">MK {Math.round(Number(payout.amount || payout.requested_amount) * 0.97).toLocaleString()}</span> (Net of 3% Fee) to{' '}
                       <span className="font-mono font-bold text-white">
                         {payout.artist_phone || payout.phone || payout.profiles?.phone}
                       </span>{' '}
                       via {payout.network}, then mark as paid.
                       <br/>
-                      <span className="text-[9px] opacity-70">Gross Requested: MK {Number(payout.amount || payout.requested_amount).toLocaleString()} | Fee: MK {Math.round(Number(payout.amount || payout.requested_amount) * 0.03).toLocaleString()}</span>
+                      <span className="text-[13px] opacity-70">Gross Requested: MK {Number(payout.amount || payout.requested_amount).toLocaleString()} | Fee: MK {Math.round(Number(payout.amount || payout.requested_amount) * 0.03).toLocaleString()}</span>
                     </p>
                   </div>
 
@@ -1636,7 +1635,7 @@ const Admin = () => {
                       setProcessingId(payout.id);
                       setAdminNote(e.target.value);
                     }}
-                    className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white placeholder-smash-gray outline-none focus:border-smash-orange/50"
+                    className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-4 text-[13px] text-white placeholder-[#737373] outline-none focus:border-[#00A3FF]/50"
                   />
 
                   <div className="flex gap-3">
@@ -1646,7 +1645,7 @@ const Admin = () => {
                         processingId === payout.id ? adminNote : ''
                       )}
                       disabled={processingId === payout.id ? (!adminNote && false) : false}
-                      className="flex-1 h-11 bg-smash-green text-white rounded-2xl font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                      className="flex-1 h-11 bg-[#22C55E] text-white rounded-2xl font-bold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
                       ✅ Mark as Paid
                     </button>
@@ -1655,15 +1654,15 @@ const Admin = () => {
                         setRejectingId(payout.id);
                         setRejectReason('');
                       }}
-                      className="flex-1 h-11 bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl font-bold text-sm hover:bg-red-500/30 transition-all"
+                      className="flex-1 h-11 bg-[#FF453A]/20 text-[#FF453A] border border-red-500/20 rounded-2xl font-bold text-[13px] hover:bg-[#FF453A]/30 transition-all"
                     >
                       ✗ Reject
                     </button>
                   </div>
 
                   {rejectingId === payout.id && (
-                    <div className="mt-3 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl space-y-3">
-                      <p className="text-xs font-black text-red-400 uppercase tracking-widest">
+                    <div className="mt-3 p-4 bg-[#FF453A]/5 border border-red-500/20 rounded-2xl space-y-3">
+                      <p className="text-[13px] font-bold text-[#FF453A]  ">
                         Rejection Reason
                       </p>
                       <textarea
@@ -1671,19 +1670,19 @@ const Admin = () => {
                         onChange={(e) => setRejectReason(e.target.value)}
                         placeholder="Explain why this payout is being rejected..."
                         rows={3}
-                        className="w-full bg-white/5 border border-red-500/20 rounded-xl p-3 text-sm text-white placeholder-smash-gray outline-none focus:border-red-500/50 resize-none"
+                        className="w-full bg-white/5 border border-red-500/20 rounded-xl p-3 text-[13px] text-white placeholder-[#737373] outline-none focus:border-red-500/50 resize-none"
                       />
                       <div className="flex gap-2">
                         <button
                           onClick={() => { rejectPayout(payout.id, rejectReason); setRejectingId(null); }}
                           disabled={!rejectReason.trim()}
-                          className="flex-1 h-10 bg-red-500 text-white rounded-xl font-bold text-sm disabled:opacity-40"
+                          className="flex-1 h-10 bg-[#FF453A] text-white rounded-xl font-bold text-[13px] disabled:opacity-40"
                         >
                           Confirm Rejection
                         </button>
                         <button
                           onClick={() => setRejectingId(null)}
-                          className="px-4 h-10 bg-white/5 text-smash-gray rounded-xl font-bold text-sm"
+                          className="px-4 h-10 bg-white/5 text-[#B0B0B0] rounded-xl font-bold text-[13px]"
                         >
                           Cancel
                         </button>
@@ -1700,57 +1699,57 @@ const Admin = () => {
   )}
 
               {activeTab === 'songs' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                  <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                  <div className="p-5 border-b border-white/10 flex items-center justify-between">
                      <div>
-                        <h3 className="font-studio font-black italic uppercase text-lg">Asset Master List</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Full Song Database Governance</p>
+                        <h3 className="font-studio font-bold italic  text-[15px]">Asset Master List</h3>
+                        <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Full Song Database Governance</p>
                      </div>
                      <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-black uppercase text-smash-gray tracking-widest">Global Assets: {allSongs.length}</p>
+                        <p className="text-[13px] font-bold  text-[#B0B0B0] ">Global Assets: {allSongs.length}</p>
                      </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
+                    <table className="w-full text-left text-[13px]">
+                      <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                         <tr>
-                          <th className="px-8 py-5">Production</th>
-                          <th className="px-8 py-5">Artist Signature</th>
-                          <th className="px-8 py-5">Network Status</th>
-                          <th className="px-8 py-5 text-right">Moderation Logic</th>
+                          <th className="px-4 py-3">Production</th>
+                          <th className="px-4 py-3">Artist Signature</th>
+                          <th className="px-4 py-3">Network Status</th>
+                          <th className="text-right px-4 py-3">Moderation Logic</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
                         {allSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
                           <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
-                            <td className="px-8 py-6">
+                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-smash-purple group-hover:scale-105 transition-transform">
+                                  <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[#00A3FF] group-hover:scale-105 transition-transform">
                                      <Music2 size={18} />
                                   </div>
                                   <div>
-                                    <p className="font-bold text-sm text-white leading-none mb-1 group-hover:text-smash-purple transition-colors truncate max-w-[200px]">{song.title}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray opacity-60">{song.genre}</p>
+                                    <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#00A3FF] transition-colors truncate max-w-[200px]">{song.title}</p>
+                                    <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60">{song.genre}</p>
                                   </div>
                                </div>
                             </td>
-                            <td className="px-8 py-6">
+                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                <p className="font-bold text-white/80">{song.profiles?.stage_name || 'Unknown Entity'}</p>
                             </td>
-                            <td className="px-8 py-6">
+                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${song.approved ? 'bg-smash-green' : 'bg-smash-orange'} animate-pulse`} />
-                                  <span className={`text-[9px] font-black uppercase tracking-widest ${song.approved ? 'text-smash-green' : 'text-smash-orange'}`}>
+                                  <div className={`w-1.5 h-1.5 rounded-full ${song.approved ? 'bg-[#22C55E]' : 'bg-[#0084D6]'} animate-pulse`} />
+                                  <span className={`text-[13px] font-bold   ${song.approved ? 'text-[#22C55E]' : 'text-[#FF453A]'}`}>
                                      {song.approved ? 'Broadcasting' : 'Hold / Review'}
                                   </span>
                                 </div>
                             </td>
-                            <td className="px-8 py-6 text-right">
+                            <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                <div className="flex items-center justify-end gap-3">
                                   {!song.approved && (
-                                    <button onClick={() => approveSong(song.id)} className="px-4 py-2 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-smash-green hover:text-white transition-all shadow-lg active:scale-95">Release</button>
+                                    <button onClick={() => approveSong(song.id)} className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">Release</button>
                                   )}
-                                  <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-red-500 text-smash-gray hover:text-white rounded-lg transition-all">
+                                  <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all">
                                     <Trash2 size={14} />
                                   </button>
                                </div>
@@ -1766,43 +1765,43 @@ const Admin = () => {
               {activeTab === 'agents' && (
                 <div className="space-y-6">
                   {/* Agents Pipeline */}
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                    <div className="p-8 border-b border-white/5">
-                       <h3 className="font-studio font-black italic uppercase text-lg">Agent Applications</h3>
-                       <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Pending approvals</p>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                    <div className="p-5 border-b border-white/10">
+                       <h3 className="font-studio font-bold italic  text-[15px]">Agent Applications</h3>
+                       <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Pending approvals</p>
                     </div>
                     {agentApplications.length === 0 ? (
                       <div className="p-8 text-center border-t border-white/5">
-                        <p className="text-smash-gray text-xs font-black tracking-widest uppercase">No pending agent applications</p>
+                        <p className="text-[#B0B0B0] text-[13px] font-bold  ">No pending agent applications</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
-                          <thead>
+                          <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                             <tr className="border-b border-white/5">
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">User</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">Phone</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 w-1/4">Date</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 text-right w-1/4">Actions</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 w-1/4 px-4 py-3">User</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 w-1/4 px-4 py-3">Phone</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 w-1/4 px-4 py-3">Date</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 text-right w-1/4 px-4 py-3">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-white/5">
                             {agentApplications.map((app) => (
                               <tr key={app.user_id} className="hover:bg-white/[0.02] transition-colors">
-                                <td className="px-8 py-6 text-sm font-bold text-white">{app.user_profiles?.full_name || 'Unknown'}</td>
-                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{app.phone}</td>
-                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{new Date(app.created_at).toLocaleDateString()}</td>
-                                <td className="px-8 py-6 text-right">
+                                <td className="md:px-5 text-[13px] font-bold text-white px-4 py-3 md:px-5 text-[13px]">{app.user_profiles?.full_name || 'Unknown'}</td>
+                                <td className="md:px-5 text-[13px] text-[#B0B0B0] font-mono px-4 py-3 md:px-5 text-[13px]">{app.phone}</td>
+                                <td className="md:px-5 text-[13px] text-[#B0B0B0] font-mono px-4 py-3 md:px-5 text-[13px]">{new Date(app.created_at).toLocaleDateString()}</td>
+                                <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                   <div className="flex gap-2 justify-end">
                                     <button
                                       onClick={() => adminApproveAgent(app.user_id)}
-                                      className="px-4 py-2 bg-[#00A3FF] hover:bg-[#0084D6] text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                      className="px-4 py-2 bg-[#00A3FF] hover:bg-[#0084D6] text-white rounded-lg text-[13px] font-bold   transition-all"
                                     >
                                       Approve
                                     </button>
                                     <button
                                       onClick={() => adminRejectAgent(app.user_id)}
-                                      className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                      className="px-4 py-2 bg-[#FF453A]/10 hover:bg-[#FF453A]/20 text-[#FF453A] rounded-lg text-[13px] font-bold   transition-all"
                                     >
                                       Reject
                                     </button>
@@ -1817,49 +1816,49 @@ const Admin = () => {
                   </motion.div>
 
                   {/* Approved Agents Roster */}
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                    <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                    <div className="p-5 border-b border-white/10 flex justify-between items-center">
                        <div>
-                         <h3 className="font-studio font-black italic uppercase text-lg">Approved Agents</h3>
-                         <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Active roster & payouts</p>
+                         <h3 className="font-studio font-bold italic  text-[15px]">Approved Agents</h3>
+                         <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Active roster & payouts</p>
                        </div>
                     </div>
                     {approvedAgents.length === 0 ? (
                       <div className="p-8 text-center border-t border-white/5">
-                        <p className="text-smash-gray text-xs font-black tracking-widest uppercase">No approved agents</p>
+                        <p className="text-[#B0B0B0] text-[13px] font-bold  ">No approved agents</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
-                          <thead>
+                          <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                             <tr className="border-b border-white/5">
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Agent</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Phone</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Referred</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60">Total Earned</th>
-                              <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] text-smash-gray/60 text-right">Actions</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 px-4 py-3">Agent</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 px-4 py-3">Phone</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 px-4 py-3">Referred</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 px-4 py-3">Total Earned</th>
+                              <th className="text-[13px] font-bold tracking-[0.25em] text-[#B0B0B0]/60 text-right px-4 py-3">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-white/5">
                             {approvedAgents.map((agent) => (
                               <tr key={agent.user_id} className="hover:bg-white/[0.02] transition-colors">
-                                <td className="px-8 py-6">
-                                  <p className="text-sm font-bold text-white">{agent.user_profiles?.full_name || 'Unknown'}</p>
-                                  <p className="text-xs text-[#00A3FF] font-mono">{agent.agent_code}</p>
+                                <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                                  <p className="text-[13px] font-bold text-white">{agent.user_profiles?.full_name || 'Unknown'}</p>
+                                  <p className="text-[13px] text-[#00A3FF] font-mono">{agent.agent_code}</p>
                                 </td>
-                                <td className="px-8 py-6 text-sm text-smash-gray font-mono">{agent.phone}</td>
-                                <td className="px-8 py-6 text-sm text-white font-bold">{agent.referred_count}</td>
-                                <td className="px-8 py-6 text-sm text-white font-mono font-bold">MK {(agent.total_earned || 0).toLocaleString()}</td>
-                                <td className="px-8 py-6 text-right">
+                                <td className="md:px-5 text-[13px] text-[#B0B0B0] font-mono px-4 py-3 md:px-5 text-[13px]">{agent.phone}</td>
+                                <td className="md:px-5 text-[13px] text-white font-bold px-4 py-3 md:px-5 text-[13px]">{agent.referred_count}</td>
+                                <td className="md:px-5 text-[13px] text-white font-mono font-bold px-4 py-3 md:px-5 text-[13px]">MK {(agent.total_earned || 0).toLocaleString()}</td>
+                                <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                   {agent.has_processing ? (
                                     <button
                                       onClick={() => adminCompleteAgentPayout(agent.user_id)}
-                                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-[13px] font-bold   transition-all"
                                     >
                                       Mark Payout Paid
                                     </button>
                                   ) : (
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Clear</span>
+                                    <span className="text-[13px] font-bold   text-[#B0B0B0]">Clear</span>
                                   )}
                                 </td>
                               </tr>
@@ -1873,51 +1872,51 @@ const Admin = () => {
               )}
 
               {activeTab === 'applications' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                  <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                  <div className="p-5 border-b border-white/10 flex justify-between items-center">
                      <div>
-                        <h3 className="font-studio font-black italic uppercase text-lg">Onboarding Pipeline</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Artist Intake Controls</p>
+                        <h3 className="font-studio font-bold italic  text-[15px]">Onboarding Pipeline</h3>
+                        <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Artist Intake Controls</p>
                      </div>
                   </div>
                   <div className="overflow-x-auto">
                     {applications.filter(app => (app.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (app.email || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
+                      <table className="w-full text-left text-[13px]">
+                        <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                           <tr>
-                            <th className="px-8 py-5">Applicant Intelligence</th>
-                            <th className="px-8 py-5">Verification Assets</th>
-                            <th className="px-8 py-5 text-right">Decision Engine</th>
+                            <th className="px-4 py-3">Applicant Intelligence</th>
+                            <th className="px-4 py-3">Verification Assets</th>
+                            <th className="text-right px-4 py-3">Decision Engine</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {applications.filter(app => (app.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (app.email || '').toLowerCase().includes(searchQuery.toLowerCase())).map((app) => (
                             <tr key={app.id} className="hover:bg-white/[0.02] transition-colors group">
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div>
-                                  <p className="font-bold text-lg text-white leading-none group-hover:text-smash-purple transition-colors mb-2">{app.stage_name}</p>
-                                  <p className="text-[9px] text-smash-gray uppercase font-black tracking-widest opacity-60 mb-1">{app.genre} • {app.city} • {app.phone}</p>
-                                  <p className="text-[10px] text-smash-purple font-bold tracking-tight lowercase underline opacity-60">{app.email}</p>
+                                  <p className="font-bold text-[15px] text-white leading-none group-hover:text-[#00A3FF] transition-colors mb-2">{app.stage_name}</p>
+                                  <p className="text-[13px] text-[#B0B0B0]  font-bold  opacity-60 mb-1">{app.genre} • {app.city} • {app.phone}</p>
+                                  <p className="text-[13px] text-[#00A3FF] font-bold tracking-tight lowercase underline opacity-60">{app.email}</p>
                                 </div>
                               </td>
-                              <td className="px-8 py-6 text-left">
+                              <td className="md:px-5 text-left px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-2">
                                  {app.id_document_url ? (
-                                   <span className="text-[10px] bg-[#00d68f]/15 text-[#00d68f] px-2 py-1 flex items-center gap-1 rounded-md uppercase font-bold"><ShieldCheck size={12} /> ID Verified</span>
+                                   <span className="text-[13px] bg-[#00d68f]/15 text-[#00d68f] px-2 py-1 flex items-center gap-1 rounded-md  font-bold"><ShieldCheck size={12} /> ID Verified</span>
                                  ) : (
-                                   <span className="text-[9px] font-black uppercase text-red-400 tracking-widest">Document Missing</span>
+                                   <span className="text-[13px] font-bold  text-[#FF453A] ">Document Missing</span>
                                  )}
                                 </div>
                               </td>
-                              <td className="px-8 py-6 text-right">
+                              <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center justify-end gap-3">
-                                   <button onClick={() => setSelectedApp(app)} className="px-5 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-smash-cyan hover:text-smash-cyan transition-all flex items-center gap-2">
+                                   <button onClick={() => setSelectedApp(app)} className="border border-white/10 text-white hover:border-white/30 h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">
                                       <ShieldCheck size={14} /> Review Details
                                    </button>
-                                   <button onClick={() => approveArtist(app)} className="h-9 w-9 bg-white text-black rounded-xl flex items-center justify-center hover:bg-smash-green hover:text-white transition-all shadow-lg active:scale-95 group/app tooltip" title="Approve">
+                                   <button onClick={() => approveArtist(app)} className="h-9 w-9 bg-white text-black rounded-xl flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-all shadow-lg active:scale-95 group/app tooltip" title="Approve">
                                       <CircleCheck size={16} />
                                    </button>
-                                   <button onClick={() => rejectArtist(app)} className="h-9 w-9 bg-white/5 text-smash-gray border border-white/5 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-95 group/rej tooltip" title="Reject">
+                                   <button onClick={() => rejectArtist(app)} className="border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/10 h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2" title="Reject">
                                       <X size={16} />
                                    </button>
                                 </div>
@@ -1928,10 +1927,10 @@ const Admin = () => {
                       </table>
                     ) : (
                       <div className="p-20 text-center">
-                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-smash-gray opacity-20">
+                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <Users size={32} />
                          </div>
-                         <p className="text-smash-gray font-black uppercase tracking-[0.2em] text-[10px] italic">Intake Queue Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Intake Queue Clear.</p>
                       </div>
                     )}
                   </div>
@@ -1939,13 +1938,13 @@ const Admin = () => {
               )}
 
               {activeTab === 'song-reviews' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                  <div className="p-8 border-b border-white/5">
-                     <h3 className="font-studio font-black italic uppercase text-lg">Content Compliance</h3>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Song Review & Approval Node</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                  <div className="p-5 border-b border-white/10">
+                     <h3 className="font-studio font-bold italic  text-[15px]">Content Compliance</h3>
+                     <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Song Review & Approval Node</p>
                   </div>
                   <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm text-smash-gray cursor-pointer">
+                    <label className="flex items-center gap-2 text-[13px] text-[#B0B0B0] cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedSongs.length === pendingSongs.length && pendingSongs.length > 0}
@@ -1957,7 +1956,7 @@ const Admin = () => {
                     {selectedSongs.length > 0 && (
                       <button
                         onClick={bulkApproveSongs}
-                        className="px-4 py-2 bg-smash-green text-white rounded-xl font-bold text-xs uppercase tracking-widest"
+                        className="px-4 py-2 bg-[#22C55E] text-white rounded-xl font-bold text-[13px]  "
                       >
                         ✅ Approve {selectedSongs.length} Selected
                       </button>
@@ -1965,19 +1964,19 @@ const Admin = () => {
                   </div>
                   <div className="overflow-x-auto">
                     {pendingSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
+                      <table className="w-full text-left text-[13px]">
+                        <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                           <tr>
-                            <th className="px-8 py-5">Production Payload</th>
-                            <th className="px-8 py-5">Artist Signature</th>
-                            <th className="px-8 py-5 text-center">Audio Preview</th>
-                            <th className="px-8 py-5 text-right">Moderation Logic</th>
+                            <th className="px-4 py-3">Production Payload</th>
+                            <th className="px-4 py-3">Artist Signature</th>
+                            <th className="text-center px-4 py-3">Audio Preview</th>
+                            <th className="text-right px-4 py-3">Moderation Logic</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {pendingSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
                             <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-4">
                                    <input
                                       type="checkbox"
@@ -1985,22 +1984,22 @@ const Admin = () => {
                                       onChange={(e) => setSelectedSongs(prev =>
                                         e.target.checked ? [...prev, song.id] : prev.filter(id => id !== song.id)
                                       )}
-                                      className="w-4 h-4 text-smash-purple bg-white/5 border-white/10 rounded cursor-pointer"
+                                      className="w-4 h-4 text-[#00A3FF] bg-white/5 border-white/10 rounded cursor-pointer"
                                     />
-                                   <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-smash-purple group-hover:scale-105 transition-transform">
+                                   <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[#00A3FF] group-hover:scale-105 transition-transform">
                                       <Music2 size={18} />
                                    </div>
                                    <div>
-                                      <p className="font-bold text-sm text-white leading-none mb-1 group-hover:text-smash-purple transition-colors">{song.title}</p>
-                                      <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray opacity-60">{song.genre}</p>
+                                      <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#00A3FF] transition-colors">{song.title}</p>
+                                      <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60">{song.genre}</p>
                                    </div>
                                 </div>
                               </td>
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <p className="font-bold text-white/80">{song.profiles?.stage_name || 'Unknown'}</p>
-                                <p className="text-[10px] text-smash-gray font-bold tracking-tight lowercase underline opacity-60">{song.profiles?.email}</p>
+                                <p className="text-[13px] text-[#B0B0B0] font-bold tracking-tight lowercase underline opacity-60">{song.profiles?.email}</p>
                               </td>
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-3">
                                    <button 
                                       onClick={() => togglePlay(song.audio_url, song.id)}
@@ -2021,10 +2020,10 @@ const Admin = () => {
                                    </div>
                                 </div>
                               </td>
-                              <td className="px-8 py-6 text-right">
+                              <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center justify-end gap-3">
-                                   <button onClick={() => approveSong(song.id)} className="px-4 py-2 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-smash-green hover:text-white transition-all shadow-lg active:scale-95">Authorize</button>
-                                   <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-red-500 text-smash-gray hover:text-white rounded-lg transition-all active:scale-95"><Trash2 size={14} /></button>
+                                   <button onClick={() => approveSong(song.id)} className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">Authorize</button>
+                                   <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all active:scale-95"><Trash2 size={14} /></button>
                                 </div>
                               </td>
                             </tr>
@@ -2033,10 +2032,10 @@ const Admin = () => {
                       </table>
                     ) : (
                       <div className="p-20 text-center">
-                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-smash-gray opacity-20">
+                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <ShieldCheck size={24} />
                          </div>
-                         <p className="text-smash-gray font-black uppercase tracking-[0.2em] text-[10px] italic">Compliance Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Compliance Clear.</p>
                       </div>
                     )}
                   </div>
@@ -2044,49 +2043,49 @@ const Admin = () => {
               )}
 
               {activeTab === 'snippet-reviews' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                  <div className="p-8 border-b border-white/5">
-                     <h3 className="font-studio font-black italic uppercase text-lg">Moto Feed Hub</h3>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Video & Audio Snippet Governance</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                  <div className="p-5 border-b border-white/10">
+                     <h3 className="font-studio font-bold italic  text-[15px]">Moto Feed Hub</h3>
+                     <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Video & Audio Snippet Governance</p>
                   </div>
                   <div className="overflow-x-auto">
                     {pendingSnippets.length > 0 ? (
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
+                      <table className="w-full text-left text-[13px]">
+                        <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                           <tr>
-                            <th className="px-8 py-5">Content Payload</th>
-                            <th className="px-8 py-5">Artist Signature</th>
-                            <th className="px-8 py-5 text-center">Visual/Audio Logic</th>
-                            <th className="px-8 py-5 text-right">Moderation Logic</th>
+                            <th className="px-4 py-3">Content Payload</th>
+                            <th className="px-4 py-3">Artist Signature</th>
+                            <th className="text-center px-4 py-3">Visual/Audio Logic</th>
+                            <th className="text-right px-4 py-3">Moderation Logic</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {pendingSnippets.map((snippet) => (
                             <tr key={snippet.id} className="hover:bg-white/[0.02] transition-colors group">
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center gap-4">
                                   <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 shrink-0 group-hover:scale-105 transition-transform">
                                     <img src={optimizeImage(snippet.cover_url, 100, 100)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                     {snippet.is_video && <div className="absolute inset-0 flex items-center justify-center bg-black/40"><Radio size={12} className="text-white animate-pulse" /></div>}
                                   </div>
                                   <div>
-                                    <p className="font-bold text-sm text-white leading-none mb-1 group-hover:text-smash-purple transition-colors truncate max-w-[140px]">{snippet.title}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray opacity-60 line-clamp-1 truncate max-w-[140px]">{snippet.caption}</p>
+                                    <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#00A3FF] transition-colors truncate max-w-[140px]">{snippet.title}</p>
+                                    <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60 line-clamp-1 truncate max-w-[140px]">{snippet.caption}</p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-8 py-6">
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <p className="font-bold text-white/80">{snippet.profiles?.stage_name || 'Unknown'}</p>
                               </td>
-                              <td className="px-8 py-6 text-center">
-                                <a href={snippet.media_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-smash-purple hover:text-smash-purple transition-all italic">
+                              <td className="md:px-5 text-center px-4 py-3 md:px-5 text-[13px]">
+                                <a href={snippet.media_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] font-bold   hover:border-[#00A3FF] hover:text-[#00A3FF] transition-all italic">
                                    Explore Meta {snippet.is_video ? '(VIDEO)' : '(AUDIO)'} <Radio size={12} />
                                 </a>
                               </td>
-                              <td className="px-8 py-6 text-right">
+                              <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex items-center justify-end gap-3">
-                                   <button onClick={() => approveSnippet(snippet.id)} className="px-4 py-2 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-smash-green hover:text-white transition-all shadow-lg active:scale-95">Authorize</button>
-                                   <button onClick={() => rejectSnippet(snippet.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-red-500 text-smash-gray hover:text-white rounded-lg transition-all active:scale-95"><Trash2 size={14} /></button>
+                                   <button onClick={() => approveSnippet(snippet.id)} className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">Authorize</button>
+                                   <button onClick={() => rejectSnippet(snippet.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all active:scale-95"><Trash2 size={14} /></button>
                                 </div>
                               </td>
                             </tr>
@@ -2095,10 +2094,10 @@ const Admin = () => {
                       </table>
                     ) : (
                       <div className="p-20 text-center">
-                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-smash-gray opacity-20">
+                         <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <Radio size={24} />
                          </div>
-                         <p className="text-smash-gray font-black uppercase tracking-[0.2em] text-[10px] italic">Feed Queue Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Feed Queue Clear.</p>
                       </div>
                     )}
                   </div>
@@ -2107,18 +2106,18 @@ const Admin = () => {
 
               {activeTab === 'ads' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                   <div className="relative group overflow-hidden p-10 bg-gradient-to-br from-smash-purple/10 to-[#111118] border border-white/5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
+                   <div className="relative group overflow-hidden p-10 bg-[#1A1A1A] border border-white/5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
                       <div className="relative z-10 space-y-2">
                         <div className="flex items-center gap-2 mb-2">
-                           <span className="w-2 h-2 bg-smash-orange rounded-full animate-ping" />
-                           <p className="text-[10px] font-black uppercase tracking-widest text-smash-orange">Ad Serving Node</p>
+                           <span className="w-2 h-2 bg-[#0084D6] rounded-full animate-ping" />
+                           <p className="text-[13px] font-bold   text-[#FF453A]">Ad Serving Node</p>
                         </div>
-                        <h4 className="text-4xl font-studio font-black italic text-white uppercase tracking-tighter leading-none">Campaign Console</h4>
-                        <p className="text-xs text-smash-gray font-bold max-w-sm">Inject audio-based commercial payloads directly into the global stream.</p>
+                        <h4 className="text-4xl font-studio font-bold italic text-white  tracking-tighter leading-none">Campaign Console</h4>
+                        <p className="text-[13px] text-[#B0B0B0] font-bold max-w-sm">Inject audio-based commercial payloads directly into the global stream.</p>
                       </div>
                       <button 
                         onClick={() => setShowAdForm(true)}
-                        className="relative z-10 px-8 py-5 bg-white text-black rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all shadow-2xl flex items-center gap-3 group/btn"
+                        className="relative z-10 px-8 py-5 bg-white text-black rounded-xl text-[11px] font-bold   hover:bg-[#0084D6] hover:text-white transition-all shadow-2xl flex items-center gap-3 group/btn"
                       >
                          <Plus size={18} className="group-hover/btn:rotate-90 transition-transform" /> Start New Campaign
                       </button>
@@ -2127,57 +2126,57 @@ const Admin = () => {
                       </div>
                    </div>
 
-                   <motion.div className="bg-[#111118] rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
-                     <div className="p-8 border-b border-white/5">
-                        <h4 className="font-studio font-black italic text-lg uppercase leading-none">Active Commercial Roster</h4>
+                   <motion.div className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
+                     <div className="p-5 border-b border-white/10">
+                        <h4 className="font-studio font-bold italic text-[15px]  leading-none">Active Commercial Roster</h4>
                      </div>
                      <div className="overflow-x-auto">
-                       <table className="w-full text-left text-sm">
-                         <thead className="bg-white/[0.02] text-smash-gray text-[9px] uppercase tracking-[0.2em] font-black">
+                       <table className="w-full text-left text-[13px]">
+                         <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
                            <tr>
-                             <th className="px-8 py-5">Campaign Source</th>
-                             <th className="px-8 py-5">Reach / Capacity</th>
-                             <th className="px-8 py-5">Network Status</th>
-                             <th className="px-8 py-5 text-right">Moderation Logic</th>
+                             <th className="px-4 py-3">Campaign Source</th>
+                             <th className="px-4 py-3">Reach / Capacity</th>
+                             <th className="px-4 py-3">Network Status</th>
+                             <th className="text-right px-4 py-3">Moderation Logic</th>
                            </tr>
                          </thead>
                          <tbody className="divide-y divide-white/5">
                            {ads.filter(ad => (ad.advertiser_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (ad.title || '').toLowerCase().includes(searchQuery.toLowerCase())).map(ad => (
                              <tr key={ad.id} className="hover:bg-white/[0.02] transition-colors group">
-                               <td className="px-8 py-6">
+                               <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                  <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-smash-orange">
+                                    <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[#FF453A]">
                                        <Radio size={18} />
                                     </div>
                                     <div>
-                                      <p className="font-bold text-sm text-white leading-none mb-1 group-hover:text-smash-orange transition-colors truncate max-w-[160px]">{ad.advertiser_name}</p>
-                                      <p className="text-[9px] font-black uppercase tracking-widest text-smash-gray opacity-60 leading-none truncate max-w-[160px]">{ad.title}</p>
+                                      <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#FF453A] transition-colors truncate max-w-[160px]">{ad.advertiser_name}</p>
+                                      <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60 leading-none truncate max-w-[160px]">{ad.title}</p>
                                     </div>
                                  </div>
                                </td>
-                               <td className="px-8 py-6">
+                               <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                   <div className="space-y-1.5">
-                                     <div className="flex items-center justify-between text-[10px] font-black uppercase text-smash-gray mb-1">
+                                     <div className="flex items-center justify-between text-[13px] font-bold  text-[#B0B0B0] mb-1">
                                        <span>{ad.plays_used.toLocaleString()} Delivered</span>
                                        <span>{Math.round((ad.plays_used / (ad.plays_purchased || 1)) * 100)}%</span>
                                      </div>
                                      <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-smash-orange group-hover:bg-white transition-colors" style={{ width: `${(ad.plays_used / (ad.plays_purchased || 1)) * 100}%` }} />
+                                        <div className="h-full bg-[#0084D6] group-hover:bg-white transition-colors" style={{ width: `${(ad.plays_used / (ad.plays_purchased || 1)) * 100}%` }} />
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-8 py-6">
-                                  <div className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest inline-flex items-center gap-2 ${ad.active ? 'bg-smash-green/10 text-smash-green border border-smash-green/10' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${ad.active ? 'bg-smash-green animate-pulse' : 'bg-red-500'}`} />
+                               <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                                  <div className={`px-4 py-1.5 rounded-lg text-[13px] font-bold   inline-flex items-center gap-2 ${ad.active ? 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/10' : 'bg-[#FF453A]/10 text-[#FF453A] border border-red-500/20'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${ad.active ? 'bg-[#22C55E] animate-pulse' : 'bg-[#FF453A]'}`} />
                                     {ad.active ? 'Broadcasting' : 'Halted'}
                                   </div>
                                </td>
-                               <td className="px-8 py-6 text-right">
+                               <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                   <div className="flex items-center justify-end gap-3">
-                                     <button onClick={() => toggleAdStatus(ad)} className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${ad.active ? 'bg-white/5 text-smash-orange hover:bg-smash-orange hover:text-black' : 'bg-smash-green/10 text-smash-green hover:bg-smash-green hover:text-white'}`}>
+                                     <button onClick={() => toggleAdStatus(ad)} className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${ad.active ? 'bg-white/5 text-[#FF453A] hover:bg-[#0084D6] hover:text-black' : 'bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E] hover:text-white'}`}>
                                        {ad.active ? <Pause size={14} /> : <Play size={14} />}
                                      </button>
-                                     <button onClick={() => deleteAd(ad.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 text-smash-gray hover:bg-red-500 hover:text-white rounded-lg transition-all">
+                                     <button onClick={() => deleteAd(ad.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 text-[#B0B0B0] hover:bg-[#FF453A] hover:text-white rounded-lg transition-all">
                                        <Trash2 size={14} />
                                      </button>
                                   </div>
@@ -2200,43 +2199,43 @@ const Admin = () => {
                           className="w-full max-w-xl bg-[#111] border border-white/10 rounded-[40px] p-8 space-y-6 relative max-h-[90vh] overflow-y-auto"
                         >
                           <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xl uppercase tracking-widest">Upload New Ad</h3>
+                            <h3 className="font-bold text-xl  ">Upload New Ad</h3>
                             <button onClick={() => setShowAdForm(false)} className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors">
                               <X size={18} />
                             </button>
                           </div>
 
                           <form onSubmit={handleAdUpload} className="space-y-4">
-                            <input name="advertiser_name" placeholder="Advertiser Name" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold focus:outline-none focus:border-smash-orange transition-all" />
-                            <input name="title" placeholder="Ad Title / Description" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold focus:outline-none focus:border-smash-orange transition-all" />
+                            <input name="advertiser_name" placeholder="Advertiser Name" required className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
+                            <input name="title" placeholder="Ad Title / Description" required className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
 
-                            <select name="type" className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold focus:outline-none focus:border-smash-orange transition-all appearance-none cursor-pointer">
+                            <select name="type" className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors">
                               <option value="platform">Platform Ad (Smashify promotes)</option>
                               <option value="artist">Artist Promotional Ad</option>
                               <option value="external">External Advertiser</option>
                             </select>
 
                             <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Audio File (MP3, max 30s)</label>
+                              <label className="text-[13px] font-bold   text-[#B0B0B0]">Audio File (MP3, max 30s)</label>
                               <input name="audio" type="file" accept="audio/mpeg, audio/mp3, .mp3" required
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-smash-orange file:text-black cursor-pointer" />
+                                className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Plays Purchased</label>
+                                <label className="text-[13px] font-bold   text-[#B0B0B0]">Plays Purchased</label>
                                 <input name="plays_purchased" type="number" min={100} defaultValue={1000} required
-                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold focus:outline-none focus:border-smash-orange transition-all" />
+                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Revenue Charged (MK)</label>
+                                <label className="text-[13px] font-bold   text-[#B0B0B0]">Revenue Charged (MK)</label>
                                 <input name="revenue" type="number" min={0} defaultValue={0}
-                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-bold focus:outline-none focus:border-smash-orange transition-all" />
+                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
                               </div>
                             </div>
 
                             <button type="submit" disabled={adUploading}
-                              className="w-full py-4 bg-smash-orange text-black rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all disabled:opacity-50 shadow-xl shadow-smash-orange/20"
+                              className="w-full py-4 bg-[#0084D6] text-black rounded-xl font-bold   text-[13px] hover:scale-[1.02] transition-all disabled:opacity-50 shadow-xl shadow-[#00A3FF]/20"
                             >
                               {adUploading ? 'Uploading...' : 'Activate Ad Campaign'}
                             </button>
@@ -2250,74 +2249,59 @@ const Admin = () => {
 
               {activeTab === 'maintenance' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                   <div className="bg-[#111118] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
-                     <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-6">System Maintenance</h2>
+                   <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 relative overflow-hidden">
+                     <h2 className="text-[22px] font-studio font-bold text-white mb-6">System Maintenance</h2>
                      
-                     <div className="flex flex-col md:flex-row gap-6 relative z-10">
-                        <div className="flex-1 space-y-6">
-                           <form onSubmit={saveMaintenanceConfig} className="space-y-4 max-w-xl">
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Maintenance Message</label>
-                                <textarea 
-                                  value={maintenance.message} 
-                                  onChange={e => setMaintenance({...maintenance, message: e.target.value})} 
-                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-orange transition-all min-h-[100px]"
-                                  placeholder="We are upgrading..."
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Estimated Time</label>
-                                <input 
-                                  type="text"
-                                  value={maintenance.estimatedTime} 
-                                  onChange={e => setMaintenance({...maintenance, estimatedTime: e.target.value})} 
-                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-orange transition-all"
-                                  placeholder="e.g. 30 minutes, 1 hour"
-                                />
-                              </div>
-                              <button 
-                                type="submit" 
-                                disabled={maintenanceLoading}
-                                className="px-6 py-3 bg-white/10 text-white rounded-lg font-bold text-sm hover:bg-white/20 transition-all"
-                              >
-                                {maintenanceLoading ? 'Saving...' : 'Save Configuration'}
-                              </button>
-                           </form>
+                     <div className="flex items-center justify-between py-4 border-b border-white/5 mb-6">
+                        <div>
+                          <p className="text-[14px] font-semibold text-white">Maintenance Mode</p>
+                          <p className="text-[12px] text-[#B0B0B0] mt-1">Enable to show the maintenance screen to all users.</p>
                         </div>
-                        
-                        <div className="w-full md:w-80 shrink-0 p-6 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center text-center justify-center space-y-4">
-                           <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${maintenance.active ? 'bg-smash-orange text-white shadow-smash-orange/30 animate-pulse' : 'bg-white/10 text-smash-gray'}`}>
-                              <Settings size={36} className={maintenance.active ? 'animate-spin-slow' : ''} />
-                           </div>
-                           <div>
-                             <h4 className="font-bold text-lg">{maintenance.active ? 'Maintenance Mode ACTIVE' : 'Maintenance Mode OFF'}</h4>
-                             <p className="text-xs text-smash-gray mt-1">
-                               {maintenance.active ? 'Users currently see the maintenance screen.' : 'App is functioning normally.'}
-                             </p>
-                           </div>
-                           
-                           <button 
-                             type="button"
-                             onClick={() => toggleMaintenance(!maintenance.active)}
-                             disabled={maintenanceLoading}
-                             className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-xl ${
-                               maintenance.active 
-                               ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20' 
-                               : 'bg-smash-orange hover:bg-smash-orange/90 text-black shadow-smash-orange/20'
-                             }`}
-                           >
-                              {maintenanceLoading ? 'Updating...' : (maintenance.active ? 'Deactivate Maintenance' : 'Activate Maintenance')}
-                           </button>
-                        </div>
+                        <button
+                          onClick={() => toggleMaintenance(!maintenance.active)}
+                          disabled={maintenanceLoading}
+                          className={`w-11 h-6 rounded-full flex items-center transition-colors px-1 ${maintenance.active ? 'bg-[#00A3FF]' : 'bg-white/10'}`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform ${maintenance.active ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
                      </div>
+
+                     <form onSubmit={saveMaintenanceConfig} className="space-y-4 max-w-xl">
+                        <div className="space-y-2">
+                          <label className="text-[13px] text-[#B0B0B0]">Maintenance Message</label>
+                          <textarea
+                             value={maintenance.message}
+                             onChange={e => setMaintenance({...maintenance, message: e.target.value})}
+                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[12px] min-h-[100px] text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            placeholder="We are upgrading..."
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[13px] text-[#B0B0B0]">Estimated Time</label>
+                          <input 
+                            type="text"
+                            value={maintenance.estimatedTime}
+                            onChange={e => setMaintenance({...maintenance, estimatedTime: e.target.value})}
+                            className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            placeholder="e.g. 30 minutes, 1 hour"
+                          />
+                        </div>
+                        <button
+                           type="submit"
+                           disabled={maintenanceLoading}
+                          className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          {maintenanceLoading ? 'Saving...' : 'Save Configuration'}
+                        </button>
+                     </form>
                    </div>
                    
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
                        <div className="flex items-center justify-between">
                          <div>
-                           <p className="font-black text-white text-sm">Manual Vault Job</p>
-                           <p className="text-xs text-smash-gray mt-1">
+                           <p className="font-bold text-white text-[13px]">Manual Vault Job</p>
+                           <p className="text-[13px] text-[#B0B0B0] mt-1">
                              Vault tracks for expired subscriptions. Runs automatically at 2am daily.
                            </p>
                          </div>
@@ -2329,7 +2313,7 @@ const Admin = () => {
                              if (error) toast.error('Vault job failed: ' + error.message);
                              else toast.success('Vault job completed successfully.');
                            }}
-                           className="px-4 py-2 bg-smash-orange/20 text-smash-orange border border-smash-orange/20 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-smash-orange/30 transition-all whitespace-nowrap"
+                           className="px-4 py-2 bg-[#0084D6]/20 text-[#FF453A] border border-[#00A3FF]/20 rounded-xl font-bold text-[13px]   hover:bg-[#0084D6]/30 transition-all whitespace-nowrap"
                          >
                            Run Now
                          </button>
@@ -2339,8 +2323,8 @@ const Admin = () => {
                      <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
                        <div className="flex items-center justify-between">
                          <div>
-                           <p className="font-black text-white text-sm">Slot Reclassification</p>
-                           <p className="text-xs text-smash-gray mt-1">
+                           <p className="font-bold text-white text-[13px]">Slot Reclassification</p>
+                           <p className="text-[13px] text-[#B0B0B0] mt-1">
                              Reclassifies songs based on monthly plays. Runs automatically at 3am daily.
                            </p>
                          </div>
@@ -2352,7 +2336,7 @@ const Admin = () => {
                              if (error) toast.error('Reclassification failed: ' + error.message);
                              else toast.success('Slot reclassification completed successfully.');
                            }}
-                           className="px-4 py-2 bg-smash-green/20 text-smash-green border border-smash-green/20 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-smash-green/30 transition-all whitespace-nowrap"
+                           className="px-4 py-2 bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/20 rounded-xl font-bold text-[13px]   hover:bg-[#22C55E]/30 transition-all whitespace-nowrap"
                          >
                            Run Now
                          </button>
@@ -2364,22 +2348,22 @@ const Admin = () => {
 
               {activeTab === 'notifications' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                   <div className="bg-[#111118] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
-                     <h2 className="text-2xl font-black uppercase tracking-widest text-white mb-6">Send Out Notifications</h2>
+                   <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 relative overflow-hidden">
+                     <h2 className="text-[22px] font-studio font-bold text-white mb-6">Send Out Notifications</h2>
                      
                      <form onSubmit={handleSendNotification} className="space-y-6 max-w-2xl">
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Target Audience</label>
+                           <label className="text-[13px] font-bold   text-[#B0B0B0]">Target Audience</label>
                            <div className="flex flex-wrap gap-2">
                              {['all', 'artists', 'listeners', 'specific'].map((t) => (
                                <button
                                  key={t}
                                  type="button"
                                  onClick={() => setNotificationTarget(t as any)}
-                                 className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors ${
+                                 className={`px-4 py-2 rounded-lg text-[13px] font-bold  tracking-[0.12em] transition-colors ${
                                    notificationTarget === t 
-                                   ? 'bg-smash-purple text-white' 
-                                   : 'bg-white/5 text-smash-gray hover:bg-white/10 hover:text-white'
+                                   ? 'bg-[#0084D6] text-white' 
+                                   : 'bg-white/5 text-[#B0B0B0] hover:bg-white/10 hover:text-white'
                                  }`}
                                >
                                  {t}
@@ -2390,7 +2374,7 @@ const Admin = () => {
 
                         {notificationTarget === 'specific' && (
                           <div className="space-y-2 relative">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Search User (Specific User)</label>
+                            <label className="text-[13px] font-bold   text-[#B0B0B0]">Search User (Specific User)</label>
                             <input 
                               type="text"
                               value={userSearchText}
@@ -2401,10 +2385,10 @@ const Admin = () => {
                               }}
                               onFocus={() => setShowUserDropdown(true)}
                               placeholder="Search by name or UUID..."
-                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all"
+                              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium focus:outline-none focus:border-[#00A3FF] transition-all"
                             />
                             {notificationUserId && (
-                              <p className="text-[10px] text-green-400 mt-1">Selected UUID: {notificationUserId}</p>
+                              <p className="text-[13px] text-green-400 mt-1">Selected UUID: {notificationUserId}</p>
                             )}
 
                             <AnimatePresence>
@@ -2428,16 +2412,16 @@ const Admin = () => {
                                         className="w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between"
                                       >
                                         <div>
-                                          <p className="text-sm font-bold text-white">{u.name}</p>
-                                          <p className="text-[10px] text-smash-gray font-mono">{u.id}</p>
+                                          <p className="text-[13px] font-bold text-white">{u.name}</p>
+                                          <p className="text-[13px] text-[#B0B0B0] font-mono">{u.id}</p>
                                         </div>
-                                        <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${u.type === 'Artist' ? 'bg-smash-orange/20 text-smash-orange' : 'bg-smash-purple/20 text-smash-purple'}`}>
+                                        <span className={`text-[13px]  font-bold px-2 py-1 rounded-md ${u.type === 'Artist' ? 'bg-[#0084D6]/20 text-[#FF453A]' : 'bg-[#0084D6]/20 text-[#00A3FF]'}`}>
                                           {u.type}
                                         </span>
                                       </button>
                                     ))
                                   ) : (
-                                    <div className="px-4 py-3 text-sm text-smash-gray">No users found</div>
+                                    <div className="px-4 py-3 text-[13px] text-[#B0B0B0]">No users found</div>
                                   )}
                                 </motion.div>
                               )}
@@ -2446,31 +2430,31 @@ const Admin = () => {
                         )}
 
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Notification Message</label>
+                          <label className="text-[13px] font-bold   text-[#B0B0B0]">Notification Message</label>
                           <textarea 
                             value={notificationMessage}
                             onChange={e => setNotificationMessage(e.target.value)}
                             placeholder="Type the message to send out..."
-                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all min-h-[120px]"
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium focus:outline-none focus:border-[#00A3FF] transition-all min-h-[120px]"
                             required
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-smash-gray">Optional Link (Where should it go when clicked?)</label>
+                          <label className="text-[13px] font-bold   text-[#B0B0B0]">Optional Link (Where should it go when clicked?)</label>
                           <input 
                             type="text"
                             value={notificationLink}
                             onChange={e => setNotificationLink(e.target.value)}
                             placeholder="e.g. /discover or /artist-hub"
-                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:border-smash-purple transition-all"
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium focus:outline-none focus:border-[#00A3FF] transition-all"
                           />
                         </div>
 
                         <button 
                           type="submit"
                           disabled={notificationSending}
-                          className="px-8 py-4 bg-smash-purple hover:bg-smash-purple/90 text-white rounded-xl font-bold uppercase tracking-widest text-sm transition-all flex items-center gap-2"
+                          className="px-8 py-4 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-xl font-bold   text-[13px] transition-all flex items-center gap-2"
                         >
                           <Send size={18} />
                           {notificationSending ? 'Sending...' : 'Dispatch Notification'}
@@ -2484,17 +2468,17 @@ const Admin = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-black font-display uppercase italic text-white">
+                      <h2 className="text-[22px] font-studio font-bold text-white mb-6">
                         Subscription Expiry Monitor
                       </h2>
-                      <p className="text-xs text-smash-gray mt-1">
+                      <p className="text-[13px] text-[#B0B0B0] mt-1">
                         Artists expiring within 30 days — {expiringArtists.length} found
                       </p>
                     </div>
                   </div>
 
                   {expiringArtists.length === 0 ? (
-                    <div className="text-center py-16 text-smash-gray">
+                    <div className="text-center py-16 text-[#B0B0B0]">
                       <p className="text-4xl mb-4">✅</p>
                       <p className="font-bold">No artists expiring in the next 30 days</p>
                     </div>
@@ -2509,26 +2493,26 @@ const Admin = () => {
 
                         return (
                           <div key={artist.id} className={`p-4 rounded-2xl border ${
-                            isExpired ? 'bg-red-500/5 border-red-500/20' :
-                            isUrgent  ? 'bg-yellow-500/5 border-yellow-500/20' :
+                            isExpired ? 'bg-[#FF453A]/5 border-red-500/20' :
+                            isUrgent  ? 'bg-[#F59E0B]/5 border-[#F59E0B]/20' :
                                         'bg-white/5 border-white/10'
                           }`}>
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-black text-white">{artist.stage_name}</p>
-                                <p className="text-xs text-smash-gray mt-0.5">
+                                <p className="font-bold text-white">{artist.stage_name}</p>
+                                <p className="text-[13px] text-[#B0B0B0] mt-0.5">
                                   {artist.artist_tier} · Wallet: MK {Number(artist.wallet_balance || 0).toLocaleString()}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <span className={`text-xs font-black px-3 py-1 rounded-full ${
-                                  isExpired ? 'bg-red-500/20 text-red-400' :
-                                  isUrgent  ? 'bg-yellow-500/20 text-yellow-400' :
+                                <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${
+                                  isExpired ? 'bg-[#FF453A]/20 text-[#FF453A]' :
+                                  isUrgent  ? 'bg-[#F59E0B]/20 text-yellow-400' :
                                               'bg-white/10 text-white'
                                 }`}>
                                   {isExpired ? 'EXPIRED' : `${daysLeft} days left`}
                                 </span>
-                                <p className="text-[10px] text-smash-gray mt-1">
+                                <p className="text-[13px] text-[#B0B0B0] mt-1">
                                   {new Date(artist.subscription_ends).toLocaleDateString('en-GB')}
                                 </p>
                               </div>
@@ -2549,10 +2533,10 @@ const Admin = () => {
             <AnimatePresence>
               {selectedApp && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-                  <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#141428] border border-[#22223e] rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
-                    <div className="p-5 border-b border-[#22223e] flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
-                      <h3 className="font-bold text-lg text-white">Application Details</h3>
-                      <button onClick={() => setSelectedApp(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#141428] border border-[#22223e] text-[#7878a0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
+                  <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
+                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
+                      <h3 className="font-bold text-[15px] text-white">Application Details</h3>
+                      <button onClick={() => setSelectedApp(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-white/10 text-[#B0B0B0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
                         <X size={16} />
                       </button>
                     </div>
@@ -2563,48 +2547,48 @@ const Admin = () => {
                         </div>
                         <div>
                           <div className="font-bold text-xl text-white">{selectedApp.stage_name}</div>
-                          <div className="text-[13px] text-[#7878a0] mt-1">Real name: {selectedApp.full_name || selectedApp.name}</div>
+                          <div className="text-[13px] text-[#B0B0B0] mt-1">Real name: {selectedApp.full_name || selectedApp.name}</div>
                           <div className="mt-2 flex gap-2">
-                             <span className="bg-[#ffaa00]/15 text-[#ffaa00] px-2 py-1 rounded-md text-[11px] font-bold uppercase">{selectedApp.status || 'Pending'}</span>
-                             <span className="bg-[#ff6b35]/15 text-[#ff6b35] px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest font-mono">APP-{selectedApp.id?.split('-')[0]}</span>
+                             <span className="bg-[#ffaa00]/15 text-[#ffaa00] px-2 py-1 rounded-md text-[11px] font-bold ">{selectedApp.status || 'Pending'}</span>
+                             <span className="bg-[#ff6b35]/15 text-[#ff6b35] px-2 py-1 rounded-md text-[11px] font-bold   font-mono">APP-{selectedApp.id?.split('-')[0]}</span>
                           </div>
                         </div>
                       </div>
 
-                      <h4 className="font-bold text-sm text-[#ff6b35] mb-2 mt-6">Personal Identity</h4>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Email</span><span className="font-semibold text-white">{selectedApp.email}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Phone</span><span className="font-semibold text-white">{selectedApp.phone || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">City</span><span className="font-semibold text-white">{selectedApp.city || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">ID Type</span><span className="font-semibold text-white">{selectedApp.id_type || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">ID Number</span><span className="font-medium text-white font-mono">{selectedApp.national_id_number || selectedApp.nrc_number || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedApp.agent_reference || selectedApp.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedApp.agent_reference || selectedApp.referral_code || 'N/A'}</span></div>
+                      <h4 className="font-bold text-[13px] text-[#ff6b35] mb-2 mt-6">Personal Identity</h4>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Email</span><span className="font-semibold text-white">{selectedApp.email}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Phone</span><span className="font-semibold text-white">{selectedApp.phone || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">City</span><span className="font-semibold text-white">{selectedApp.city || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">ID Type</span><span className="font-semibold text-white">{selectedApp.id_type || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">ID Number</span><span className="font-medium text-white font-mono">{selectedApp.national_id_number || selectedApp.nrc_number || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedApp.agent_reference || selectedApp.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedApp.agent_reference || selectedApp.referral_code || 'N/A'}</span></div>
 
-                      <h4 className="font-bold text-sm text-[#ff6b35] mb-2 mt-8">Verification Documents</h4>
+                      <h4 className="font-bold text-[13px] text-[#ff6b35] mb-2 mt-8">Verification Documents</h4>
                       <div className="grid grid-cols-2 gap-4 mb-4">
                          <div>
-                            <p className="text-[11px] text-[#7878a0] mb-1">ID Document</p>
+                            <p className="text-[11px] text-[#B0B0B0] mb-1">ID Document</p>
                             {selectedApp.id_document_url ? (
-                              <img src={selectedApp.id_document_url} alt="ID Document" className="w-full rounded-lg border border-[#22223e] hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.id_document_url, '_blank')} />
+                              <img src={selectedApp.id_document_url} alt="ID Document" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.id_document_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#7878a0]">Not provided</div>
+                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                          <div>
-                            <p className="text-[11px] text-[#7878a0] mb-1">Selfie Image</p>
+                            <p className="text-[11px] text-[#B0B0B0] mb-1">Selfie Image</p>
                             {selectedApp.selfie_url ? (
-                              <img src={selectedApp.selfie_url} alt="Selfie" className="w-full rounded-lg border border-[#22223e] hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.selfie_url, '_blank')} />
+                              <img src={selectedApp.selfie_url} alt="Selfie" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.selfie_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#7878a0]">Not provided</div>
+                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                       </div>
                       
-                      <h4 className="font-bold text-sm text-[#ff6b35] mb-2 mt-8">Artist Roster Data</h4>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Stage Name</span><span className="font-semibold text-white">{selectedApp.stage_name}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Genre</span><span className="font-semibold text-white">{selectedApp.genre}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedApp.agent_reference || selectedApp.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedApp.agent_reference || selectedApp.referral_code || 'N/A'}</span></div>
+                      <h4 className="font-bold text-[13px] text-[#ff6b35] mb-2 mt-8">Artist Roster Data</h4>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Stage Name</span><span className="font-semibold text-white">{selectedApp.stage_name}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Genre</span><span className="font-semibold text-white">{selectedApp.genre}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedApp.agent_reference || selectedApp.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedApp.agent_reference || selectedApp.referral_code || 'N/A'}</span></div>
 
-                      <div className="flex gap-3 mt-8 pt-5 border-t border-[#22223e]">
+                      <div className="flex gap-3 mt-8 pt-5 border-t border-white/10">
                          <button onClick={() => { approveArtist(selectedApp); setSelectedApp(null); }} className="flex-1 py-3 bg-[#00d68f] hover:brightness-110 text-black font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all">
                             <CircleCheck size={16} /> Approve Application
                          </button>
@@ -2618,10 +2602,10 @@ const Admin = () => {
               )}
               {selectedArtist && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-                  <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#141428] border border-[#22223e] rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
-                    <div className="p-5 border-b border-[#22223e] flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
-                      <h3 className="font-bold text-lg text-white">Artist Profile</h3>
-                      <button onClick={() => setSelectedArtist(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#141428] border border-[#22223e] text-[#7878a0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
+                  <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
+                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
+                      <h3 className="font-bold text-[15px] text-white">Artist Profile</h3>
+                      <button onClick={() => setSelectedArtist(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-white/10 text-[#B0B0B0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
                         <X size={16} />
                       </button>
                     </div>
@@ -2635,54 +2619,54 @@ const Admin = () => {
                             {selectedArtist.stage_name}
                             {(selectedArtist.verified || selectedArtist.is_verified) && <ShieldCheck size={18} className="text-[#00d68f]" />}
                           </div>
-                          <div className="text-[13px] text-[#7878a0] mt-1">{selectedArtist.genre} • {selectedArtist.city || 'Malawi'}</div>
+                          <div className="text-[13px] text-[#B0B0B0] mt-1">{selectedArtist.genre} • {selectedArtist.city || 'Malawi'}</div>
                           <div className="mt-2 flex gap-2">
-                             <span className="bg-[#4c9aff]/15 text-[#4c9aff] px-2 py-1 rounded-md text-[11px] font-bold uppercase">{selectedArtist.artist_tier || 'Standard'} Tier</span>
-                             <span className="bg-[#ff6b35]/15 text-[#ff6b35] px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest font-mono">AP-{selectedArtist.id?.split('-')[0]}</span>
+                             <span className="bg-[#4c9aff]/15 text-[#4c9aff] px-2 py-1 rounded-md text-[11px] font-bold ">{selectedArtist.artist_tier || 'Standard'} Tier</span>
+                             <span className="bg-[#ff6b35]/15 text-[#ff6b35] px-2 py-1 rounded-md text-[11px] font-bold   font-mono">AP-{selectedArtist.id?.split('-')[0]}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-[#22223e]">
-                            <p className="text-[11px] text-[#7878a0] uppercase font-bold tracking-widest mb-1">Wallet Balance</p>
+                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-white/10">
+                            <p className="text-[11px] text-[#B0B0B0]  font-bold  mb-1">Wallet Balance</p>
                             <p className="text-xl font-bold text-[#00d68f]">MK {selectedArtist.wallet_balance?.toLocaleString() || 0}</p>
                          </div>
-                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-[#22223e]">
-                            <p className="text-[11px] text-[#7878a0] uppercase font-bold tracking-widest mb-1">Pending Songs</p>
+                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-white/10">
+                            <p className="text-[11px] text-[#B0B0B0]  font-bold  mb-1">Pending Songs</p>
                             <p className="text-xl font-bold text-[#ffaa00]">{selectedArtist.pending_songs || 0}</p>
                          </div>
                       </div>
 
-                      <h4 className="font-bold text-sm text-white mb-2">Platform Identity</h4>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Email Address</span><span className="font-semibold text-white">{selectedArtist.email || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Phone / Mobile Money</span><span className="font-semibold text-white">{selectedArtist.phone || 'N/A'}</span></div>
+                      <h4 className="font-bold text-[13px] text-white mb-2">Platform Identity</h4>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Email Address</span><span className="font-semibold text-white">{selectedArtist.email || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Phone / Mobile Money</span><span className="font-semibold text-white">{selectedArtist.phone || 'N/A'}</span></div>
 
-                      <h4 className="font-bold text-sm text-white mb-2 mt-8">KYC Information</h4>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Name</span><span className="font-semibold text-white">{selectedArtist.full_name || selectedArtist.name || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">ID Number</span><span className="font-medium text-white font-mono">{selectedArtist.nrc_number || 'N/A'}</span></div>
-                      <div className="flex justify-between py-2 border-b border-[#22223e] text-[13px]"><span className="text-[#7878a0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedArtist.agent_reference || selectedArtist.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedArtist.agent_reference || selectedArtist.referral_code || 'N/A'}</span></div>
+                      <h4 className="font-bold text-[13px] text-white mb-2 mt-8">KYC Information</h4>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Name</span><span className="font-semibold text-white">{selectedArtist.full_name || selectedArtist.name || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">ID Number</span><span className="font-medium text-white font-mono">{selectedArtist.nrc_number || 'N/A'}</span></div>
+                      <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedArtist.agent_reference || selectedArtist.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedArtist.agent_reference || selectedArtist.referral_code || 'N/A'}</span></div>
 
                       <div className="grid grid-cols-2 gap-4 mt-4 mb-4">
                          <div>
-                            <p className="text-[11px] text-[#7878a0] mb-1">ID Document</p>
+                            <p className="text-[11px] text-[#B0B0B0] mb-1">ID Document</p>
                             {selectedArtist.id_document_url ? (
-                              <img src={selectedArtist.id_document_url} alt="ID Document" className="w-full rounded-lg border border-[#22223e] hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.id_document_url, '_blank')} />
+                              <img src={selectedArtist.id_document_url} alt="ID Document" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.id_document_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#7878a0]">Not provided</div>
+                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                          <div>
-                            <p className="text-[11px] text-[#7878a0] mb-1">Selfie Image</p>
+                            <p className="text-[11px] text-[#B0B0B0] mb-1">Selfie Image</p>
                             {selectedArtist.selfie_url ? (
-                              <img src={selectedArtist.selfie_url} alt="Selfie" className="w-full rounded-lg border border-[#22223e] hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.selfie_url, '_blank')} />
+                              <img src={selectedArtist.selfie_url} alt="Selfie" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.selfie_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#7878a0]">Not provided</div>
+                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                       </div>
 
-                      <div className="flex gap-3 mt-8 pt-5 border-t border-[#22223e]">
+                      <div className="flex gap-3 mt-8 pt-5 border-t border-white/10">
                          <button 
                             onClick={() => { toggleArtistVerification(selectedArtist.id, !!(selectedArtist.verified || selectedArtist.is_verified)); setSelectedArtist(null); }} 
                             className={`flex-1 py-3 font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all ${
@@ -2712,46 +2696,45 @@ const Admin = () => {
 const AdminSidebarItem = ({ id, label, icon: Icon, activeTab, setActiveTab, collapsed, count }: any) => (
   <button
     onClick={() => setActiveTab(id)}
-    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
+    className={`w-full flex items-center gap-3 px-3 py-2 rounded-[10px] transition-colors group relative ${
       activeTab === id 
-        ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' 
-        : 'text-smash-gray hover:text-white hover:bg-white/5'
+        ? 'bg-[#00A3FF]/10 text-[#00A3FF]' 
+        : 'text-[#B0B0B0] hover:text-white hover:bg-white/5'
     }`}
   >
-    <Icon size={18} className={activeTab === id ? 'text-white' : 'text-smash-gray group-hover:text-white'} />
+    <Icon size={18} className={activeTab === id ? 'text-[#00A3FF]' : 'text-[#B0B0B0] group-hover:text-white transition-colors'} />
     {!collapsed && (
       <div className="flex-1 flex items-center justify-between overflow-hidden">
-        <span className="text-[11px] font-black uppercase tracking-wider truncate">{label}</span>
+        <span className="text-[13px] font-medium truncate">{label}</span>
         {count !== undefined && count > 0 && (
-          <span className="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse">
+          <span className="bg-[#FF453A]/15 text-[#FF453A] text-[11px] font-medium px-2 py-0.5 rounded-full">
             {count}
           </span>
         )}
       </div>
     )}
     {collapsed && count !== undefined && count > 0 && (
-      <div className="absolute left-14 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-[#0c0c10]">
-         <span className="text-[7px] font-black text-white">{count}</span>
-      </div>
+      <div className="absolute right-2 top-2 w-2 h-2 rounded-full bg-[#FF453A]" />
     )}
   </button>
 );
 
 const KpiCard = ({ title, value, trend, icon: Icon, color }: any) => (
-  <div className="p-6 bg-[#111118] border border-white/5 rounded-3xl group hover:border-white/10 transition-all overflow-hidden relative">
-     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform pointer-events-none">
-        <Icon size={80} />
-     </div>
-     <div className="flex items-center justify-between mb-4 relative z-10">
-        <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${color}`}>
-           <Icon size={20} />
-        </div>
-        <div className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${trend?.includes('+') ? 'bg-smash-green/10 text-smash-green' : 'bg-smash-purple/10 text-smash-purple'}`}>
-           {trend}
-        </div>
-     </div>
-     <p className="text-smash-gray text-[9px] font-black uppercase tracking-[0.2em] mb-1 relative z-10">{title}</p>
-     <h4 className="text-2xl font-studio font-black italic text-white tracking-tighter relative z-10">{value}</h4>
+  <div className="p-5 bg-[#1A1A1A] border border-white/10 rounded-[16px] overflow-hidden">
+    <div className="flex justify-between items-start mb-4">
+       <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF]">
+          <Icon size={16} />
+       </div>
+       {trend && (
+         <div className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${trend?.includes('+') ? 'bg-[#22C55E]/10 text-[#22C55E]' : 'bg-white/5 text-[#B0B0B0]'}`}>
+            {trend}
+         </div>
+       )}
+    </div>
+    <div>
+      <h3 className="text-[12px] text-[#B0B0B0] mb-1 capitalize">{title}</h3>
+      <p className="text-[24px] font-mono text-white leading-none">{value}</p>
+    </div>
   </div>
 );
 
