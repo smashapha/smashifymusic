@@ -34,7 +34,7 @@ const Agent = () => {
       } else {
         setAgentData(data);
         if (data?.status === 'approved') {
-          fetchCommissions(data.id);
+          fetchCommissions(data.id, data);
         }
       }
     } catch (err) {
@@ -44,7 +44,7 @@ const Agent = () => {
     }
   };
 
-  const fetchCommissions = async (agentId: string) => {
+  const fetchCommissions = async (agentId: string, currentAgentData?: any) => {
     try {
       const { data: comms, error } = await supabase
         .from('agent_commissions')
@@ -61,8 +61,9 @@ const Agent = () => {
       const referredSet = new Set();
       
       comms?.forEach(c => {
-        if (c.status === 'pending') available += c.amount;
-        earned += c.amount; // total_earned can also be used from agents table
+        const amt = Number(c.amount) || 0;
+        if (c.status === 'pending') available += amt;
+        earned += amt;
         if (c.artist_id) referredSet.add(c.artist_id);
       });
       
@@ -74,10 +75,13 @@ const Agent = () => {
         
       referredProfiles?.forEach(p => referredSet.add(p.id));
       
+      const agentRec = currentAgentData || agentData;
+      const totalEarned = (agentRec?.total_earned != null) ? Number(agentRec.total_earned) : earned;
+      
       setStats({
-        referred: referredSet.size,
-        earned: agentData?.total_earned || earned, // fallback to calculated if not in agentData
-        available
+        referred: referredSet.size || 0,
+        earned: totalEarned || 0,
+        available: available || 0
       });
       
     } catch (err) {
@@ -149,7 +153,7 @@ const Agent = () => {
       });
       if (error) throw error;
       
-      toast.success(`Payout of MK ${stats.available.toLocaleString()} requested!`);
+      toast.success(`Payout of MK ${(stats.available ?? 0).toLocaleString()} requested!`);
       // Optimistically update UI
       setCommissions(prev => prev.map(c => 
         c.status === 'pending' ? { ...c, status: 'processing' } : c
@@ -360,11 +364,11 @@ const Agent = () => {
         </div>
         <div className="p-5 bg-[#1A1A1A] border border-white/10 rounded-[16px]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] mb-2">Total earned</p>
-          <p className="text-2xl font-mono font-bold text-white">MK {stats.earned.toLocaleString()}</p>
+          <p className="text-2xl font-mono font-bold text-white">MK {(stats.earned ?? 0).toLocaleString()}</p>
         </div>
         <div className="p-5 bg-[#1A1A1A] border border-[#00A3FF]/30 bg-[#00A3FF]/5 rounded-[16px]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-2">Available</p>
-          <p className="text-2xl font-mono font-bold text-[#00A3FF]">MK {stats.available.toLocaleString()}</p>
+          <p className="text-2xl font-mono font-bold text-[#00A3FF]">MK {(stats.available ?? 0).toLocaleString()}</p>
         </div>
       </div>
       
@@ -378,7 +382,7 @@ const Agent = () => {
               disabled={payoutLoading}
               className="px-5 py-2.5 bg-[#00A3FF] hover:bg-[#0084D6] text-white font-semibold rounded-[10px] text-sm transition-colors disabled:opacity-50"
             >
-              {payoutLoading ? 'Processing...' : `Request payout (MK ${stats.available.toLocaleString()})`}
+              {payoutLoading ? 'Processing...' : `Request payout (MK ${(stats.available ?? 0).toLocaleString()})`}
             </button>
           ) : (
             <span className="text-sm text-[#B0B0B0]">No pending commissions yet.</span>
@@ -404,7 +408,7 @@ const Agent = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono font-bold text-white">MK {comm.amount.toLocaleString()}</p>
+                  <p className="font-mono font-bold text-white">MK {(comm.amount ?? 0).toLocaleString()}</p>
                   <span className={`inline-block text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full mt-1 ${
                     comm.status === 'pending' ? 'bg-[#00A3FF]/10 text-[#00A3FF]' :
                     comm.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
