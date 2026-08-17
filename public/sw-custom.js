@@ -1,5 +1,5 @@
 // Service Worker with full Offline Page + Resource Caching for Smashify & PWABuilder compliance
-const CACHE_NAME = "smashify-offline-v2";
+const CACHE_NAME = "smashify-offline-v3";
 const offlineFallbackPage = "/offline.html";
 
 // Pre-cache key assets on install

@@ -24,7 +24,10 @@ const AuthListener: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = new URLSearchParams(location.search).get('returnTo') || '/home';
+  const locationStateFrom = (location.state as any)?.from;
+  const rawReturnTo = locationStateFrom || new URLSearchParams(location.search).get('returnTo') || '/';
+  // Strip any trailing params if needed, but preserve path; default to '/' (home)
+  const returnTo = rawReturnTo === '/home' ? '/' : rawReturnTo;
 
   useEffect(() => {
     if (user && !loading && role !== null) {
@@ -32,10 +35,10 @@ const AuthListener: React.FC = () => {
         toast.error('This is a Listener portal. Please use Artist Studio login.');
         navigate('/auth/artist');
       }
-      else if (role === 'listener') navigate(returnTo);
-      else navigate(returnTo);
+      else if (role === 'listener') navigate(returnTo, { replace: true });
+      else navigate(returnTo, { replace: true });
     }
-  }, [user, loading, role, navigate]);
+  }, [user, loading, role, navigate, returnTo]);
 
   useEffect(() => {
     localStorage.removeItem('smashify_auth_intent'); // Clear any stale intent on entry

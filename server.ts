@@ -326,8 +326,8 @@ async function startServer() {
         });
       }
 
-      // Create Pending Transaction
-      const { error: txError } = await supabaseAdmin.from('transactions').insert({
+      // Create or Update Pending Transaction (idempotent on paychangu_ref)
+      const { error: txError } = await supabaseAdmin.from('transactions').upsert({
         artist_id: txArtistId,
         fan_id: txFanId,
         type: dbType,
@@ -337,9 +337,9 @@ async function startServer() {
         paychangu_ref: tx_ref,
         description: descriptions[type] || 'Smashify Payment',
         metadata: { ...meta, payment_type: type }
-      });
+      }, { onConflict: 'paychangu_ref' });
 
-      if (txError) {
+      if (txError && txError.code !== '23505') {
         console.error('[API] txError:', txError.message);
         throw txError;
       }

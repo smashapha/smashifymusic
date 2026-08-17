@@ -61,7 +61,7 @@ const Agent = () => {
       const referredSet = new Set();
       
       comms?.forEach(c => {
-        const amt = Number(c.amount) || 0;
+        const amt = Number(c.commission_amount ?? c.amount) || 0;
         if (c.status === 'pending') available += amt;
         earned += amt;
         if (c.artist_id) referredSet.add(c.artist_id);
@@ -408,7 +408,7 @@ const Agent = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono font-bold text-white">MK {(comm.amount ?? 0).toLocaleString()}</p>
+                  <p className="font-mono font-bold text-white">MK {((comm.commission_amount ?? comm.amount) ?? 0).toLocaleString()}</p>
                   <span className={`inline-block text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full mt-1 ${
                     comm.status === 'pending' ? 'bg-[#00A3FF]/10 text-[#00A3FF]' :
                     comm.status === 'processing' ? 'bg-amber-500/10 text-amber-500' :
