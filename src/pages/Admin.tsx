@@ -141,7 +141,7 @@ const Admin = () => {
           .select('agent_id, status');
           
         const agentsWithCounts = approved.map(a => {
-          const aComms = comms?.filter(c => c.agent_id === a.user_id) || [];
+          const aComms = comms?.filter(c => c.agent_id === a.id) || [];
           return {
             ...a,
             referred_count: aComms.length,

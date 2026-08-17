@@ -247,9 +247,17 @@ const AuthArtist: React.FC = () => {
       migrateLegacyDownloads(userId);
 
       // Check for agent referral
-      const agentRef = localStorage.getItem('smash_agent_ref');
-      if (agentRef) {
-        supabase.rpc('claim_referral', { p_code: agentRef });
+      const G = localStorage.getItem('smash_agent_ref');
+      if (G) {
+        try {
+          const { data: claimed, error } = await supabase
+            .rpc('claim_referral', { p_code: G });
+          if (error || claimed === false) {
+            // keep the code stored in the profile row so the DB trigger
+            // can still attribute on approval
+            console.warn('claim_referral did not attribute:', error?.message);
+          }
+        } catch {}
         localStorage.removeItem('smash_agent_ref');
       }
 

@@ -25,6 +25,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 async function startServer() {
   const app = express();
+  app.set("trust proxy", 1);
   const PORT = 3000;
 
   console.log(`NODE_ENV is: ${process.env.NODE_ENV}`);
@@ -73,6 +74,7 @@ async function startServer() {
     message: { error: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false, trustProxy: false }
   });
 
   // Apply to all /api routes
@@ -148,17 +150,24 @@ async function startServer() {
 
   let supabaseAdmin: any = null;
   if (SUPABASE_URL) {
-    const adminKey = (!SUPABASE_SERVICE_ROLE_KEY || 
+    let adminKey = (!SUPABASE_SERVICE_ROLE_KEY || 
         SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPABASE_SERVICE_ROLE_KEY' ||
         SUPABASE_SERVICE_ROLE_KEY === 'YOUR_SUPA_ADMIN_KEY') 
         ? process.env.VITE_SUPABASE_ANON_KEY 
         : SUPABASE_SERVICE_ROLE_KEY;
 
     if (adminKey) {
+        adminKey = adminKey.trim();
+        if (!adminKey.startsWith('eyJ')) {
+            console.error('[Server] CRITICAL: The Supabase API key in use is invalid (does not start with eyJ). Please check your environment variables (SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY).');
+        }
+    }
+
+    if (adminKey) {
       try {
         supabaseAdmin = createClient(SUPABASE_URL, adminKey);
         if (adminKey === process.env.VITE_SUPABASE_ANON_KEY) {
-          console.warn('[Server] WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Falling back to VITE_SUPABASE_ANON_KEY. Admin bypass will be restricted.');
+          console.warn('[Server] WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Falling back to VITE_SUPABASE_ANON_KEY. Admin bypass will be restricted.'); console.log("adminKey len:", adminKey ? adminKey.length : "null");
         } else {
           console.log('[Server] Supabase client initialized successfully.');
         }

@@ -34,7 +34,7 @@ const Agent = () => {
       } else {
         setAgentData(data);
         if (data?.status === 'approved') {
-          fetchCommissions(data.user_id);
+          fetchCommissions(data.id);
         }
       }
     } catch (err) {

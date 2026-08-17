@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Mail, Lock as AppLockIcon, User, Chrome, AlertCircle, Headphones, Phone, Eye, EyeOff, Mic2
+  Mail, Lock as AppLockIcon, User, Chrome, AlertCircle, Headphones, Phone, Eye, EyeOff, Mic2, Handshake
 } from 'lucide-react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -19,6 +19,7 @@ const AuthListener: React.FC = () => {
   const { user, role, loading, refreshProfile } = useAuth();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
+  const [refCode, setRefCode] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -41,6 +42,13 @@ const AuthListener: React.FC = () => {
     const qMode = searchParams.get('mode');
     if (qMode === 'signup') setMode('signup');
     else setMode('login');
+
+    const r = searchParams.get('ref') || new URLSearchParams(window.location.search).get('ref');
+    if (r) {
+      localStorage.setItem('smash_agent_ref', r);
+      setRefCode(r);
+      setMode('signup');
+    }
   }, [searchParams]);
 
   const [email, setEmail] = useState('');
@@ -162,6 +170,15 @@ const AuthListener: React.FC = () => {
       }, { onConflict: 'id' });
       if (profileError) throw profileError;
       
+      // Claim agent referral if present
+      const G = localStorage.getItem('smash_agent_ref');
+      if (G) {
+        try {
+          await supabase.rpc('claim_referral', { p_code: G });
+        } catch {}
+        localStorage.removeItem('smash_agent_ref');
+      }
+      
       migrateLegacyDownloads(data.user.id).catch(console.error);
       
       const userProfileObj = { id: data.user.id, email, full_name: fullName, is_artist: false };
@@ -256,6 +273,15 @@ const AuthListener: React.FC = () => {
            <button onClick={() => setMode('login')} className={`flex-1 py-2 rounded-[8px] font-sans font-medium text-[13px] transition-all ${mode === 'login' ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>Log In</button>
            <button onClick={() => setMode('signup')} className={`flex-1 py-2 rounded-[8px] font-sans font-medium text-[13px] transition-all ${mode === 'signup' ? 'bg-bg-elevated text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}>Sign Up</button>
         </div>
+
+        {mode === 'signup' && refCode && (
+          <div className="mb-4 text-center">
+            <span className="text-[12px] font-medium text-white/60 bg-white/5 px-3 py-1 rounded-full inline-flex items-center gap-1">
+              <Handshake size={14} className="text-[#00A3FF]" />
+              Referred by Smashify Agent {refCode}
+            </span>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
            {mode === 'login' ? (
