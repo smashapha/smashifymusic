@@ -20,6 +20,7 @@ import { BottomNav } from '../components/common/MainLayout';
 import { useUploadGuard } from '../hooks/useUploadGuard';
 import { getArtistTier, getTierLimits, getSongsUploadedThisMonth } from '../lib/tierUtils';
 import { uploadFileWithProgress, formatSpeed, formatEta } from '../lib/uploadWithProgress';
+import { shareSong } from '../lib/shareUtils';
 import { requestPayout, upgradeArtistTier, payForAdCampaign } from '../lib/paychangu';
 import BrandLoader from '../components/common/BrandLoader';
 
@@ -1672,7 +1673,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                            <Tag size={14} /> {song.discount_percent > 0 ? `${song.discount_percent}% off` : 'Promo'}
                          </button>
                        )}
-                       <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(window.location.origin + '/song/' + song.id); toast.success('Link copied'); }} title="Share Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Share2 size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); shareSong(song); }} title="Share Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Share2 size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); openEditModal(song); }} title="Edit Song" className="w-8 h-8 inline-flex items-center justify-center bg-bg-surface border border-border-default text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-[8px] transition-all"><Edit3 size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); handleDelete(song); }} title="Delete Song" className="w-8 h-8 inline-flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-[8px] transition-all"><Trash2 size={14} /></button>
                     </td>

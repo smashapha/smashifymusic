@@ -17,6 +17,7 @@ import { useRequireAuth } from '../context/AuthGateContext';
 import { getListenerLimits } from '../lib/tierUtils';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
+import { shareSong } from '../lib/shareUtils';
 
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/common/SEO';
@@ -281,20 +282,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-       await supabase.rpc('increment_shares', { song_id: song.id });
-    } catch {}
-    const url = `${window.location.origin}/artist/${song.artist_id}`;
-    if (navigator.share) {
-      navigator.share({
-        title: song.title,
-        text: `Check out ${song.title} by ${song.artist_name} on Smashify!`,
-        url: url
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success('Artist link copied to clipboard!');
-    }
+    await shareSong(song);
   };
 
   const isPurchased = song.is_purchased || purchasedIds.has(song.id);

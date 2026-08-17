@@ -596,7 +596,7 @@ async function startServer() {
             switch (type) {
               case 'TRACK_PURCHASE':
                 if (userId && songId) {
-                  await supabaseAdmin.from('fan_purchases').upsert({ 
+                  const { error: fpError } = await supabaseAdmin.from('fan_purchases').upsert({ 
                     fan_id: userId, 
                     song_id: songId, 
                     transaction_id: dbTx.id,
@@ -604,6 +604,8 @@ async function startServer() {
                     status: 'completed',
                     purchased_at: new Date().toISOString()
                   }, { onConflict: 'fan_id,song_id' });
+
+                  if (fpError && fpError.code !== '23505') console.error('[API VERIFY] fan_purchases upsert error:', fpError);
 
                   await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
 
@@ -871,18 +873,19 @@ async function startServer() {
           throw new Error(`Update failed: ${updateError.message}`);
         }
 
-        // Record the transaction for accounting
-        const { error: txError } = await supabaseAdmin.from('transactions').insert({
+        // Record the transaction for accounting (idempotent on paychangu_ref)
+        const { error: txError } = await supabaseAdmin.from('transactions').upsert({
           artist_id: payout.artist_id,
           type: 'withdrawal',
           gross_amount: payout.requested_amount,
           net_amount: payout.net_amount || (payout.requested_amount * 0.97),
           status: 'completed',
           paychangu_ref: payout.reference || `manual-${id}`,
-          description: `Manual payout withdrawal to ${payout.phone} (${payout.network})`
-        });
+          description: `Manual payout withdrawal to ${payout.phone} (${payout.network})`,
+          completed_at: new Date().toISOString()
+        }, { onConflict: 'paychangu_ref' });
         
-        if (txError) console.error('[API] Withdrawal transaction recording failed:', txError);
+        if (txError && txError.code !== '23505') console.error('[API] Withdrawal transaction recording failed:', txError);
 
         await supabaseAdmin.from('notifications').insert({
           profile_id: payout.artist_id,
@@ -955,13 +958,14 @@ async function startServer() {
           paid_at: new Date().toISOString()
         }).eq('id', payout.id);
 
-        await supabaseAdmin.from('transactions').insert({
+        await supabaseAdmin.from('transactions').upsert({
           artist_id: payout.artist_id,
           type: 'withdrawal',
           gross_amount: amount,
           status: 'completed',
-          paychangu_ref: reference
-        });
+          paychangu_ref: reference,
+          completed_at: new Date().toISOString()
+        }, { onConflict: 'paychangu_ref' });
 
         await supabaseAdmin.from('notifications').insert({
           profile_id: payout.artist_id,
@@ -1155,7 +1159,7 @@ async function startServer() {
             purchased_at: new Date().toISOString()
           }, { onConflict: 'fan_id,song_id' });
           
-          if (fanError) console.error('[WEBHOOK] fan_purchases insert error:', fanError);
+          if (fanError && fanError.code !== '23505') console.error('[WEBHOOK] fan_purchases insert error:', fanError);
 
           await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
           

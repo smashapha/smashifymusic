@@ -64,22 +64,22 @@ export const musicService = {
   },
 
   /**
-   * Records a successful purchase in Database
+   * Records a successful purchase in Database (idempotent on fan_id,song_id)
    */
   async recordPurchase(userId: string, songId: string, amount: number, tx_ref: string) {
     const { data, error } = await supabase
       .from('fan_purchases')
-      .insert({
+      .upsert({
         fan_id: userId,
         song_id: songId,
         amount,
         transaction_id: tx_ref,
         status: 'completed'
-      })
+      }, { onConflict: 'fan_id,song_id' })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error && error.code !== '23505') throw error;
     return data;
   },
 
@@ -98,10 +98,32 @@ export const musicService = {
   },
 
   /**
-   * Increments the play count for a song
+   * Increments the play count for a song with anti-chart-gaming throttle
    */
   async incrementPlays(songId: string) {
     try {
+      // 1. Check anti-chart-gaming throttle RPC before proceeding
+      let allowed = true;
+      try {
+        const { data, error } = await supabase
+          .rpc('record_play_throttled', { p_song_id: songId });
+        
+        if (error) {
+          console.warn('record_play_throttled error, falling back to increment:', error.message);
+          allowed = true;
+        } else if (typeof data === 'boolean') {
+          allowed = data;
+        }
+      } catch (throttleErr) {
+        console.warn('record_play_throttled exception, falling back to increment:', throttleErr);
+        allowed = true;
+      }
+
+      // 2. Only proceed with increments when allowed === true
+      if (!allowed) {
+        return;
+      }
+
       // Record play for current month
       await supabase.rpc('increment_plays_this_month', { song_id: songId });
 

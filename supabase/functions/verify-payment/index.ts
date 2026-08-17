@@ -39,7 +39,7 @@ async function processSuccessfulPayment(supabase: any, dbTx: any) {
           },
           { onConflict: "fan_id,song_id" },
         );
-      if (fpError)
+      if (fpError && fpError.code !== '23505')
         console.error(
           "fan_purchases upsert failed:",
           fpError.message,

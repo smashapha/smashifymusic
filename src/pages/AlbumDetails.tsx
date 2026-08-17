@@ -9,6 +9,7 @@ import { musicService } from '../services/musicService';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
+import { copyToClipboard } from '../lib/shareUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
@@ -127,19 +128,24 @@ const AlbumDetails: React.FC = () => {
 
   const handleShare = async () => {
     const url = window.location.href;
-    try {
-      if (navigator.share) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
         await navigator.share({
           title: album?.title,
           text: `Check out the album ${album?.title} by ${artist?.stage_name || artist?.full_name} on Smashify!`,
           url
         });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast.success('Album link copied to clipboard!');
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        console.warn('Native share failed, falling back to copy:', err);
       }
-    } catch (err) {
-      console.error(err);
+    }
+    const copied = await copyToClipboard(url);
+    if (copied) {
+      toast.success('Album link copied to clipboard!');
+    } else {
+      toast.error('Could not copy link to clipboard');
     }
   };
 

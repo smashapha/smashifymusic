@@ -20,6 +20,7 @@ import SEO from '../components/common/SEO';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING, GRID_ARTIST_CARDS } from '../lib/layout';
+import { copyToClipboard } from '../lib/shareUtils';
 import BrandLoader from '../components/common/BrandLoader';
 
 const ArtistProfile: React.FC = () => {
@@ -109,7 +110,7 @@ const ArtistProfile: React.FC = () => {
 
    const handleShare = async () => {
       const shareUrl = `${window.location.origin}/artist/${encodeURIComponent(artist?.stage_name || id || '')}`;
-      if (navigator.share) {
+      if (typeof navigator !== 'undefined' && navigator.share) {
          try {
             await navigator.share({
                title: `${artist?.stage_name || 'Artist'} — Smashify`,
@@ -117,14 +118,19 @@ const ArtistProfile: React.FC = () => {
                url: shareUrl
             });
             return;
-         } catch {
+         } catch (err: any) {
+            if (err?.name === 'AbortError') return;
             // fallback to clipboard on cancel or fail
          }
       }
-      navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast.success('Profile link copied to clipboard!');
-      setTimeout(() => setCopied(false), 2000);
+      const copied = await copyToClipboard(shareUrl);
+      if (copied) {
+         setCopied(true);
+         toast.success('Profile link copied to clipboard!');
+         setTimeout(() => setCopied(false), 2000);
+      } else {
+         toast.error('Could not copy link to clipboard');
+      }
    };
 
    const handleWhatsAppShare = () => {

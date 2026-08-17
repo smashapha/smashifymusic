@@ -16,6 +16,7 @@ import AddToPlaylistModal from './AddToPlaylistModal';
 import SupportArtistModal from './SupportArtistModal';
 import { optimizeImage } from '../../lib/imageUtils';
 import { formatDisplayTitle, formatArtistName } from '../../lib/formatting';
+import { shareSong } from '../../lib/shareUtils';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 
@@ -312,7 +313,9 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                    song={song}
                    onClose={() => setShowMenu(false)}
                    onBuy={handleBuy}
+                   onDownload={handleDownload}
                    onAddToPlaylist={() => setShowPlaylistModal(true)}
+                   artistCanSell={artistCanSell}
                  />
                )}
              </AnimatePresence>
@@ -464,24 +467,9 @@ const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCan
   const { addToQueue, purchasedIds } = usePlayer();
   const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['Elite', 'elite', 'Label', 'label'].includes((song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || '').toLowerCase());
   
-  const handleShare = async () => {
-    const displayArtist = formatArtistName(song.artist_name, song.featured_artist);
-    const shareData = {
-      title: song.title,
-      text: `Listen to ${song.title} by ${displayArtist} on Smashify!`,
-      url: window.location.origin + `/artist/${song.artist_id}`
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        toast.success('Link copied to clipboard');
-      }
-    } catch (err) {
-      console.error('Error sharing:', err);
-    }
+  const handleShare = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    await shareSong(song);
     onClose();
   };
 
@@ -507,7 +495,7 @@ const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCan
           <ListMusic size={16} /> Add to Playlist
         </button>
         <button 
-          onClick={(e) => { e.stopPropagation(); handleShare(); }}
+          onClick={(e) => { e.stopPropagation(); handleShare(e); }}
           className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <Share2 size={16} /> Share Song
@@ -526,7 +514,10 @@ const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCan
             <Download size={16} /> Download Song
           </button>
         )}
-        <button className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary">
+        <button 
+          onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); onClose(); }}
+          className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
+        >
           <Info size={16} /> Song Details
         </button>
         {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && song.price > 0 && actualArtistCanSell && (

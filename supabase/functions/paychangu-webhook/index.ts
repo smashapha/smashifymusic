@@ -205,7 +205,7 @@ serve(async (req) => {
     // HANDLERS
     switch (type) {
       case "TRACK_PURCHASE": {
-        // Record purchase - Using upsert to be idempotent
+        // Record purchase - Using upsert to be idempotent on (fan_id, song_id)
         const { error: fanError } = await supabase.from("fan_purchases").upsert(
           {
             fan_id: userId,
@@ -218,7 +218,7 @@ serve(async (req) => {
           { onConflict: "fan_id,song_id" },
         );
 
-        if (fanError) console.error("fan_purchases insert error:", fanError);
+        if (fanError && fanError.code !== "23505") console.error("fan_purchases insert error:", fanError);
         // Increment sales count safely
         const { data: songData } = await supabase
           .from("songs")
