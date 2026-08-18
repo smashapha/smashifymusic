@@ -138,13 +138,27 @@ const Admin = () => {
         // Also fetch pending commissions for them
         const { data: comms } = await supabase
           .from('agent_commissions')
-          .select('agent_id, status');
+          .select('agent_id, status, artist_id');
+          
+        const { data: referredProfiles } = await supabase
+          .from('profiles')
+          .select('id, referred_by_agent_id')
+          .not('referred_by_agent_id', 'is', null);
           
         const agentsWithCounts = approved.map(a => {
           const aComms = comms?.filter(c => c.agent_id === a.id) || [];
+          
+          const referredSet = new Set();
+          aComms.forEach(c => {
+             if (c.artist_id) referredSet.add(c.artist_id);
+          });
+          
+          const aReferred = referredProfiles?.filter(p => p.referred_by_agent_id === a.id) || [];
+          aReferred.forEach(p => referredSet.add(p.id));
+
           return {
             ...a,
-            referred_count: aComms.length,
+            referred_count: referredSet.size,
             has_processing: aComms.some(c => c.status === 'processing')
           };
         });
@@ -1852,7 +1866,7 @@ const Admin = () => {
                                 <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
                                   {agent.has_processing ? (
                                     <button
-                                      onClick={() => adminCompleteAgentPayout(agent.user_id)}
+                                      onClick={() => adminCompleteAgentPayout(agent.id)}
                                       className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-[13px] font-bold   transition-all"
                                     >
                                       Mark Payout Paid
