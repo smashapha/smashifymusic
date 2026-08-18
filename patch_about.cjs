@@ -1,4 +1,6 @@
-import React from 'react';
+const fs = require('fs');
+
+const code = `import React from 'react';
 import { motion } from "motion/react";
 import { Link } from 'react-router-dom';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
@@ -6,7 +8,7 @@ import SEO from '../components/common/SEO';
 
 const About = () => {
   return (
-    <div className={`pt-6 md:pt-10 ${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} text-white max-w-4xl mx-auto`}>
+    <div className={\`pt-6 md:pt-10 \${PAGE_CONTAINER} \${PAGE_BOTTOM_PADDING} text-white max-w-4xl mx-auto\`}>
       <SEO 
         title="About Us | Smashify Music" 
         description="Learn about Smashify Music's mission to empower African musicians and connect fans directly with artists." 
@@ -91,3 +93,7 @@ const About = () => {
 };
 
 export default About;
+`;
+
+fs.writeFileSync('src/pages/About.tsx', code);
+console.log("Rewrote About.tsx");
