@@ -215,7 +215,7 @@ const ArtistProfile: React.FC = () => {
          if (data && data.status === 'active' && new Date(data.next_billing_at) > new Date()) {
             // Fetch songs marked as exclusive
             const { data: exclusiveSongs } = await supabase
-               .from('songs')
+               .from('public_songs')
                .select('*')
                .eq('artist_id', id)
                .eq('is_exclusive', true)

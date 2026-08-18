@@ -70,7 +70,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
         let profilesLookup: Record<string, any> = {};
         if (profileIds.length > 0) {
           const { data: pData } = await supabase
-            .from('profiles')
+            .from('public_profiles')
             .select('id, stage_name, full_name, avatar_url')
             .in('id', profileIds);
           (pData || []).forEach((p: any) => { profilesLookup[p.id] = p; });
