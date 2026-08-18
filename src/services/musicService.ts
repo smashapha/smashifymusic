@@ -75,25 +75,7 @@ export const musicService = {
     }
   },
 
-  /**
-   * Records a successful purchase in Database (idempotent on fan_id,song_id)
-   */
-  async recordPurchase(userId: string, songId: string, amount: number, tx_ref: string) {
-    const { data, error } = await supabase
-      .from('fan_purchases')
-      .upsert({
-        fan_id: userId,
-        song_id: songId,
-        amount,
-        transaction_id: tx_ref,
-        status: 'completed'
-      }, { onConflict: 'fan_id,song_id' })
-      .select()
-      .maybeSingle();
 
-    if (error && error.code !== '23505') throw error;
-    return data;
-  },
 
   /**
    * Checks if user has already bought the track

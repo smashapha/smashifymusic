@@ -79,6 +79,25 @@ Deno.serve(async (req) => {
       if (meta.artistId && meta.artistId !== songRow.artist_id) {
         meta.artistId = songRow.artist_id;
       }
+    } else if (type === 'fan_subscription') {
+      if (!meta?.artistId) {
+        return new Response(JSON.stringify({ error: 'Missing artistId for fan subscription' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      const { data: artistProfile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('subscription_price')
+        .eq('id', meta.artistId)
+        .single();
+      if (profileErr || !artistProfile) {
+        return new Response(JSON.stringify({ error: 'Artist not found' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      finalAmount = artistProfile.subscription_price || 1500;
     } else {
       finalAmount = canonicalAmount ?? Number(amount);
     }
