@@ -24,6 +24,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePlayer } from "../context/PlayerContext";
 import { getAiRecommendations } from "../services/aiService";
 import { musicService } from "../services/musicService";
+import { attachArtistProfilesToSongs } from "../lib/publicCatalog";
 import SEO from "../components/common/SEO";
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, GRID_ARTIST_CARDS, GRID_LIST_CARDS } from "../lib/layout";
 import { Skeleton, SongCardSkeleton, ListRowSkeleton, SectionHeaderSkeleton } from "../components/common/Skeleton";
@@ -125,7 +126,7 @@ const Discover: React.FC = () => {
         let songsLookup: Record<string, any> = {};
         if (allSongIds.size > 0) {
           const { data: sData } = await supabase
-            .from('songs')
+            .from('public_songs')
             .select('id, cover_url')
             .in('id', Array.from(allSongIds));
           (sData || []).forEach(s => { songsLookup[s.id] = s; });
@@ -134,7 +135,7 @@ const Discover: React.FC = () => {
         let profilesLookup: Record<string, any> = {};
         if (allProfileIds.size > 0) {
           const { data: pData } = await supabase
-            .from('profiles')
+            .from('artist_catalog')
             .select('id, full_name, avatar_url')
             .in('id', Array.from(allProfileIds));
           (pData || []).forEach(p => { profilesLookup[p.id] = p; });
@@ -161,19 +162,20 @@ const Discover: React.FC = () => {
   const fetchAllSongs = async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const { data: allSongs } = await supabase
-        .from("songs")
-        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+      const { data: rawSongs } = await supabase
+        .from("public_songs")
+        .select("*")
         .eq("approved", true)
         .lte("release_date", today)
         .order("plays", { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
-      if (allSongs) {
-        const formatted = allSongs.map((s: any) => ({
+      if (rawSongs) {
+        const withProfiles = await attachArtistProfilesToSongs(rawSongs);
+        const formatted = withProfiles.map((s: any) => ({
           ...s,
           artist_name:
-            s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+            s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || "Artist",
           cover_url:
             s.cover_url ||
             "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
@@ -186,7 +188,7 @@ const Discover: React.FC = () => {
           userProfile?.id,
         );
         setSongs(enriched as any);
-        setHasMoreSongs(allSongs.length === PAGE_SIZE);
+        setHasMoreSongs(rawSongs.length === PAGE_SIZE);
         setSongsPage(1);
       }
     } catch (err) {
@@ -202,18 +204,19 @@ const Discover: React.FC = () => {
       const from = songsPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       const { data } = await supabase
-        .from("songs")
-        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+        .from("public_songs")
+        .select("*")
         .eq("approved", true)
         .lte("release_date", today)
         .order("plays", { ascending: false })
         .range(from, to);
 
       if (data && data.length > 0) {
-        const formatted = data.map((s: any) => ({
+        const withProfiles = await attachArtistProfilesToSongs(data);
+        const formatted = withProfiles.map((s: any) => ({
           ...s,
           artist_name:
-            s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+            s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || "Artist",
           cover_url:
             s.cover_url ||
             "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
@@ -241,19 +244,20 @@ const Discover: React.FC = () => {
     setIsRefreshingRecs(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const { data: allSongs } = await supabase
-        .from("songs")
-        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+      const { data: rawSongs } = await supabase
+        .from("public_songs")
+        .select("*")
         .eq("approved", true)
         .lte("release_date", today)
         .order("plays", { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
-      if (allSongs) {
-        const formatted = allSongs.map((s: any) => ({
+      if (rawSongs) {
+        const withProfiles = await attachArtistProfilesToSongs(rawSongs);
+        const formatted = withProfiles.map((s: any) => ({
           ...s,
           artist_name:
-            s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+            s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || "Artist",
           cover_url:
             s.cover_url ||
             "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
@@ -302,17 +306,18 @@ const Discover: React.FC = () => {
     try {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase
-        .from("songs")
-        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+        .from("public_songs")
+        .select("*")
         .eq("approved", true)
         .lte("release_date", today)
         .order("plays", { ascending: false })
         .limit(6);
       if (data) {
-        const baseSongs = data.map((s) => ({
+        const withProfiles = await attachArtistProfilesToSongs(data);
+        const baseSongs = withProfiles.map((s) => ({
           ...s,
           artist_name:
-            s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+            s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || "Artist",
           cover_url:
             s.cover_url ||
             "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
@@ -336,8 +341,8 @@ const Discover: React.FC = () => {
     try {
       const today = new Date().toISOString().split("T")[0];
       let songsQuery = supabase
-        .from("songs")
-        .select("*, profiles!artist_id(full_name, stage_name, avatar_url)")
+        .from("public_songs")
+        .select("*")
         .eq("approved", true)
         .lte("release_date", today);
 
@@ -350,10 +355,11 @@ const Discover: React.FC = () => {
 
       const { data: songsData } = await songsQuery.limit(20);
 
-      const baseSongs = (songsData || []).map((s) => ({
+      const withProfiles = await attachArtistProfilesToSongs(songsData || []);
+      const baseSongs = withProfiles.map((s) => ({
         ...s,
         artist_name:
-          s.profiles?.stage_name || s.profiles?.full_name || "Artist",
+          s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || "Artist",
         cover_url:
           s.cover_url ||
           "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop",
@@ -366,7 +372,7 @@ const Discover: React.FC = () => {
       );
 
       let artistsQuery = supabase
-        .from("profiles")
+        .from("artist_catalog")
         .select("*")
         .eq("user_type", "artist")
         .not("stage_name", "is", null);

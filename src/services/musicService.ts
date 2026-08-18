@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song, Artist } from '../types';
 
 export const musicService = {
@@ -30,10 +31,13 @@ export const musicService = {
    */
   async getTrendingSongs(userId?: string): Promise<Song[]> {
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
-        .from('songs')
+        .from('public_songs')
         .select('*')
-        .eq('trending', true)
+        .eq('approved', true)
+        .lte('release_date', today)
+        .order('plays', { ascending: false })
         .limit(10);
         
       if (error) throw error;
@@ -42,7 +46,15 @@ export const musicService = {
           throw new Error('No songs found');
       }
 
-      const songs = data as Song[];
+      const withProfiles = await attachArtistProfilesToSongs(data);
+      const formatted = withProfiles.map((s: any) => ({
+        ...s,
+        artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'The Great Artist',
+        cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&h=300&fit=crop',
+        url: s.audio_url
+      }));
+
+      const songs = formatted as unknown as Song[];
       return this.enrichSongsWithPurchases(songs, userId);
     } catch (error) {
       console.warn('Supabase fetch failed, using fallback trending data');

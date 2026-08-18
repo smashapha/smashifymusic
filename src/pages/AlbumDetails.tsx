@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
@@ -44,7 +45,7 @@ const AlbumDetails: React.FC = () => {
       setAlbum(albumData);
 
       const { data: artistData } = await supabase
-        .from('profiles')
+        .from('artist_catalog')
         .select('*')
         .eq('id', albumData.artist_id)
         .single();
@@ -52,15 +53,16 @@ const AlbumDetails: React.FC = () => {
       setArtist(artistData);
 
       const { data: songsData } = await supabase
-        .from('songs')
-        .select('*, profiles!artist_id(stage_name, full_name)')
+        .from('public_songs')
+        .select('*')
         .eq('album_id', id)
         .order('created_at', { ascending: true }); 
         
       if (songsData) {
-        let formatted = (songsData || []).map((s: any) => ({
+        const withProfiles = await attachArtistProfilesToSongs(songsData);
+        let formatted = withProfiles.map((s: any) => ({
           ...s,
-          artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
+          artist_name: s.profiles?.stage_name || s.profiles?.full_name || artistData?.stage_name || artistData?.full_name || 'Unknown Artist',
           cover_url: s.cover_url || albumData.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
           url: s.audio_url
         }));

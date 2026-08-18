@@ -9,6 +9,7 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import { supabase } from '../lib/supabase';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { optimizeImage } from '../lib/imageUtils';
 import SEO from '../components/common/SEO';
 import Footer from '../components/common/Footer';
@@ -167,7 +168,7 @@ const Landing: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       const { data: artistsData } = await supabase
-        .from('profiles')
+        .from('artist_catalog')
         .select('id, full_name, stage_name, avatar_url, genre')
         .eq('user_type', 'artist')
         .not('stage_name', 'is', null)
@@ -176,22 +177,24 @@ const Landing: React.FC = () => {
 
       const today = new Date().toISOString().split('T')[0];
       const { data: topSongsData } = await supabase
-        .from('songs')
-        .select('id, title, plays, cover_url, profiles:artist_id(stage_name, full_name)')
+        .from('public_songs')
+        .select('id, title, plays, cover_url, artist_id')
         .eq('approved', true)
         .lte('release_date', today)
         .order('plays', { ascending: false })
         .limit(10);
-      setTopSongs(topSongsData || []);
+      const topWithProfiles = await attachArtistProfilesToSongs(topSongsData || []);
+      setTopSongs(topWithProfiles);
 
       const { data: trendingData } = await supabase
-        .from('songs')
-        .select('id, title, profiles:artist_id(stage_name, full_name)')
+        .from('public_songs')
+        .select('id, title, artist_id')
         .eq('approved', true)
         .lte('release_date', today)
         .order('plays', { ascending: false })
         .limit(10);
-      setTrendingSongs(trendingData || []);
+      const trendingWithProfiles = await attachArtistProfilesToSongs(trendingData || []);
+      setTrendingSongs(trendingWithProfiles);
     };
     fetchData();
   }, []);

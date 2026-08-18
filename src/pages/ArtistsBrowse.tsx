@@ -32,12 +32,9 @@ const ArtistsBrowse: React.FC = () => {
       setLoading(true);
       try {
         const { data: artistsData, error: artistsErr } = await supabase
-          .from('profiles')
-          .select('id, stage_name, full_name, avatar_url, genre, verified, artist_tier, approved')
-          .eq('user_type', 'artist')
+          .from('artist_catalog')
+          .select('id, stage_name, full_name, avatar_url, genre, verified, artist_tier')
           .not('stage_name', 'is', null)
-          .eq('approved', true)
-          .order('created_at', { ascending: false })
           .limit(60);
 
         if (artistsErr) {
@@ -45,7 +42,7 @@ const ArtistsBrowse: React.FC = () => {
         }
 
         const { data: songsData, error: songsErr } = await supabase
-          .from('songs')
+          .from('public_songs')
           .select('artist_id')
           .eq('approved', true);
 

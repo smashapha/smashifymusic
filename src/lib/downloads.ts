@@ -152,7 +152,7 @@ export async function downloadPurchasedSong(
 
     // 2. Get song details
     const { data: song, error: songError } = await supabase
-      .from('songs')
+      .from('public_songs')
       .select('audio_url, title, artist_name, artist_id')
       .eq('id', songId)
       .single();

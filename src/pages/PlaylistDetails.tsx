@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song } from '../types';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
@@ -139,10 +140,10 @@ const PlaylistDetails: React.FC = () => {
             let fetchedSongs: any[] = [];
             if (songIds.length > 0) {
               const { data: sData } = await supabase
-                .from('songs')
-                .select('*, profiles:artist_id(full_name, stage_name, avatar_url, verified)')
+                .from('public_songs')
+                .select('*')
                 .in('id', songIds);
-              fetchedSongs = sData || [];
+              fetchedSongs = await attachArtistProfilesToSongs(sData || []);
             }
             
             // Reconstruct the nested structure
@@ -198,24 +199,17 @@ const PlaylistDetails: React.FC = () => {
       setCustomPlaylistInfo(null);
       const today = new Date().toISOString().split('T')[0];
       const { data: songsData, error: songsError } = await supabase
-        .from('songs')
-        .select(`
-          *,
-          profiles:artist_id (
-            full_name,
-            stage_name,
-            avatar_url,
-            verified
-          )
-        `)
+        .from('public_songs')
+        .select('*')
         .eq('approved', true)
         .lte('release_date', today);
 
       if (songsError) throw songsError;
 
-      let formatted = (songsData || []).map((s: any) => ({
+      const withProfiles = await attachArtistProfilesToSongs(songsData || []);
+      let formatted = withProfiles.map((s: any) => ({
         ...s,
-        artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
+        artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Unknown Artist',
         cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
         url: s.audio_url
       }));

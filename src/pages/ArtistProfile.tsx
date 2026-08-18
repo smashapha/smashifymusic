@@ -19,6 +19,7 @@ import SupportArtistModal from '../components/common/SupportArtistModal';
 import SEO from '../components/common/SEO';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING, GRID_ARTIST_CARDS } from '../lib/layout';
 import { copyToClipboard } from '../lib/shareUtils';
 import BrandLoader from '../components/common/BrandLoader';
@@ -42,7 +43,7 @@ const ArtistProfile: React.FC = () => {
        }
        
        const { data, error } = await supabase
-         .from('profiles')
+         .from('artist_catalog')
          .select('id')
          .ilike('stage_name', decodeURIComponent(paramId))
          .maybeSingle();
@@ -160,7 +161,7 @@ const ArtistProfile: React.FC = () => {
 
           // Recent comments on artist songs from moto_comments
           const { data: songIds } = await supabase
-            .from('songs')
+            .from('public_songs')
             .select('id')
             .eq('artist_id', id)
 
@@ -258,8 +259,8 @@ const ArtistProfile: React.FC = () => {
          setLoading(true);
          try {
             const { data: artistData, error: artistError } = await supabase
-               .from('profiles')
-               .select('*')
+               .from('artist_catalog')
+               .select('id, full_name, stage_name, genre, location, bio, avatar_url, banner_url, followers_count, total_plays, user_type, verified, artist_tier')
                .eq('id', id)
                .single();
             
@@ -277,7 +278,7 @@ const ArtistProfile: React.FC = () => {
 
             const today = new Date().toISOString().split('T')[0];
             const { data: songsData, error: songsError } = await supabase
-               .from('songs')
+               .from('public_songs')
                .select('*')
                .eq('artist_id', id)
                .eq('approved', true)
@@ -311,7 +312,7 @@ const ArtistProfile: React.FC = () => {
 
             // Fetch fans also like (other users who are artists)
             const { data: otherArtists } = await supabase
-               .from('profiles')
+               .from('artist_catalog')
                .select('*')
                .neq('id', id)
                .eq('user_type', 'artist')
@@ -322,17 +323,18 @@ const ArtistProfile: React.FC = () => {
             // Fetch appears on (songs from other artists)
             const searchName = artistData.stage_name || artistData.full_name || '';
             const { data: otherSongs } = await supabase
-               .from('songs')
-               .select('*, profiles!artist_id(*)')
+               .from('public_songs')
+               .select('*')
                .neq('artist_id', id)
                .ilike('featured_artist', `%${searchName}%`)
                .eq('approved', true)
                .lte('release_date', today)
                .limit(5);
-            if (otherSongs) {
-               const formattedOther = otherSongs.map((s: any) => ({
+            if (otherSongs && otherSongs.length > 0) {
+               const withOtherProfiles = await attachArtistProfilesToSongs(otherSongs);
+               const formattedOther = withOtherProfiles.map((s: any) => ({
                   ...s,
-                  artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+                  artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Artist',
                   cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
                   url: s.audio_url,
                }));

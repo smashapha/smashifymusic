@@ -57,7 +57,7 @@ const ArtistLanding: React.FC = () => {
 
   useEffect(() => {
     const fetchEarners = async () => {
-       const { data } = await supabase.from('profiles').select('id, stage_name, full_name, avatar_url, genre').eq('user_type', 'artist').not('stage_name', 'is', null).limit(5);
+       const { data } = await supabase.from('artist_catalog').select('id, stage_name, full_name, avatar_url, genre').eq('user_type', 'artist').not('stage_name', 'is', null).limit(5);
        setTopEarners(data || []);
 
        const [
@@ -65,10 +65,10 @@ const ArtistLanding: React.FC = () => {
         { count: songCount },
         { data: payoutData }
        ] = await Promise.all([
-        supabase.from('profiles')
+        supabase.from('artist_catalog')
           .select('*', { count: 'exact', head: true })
           .eq('user_type', 'artist'),
-        supabase.from('songs')
+        supabase.from('public_songs')
           .select('*', { count: 'exact', head: true })
           .eq('approved', true),
         supabase.from('payout_requests')

@@ -25,6 +25,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
 import { handleTrackDownload } from '../lib/downloads';
@@ -132,7 +133,7 @@ const Library: React.FC = () => {
           let fetchedSongs: Record<string, any> = {};
           if (allSongIds.size > 0) {
             const { data: sData } = await supabase
-              .from('songs')
+              .from('public_songs')
               .select('id, cover_url')
               .in('id', Array.from(allSongIds));
             (sData || []).forEach(s => { fetchedSongs[s.id] = s; });
@@ -245,14 +246,15 @@ const Library: React.FC = () => {
         
         if (downloadIds.length > 0) {
            const { data: downloadSongs, error: dError } = await supabase
-              .from('songs')
-              .select('*, profiles!artist_id(full_name, stage_name)')
+              .from('public_songs')
+              .select('*')
               .in('id', downloadIds);
            
            if (!dError && downloadSongs) {
-              const formatted = downloadSongs.map((s: any) => ({
+              const withProfiles = await attachArtistProfilesToSongs(downloadSongs);
+              const formatted = withProfiles.map((s: any) => ({
                  ...s,
-                 artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+                 artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Artist',
                  cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
                  url: s.audio_url
               }));
@@ -287,7 +289,7 @@ const Library: React.FC = () => {
             let fetchedSongs: Record<string, any> = {};
             if (allSongIds.size > 0) {
               const { data: sData } = await supabase
-                .from('songs')
+                .from('public_songs')
                 .select('id, cover_url')
                 .in('id', Array.from(allSongIds));
               (sData || []).forEach(s => { fetchedSongs[s.id] = s; });

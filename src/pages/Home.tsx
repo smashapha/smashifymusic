@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { getAiRecommendations } from '../services/aiService';
 import { musicService } from '../services/musicService';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { optimizeImage } from '../lib/imageUtils';
 import { formatArtistName } from '../lib/formatting';
 import SEO from '../components/common/SEO';
@@ -167,24 +168,17 @@ const Home: React.FC = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const { data: songsData, error: songsError } = await supabase
-        .from('songs')
-        .select(`
-          *,
-          profiles:artist_id (
-            full_name,
-            stage_name,
-            avatar_url,
-            verified
-          )
-        `)
+        .from('public_songs')
+        .select('*')
         .eq('approved', true)
         .lte('release_date', today);
 
       if (songsError) throw songsError;
 
-      const formattedSongs = (songsData || []).map((s: any) => ({
+      const withProfiles = await attachArtistProfilesToSongs(songsData || []);
+      const formattedSongs = withProfiles.map((s: any) => ({
         ...s,
-        artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
+        artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Unknown Artist',
         cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
         url: s.audio_url
       }));
@@ -194,33 +188,38 @@ const Home: React.FC = () => {
 
       // Step 1: Get Elite artist IDs
       const { data: eliteArtists } = await supabase
-        .from('profiles')
+        .from('artist_catalog')
         .select('id')
-        .in('artist_tier', ['Elite', 'elite', 'Label', 'label'])
-        .eq('approved', true);
+        .in('artist_tier', ['Elite', 'elite', 'Label', 'label']);
 
       const eliteIds = (eliteArtists || []).map(a => a.id);
 
       // Step 2: Get their top songs
-      const { data: eliteSongs } = eliteIds.length > 0
-        ? await supabase
-            .from('songs')
-            .select('*, profiles:artist_id(id, full_name, stage_name, avatar_url, artist_tier, verified)')
-            .eq('approved', true)
-            .eq('is_active', true)
-            .lte('release_date', today)
-            .in('artist_id', eliteIds)
-            .order('plays', { ascending: false })
-            .limit(8)
-        : { data: [] };
+      let eliteFormatted: any[] = [];
+      if (eliteIds.length > 0) {
+        const { data: eliteSongs } = await supabase
+          .from('public_songs')
+          .select('*')
+          .eq('approved', true)
+          .eq('is_active', true)
+          .lte('release_date', today)
+          .in('artist_id', eliteIds)
+          .order('plays', { ascending: false })
+          .limit(8);
 
-      const carouselItems = (eliteSongs && eliteSongs.length > 0)
-        ? eliteSongs.map((s: any) => ({
+        if (eliteSongs && eliteSongs.length > 0) {
+          const withEliteProfiles = await attachArtistProfilesToSongs(eliteSongs);
+          eliteFormatted = withEliteProfiles.map((s: any) => ({
             ...s,
-            artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Unknown Artist',
+            artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Unknown Artist',
             cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
             url: s.audio_url
-          }))
+          }));
+        }
+      }
+
+      const carouselItems = eliteFormatted.length > 0
+        ? eliteFormatted
         : enrichedSongs.sort((a: any, b: any) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
 
       setFeaturedItems(carouselItems);
@@ -241,7 +240,7 @@ const Home: React.FC = () => {
       setForSaleSongs(enrichedSongs.filter(s => s.is_for_sale).slice(0, 10));
 
       const { data: artistsData, error: artistsError } = await supabase
-        .from('profiles')
+        .from('artist_catalog')
         .select('*')
         .eq('user_type', 'artist')
         .not('stage_name', 'is', null)
@@ -252,7 +251,7 @@ const Home: React.FC = () => {
       }
 
       const { data: songsWithAlbums } = await supabase
-        .from('songs')
+        .from('public_songs')
         .select('album_id')
         .eq('approved', true)
         .lte('release_date', today)
@@ -260,17 +259,34 @@ const Home: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      const validAlbumIds = Array.from(new Set((songsWithAlbums || []).map(s => s.album_id)));
+      const validAlbumIds = Array.from(new Set((songsWithAlbums || []).map(s => s.album_id).filter(Boolean)));
 
       if (validAlbumIds.length > 0) {
         const { data: albumsData } = await supabase
           .from('albums')
-          .select('*, profiles:artist_id(full_name, stage_name)')
+          .select('*')
           .in('id', validAlbumIds)
           .limit(10)
           .order('created_at', { ascending: false });
 
-        setAlbums((albumsData || []) as any);
+        if (albumsData && albumsData.length > 0) {
+          const albumArtistIds = Array.from(new Set(albumsData.map(a => a.artist_id).filter(Boolean)));
+          let artistsMap: Record<string, any> = {};
+          if (albumArtistIds.length > 0) {
+            const { data: aData } = await supabase
+              .from('artist_catalog')
+              .select('id, full_name, stage_name')
+              .in('id', albumArtistIds);
+            (aData || []).forEach((a: any) => { artistsMap[a.id] = a; });
+          }
+          const formattedAlbums = albumsData.map((a: any) => ({
+            ...a,
+            profiles: artistsMap[a.artist_id] || null
+          }));
+          setAlbums(formattedAlbums as any);
+        } else {
+          setAlbums([]);
+        }
       } else {
         setAlbums([]);
       }
@@ -301,7 +317,7 @@ const Home: React.FC = () => {
           let fetchedSongs: Record<string, any> = {};
           if (allSongIds.size > 0) {
             const { data: sData } = await supabase
-              .from('songs')
+              .from('public_songs')
               .select('id, cover_url')
               .in('id', Array.from(allSongIds));
             (sData || []).forEach(s => { fetchedSongs[s.id] = s; });
@@ -310,7 +326,7 @@ const Home: React.FC = () => {
           let profilesLookup: Record<string, any> = {};
           if (allProfileIds.size > 0) {
             const { data: pData } = await supabase
-              .from('profiles')
+              .from('artist_catalog')
               .select('id, full_name, avatar_url')
               .in('id', Array.from(allProfileIds));
             (pData || []).forEach(p => { profilesLookup[p.id] = p; });

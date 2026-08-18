@@ -18,6 +18,7 @@ import { getListenerLimits } from '../lib/tierUtils';
 import { getEffectivePrice, isOnSale } from '../lib/pricing';
 import { formatDisplayTitle } from '../lib/formatting';
 import { shareSong } from '../lib/shareUtils';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/common/SEO';
@@ -912,28 +913,29 @@ const MotoFeed: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
 
       // 1. Featured/Trending
-      const { data: featured } = await supabase.from('songs')
-         .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+      const { data: rawFeatured } = await supabase.from('public_songs')
+         .select('*')
          .eq('approved', true)
          .lte('release_date', today)
          .order('plays', { ascending: false }).limit(10);
+      const featured = await attachArtistProfilesToSongs(rawFeatured || []);
 
       // 2. Artists followed
       let followedSongs: any[] = [];
       if (followedIds.length > 0) {
-         const { data: fs } = await supabase.from('songs')
-            .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+         const { data: fs } = await supabase.from('public_songs')
+            .select('*')
             .eq('approved', true).lte('release_date', today).in('artist_id', followedIds).limit(10);
-         if (fs) followedSongs = fs;
+         if (fs) followedSongs = await attachArtistProfilesToSongs(fs);
       }
 
       // 3. Same region
       let regionSongs: any[] = [];
       if (userProfile?.city) {
-         const { data: rs } = await supabase.from('songs')
-            .select('*, profiles!artist_id(full_name, stage_name, avatar_url, verified, subscription_tier)')
+         const { data: rs } = await supabase.from('public_songs')
+            .select('*')
             .eq('approved', true).lte('release_date', today).eq('region', userProfile.city).limit(10);
-         if (rs) regionSongs = rs;
+         if (rs) regionSongs = await attachArtistProfilesToSongs(rs);
       }
 
       const mixed: any[] = [];

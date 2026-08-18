@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { musicService } from '../services/musicService';
 import { getRadioNextSong } from '../services/aiService';
 import { getListenerLimits } from '../lib/tierUtils';
+import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import toast from 'react-hot-toast';
 
 interface PlayerContextType {
@@ -693,16 +694,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // Fetch some available songs to pick from
         const today = new Date().toISOString().split('T')[0];
         const { data } = await supabase
-          .from('songs')
-          .select('*, profiles!artist_id(full_name, stage_name)')
+          .from('public_songs')
+          .select('*')
           .eq('approved', true)
           .lte('release_date', today)
           .limit(50);
         
         if (data) {
-          let formatted = data.map((s: any) => ({
+          const withProfiles = await attachArtistProfilesToSongs(data);
+          let formatted = withProfiles.map((s: any) => ({
              ...s,
-             artist_name: s.profiles?.stage_name || s.profiles?.full_name || 'Artist',
+             artist_name: s.profiles?.stage_name || s.profiles?.full_name || s.artist_name || 'Artist',
              cover_url: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
              audio_url: s.audio_url,
              profiles: s.profiles

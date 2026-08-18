@@ -85,7 +85,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
     setShowLyricsDrawer(true);
     try {
       const { data, error } = await supabase
-        .from('songs')
+        .from('public_songs')
         .select('lyrics')
         .eq('id', currentSong.id)
         .maybeSingle();
