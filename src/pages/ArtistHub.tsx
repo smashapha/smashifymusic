@@ -1608,25 +1608,32 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                       <div className="flex items-center gap-2">
-                          <div className={`w-[6px] h-[6px] rounded-full ${
-                        !song.approved ? 'bg-[#eab308] animate-pulse' : 
-                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                          ? 'bg-smash-orange' 
-                          : 'bg-smash-green')
-                      }`} />
-                          <span className={`text-[12px] font-display font-medium ${
-                        !song.approved ? 'text-[#eab308]' : 
-                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                          ? 'text-smash-orange' 
-                          : 'text-smash-green')
-                      }`}>
-                         {!song.approved ? 'Reviewing' : 
-                          (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                            ? `Upcoming (${new Date(song.release_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})})` 
-                            : 'Distributed')}
-                      </span>
-                       </div>
+                      {(() => {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const isUpcoming = song.release_date && song.release_date > todayStr;
+                        if (!song.approved) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 inline-flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                              Reviewing
+                            </span>
+                          );
+                        }
+                        if (isUpcoming) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                              Upcoming ({new Date(song.release_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-smash-green/10 text-smash-green border border-smash-green/30 inline-flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-smash-green" />
+                            Live
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                         <div className="flex items-center gap-4">
@@ -1714,24 +1721,33 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                   <p className="text-[12px] text-text-muted font-sans truncate">{song.genre || 'Afro'} • {formatCount(song.plays)} plays</p>
                 </div>
                 <div className="flex flex-col items-end shrink-0 gap-2">
-                   <div className="flex items-center gap-1.5">
-                      <div className={`w-[6px] h-[6px] rounded-full ${
-                        !song.approved ? 'bg-[#eab308] animate-pulse' : 
-                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                          ? 'bg-smash-orange' 
-                          : 'bg-smash-green')
-                      }`} />
-                      <span className={`text-[10px] font-display font-medium ${
-                        !song.approved ? 'text-[#eab308]' : 
-                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                          ? 'text-smash-orange' 
-                          : 'text-smash-green')
-                      }`}>
-                         {!song.approved ? 'Rev' : 
-                          (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
-                            ? `Upcoming (${new Date(song.release_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})})` 
-                            : 'Live')}
-                      </span>
+                   <div>
+                      {(() => {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const isUpcoming = song.release_date && song.release_date > todayStr;
+                        if (!song.approved) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                              Reviewing
+                            </span>
+                          );
+                        }
+                        if (isUpcoming) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                              Upcoming ({new Date(song.release_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-smash-green/10 text-smash-green border border-smash-green/30 inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-smash-green" />
+                            Live
+                          </span>
+                        );
+                      })()}
                    </div>
                    <div className="flex items-center gap-1">
                       <button
@@ -2980,8 +2996,19 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                </p>
                              </div>
                              <div className="group">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Release Date</label>
-                               <input required type="date" value={releaseDate} onChange={e=>setReleaseDate(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white" />
+                               <label className="text-[13px] text-text-muted font-sans block mb-2 transition-colors">Release date (optional)</label>
+                               <input 
+                                 type="date" 
+                                 min={new Date(Date.now() + 86400000).toISOString().split('T')[0]} 
+                                 value={releaseDate} 
+                                 onChange={e => setReleaseDate(e.target.value)} 
+                                 className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-sans focus:border-[#00A3FF] transition-all outline-none text-white" 
+                               />
+                               {releaseDate && releaseDate > new Date().toISOString().split('T')[0] && (
+                                 <p className="text-[12px] text-[#00A3FF] mt-2 font-sans">
+                                   Scheduled for release on {new Date(releaseDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. Fans can pre-save once the track is approved.
+                                 </p>
+                               )}
                              </div>
                            </div>
 
@@ -3231,10 +3258,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                              </div>
                            )}
                            
-                           {releaseDate > '2026-08-19' && (
+                           {releaseDate && releaseDate > new Date().toISOString().split('T')[0] && (
                              <div className="p-4 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-2xl mb-4">
-                               <p className="text-[12px] font-bold text-[#00A3FF]">
-                                 🗓️ This will be scheduled for release on {new Date(releaseDate).toLocaleDateString()}. Fans will be able to pre-save once approved.
+                               <p className="text-[12px] font-medium text-[#00A3FF]">
+                                 🗓️ Scheduled for release on {new Date(releaseDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. Fans can pre-save once approved.
                                </p>
                              </div>
                            )}

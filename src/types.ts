@@ -94,6 +94,9 @@ export interface UserProfile {
   family_plan_id?: string;
   approved?: boolean;
   agent_reference?: string;
+  notify_artist_drops?: boolean;
+  notify_broadcasts?: boolean;
+  notify_purchases?: boolean;
 }
 
 export interface Transaction {

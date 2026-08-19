@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight, Download } from 'lucide-react';
+import { Search, Flame, Sparkles, DollarSign, Clock, Trophy, Heart, Play, MoreVertical, Bell, X, Headphones, TrendingUp, ArrowUpRight, Download, Music2, Megaphone, ShoppingBag, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
@@ -81,10 +81,80 @@ const Home: React.FC = () => {
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
   const showNotificationsRef = useRef(showNotifications);
   useEffect(() => { showNotificationsRef.current = showNotifications; }, [showNotifications]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const [prefs, setPrefs] = useState({
+    notify_artist_drops: userProfile?.notify_artist_drops ?? true,
+    notify_broadcasts: userProfile?.notify_broadcasts ?? true,
+    notify_purchases: userProfile?.notify_purchases ?? true,
+  });
+
+  useEffect(() => {
+    if (userProfile) {
+      setPrefs({
+        notify_artist_drops: userProfile.notify_artist_drops ?? true,
+        notify_broadcasts: userProfile.notify_broadcasts ?? true,
+        notify_purchases: userProfile.notify_purchases ?? true,
+      });
+    }
+  }, [userProfile]);
+
+  const updatePref = async (key: 'notify_artist_drops' | 'notify_broadcasts' | 'notify_purchases', val: boolean) => {
+    setPrefs(prev => ({ ...prev, [key]: val }));
+    if (!userProfile?.id) return;
+    await supabase
+      .from('user_profiles')
+      .update({ [key]: val })
+      .eq('id', userProfile.id);
+  };
+
+  const formatRelativeTime = (dateString: string): string => {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffInSeconds < 60) return 'Just now';
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  const isDateToday = (dateStr: string) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+  };
+
+  const visibleNotifications = notifications.filter(n => {
+    const kind = n.kind || (n.type === 'new_release' ? 'artist_drop' : 'system');
+    const isPurchaseOrTip = (n.message || '').toLowerCase().match(/purchase|tip|bought/);
+
+    if (kind === 'artist_drop' && prefs.notify_artist_drops === false) return false;
+    if (kind === 'broadcast' && prefs.notify_broadcasts === false) return false;
+    if (isPurchaseOrTip && prefs.notify_purchases === false) return false;
+    return true;
+  });
+
+  const unreadCount = visibleNotifications.filter(n => !n.read).length;
+  const latestUnreadBroadcast = notifications.find(n => !n.read && n.kind === 'broadcast' && prefs.notify_broadcasts !== false);
+
+  const dismissBroadcast = async (id: string) => {
+    if (!userProfile?.id) return;
+    await supabase
+      .from('listener_notifications')
+      .update({ read: true })
+      .eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
 
   const [refreshing, setRefreshing] = useState(false);
   const startY = React.useRef(0);
@@ -570,7 +640,7 @@ const Home: React.FC = () => {
             </button>
           </div>
           <button
-            onClick={() => { setShowNotifications(true); markAllRead(); }}
+            onClick={() => { setShowNotifications(true); }}
             aria-label="Notifications"
             className="relative w-11 h-11 rounded-[12px] bg-[#1A1A1A] border border-white/10 flex items-center justify-center shrink-0 hover:border-white/20 transition-colors"
           >
@@ -583,6 +653,33 @@ const Home: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Broadcast Banner */}
+      {latestUnreadBroadcast && (
+        <div className="mb-8 w-full bg-[#1A1A1A] border border-amber-500/30 rounded-[16px] p-4 flex items-center gap-3 shadow-lg">
+          <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+            <Megaphone size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p 
+              className={`text-[13px] text-white ${latestUnreadBroadcast.link ? 'cursor-pointer hover:underline' : ''}`}
+              onClick={() => {
+                if (latestUnreadBroadcast.link) {
+                  navigate(latestUnreadBroadcast.link);
+                }
+              }}
+            >
+              {latestUnreadBroadcast.message}
+            </p>
+          </div>
+          <button
+            onClick={() => dismissBroadcast(latestUnreadBroadcast.id)}
+            className="px-3 py-1.5 rounded-[8px] text-[12px] font-medium text-[#B0B0B0] border border-white/10 hover:border-red-500/40 hover:text-red-400 transition-colors shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Featured Carousel */}
       {featuredItems.length > 0 && (() => {
@@ -974,23 +1071,103 @@ const Home: React.FC = () => {
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-white/8">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/8 relative">
                 <div>
                   <h2 className="text-[16px] font-bold text-white">Notifications</h2>
                   <p className="text-[12px] text-[#B0B0B0]">Updates and new release alerts</p>
                 </div>
-                <button 
-                  onClick={() => setShowNotifications(false)} 
-                  aria-label="Close notifications"
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-[#B0B0B0] hover:text-white"
-                >
-                  <X size={16} />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setShowPrefs(prev => !prev)}
+                    title="Notification Preferences"
+                    aria-label="Notification Preferences"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                      showPrefs ? 'bg-[#00A3FF]/20 text-[#00A3FF]' : 'bg-white/5 hover:bg-white/10 text-[#B0B0B0] hover:text-white'
+                    }`}
+                  >
+                    <SlidersHorizontal size={15} />
+                  </button>
+                  <button 
+                    onClick={() => setShowNotifications(false)} 
+                    aria-label="Close notifications"
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-[#B0B0B0] hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Preferences Dropdown */}
+                <AnimatePresence>
+                  {showPrefs && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-4 right-4 mt-2 p-4 bg-[#141414] border border-white/10 rounded-[16px] shadow-2xl z-20 space-y-3.5"
+                    >
+                      <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                        <span className="text-[12px] font-bold uppercase tracking-wider text-white">Notification Preferences</span>
+                        <button onClick={() => setShowPrefs(false)} className="text-[11px] text-[#737373] hover:text-white">Done</button>
+                      </div>
+
+                      {/* Option 1: Artist drops */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[13px] font-medium text-white">Artist drops</p>
+                          <p className="text-[11px] text-[#737373]">New music from followed artists</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updatePref('notify_artist_drops', !prefs.notify_artist_drops)}
+                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
+                            prefs.notify_artist_drops ? 'bg-[#00A3FF]' : 'bg-white/10'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 bg-white rounded-full transition-transform ${prefs.notify_artist_drops ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+
+                      {/* Option 2: Announcements */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[13px] font-medium text-white">Announcements</p>
+                          <p className="text-[11px] text-[#737373]">Platform updates & broadcasts</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updatePref('notify_broadcasts', !prefs.notify_broadcasts)}
+                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
+                            prefs.notify_broadcasts ? 'bg-[#00A3FF]' : 'bg-white/10'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 bg-white rounded-full transition-transform ${prefs.notify_broadcasts ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+
+                      {/* Option 3: Purchases & tips */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[13px] font-medium text-white">Purchases & tips</p>
+                          <p className="text-[11px] text-[#737373]">Receipts & supporter activity</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updatePref('notify_purchases', !prefs.notify_purchases)}
+                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
+                            prefs.notify_purchases ? 'bg-[#00A3FF]' : 'bg-white/10'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 bg-white rounded-full transition-transform ${prefs.notify_purchases ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* List */}
               <div className="flex-1 overflow-y-auto divide-y divide-white/5">
-                {notifications.length === 0 ? (
+                {visibleNotifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
                     <div className="w-14 h-14 rounded-full bg-white/[0.04] border border-white/8 flex items-center justify-center text-[#B0B0B0]">
                       <Bell size={24} />
@@ -999,30 +1176,111 @@ const Home: React.FC = () => {
                     <p className="text-[#B0B0B0] text-[12px] max-w-xs leading-relaxed">When artists you follow drop new music or send updates, you will see them here.</p>
                   </div>
                 ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => { if (n.link) navigate(n.link); setShowNotifications(false); }}
-                      className={`flex items-start gap-3.5 px-6 py-4 transition-colors cursor-pointer hover:bg-white/5 ${!n.read ? 'bg-[#00A3FF]/5 border-l-2 border-[#00A3FF]' : ''}`}
-                    >
-                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-[#00A3FF]' : 'bg-white/20'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-[13px] font-medium leading-snug">{n.message}</p>
-                        <p className="text-[#B0B0B0] text-[11px] mt-1">
-                          {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                  <div className="p-4 space-y-6">
+                    {(() => {
+                      const todayList = visibleNotifications.filter(n => isDateToday(n.created_at));
+                      const earlierList = visibleNotifications.filter(n => !isDateToday(n.created_at));
+
+                      const renderNotificationItem = (n: any) => {
+                        const isPurchaseOrTip = (n.message || '').toLowerCase().match(/purchase|tip|bought/);
+                        const kind = n.kind || (n.type === 'new_release' ? 'artist_drop' : 'system');
+                        
+                        let icon = (
+                          <div className="w-8 h-8 rounded-full bg-white/5 text-[#B0B0B0] flex items-center justify-center shrink-0">
+                            <Bell size={15} />
+                          </div>
+                        );
+                        if (kind === 'artist_drop') {
+                          icon = (
+                            <div className="w-8 h-8 rounded-full bg-[#00A3FF]/10 text-[#00A3FF] flex items-center justify-center shrink-0">
+                              <Music2 size={15} />
+                            </div>
+                          );
+                        } else if (kind === 'broadcast') {
+                          icon = (
+                            <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                              <Megaphone size={15} />
+                            </div>
+                          );
+                        } else if (isPurchaseOrTip) {
+                          icon = (
+                            <div className="w-8 h-8 rounded-full bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center shrink-0">
+                              <ShoppingBag size={15} />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.read && userProfile?.id) {
+                                supabase.from('listener_notifications').update({ read: true }).eq('id', n.id).then(() => {});
+                                setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
+                              }
+                              if (n.link) navigate(n.link);
+                              setShowNotifications(false);
+                            }}
+                            className={`flex items-start gap-3 p-3 rounded-[12px] transition-colors cursor-pointer hover:bg-white/5 ${
+                              !n.read ? 'bg-white/[0.03]' : 'bg-transparent'
+                            }`}
+                          >
+                            {icon}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-[13px] font-medium leading-snug line-clamp-2">{n.message}</p>
+                              <p className="text-[#737373] text-[11px] mt-1">
+                                {formatRelativeTime(n.created_at)}
+                              </p>
+                            </div>
+                            {!n.read && (
+                              <div className="w-2 h-2 rounded-full bg-[#00A3FF] shrink-0 mt-2" />
+                            )}
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <>
+                          {todayList.length > 0 && (
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-[#737373] px-1 mb-2">
+                                TODAY
+                              </p>
+                              <div className="space-y-1">
+                                {todayList.map(n => renderNotificationItem(n))}
+                              </div>
+                            </div>
+                          )}
+
+                          {earlierList.length > 0 && (
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-[#737373] px-1 mb-2">
+                                EARLIER
+                              </p>
+                              <div className="space-y-1">
+                                {earlierList.map(n => renderNotificationItem(n))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
 
               {/* Footer */}
-              {notifications.length > 0 && (
-                <div className="px-6 py-4 border-t border-white/8">
+              {visibleNotifications.length > 0 && (
+                <div className="px-6 py-4 border-t border-white/8 flex gap-2">
+                  <button
+                    onClick={markAllRead}
+                    className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-[10px] text-[#B0B0B0] hover:text-white text-[12px] font-semibold transition-colors"
+                  >
+                    Mark All Read
+                  </button>
                   <button
                     onClick={() => setNotifications([])}
-                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-[10px] text-[#B0B0B0] hover:text-white text-[12px] font-semibold transition-colors"
+                    className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-[10px] text-[#B0B0B0] hover:text-white text-[12px] font-semibold transition-colors"
                   >
                     Clear All
                   </button>

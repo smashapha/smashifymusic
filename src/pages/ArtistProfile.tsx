@@ -487,10 +487,10 @@ const ArtistProfile: React.FC = () => {
       <button
         onClick={handleFollow}
         disabled={followLoading}
-        className={`h-9 px-5 rounded-full font-black text-xs uppercase tracking-widest transition-all border ${
+        className={`h-9 px-5 rounded-[10px] text-[13px] font-semibold border transition-all ${
           isFollowing
-            ? 'border-white/20 text-white/60 hover:border-white/40 hover:text-white'
-            : 'border-smash-orange text-smash-orange hover:bg-smash-orange hover:text-white'
+            ? 'bg-[#00A3FF]/15 border-[#00A3FF]/30 text-[#00A3FF] hover:bg-[#00A3FF]/20'
+            : 'border-white/15 text-white hover:border-[#00A3FF]/50 hover:text-[#00A3FF]'
         }`}
       >
         {isFollowing ? 'Following' : 'Follow'}

@@ -4,40 +4,68 @@ import { Check, ChevronRight, Calculator, Wallet, Coins, ArrowRight, MessageCirc
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
-import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
+import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
 
-const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo', isCurrentPlan = false }: any) => (
-  <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${isCurrentPlan ? 'ring-2 ring-[#22C55E] bg-[#22C55E]/5' : (badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5')}`}>
+const PricingCard = ({ 
+  title, 
+  price, 
+  features, 
+  badge, 
+  isArtist = false, 
+  onAction, 
+  subtitle, 
+  period = 'mo', 
+  isCurrentPlan = false 
+}: any) => (
+  <div className={`bg-[#1A1A1A] border rounded-[16px] p-6 md:p-8 flex flex-col relative overflow-hidden transition-all duration-200 ${
+    isCurrentPlan 
+      ? 'border-[#00A3FF] ring-1 ring-[#00A3FF] bg-[#00A3FF]/[0.03]' 
+      : (badge ? 'border-white/20 hover:border-white/30' : 'border-white/10 hover:border-white/20')
+  }`}>
     {isCurrentPlan && (
-      <div className="absolute top-4 md:top-6 right-0 bg-[#22C55E] text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
-        CURRENT PLAN
+      <div className="absolute top-4 right-4 bg-[#00A3FF] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+        Current Plan
       </div>
     )}
     {!isCurrentPlan && badge && (
-      <div className="absolute top-4 md:top-6 right-0 bg-smash-orange text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
+      <div className="absolute top-4 right-4 bg-[#00A3FF] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
         {badge}
       </div>
     )}
-    <h3 className="text-xl md:text-2xl font-black font-display italic uppercase mb-1">{title}</h3>
-    {subtitle && <p className="text-smash-gray text-[10px] md:text-xs mb-4 font-bold h-4">{subtitle}</p>}
-    <div className="flex items-baseline gap-2 mb-6 md:mb-8">
-      <span className="text-[10px] md:text-sm font-black text-smash-gray uppercase tracking-widest">MK</span>
-      <span className="text-4xl md:text-5xl font-black font-display italic">{price}</span>
-      <span className="text-[10px] md:text-sm font-black text-smash-gray uppercase tracking-widest">/{period}</span>
+
+    <h3 className="text-xl font-bold text-white mb-1">{title}</h3>
+    {subtitle ? (
+      <p className="text-[#B0B0B0] text-[12px] mb-4 min-h-[18px]">{subtitle}</p>
+    ) : (
+      <div className="mb-4 min-h-[18px]" />
+    )}
+
+    <div className="flex items-baseline gap-1.5 mb-6">
+      <span className="text-[12px] font-bold text-[#737373] uppercase tracking-wider">MK</span>
+      <span className="text-3xl md:text-4xl font-extrabold text-white">{price}</span>
+      <span className="text-[12px] font-medium text-[#737373]">/{period}</span>
     </div>
-    <ul className="space-y-3 md:space-y-4 mb-4 flex-1">
+
+    <ul className="space-y-3 mb-8 flex-1">
       {features.map((f: string, i: number) => (
-        <li key={i} className="flex items-start gap-3 text-smash-gray font-bold group-hover:text-white transition-colors text-xs md:text-sm">
-          <Check size={16} className={`${isCurrentPlan ? 'text-[#22C55E]' : 'text-smash-orange'} flex-shrink-0 mt-0.5 md:w-[18px] md:h-[18px]`} />
+        <li key={i} className="flex items-start gap-2.5 text-[#B0B0B0] text-[13px] leading-snug">
+          <Check size={16} className={`${isCurrentPlan ? 'text-[#00A3FF]' : 'text-[#00A3FF]'} shrink-0 mt-0.5`} />
           <span>{f}</span>
         </li>
       ))}
     </ul>
+
     <button 
       onClick={onAction}
       disabled={isCurrentPlan}
-      className={`w-full py-4 md:py-5 rounded-[20px] md:rounded-[24px] font-black text-xs md:text-sm uppercase tracking-widest transition-all mt-auto ${isCurrentPlan ? 'bg-[#22C55E]/20 text-[#22C55E] cursor-not-allowed border border-[#22C55E]/30' : (badge ? 'bg-smash-orange text-white hover:bg-smash-orange/80 shadow-xl' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white shadow-xl')}`}
+      className={`w-full py-3 rounded-[10px] font-semibold text-[13px] transition-all mt-auto ${
+        isCurrentPlan 
+          ? 'bg-white/5 text-[#737373] cursor-not-allowed border border-white/5' 
+          : (badge 
+              ? 'bg-[#00A3FF] text-white hover:bg-[#0090e0] shadow-md' 
+              : 'bg-white text-[#0A0A0A] hover:bg-white/90 shadow-md')
+      }`}
     >
       {isCurrentPlan ? 'Active Plan' : (price === '0' ? 'Start Free' : (isArtist ? 'Upgrade Now' : 'Get Plan'))}
     </button>
@@ -46,8 +74,7 @@ const PricingCard = ({ title, price, features, badge, isArtist = false, onAction
 
 const Pricing = () => {
   const navigate = useNavigate();
-  
-  const { user, userProfile, role, refreshProfile } = useAuth();
+  const { user, userProfile, role } = useAuth();
   
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'listeners' | 'artists'>('listeners');
@@ -79,7 +106,6 @@ const Pricing = () => {
       return;
     }
 
-    // Build a safe user object sourced from the auth user, not the profile
     const safeUser = {
       id: user.id,
       email: user.email ?? userProfile?.email ?? '',
@@ -95,236 +121,248 @@ const Pricing = () => {
   };
 
   const calculateKeep = (tier: string) => {
-    // Tips are 5% all-in for every tier — tier no longer affects tip earnings
     const TIP_FEE = 0.05;
     return expectedTips - (expectedTips * TIP_FEE);
   };
 
   return (
-    <div 
-      className="p-4 md:p-12 pb-32 max-w-[1400px] mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
-    >
+    <div className={`pt-6 md:pt-10 ${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} text-white max-w-6xl mx-auto`}>
       <SEO 
         title="Plans & Pricing | Smashify Music" 
         description="Affordable listener plans and premium artist tiers on Smashify Music." 
       />
 
-      <div className="flex items-center gap-3 text-[10px] md:text-sm font-bold text-smash-gray uppercase tracking-widest mb-8 md:mb-12">
-         <Link to="/" className="hover:text-white transition-colors">Home</Link>
-         <ChevronRight size={12} className="md:w-3.5 md:h-3.5" />
-         <span className="text-smash-orange">Pricing Plans</span>
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-[13px] text-[#B0B0B0] mb-6">
+        <Link to="/" className="hover:text-white transition-colors">Home</Link>
+        <span className="text-[#737373]">/</span>
+        <span className="text-white">Pricing Plans</span>
       </div>
 
-      <div className="text-center mb-12 md:mb-16">
-         {activeTab === 'artists' ? (
-            <>
-              <h1 className="text-3xl md:text-7xl font-black font-display italic uppercase tracking-tighter mb-4 leading-tight md:leading-none">
-                We only make money<br className="hidden md:block"/>when <span className="text-smash-orange">you make money</span>
-              </h1>
-              <p className="text-smash-gray text-base md:text-xl font-medium tracking-tight mt-4">Invest in your music. Every tier pays for itself.</p>
-            </>
-         ) : (
-            <>
-              <h1 className="text-3xl md:text-7xl font-black font-display italic uppercase tracking-tighter mb-4 leading-tight md:leading-none">
-                STREAM <span className="text-smash-orange">AFRICA'S BEST</span>
-              </h1>
-              <p className="text-smash-gray text-base md:text-xl font-medium tracking-tight mt-4">Support your favorite artists directly.</p>
-            </>
-         )}
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto mb-10">
+        <h1 className="text-3xl md:text-5xl font-studio font-bold text-white tracking-tight">
+          {activeTab === 'artists' ? 'Invest in Your Music' : 'Stream Africa’s Best'}
+        </h1>
+        <p className="text-[14px] md:text-[15px] text-[#B0B0B0] mt-3 leading-relaxed">
+          {activeTab === 'artists' 
+            ? 'Transparent creator tiers designed to help you monetize and grow directly with your fans.'
+            : 'Uninterrupted music, high-definition streaming, and direct artist support.'}
+        </p>
       </div>
 
-      <div className="flex justify-center mb-12 md:mb-16">
-        <div className="flex p-1.5 md:p-2 bg-smash-dark rounded-full md:rounded-3xl border border-white/5 shadow-2xl w-full max-w-md">
+      {/* Role Tabs */}
+      <div className="flex justify-center mb-10">
+        <div className="flex p-1 bg-[#1A1A1A] border border-white/10 rounded-[12px] w-full max-w-xs">
           <button 
             onClick={() => handleTabChange('listeners')} 
-            className={`flex-1 px-4 md:px-8 py-3 rounded-full md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'listeners' ? 'bg-white text-smash-black shadow-lg' : 'text-smash-gray hover:text-white'}`}
+            className={`flex-1 py-2 rounded-[8px] text-[13px] font-semibold transition-all ${
+              activeTab === 'listeners' 
+                ? 'bg-white text-[#0A0A0A] shadow-sm' 
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
           >
             Listeners
           </button>
           <button 
             onClick={() => handleTabChange('artists')} 
-            className={`flex-1 px-4 md:px-8 py-3 rounded-full md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'artists' ? 'bg-white text-smash-black shadow-lg' : 'text-smash-gray hover:text-white'}`}
+            className={`flex-1 py-2 rounded-[8px] text-[13px] font-semibold transition-all ${
+              activeTab === 'artists' 
+                ? 'bg-white text-[#0A0A0A] shadow-sm' 
+                : 'text-[#B0B0B0] hover:text-white'
+            }`}
           >
             Artists
           </button>
         </div>
       </div>
 
+      {/* Listener Plans */}
       {activeTab === 'listeners' && (
-         <motion.div 
+        <motion.div 
           key="listeners"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12 md:mb-16 max-w-7xl mx-auto">
-             <PricingCard 
-                title="Daily Pass" 
-                isCurrentPlan={userProfile?.subscription_tier === 'DailyPass'}
-                price="150" 
-                period="24 HRS"
-                onAction={() => handleAction('DailyPass')}
-                features={[
-                  "Ad-free for 24 hours", 
-                  "High quality audio", 
-                  "Offline saves (10 songs)",
-                  "Unlimited skips",
-                  "Cancel anytime"
-                ]} 
-             />
-             <PricingCard 
-                title="Weekly Pass" 
-                isCurrentPlan={userProfile?.subscription_tier === 'WeeklyPass'}
-                price="700" 
-                period="7 DAYS"
-                onAction={() => handleAction('WeeklyPass')}
-                features={[
-                  "Ad-free for 7 days", 
-                  "High quality audio", 
-                  "Offline saves (30 songs)",
-                  "Unlimited skips",
-                  "Cancel anytime"
-                ]} 
-             />
-             <PricingCard 
-                title="Premium Monthly" 
-                isCurrentPlan={userProfile?.subscription_tier === 'Premium'}
-                price="2,000" 
-                badge="POPULAR"
-                onAction={() => handleAction('Premium')}
-                features={[
-                  "Ad-free listening", 
-                  "High quality audio", 
-                  "Offline saves (50 songs)",
-                  "Unlimited skips & downloads",
-                  "Lyrics display & stats",
-                  "Early access to content"
-                ]} 
-             />
-             <PricingCard 
-                title="Family Monthly" 
-                isCurrentPlan={userProfile?.subscription_tier === 'Family'}
-                price="5,000" 
-                onAction={() => handleAction('Family')}
-                features={[
-                  "5 Premium accounts", 
-                  "Ad-free for everyone",
-                  "Offline saves for all",
-                  "Unlimited downloads",
-                  "Individual stats",
-                  "One monthly bill"
-                ]} 
-             />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            <PricingCard 
+              title="Daily Pass" 
+              isCurrentPlan={userProfile?.subscription_tier === 'DailyPass'}
+              price="150" 
+              period="24 hrs"
+              onAction={() => handleAction('DailyPass')}
+              features={[
+                "Ad-free for 24 hours", 
+                "High quality audio", 
+                "Offline saves (10 songs)",
+                "Unlimited skips",
+                "Cancel anytime"
+              ]} 
+            />
+            <PricingCard 
+              title="Weekly Pass" 
+              isCurrentPlan={userProfile?.subscription_tier === 'WeeklyPass'}
+              price="700" 
+              period="7 days"
+              onAction={() => handleAction('WeeklyPass')}
+              features={[
+                "Ad-free for 7 days", 
+                "High quality audio", 
+                "Offline saves (30 songs)",
+                "Unlimited skips",
+                "Cancel anytime"
+              ]} 
+            />
+            <PricingCard 
+              title="Premium Monthly" 
+              isCurrentPlan={userProfile?.subscription_tier === 'Premium'}
+              price="2,000" 
+              badge="Popular"
+              period="month"
+              onAction={() => handleAction('Premium')}
+              features={[
+                "Ad-free listening", 
+                "High quality audio", 
+                "Offline saves (50 songs)",
+                "Unlimited skips & downloads",
+                "Lyrics display & stats",
+                "Early access to releases"
+              ]} 
+            />
+            <PricingCard 
+              title="Family Monthly" 
+              isCurrentPlan={userProfile?.subscription_tier === 'Family'}
+              price="5,000" 
+              period="month"
+              onAction={() => handleAction('Family')}
+              features={[
+                "5 Premium accounts", 
+                "Ad-free for everyone",
+                "Offline saves for all",
+                "Unlimited downloads",
+                "Individual stats",
+                "One convenient monthly bill"
+              ]} 
+            />
           </div>
-          <p className="text-center text-smash-gray font-bold text-[10px] md:text-sm uppercase tracking-widest">
-            Cancel anytime. Billed monthly via Airtel/TNM.
+          <p className="text-center text-[#737373] text-[13px] mb-16">
+            Cancel anytime. Billed via Airtel Money & TNM Mpamba.
           </p>
         </motion.div>
       )}
 
+      {/* Artist Plans */}
       {activeTab === 'artists' && (
         <motion.div 
           key="artists"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 md:mb-16">
-             <PricingCard 
-                isArtist={true}
-                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Free'}
-                title="Free Studio" 
-                price="0" 
-                subtitle="For beginners"
-                onAction={() => handleAction()}
-                features={[
-                  "5 total uploads (lifetime)",
-                  "Streaming only — no track sales or downloads",
-                  "5% fee on tips (same for everyone)",
-                  "Basic play analytics",
-                  "MK 50,000 max withdrawal",
-                  "Minimum withdrawal: MK 10,000",
-                  "7 day payout speed"
-                ]} 
-             />
-             <PricingCard 
-                isArtist={true}
-                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'RisingStar'}
-                title="Rising Star" 
-                price="8,000" 
-                period="6 MO"
-                subtitle="MK 1,500/mo | MK 15,000 for 12 months"
-                onAction={() => handleAction('RisingStar')}
-                features={[
-                  "10 uploads per 6 months",
-                  "Tips & fan subscriptions only (no track sales)",
-                  "Accept fan subscriptions",
-                  "5% fee on tips",
-                  "Fan messaging enabled",
-                  "Standard analytics",
-                  "MK 200,000 max withdrawal",
-                  "Minimum withdrawal: MK 10,000",
-                  "3 day payout speed"
-                ]} 
-             />
-             <PricingCard 
-                isArtist={true}
-                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Standard'}
-                title="Standard" 
-                price="16,000" 
-                period="6 MO"
-                badge="POPULAR" 
-                subtitle="MK 3,000/mo | MK 30,000 for 12 months"
-                onAction={() => handleAction('Standard')}
-                features={[
-                  "15 uploads per 6 months",
-                  "Tips & fan subscriptions only (no track sales)",
-                  "Accept fan subscriptions",
-                  "5% fee on tips",
-                  "1 free featured placement/month",
-                  "Advanced analytics suite",
-                  "Verified badge on profile",
-                  "MK 500,000 max withdrawal",
-                  "Minimum withdrawal: MK 10,000",
-                  "24 hour payout speed"
-                ]} 
-             />
-             <PricingCard 
-                isArtist={true}
-                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Elite'}
-                title="Elite" 
-                price="27,000" 
-                period="6 MO"
-                subtitle="MK 5,000/mo | MK 50,000 for 12 months"
-                onAction={() => handleAction('Elite')}
-                features={[
-                  "25 uploads per 6 months",
-                  "Sell tracks to fans — 10% + MK 50 per sale, with fan download access",
-                  "Elite exclusive: track sales & downloads",
-                  "5% fee on tips",
-                  "3 free featured placements/month",
-                  "Full analytics with CSV export",
-                  "Gold verified badge",
-                  "Instant payouts",
-                  "Unlimited withdrawals",
-                  "Minimum withdrawal: MK 10,000"
-                ]} 
-             />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            <PricingCard 
+              isArtist={true}
+              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Free'}
+              title="Free Studio" 
+              price="0" 
+              period="lifetime"
+              subtitle="For emerging creators"
+              onAction={() => handleAction()}
+              features={[
+                "5 total uploads (lifetime)",
+                "Streaming only — no track sales",
+                "5% platform fee on tips",
+                "Basic play analytics",
+                "MK 50,000 max withdrawal",
+                "Minimum withdrawal: MK 10,000",
+                "7 day payout speed"
+              ]} 
+            />
+            <PricingCard 
+              isArtist={true}
+              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'RisingStar'}
+              title="Rising Star" 
+              price="8,000" 
+              period="6 mo"
+              subtitle="MK 1,500/mo equivalent"
+              onAction={() => handleAction('RisingStar')}
+              features={[
+                "10 uploads per 6 months",
+                "Tips & fan subscriptions",
+                "Accept fan subscriptions",
+                "5% fee on tips",
+                "Fan messaging enabled",
+                "Standard analytics",
+                "MK 200,000 max withdrawal",
+                "3 day payout speed"
+              ]} 
+            />
+            <PricingCard 
+              isArtist={true}
+              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Standard'}
+              title="Standard" 
+              price="16,000" 
+              period="6 mo"
+              badge="Popular" 
+              subtitle="MK 3,000/mo equivalent"
+              onAction={() => handleAction('Standard')}
+              features={[
+                "15 uploads per 6 months",
+                "Tips & fan subscriptions",
+                "Accept fan subscriptions",
+                "5% fee on tips",
+                "1 free featured placement/month",
+                "Advanced analytics suite",
+                "Verified artist badge",
+                "MK 500,000 max withdrawal",
+                "24 hour payout speed"
+              ]} 
+            />
+            <PricingCard 
+              isArtist={true}
+              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Elite'}
+              title="Elite" 
+              price="27,000" 
+              period="6 mo"
+              subtitle="MK 5,000/mo equivalent"
+              onAction={() => handleAction('Elite')}
+              features={[
+                "25 uploads per 6 months",
+                "Sell tracks with fan downloads",
+                "10% + MK 50 per track sale",
+                "5% fee on tips",
+                "3 free featured placements/month",
+                "Full analytics with CSV export",
+                "Gold verified badge",
+                "Instant payouts & unlimited cap"
+              ]} 
+            />
           </div>
-          <p className="text-center text-smash-gray font-bold text-[10px] md:text-sm uppercase tracking-widest mb-16">
-            Slot Booster Pack available for Elite users: +MK 1,500/month per +10 extra track slots
+
+          <p className="text-center text-[#737373] text-[13px] mb-14">
+            Slot Booster Pack available for Elite creators: +MK 1,500/month per +10 extra track slots.
           </p>
 
-          <div className="bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-6 md:p-10 mb-20">
-            <h3 className="text-xl md:text-3xl font-black font-display italic uppercase mb-8 flex items-center gap-4">
-              <Calculator className="text-smash-orange shrink-0 md:w-8 md:h-8" size={24} />
-              Calculate ROI
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Calculator */}
+          <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 md:p-8 mb-16">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-full bg-[#00A3FF]/10 text-[#00A3FF] flex items-center justify-center">
+                <Calculator size={18} />
+              </div>
               <div>
-                <label className="block text-[10px] md:text-sm font-bold text-smash-gray uppercase tracking-widest mb-4">
-                  Tips & sales worth:
+                <h3 className="text-lg font-bold text-white">Earnings Calculator</h3>
+                <p className="text-[12px] text-[#B0B0B0]">Estimate your net earnings from tips and fan support</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div>
+                <label className="block text-[12px] font-semibold text-[#B0B0B0] uppercase tracking-wider mb-3">
+                  Estimated Fan Tips / Sales
                 </label>
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-xl md:text-2xl font-black">MK</span>
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="text-lg font-bold text-[#737373]">MK</span>
                   <input 
                     type="range" 
                     min="10000" 
@@ -332,28 +370,29 @@ const Pricing = () => {
                     step="10000"
                     value={expectedTips}
                     onChange={(e) => setExpectedTips(Number(e.target.value))}
-                    className="flex-1 accent-smash-orange"
+                    className="flex-1 accent-[#00A3FF]"
                   />
-                  <span className="text-xl md:text-2xl font-black">{expectedTips.toLocaleString()}</span>
+                  <span className="text-lg font-bold text-white min-w-[100px] text-right">{expectedTips.toLocaleString()}</span>
                 </div>
-                <p className="text-[10px] md:text-sm text-smash-gray">
-                  Adjust slider to see earnings.
+                <p className="text-[12px] text-[#737373]">
+                  Slide to preview how much you keep after standard processing.
                 </p>
               </div>
-              <div className="space-y-3 md:space-y-4">
-                <div className="flex justify-between items-center p-4 bg-smash-orange/20 rounded-xl border border-smash-orange/50">
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-4 bg-[#00A3FF]/10 rounded-[12px] border border-[#00A3FF]/20">
                   <div>
-                    <span className="font-bold text-xs md:text-sm text-smash-orange block">You Keep (95%):</span>
-                    <span className="text-[9px] text-smash-gray">Tips are 5% all-in — same for every tier</span>
+                    <span className="font-semibold text-[13px] text-[#00A3FF] block">You Keep (95%):</span>
+                    <span className="text-[11px] text-[#B0B0B0]">Tips are 5% all-in across all tiers</span>
                   </div>
-                  <span className="text-base md:text-lg font-black text-white shrink-0">MK {calculateKeep('any').toLocaleString()}</span>
+                  <span className="text-base md:text-lg font-bold text-white shrink-0">MK {calculateKeep('any').toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="flex justify-between items-center p-4 bg-white/5 rounded-[12px] border border-white/5">
                   <div>
-                    <span className="font-bold text-xs md:text-sm text-smash-gray block">Smashify Fee (5%):</span>
-                    <span className="text-[9px] text-smash-gray">Covers payment processing + platform costs</span>
+                    <span className="font-semibold text-[13px] text-[#B0B0B0] block">Platform Fee (5%):</span>
+                    <span className="text-[11px] text-[#737373]">Covers payment gateway + infrastructure</span>
                   </div>
-                  <span className="text-base md:text-lg font-black text-smash-gray shrink-0">MK {(expectedTips - calculateKeep('any')).toLocaleString()}</span>
+                  <span className="text-base font-medium text-[#737373] shrink-0">MK {(expectedTips - calculateKeep('any')).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -361,64 +400,70 @@ const Pricing = () => {
         </motion.div>
       )}
 
-      {/* Shared Bottom Section */}
-      <div className="mb-24">
-        <h3 className="text-4xl font-black font-display italic uppercase text-center mb-16">How Payouts Work</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      {/* How Payouts Work */}
+      <div className="mb-16">
+        <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-8">How Payouts Work</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: <Coins size={32} />, title: "Fan Pays", desc: "Fans tip or buy exactly what they want to pay for." },
-            { icon: <Calculator size={32} />, title: "Auto-Split", desc: "Transactions process immediately and our tiny fee is deducted." },
-            { icon: <Wallet size={32} />, title: "Added to Wallet", desc: "Your Smashify wallet updates instantly with your earnings." },
-            { icon: <ArrowRight size={32} />, title: "Withdraw to Phone", desc: "Cash out directly to Airtel Money or TNM Mpamba." }
+            { icon: <Coins size={20} />, title: "Fan Pays", desc: "Fans tip or subscribe with local mobile money." },
+            { icon: <Calculator size={20} />, title: "Auto-Split", desc: "Transactions process immediately and our tiny fee is deducted." },
+            { icon: <Wallet size={20} />, title: "Added to Wallet", desc: "Your Smashify creator balance updates instantly." },
+            { icon: <ArrowRight size={20} />, title: "Cash Out", desc: "Withdraw anytime directly to Airtel Money or TNM Mpamba." }
           ].map((step, i) => (
-            <div key={i} className="text-center p-6 bg-white/5 rounded-3xl border border-white/10 hover:border-smash-orange/50 transition-colors">
-              <div className="w-16 h-16 rounded-full bg-smash-orange/20 text-smash-orange flex items-center justify-center mx-auto mb-6">
+            <div key={i} className="p-6 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center flex flex-col items-center">
+              <div className="w-11 h-11 rounded-full bg-[#00A3FF]/10 text-[#00A3FF] flex items-center justify-center mb-4">
                 {step.icon}
               </div>
-              <h4 className="text-xl font-black uppercase tracking-widest mb-2">{step.title}</h4>
-              <p className="text-smash-gray text-sm">{step.desc}</p>
+              <h4 className="text-[15px] font-bold text-white mb-1.5">{step.title}</h4>
+              <p className="text-[#B0B0B0] text-[12px] leading-relaxed">{step.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto mb-20">
-        <h3 className="text-4xl font-black font-display italic uppercase text-center mb-12">FAQ</h3>
+      {/* FAQ */}
+      <div className="max-w-3xl mx-auto mb-16">
+        <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
         
-        <div className="mt-12 mb-8 p-6 md:p-8 bg-white/5 border border-white/10 rounded-2xl">
-          <h3 className="text-lg md:text-xl font-studio font-black uppercase italic text-white mb-4">
+        <div className="mb-6 p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px]">
+          <h3 className="text-[15px] font-bold text-white mb-3">
             Full Fee Transparency
           </h3>
-          <div className="space-y-3 text-sm text-smash-gray">
-            <p><span className="text-white font-bold">Tips:</span> 5% all-in, every tier. You keep 95%.</p>
-            <p><span className="text-white font-bold">Track sales (Elite/Label only):</span> 10% (Elite) or 5% (Label) + MK 50 flat fee per sale.</p>
-            <p><span className="text-white font-bold">Fan subscriptions:</span> Our 10% fee is baked into the listed price — what fans see is final.</p>
-            <p><span className="text-white font-bold">Withdrawals:</span> Smashify takes 0%. Only the mobile money network's 3% transfer fee applies — that's Airtel/TNM's cost, not ours. Minimum withdrawal: MK 10,000.</p>
-            <p><span className="text-white font-bold">Studio subscriptions:</span> Your tier price is fixed and transparent — no hidden add-ons at checkout.</p>
+          <div className="space-y-2.5 text-[13px] text-[#B0B0B0] leading-relaxed">
+            <p><strong className="text-white">Tips:</strong> 5% all-in, every tier. You keep 95%.</p>
+            <p><strong className="text-white">Track sales (Elite only):</strong> 10% + MK 50 flat fee per sale.</p>
+            <p><strong className="text-white">Fan subscriptions:</strong> Our 10% fee is included in the listed price.</p>
+            <p><strong className="text-white">Withdrawals:</strong> Smashify takes 0%. Only the mobile money network’s 3% transfer fee applies.</p>
+            <p><strong className="text-white">Studio subscriptions:</strong> Fixed and transparent — no surprises at checkout.</p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[
             { q: "How do I get paid?", a: "When your wallet reaches the minimum withdrawal amount for your tier, you can cash out directly to your registered Airtel Money or TNM Mpamba number." },
-            { q: "Are there hidden fees?", a: "No. Tips have a flat 5% fee for every artist — no tier differences. Track sales (Elite/Label only) have a tiered commission plus a small MK 50 processing fee. Fan subscription prices already include our fee — what's listed is what's paid. Withdrawals: Smashify charges 0%, you only pay the standard mobile money network transfer fee (3%), which goes to Airtel/TNM, not us." },
-            { q: "What's the minimum withdrawal amount?", a: "MK 10,000. This helps us process payouts efficiently as the platform grows. There's no maximum on most tiers beyond your tier's withdrawal cap." },
-            { q: "Does Smashify charge anything on withdrawals?", a: "No. Smashify takes 0% on withdrawals. The only deduction is the mobile money network's standard 3% transfer fee, which is the cost of moving money to Airtel Money or TNM Mpamba — not a Smashify charge." },
+            { q: "Are there hidden fees?", a: "No. Tips have a flat 5% fee for every artist. Track sales (Elite only) have a tiered commission plus a small MK 50 processing fee. Withdrawals: Smashify charges 0%, you only pay the standard mobile money network transfer fee (3%), which goes to Airtel/TNM, not us." },
+            { q: "What's the minimum withdrawal amount?", a: "MK 10,000. This ensures efficient processing and keeps payout speeds fast." },
             { q: "Can I upgrade or downgrade anytime?", a: "Yes. Listener plans are billed monthly. Artist Studio plans are billed every 6 months. You can upgrade at any time — the new plan takes effect immediately." },
-            { q: "Do listeners have to pay to hear my music?", a: "No, listeners on the Free plan can hear your music with ads. However, they can tip you directly. Only music you explicitly set a price for requires purchase." }
+            { q: "Do listeners have to pay to hear my music?", a: "No, listeners can stream approved music. Fans can also tip you or subscribe for exclusive perks." }
           ].map((faq, i) => (
-            <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10">
-              <h4 className="font-black text-lg mb-2">{faq.q}</h4>
-              <p className="text-smash-gray leading-relaxed">{faq.a}</p>
+            <div key={i} className="p-5 bg-[#1A1A1A] rounded-[16px] border border-white/10">
+              <h4 className="font-bold text-[14px] text-white mb-1.5">{faq.q}</h4>
+              <p className="text-[#B0B0B0] text-[13px] leading-relaxed">{faq.a}</p>
             </div>
           ))}
         </div>
       </div>
 
+      {/* WhatsApp Support CTA */}
       <div className="text-center">
-        <a href="https://wa.me/265883728868" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-4 bg-[#25D366] text-white rounded-full font-black uppercase tracking-widest hover:bg-[#20bd5a] transition-colors shadow-lg shadow-[#25D366]/20">
-          <MessageCircle size={24} />
-          Still unsure? Chat on WhatsApp
+        <a 
+          href="https://wa.me/265883728868" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-[#25D366] text-white rounded-[12px] font-semibold text-[13px] hover:bg-[#20bd5a] transition-colors shadow-md"
+        >
+          <MessageCircle size={18} />
+          Have questions? Chat on WhatsApp
         </a>
       </div>
 
