@@ -1,11 +1,13 @@
-import React from 'react';
+const fs = require('fs');
+
+const code = `import React from 'react';
 import { Link } from 'react-router-dom';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
 import SEO from '../components/common/SEO';
 
 const Help = () => {
   return (
-    <div className={`pt-6 md:pt-10 ${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} text-white max-w-4xl mx-auto`}>
+    <div className={\`pt-6 md:pt-10 \${PAGE_CONTAINER} \${PAGE_BOTTOM_PADDING} text-white max-w-4xl mx-auto\`}>
       <SEO 
         title="Help & Support | Smashify Music" 
         description="Get help and support with your Smashify account, payouts, and uploads." 
@@ -71,3 +73,7 @@ const Help = () => {
 };
 
 export default Help;
+`;
+
+fs.writeFileSync('src/pages/Help.tsx', code);
+console.log("Rewrote Help.tsx");
