@@ -7,9 +7,14 @@ import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
 import toast from 'react-hot-toast';
 import SEO from '../components/common/SEO';
 
-const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo' }: any) => (
-  <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5'}`}>
-    {badge && (
+const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo', isCurrentPlan = false }: any) => (
+  <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${isCurrentPlan ? 'ring-2 ring-[#22C55E] bg-[#22C55E]/5' : (badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5')}`}>
+    {isCurrentPlan && (
+      <div className="absolute top-4 md:top-6 right-0 bg-[#22C55E] text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
+        CURRENT PLAN
+      </div>
+    )}
+    {!isCurrentPlan && badge && (
       <div className="absolute top-4 md:top-6 right-0 bg-smash-orange text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
         {badge}
       </div>
@@ -24,39 +29,45 @@ const PricingCard = ({ title, price, features, badge, isArtist = false, onAction
     <ul className="space-y-3 md:space-y-4 mb-4 flex-1">
       {features.map((f: string, i: number) => (
         <li key={i} className="flex items-start gap-3 text-smash-gray font-bold group-hover:text-white transition-colors text-xs md:text-sm">
-          <Check size={16} className="text-smash-orange flex-shrink-0 mt-0.5 md:w-[18px] md:h-[18px]" />
+          <Check size={16} className={`${isCurrentPlan ? 'text-[#22C55E]' : 'text-smash-orange'} flex-shrink-0 mt-0.5 md:w-[18px] md:h-[18px]`} />
           <span>{f}</span>
         </li>
       ))}
     </ul>
     <button 
       onClick={onAction}
-      className={`w-full py-4 md:py-5 rounded-[20px] md:rounded-[24px] font-black text-xs md:text-sm uppercase tracking-widest transition-all ${badge ? 'bg-smash-orange text-white hover:bg-smash-orange/80 shadow-xl mt-auto' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white shadow-xl mt-auto'}`}
+      disabled={isCurrentPlan}
+      className={`w-full py-4 md:py-5 rounded-[20px] md:rounded-[24px] font-black text-xs md:text-sm uppercase tracking-widest transition-all mt-auto ${isCurrentPlan ? 'bg-[#22C55E]/20 text-[#22C55E] cursor-not-allowed border border-[#22C55E]/30' : (badge ? 'bg-smash-orange text-white hover:bg-smash-orange/80 shadow-xl' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white shadow-xl')}`}
     >
-      {price === '0' ? 'Start Free' : (isArtist ? 'Upgrade Now' : 'Get Plan')}
+      {isCurrentPlan ? 'Active Plan' : (price === '0' ? 'Start Free' : (isArtist ? 'Upgrade Now' : 'Get Plan'))}
     </button>
   </div>
 );
 
 const Pricing = () => {
   const navigate = useNavigate();
+  
+  const { user, userProfile, role, refreshProfile } = useAuth();
+  
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'listeners' | 'artists'>((searchParams.get('tab') as 'listeners' | 'artists') || 'listeners');
+  const [activeTab, setActiveTab] = useState<'listeners' | 'artists'>('listeners');
   const [expectedTips, setExpectedTips] = useState<number>(50000);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'artists' || tab === 'listeners') {
       setActiveTab(tab);
+    } else if (role === 'artist' || role === 'admin') {
+      setActiveTab('artists');
+    } else {
+      setActiveTab('listeners');
     }
-  }, [searchParams]);
+  }, [searchParams, role]);
 
   const handleTabChange = (tab: 'listeners' | 'artists') => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
-
-  const { user, userProfile, refreshProfile } = useAuth();
   
   const handleAction = (planId?: string) => {
     if (!user) {
@@ -148,6 +159,7 @@ const Pricing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12 md:mb-16 max-w-7xl mx-auto">
              <PricingCard 
                 title="Daily Pass" 
+                isCurrentPlan={userProfile?.subscription_tier === 'DailyPass'}
                 price="150" 
                 period="24 HRS"
                 onAction={() => handleAction('DailyPass')}
@@ -161,6 +173,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 title="Weekly Pass" 
+                isCurrentPlan={userProfile?.subscription_tier === 'WeeklyPass'}
                 price="700" 
                 period="7 DAYS"
                 onAction={() => handleAction('WeeklyPass')}
@@ -174,6 +187,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 title="Premium Monthly" 
+                isCurrentPlan={userProfile?.subscription_tier === 'Premium'}
                 price="2,000" 
                 badge="POPULAR"
                 onAction={() => handleAction('Premium')}
@@ -188,6 +202,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 title="Family Monthly" 
+                isCurrentPlan={userProfile?.subscription_tier === 'Family'}
                 price="5,000" 
                 onAction={() => handleAction('Family')}
                 features={[
@@ -215,6 +230,7 @@ const Pricing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 md:mb-16">
              <PricingCard 
                 isArtist={true}
+                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Free'}
                 title="Free Studio" 
                 price="0" 
                 subtitle="For beginners"
@@ -231,6 +247,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 isArtist={true}
+                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'RisingStar'}
                 title="Rising Star" 
                 price="8,000" 
                 period="6 MO"
@@ -250,6 +267,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 isArtist={true}
+                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Standard'}
                 title="Standard" 
                 price="16,000" 
                 period="6 MO"
@@ -271,6 +289,7 @@ const Pricing = () => {
              />
              <PricingCard 
                 isArtist={true}
+                isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Elite'}
                 title="Elite" 
                 price="27,000" 
                 period="6 MO"

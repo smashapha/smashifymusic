@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const code = `import React, { useState, useEffect } from 'react';
 import { motion } from "motion/react";
 import { Bell, Coins, Megaphone, Music2, AlertCircle, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -49,7 +51,6 @@ export default function Notifications() {
       case 'system':
         return <Megaphone size={20} />;
       case 'new_drop':
-      case 'artist_drop':
       case 'track_approved':
         return <Music2 size={20} />;
       case 'follow':
@@ -75,23 +76,23 @@ export default function Notifications() {
         <h3 className="text-[11px] font-black uppercase tracking-widest text-smash-gray mb-4 px-6">{title}</h3>
         <div className="divide-y divide-white/5 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden">
           {notifs.map(n => (
-            <div key={n.id} className={`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? (role === 'artist' ? 'bg-smash-purple/5' : 'bg-smash-orange/5') : ''}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? (role === 'artist' ? 'bg-smash-purple text-white' : 'bg-smash-orange text-white') : 'bg-white/5 text-smash-gray'}`}>
+            <div key={n.id} className={\`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors \${!n.read ? (role === 'artist' ? 'bg-smash-purple/5' : 'bg-smash-orange/5') : ''}\`}>
+              <div className={\`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 \${!n.read ? (role === 'artist' ? 'bg-smash-purple text-white' : 'bg-smash-orange text-white') : 'bg-white/5 text-smash-gray'}\`}>
                 {getIcon(n.type)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-1">
-                  <p className={`text-sm font-bold ${!n.read ? 'text-white' : 'text-white/60'}`}>{n.message}</p>
+                  <p className={\`text-sm font-bold \${!n.read ? 'text-white' : 'text-white/60'}\`}>{n.message}</p>
                   <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest shrink-0 ml-4">{new Date(n.created_at).toLocaleDateString()}</span>
                 </div>
                 {n.link && (
-                  <Link to={n.link} className={`text-[10px] font-black uppercase tracking-widest ${role === 'artist' ? 'text-smash-purple' : 'text-smash-orange'} hover:text-white transition-colors`}>
+                  <Link to={n.link} className={\`text-[10px] font-black uppercase tracking-widest \${role === 'artist' ? 'text-smash-purple' : 'text-smash-orange'} hover:text-white transition-colors\`}>
                     View Details →
                   </Link>
                 )}
               </div>
               {!n.read && (
-                <button onClick={() => markAsRead(n.id)} className={`w-2 h-2 rounded-full mt-2 shrink-0 ${role === 'artist' ? 'bg-smash-purple' : 'bg-smash-orange'}`} title="Mark as read" />
+                <button onClick={() => markAsRead(n.id)} className={\`w-2 h-2 rounded-full mt-2 shrink-0 \${role === 'artist' ? 'bg-smash-purple' : 'bg-smash-orange'}\`} title="Mark as read" />
               )}
             </div>
           ))}
@@ -124,3 +125,7 @@ export default function Notifications() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/pages/Notifications.tsx', code);
+console.log("Rewrote Notifications.tsx");

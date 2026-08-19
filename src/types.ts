@@ -27,6 +27,7 @@ export interface Song {
   approved?: boolean;
   status?: 'pending' | 'approved';
   is_for_sale?: boolean;
+  release_date?: string;
   album_id?: string;
   supporter_only?: boolean;
   discount_percent?: number;

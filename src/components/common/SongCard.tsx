@@ -462,7 +462,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   );
 };
 
-const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCanSell }: any) => {
+export const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCanSell }: any) => {
   const navigate = useNavigate();
   const { addToQueue, purchasedIds } = usePlayer();
   const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['Elite', 'elite', 'Label', 'label'].includes((song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || '').toLowerCase());

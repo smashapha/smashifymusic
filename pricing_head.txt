@@ -1,0 +1,150 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from "motion/react";
+import { Check, ChevronRight, Calculator, Wallet, Coins, ArrowRight, MessageCircle } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
+import toast from 'react-hot-toast';
+import SEO from '../components/common/SEO';
+
+const PricingCard = ({ title, price, features, badge, isArtist = false, onAction, subtitle, period = 'mo' }: any) => (
+  <div className={`bento-card p-6 md:p-10 flex flex-col relative overflow-hidden group hover:border-smash-orange/30 transition-all ${badge ? 'ring-2 ring-smash-orange bg-smash-dark/50' : 'bg-white/5 border-white/5'}`}>
+    {badge && (
+      <div className="absolute top-4 md:top-6 right-0 bg-smash-orange text-white text-[9px] md:text-[10px] font-black px-3 md:px-4 py-1.5 rounded-l-full uppercase tracking-widest shadow-lg z-10">
+        {badge}
+      </div>
+    )}
+    <h3 className="text-xl md:text-2xl font-black font-display italic uppercase mb-1">{title}</h3>
+    {subtitle && <p className="text-smash-gray text-[10px] md:text-xs mb-4 font-bold h-4">{subtitle}</p>}
+    <div className="flex items-baseline gap-2 mb-6 md:mb-8">
+      <span className="text-[10px] md:text-sm font-black text-smash-gray uppercase tracking-widest">MK</span>
+      <span className="text-4xl md:text-5xl font-black font-display italic">{price}</span>
+      <span className="text-[10px] md:text-sm font-black text-smash-gray uppercase tracking-widest">/{period}</span>
+    </div>
+    <ul className="space-y-3 md:space-y-4 mb-4 flex-1">
+      {features.map((f: string, i: number) => (
+        <li key={i} className="flex items-start gap-3 text-smash-gray font-bold group-hover:text-white transition-colors text-xs md:text-sm">
+          <Check size={16} className="text-smash-orange flex-shrink-0 mt-0.5 md:w-[18px] md:h-[18px]" />
+          <span>{f}</span>
+        </li>
+      ))}
+    </ul>
+    <button 
+      onClick={onAction}
+      className={`w-full py-4 md:py-5 rounded-[20px] md:rounded-[24px] font-black text-xs md:text-sm uppercase tracking-widest transition-all ${badge ? 'bg-smash-orange text-white hover:bg-smash-orange/80 shadow-xl mt-auto' : 'bg-white text-smash-black hover:bg-smash-orange hover:text-white shadow-xl mt-auto'}`}
+    >
+      {price === '0' ? 'Start Free' : (isArtist ? 'Upgrade Now' : 'Get Plan')}
+    </button>
+  </div>
+);
+
+const Pricing = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'listeners' | 'artists'>((searchParams.get('tab') as 'listeners' | 'artists') || 'listeners');
+  const [expectedTips, setExpectedTips] = useState<number>(50000);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'artists' || tab === 'listeners') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: 'listeners' | 'artists') => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
+
+  const { user, userProfile, refreshProfile } = useAuth();
+  
+  const handleAction = (planId?: string) => {
+    if (!user) {
+      navigate(activeTab === 'artists' ? '/auth/artist' : '/auth/listener');
+      return;
+    }
+    if (!planId) {
+      navigate(activeTab === 'artists' ? '/artist-hub' : '/');
+      return;
+    }
+
+    // Build a safe user object sourced from the auth user, not the profile
+    const safeUser = {
+      id: user.id,
+      email: user.email ?? userProfile?.email ?? '',
+      full_name: userProfile?.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'User',
+      ...userProfile,
+    };
+
+    if (activeTab === 'artists') {
+      upgradeArtistTier({ tier: planId as any, artist: safeUser });
+    } else {
+      upgradeListenerPlan({ plan: planId as any, user: safeUser });
+    }
+  };
+
+  const calculateKeep = (tier: string) => {
+    // Tips are 5% all-in for every tier — tier no longer affects tip earnings
+    const TIP_FEE = 0.05;
+    return expectedTips - (expectedTips * TIP_FEE);
+  };
+
+  return (
+    <div 
+      className="p-4 md:p-12 pb-32 max-w-[1400px] mx-auto overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
+    >
+      <SEO 
+        title="Plans & Pricing | Smashify Music" 
+        description="Affordable listener plans and premium artist tiers on Smashify Music." 
+      />
+
+      <div className="flex items-center gap-3 text-[10px] md:text-sm font-bold text-smash-gray uppercase tracking-widest mb-8 md:mb-12">
+         <Link to="/" className="hover:text-white transition-colors">Home</Link>
+         <ChevronRight size={12} className="md:w-3.5 md:h-3.5" />
+         <span className="text-smash-orange">Pricing Plans</span>
+      </div>
+
+      <div className="text-center mb-12 md:mb-16">
+         {activeTab === 'artists' ? (
+            <>
+              <h1 className="text-3xl md:text-7xl font-black font-display italic uppercase tracking-tighter mb-4 leading-tight md:leading-none">
+                We only make money<br className="hidden md:block"/>when <span className="text-smash-orange">you make money</span>
+              </h1>
+              <p className="text-smash-gray text-base md:text-xl font-medium tracking-tight mt-4">Invest in your music. Every tier pays for itself.</p>
+            </>
+         ) : (
+            <>
+              <h1 className="text-3xl md:text-7xl font-black font-display italic uppercase tracking-tighter mb-4 leading-tight md:leading-none">
+                STREAM <span className="text-smash-orange">AFRICA'S BEST</span>
+              </h1>
+              <p className="text-smash-gray text-base md:text-xl font-medium tracking-tight mt-4">Support your favorite artists directly.</p>
+            </>
+         )}
+      </div>
+
+      <div className="flex justify-center mb-12 md:mb-16">
+        <div className="flex p-1.5 md:p-2 bg-smash-dark rounded-full md:rounded-3xl border border-white/5 shadow-2xl w-full max-w-md">
+          <button 
+            onClick={() => handleTabChange('listeners')} 
+            className={`flex-1 px-4 md:px-8 py-3 rounded-full md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'listeners' ? 'bg-white text-smash-black shadow-lg' : 'text-smash-gray hover:text-white'}`}
+          >
+            Listeners
+          </button>
+          <button 
+            onClick={() => handleTabChange('artists')} 
+            className={`flex-1 px-4 md:px-8 py-3 rounded-full md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'artists' ? 'bg-white text-smash-black shadow-lg' : 'text-smash-gray hover:text-white'}`}
+          >
+            Artists
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'listeners' && (
+         <motion.div 
+          key="listeners"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-12 md:mb-16 max-w-7xl mx-auto">
+             <PricingCard 
+                title="Daily Pass" 

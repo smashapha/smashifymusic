@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
+import UpcomingSongCard from '../components/common/UpcomingSongCard';
+import FollowedArtistCard from '../components/common/FollowedArtistCard';
+import QuickPickCard from '../components/common/QuickPickCard';
 import Avatar from '../components/common/Avatar';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -67,6 +70,8 @@ const Home: React.FC = () => {
   const [forSaleSongs, setForSaleSongs] = useState<Song[]>([]);
   const [recentSongs, setRecentSongs] = useState<Song[]>([]);
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
+  const [followedSongs, setFollowedSongs] = useState<Song[]>([]);
+  const [upcomingSongs, setUpcomingSongs] = useState<Song[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
   const [aiPicks, setAiPicks] = useState<Song[]>([]);
@@ -238,6 +243,55 @@ const Home: React.FC = () => {
       setTrendingSongs(weightedShuffle(enrichedSongs));
       setNewReleases(enrichedSongs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10));
       setForSaleSongs(enrichedSongs.filter(s => s.is_for_sale).slice(0, 10));
+
+      
+      if (userProfile?.id) {
+        
+      // Fetch upcoming drops
+      const { data: upcomingData } = await supabase
+        .from('public_songs')
+        .select('*')
+        .eq('approved', true)
+        .eq('is_active', true)
+        .gt('release_date', today)
+        .order('release_date', { ascending: true })
+        .limit(10);
+        
+      if (upcomingData && upcomingData.length > 0) {
+        const enrichedUpcoming = await attachArtistProfilesToSongs(upcomingData);
+        setUpcomingSongs(enrichedUpcoming as any);
+      }
+
+
+      // Fetch followed artists
+        const { data: followedData } = await supabase
+          .from('followers')
+          .select('artist_id')
+          .eq('follower_id', userProfile.id);
+        
+        if (followedData && followedData.length > 0) {
+          const artistIds = followedData.map(f => f.artist_id);
+          const { data: followedSongsData } = await supabase
+            .from('public_songs')
+            .select('*')
+            .in('artist_id', artistIds)
+            .eq('approved', true)
+            .order('created_at', { ascending: false })
+            .limit(10);
+            
+          if (followedSongsData && followedSongsData.length > 0) {
+            const enrichedFollowed = await Promise.all(followedSongsData.map(async (song: any) => {
+              const { data: pData } = await supabase
+                .from('artist_catalog')
+                .select('id, full_name, stage_name, genre, avatar_url, verified')
+                .eq('id', song.artist_id)
+                .single();
+              return { ...song, profiles: pData || null };
+            }));
+            setFollowedSongs(enrichedFollowed as any);
+          }
+        }
+      }
 
       const { data: artistsData, error: artistsError } = await supabase
         .from('artist_catalog')
@@ -622,30 +676,9 @@ const Home: React.FC = () => {
             </button>
           </div>
           
-          <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2 overflow-x-auto snap-x no-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0 auto-cols-[85vw] md:auto-cols-[340px]">
-            {trendingSongs.map((song) => (
-              <div 
-                key={`quick-${song.id}`} 
-                className="flex items-center gap-3 p-2 rounded-[12px] bg-[#1A1A1A]/40 border border-white/5 hover:border-white/15 hover:bg-[#1A1A1A] snap-start group cursor-pointer transition-colors" 
-                onClick={() => playSong(song)}
-              >
-                <div className="relative w-[48px] h-[48px] md:w-[52px] md:h-[52px] rounded-[8px] overflow-hidden flex-shrink-0 bg-black/40">
-                   <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Play size={18} className="fill-white text-white ml-0.5" />
-                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] font-semibold text-white truncate mb-0.5 group-hover:text-[#00A3FF] transition-colors">{song.title}</h4>
-                  <div className="flex items-center gap-1.5">
-                    {(song as any).is_explicit && <span className="px-1 bg-white/10 text-white rounded-[3px] text-[8px] font-bold">E</span>}
-                    <span className="text-[12px] text-[#B0B0B0] truncate">{song.artist_name}</span>
-                  </div>
-                </div>
-                <button className="p-2 text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); }}>
-                  <MoreVertical size={16} />
-                </button>
-              </div>
+          <div className="grid grid-rows-4 grid-flow-col gap-x-4 gap-y-3 overflow-x-auto snap-x no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 auto-cols-[85vw] md:auto-cols-[320px]">
+            {trendingSongs.map((song, idx) => (
+              <QuickPickCard key={`quick-${song.id}`} song={song} queue={trendingSongs} />
             ))}
           </div>
         </section>
@@ -693,6 +726,44 @@ const Home: React.FC = () => {
             )}
          </div>
       </HomeSection>
+
+      
+      {upcomingSongs.length > 0 && (
+        <HomeSection 
+          overline="COMING SOON"
+          title="Upcoming drops" 
+          subtitle="Pre-save unreleased tracks and get notified when they drop."
+        >
+          <div className="flex overflow-x-auto gap-4 md:gap-5 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            {upcomingSongs.map((song, i) => (
+              <div 
+                key={`upcoming-${song.id}-${i}`}
+                className="w-[160px] md:w-[180px] shrink-0 snap-start"
+              >
+                <UpcomingSongCard song={song} />
+              </div>
+            ))}
+          </div>
+        </HomeSection>
+      )}
+
+      {followedSongs.length > 0 && (
+        <HomeSection 
+          title="From Your Artists" 
+          subtitle="Recent drops from artists you follow."
+          onViewAll={() => navigate('/library?tab=artists')}
+        >
+          <div className="flex overflow-x-auto gap-4 md:gap-5 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            {followedSongs.map((song, i) => (
+              <FollowedArtistCard 
+                key={`followed-${song.id}-${i}`} 
+                song={song} 
+                queue={followedSongs} 
+              />
+            ))}
+          </div>
+        </HomeSection>
+      )}
 
       <HomeSection 
         title="New Releases" 
@@ -985,11 +1056,13 @@ const Home: React.FC = () => {
 };
 
 const HomeSection = ({ 
+  overline,
   title, 
   subtitle, 
   onViewAll, 
   children 
 }: { 
+  overline?: string;
   title: string; 
   subtitle: string; 
   onViewAll?: () => void; 
@@ -998,6 +1071,7 @@ const HomeSection = ({
   <section className={SECTION_SPACING}>
     <div className="flex items-end justify-between mb-4">
       <div>
+        {overline && <p className="text-[11px] font-black uppercase tracking-widest text-[#00A3FF] mb-2">{overline}</p>}
         <h2 className="text-[20px] md:text-[22px] font-studio font-bold tracking-[-0.01em] text-white leading-none mb-1">{title}</h2>
         <p className="text-[13px] text-[#B0B0B0]">{subtitle}</p>
       </div>

@@ -334,6 +334,7 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { userProfile } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [broadcast, setBroadcast] = useState<any>(null);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {

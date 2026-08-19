@@ -1609,10 +1609,23 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                     </td>
                     <td className="px-4 py-3">
                        <div className="flex items-center gap-2">
-                          <div className={`w-[6px] h-[6px] rounded-full ${song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
-                          <span className={`text-[12px] font-display font-medium ${song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
-                             {song.approved ? 'Distributed' : 'Reviewing'}
-                          </span>
+                          <div className={`w-[6px] h-[6px] rounded-full ${
+                        !song.approved ? 'bg-[#eab308] animate-pulse' : 
+                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                          ? 'bg-smash-orange' 
+                          : 'bg-smash-green')
+                      }`} />
+                          <span className={`text-[12px] font-display font-medium ${
+                        !song.approved ? 'text-[#eab308]' : 
+                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                          ? 'text-smash-orange' 
+                          : 'text-smash-green')
+                      }`}>
+                         {!song.approved ? 'Reviewing' : 
+                          (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                            ? `Upcoming (${new Date(song.release_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})})` 
+                            : 'Distributed')}
+                      </span>
                        </div>
                     </td>
                     <td className="px-4 py-3">
@@ -1702,9 +1715,22 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                 </div>
                 <div className="flex flex-col items-end shrink-0 gap-2">
                    <div className="flex items-center gap-1.5">
-                      <div className={`w-[6px] h-[6px] rounded-full ${song.approved ? 'bg-smash-green' : 'bg-[#eab308] animate-pulse'}`} />
-                      <span className={`text-[10px] font-display font-medium ${song.approved ? 'text-smash-green' : 'text-[#eab308]'}`}>
-                         {song.approved ? 'Live' : 'Rev'}
+                      <div className={`w-[6px] h-[6px] rounded-full ${
+                        !song.approved ? 'bg-[#eab308] animate-pulse' : 
+                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                          ? 'bg-smash-orange' 
+                          : 'bg-smash-green')
+                      }`} />
+                      <span className={`text-[10px] font-display font-medium ${
+                        !song.approved ? 'text-[#eab308]' : 
+                        (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                          ? 'text-smash-orange' 
+                          : 'text-smash-green')
+                      }`}>
+                         {!song.approved ? 'Rev' : 
+                          (new Date(song.release_date || song.created_at) > new Date(new Date().toISOString().split('T')[0]) 
+                            ? `Upcoming (${new Date(song.release_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})})` 
+                            : 'Live')}
                       </span>
                    </div>
                    <div className="flex items-center gap-1">
@@ -3202,6 +3228,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            {guardResult?.allowed === false && (
                              <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm font-sans text-center">
                                {guardResult.message || 'You have reached your slot limit. Archive a track or upgrade your plan to upload more songs.'}
+                             </div>
+                           )}
+                           
+                           {releaseDate > '2026-08-19' && (
+                             <div className="p-4 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-2xl mb-4">
+                               <p className="text-[12px] font-bold text-[#00A3FF]">
+                                 🗓️ This will be scheduled for release on {new Date(releaseDate).toLocaleDateString()}. Fans will be able to pre-save once approved.
+                               </p>
                              </div>
                            )}
                            <button type="submit" disabled={uploading || (mode === 'single' && audioUploading) || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
