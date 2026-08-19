@@ -26,3 +26,11 @@ SELECT cron.schedule(
   '0 9 * * *',
   'SELECT net.http_post(url := current_setting(''app.supabase_url'') || ''/functions/v1/send-renewal-warnings'', headers := json_build_object(''Authorization'', ''Bearer '' || current_setting(''app.service_role_key''))::jsonb);'
 );
+
+-- Hourly presave release fanout job
+SELECT cron.schedule(
+  'presave-release-fanout',
+  '0 * * * *',
+  'SELECT fanout_presave_releases();'
+);
+
