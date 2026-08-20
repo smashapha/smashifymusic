@@ -213,7 +213,7 @@ const Agent = () => {
             Earn <span className="text-[#00A3FF]">commissions.</span>
           </h1>
           <p className="text-[#B0B0B0] max-w-lg mx-auto text-[15px]">
-            Join the movement. Bring new talent to Smashify and earn 5% on their first subscription payment.
+            Join the movement. Bring new talent to Smashify and earn 10% on their first subscription payment.
           </p>
         </div>
         
@@ -231,7 +231,7 @@ const Agent = () => {
           <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] text-center space-y-3">
             <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto text-[#00A3FF]">3</div>
             <h3 className="text-white font-semibold">You get paid</h3>
-            <p className="text-[13px] text-[#B0B0B0]">5% commission via Airtel Money or TNM Mpamba.</p>
+            <p className="text-[13px] text-[#B0B0B0]">10% commission via Airtel Money or TNM Mpamba.</p>
           </div>
         </div>
         
@@ -239,7 +239,7 @@ const Agent = () => {
           <p className="text-[15px] font-medium text-[#B0B0B0]">10 artists × MK 8,000 Rising Star</p>
           <div className="flex items-center justify-center gap-2 text-xl font-bold">
             <span className="text-white">You earn</span>
-            <span className="text-[#22C55E]">MK 4,000</span>
+            <span className="text-[#22C55E]">MK 8,000</span>
           </div>
         </div>
         
@@ -324,7 +324,7 @@ const Agent = () => {
           YOUR AGENT LINK
         </p>
         <h1 className="text-3xl font-studio font-bold text-white">
-          Refer artists, earn 5%.
+          Refer artists, earn 10%.
         </h1>
       </div>
       

@@ -589,7 +589,7 @@ const Landing: React.FC = () => {
               Become a Smashify Agent
             </h2>
             <p className="text-[#B0B0B0] text-[16px] mb-10 max-w-xl mx-auto leading-[1.6]">
-              Refer artists, producers, or podcasters to Smashify and earn a 5% commission on their first subscription payment.
+              Refer artists, producers, or podcasters to Smashify and earn a 10% commission on their first subscription payment.
             </p>
           </FadeIn>
 
@@ -601,7 +601,7 @@ const Landing: React.FC = () => {
               },
               {
                 title: 'They Subscribe',
-                desc: 'When they activate their Rising Star, Standard, or Elite studio tier, you earn 5%.'
+                desc: 'When they activate their Rising Star, Standard, or Elite studio tier, you earn 10%.'
               },
               {
                 title: 'You Get Paid',
@@ -631,10 +631,10 @@ const Landing: React.FC = () => {
                 Example: Refer 10 artists subscribing to Rising Star (MK 8,000)
               </p>
               <div className="text-[28px] md:text-[34px] font-extrabold text-[#22C55E] my-1 font-display">
-                MK 4,000
+                MK 8,000
               </div>
               <p className="text-[#B0B0B0] text-[12px]">
-                5% commission × MK 8,000 × 10 artists
+                10% commission × MK 8,000 × 10 artists
               </p>
             </div>
           </FadeIn>

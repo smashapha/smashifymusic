@@ -535,14 +535,14 @@ const ArtistLanding: React.FC = () => {
             Become a <span className="text-smash-green">Smashify Agent</span>
           </h2>
           <p className="text-white/50 text-base mb-10 max-w-2xl mx-auto">
-            Know artists? Refer them and earn 5% of their first subscription. Artists succeed, you get paid — directly to your mobile money.
+            Know artists? Refer them and earn 10% of their first subscription. Artists succeed, you get paid — directly to your mobile money.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
             {[
               { e: '🤝', t: 'Refer an Artist', 
                 d: 'Share your agent code with musicians who need to monetize their music' },
               { e: '💰', t: 'They Subscribe', 
-                d: 'When they pay Rising Star, Standard or Elite — you earn 5%' },
+                d: 'When they pay Rising Star, Standard or Elite — you earn 10%' },
               { e: '📱', t: 'You Get Paid', 
                 d: 'Commission sent straight to your Airtel Money or TNM Mpamba' }
             ].map((item, i) => (
@@ -559,7 +559,7 @@ const ArtistLanding: React.FC = () => {
             <p className="text-smash-green font-bold text-sm">
               Refer 10 artists on Rising Star = 
               <span className="text-xl font-black ml-2">
-                MK 4,000 commission
+                MK 8,000 commission
               </span>
             </p>
           </div>
