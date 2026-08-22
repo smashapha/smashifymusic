@@ -94,6 +94,48 @@ const Admin = () => {
   const [showAdForm, setShowAdForm] = useState(false);
   const [adUploading, setAdUploading] = useState(false);
   const [fixStuckLoading, setFixStuckLoading] = useState(false);
+  const [adFormDraft, setAdFormDraft] = useState({
+    advertiser_name: '',
+    title: '',
+    type: 'platform',
+    plays_purchased: 1000,
+    revenue: 0,
+  });
+
+  const loadAdDraft = () => {
+    try {
+      const saved = sessionStorage.getItem('smashify_ad_draft');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setAdFormDraft(prev => ({
+          ...prev,
+          ...parsed
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to load ad draft from sessionStorage', e);
+    }
+  };
+
+  useEffect(() => {
+    loadAdDraft();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'ads' || showAdForm) {
+      loadAdDraft();
+    }
+  }, [activeTab, showAdForm]);
+
+  const handleAdFieldChange = (field: string, value: any) => {
+    setAdFormDraft(prev => {
+      const next = { ...prev, [field]: value };
+      try {
+        sessionStorage.setItem('smashify_ad_draft', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
   
   const [platformStats, setPlatformStats] = useState({
     totalArtists: 0, totalListeners: 0, totalSongs: 0,
@@ -595,8 +637,32 @@ const Admin = () => {
     const fd = new FormData(e.currentTarget);
     const file = fd.get('audio') as File;
 
+    const advertiser_name = (fd.get('advertiser_name') as string) || '';
+    const title = (fd.get('title') as string) || '';
+    const type = (fd.get('type') as string) || 'platform';
+    const plays_purchased = parseInt(fd.get('plays_purchased') as string) || 1000;
+    const revenue = parseFloat(fd.get('revenue') as string) || 0;
+
+    // 1. Before upload starts, stash form values into sessionStorage
+    try {
+      sessionStorage.setItem('smashify_ad_draft', JSON.stringify({
+        advertiser_name,
+        title,
+        type,
+        plays_purchased,
+        revenue,
+      }));
+    } catch (err) {
+      console.warn('Failed to stash ad draft', err);
+    }
+
     if (file && !file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
       toast.error('Only MP3 files are allowed.');
+      setAdUploading(false);
+      return;
+    }
+    if (!file || file.size === 0) {
+      toast.error('Please select an MP3 audio file.');
       setAdUploading(false);
       return;
     }
@@ -609,16 +675,28 @@ const Admin = () => {
       const { data: { publicUrl } } = supabase.storage.from('audio_ads').getPublicUrl(path);
 
       const { error } = await supabase.from('audio_ads').insert({
-        advertiser_name: fd.get('advertiser_name'),
-        title: fd.get('title'),
-        type: fd.get('type'),
+        advertiser_name,
+        title,
+        type,
         audio_url: publicUrl,
-        plays_purchased: parseInt(fd.get('plays_purchased') as string),
+        plays_purchased,
         plays_used: 0,
         active: true,
-        revenue: parseFloat(fd.get('revenue') as string) || 0,
+        revenue,
       });
       if (error) throw error;
+
+      // 3. Clear draft ONLY after upload + DB insert succeed
+      try {
+        sessionStorage.removeItem('smashify_ad_draft');
+      } catch (err) {}
+      setAdFormDraft({
+        advertiser_name: '',
+        title: '',
+        type: 'platform',
+        plays_purchased: 1000,
+        revenue: 0,
+      });
 
       toast.success('Ad uploaded and activated!');
       setShowAdForm(false);
@@ -2348,31 +2426,68 @@ const Admin = () => {
                           </div>
 
                           <form onSubmit={handleAdUpload} className="space-y-4">
-                            <input name="advertiser_name" placeholder="Advertiser Name" required className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
-                            <input name="title" placeholder="Ad Title / Description" required className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
+                            <input
+                              name="advertiser_name"
+                              placeholder="Advertiser Name"
+                              value={adFormDraft.advertiser_name}
+                              onChange={(e) => handleAdFieldChange('advertiser_name', e.target.value)}
+                              required
+                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            />
+                            <input
+                              name="title"
+                              placeholder="Ad Title / Description"
+                              value={adFormDraft.title}
+                              onChange={(e) => handleAdFieldChange('title', e.target.value)}
+                              required
+                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            />
 
-                            <select name="type" className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors">
+                            <select
+                              name="type"
+                              value={adFormDraft.type}
+                              onChange={(e) => handleAdFieldChange('type', e.target.value)}
+                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            >
                               <option value="platform">Platform Ad (Smashify promotes)</option>
                               <option value="artist">Artist Promotional Ad</option>
                               <option value="external">External Advertiser</option>
                             </select>
 
                             <div className="space-y-2">
-                              <label className="text-[13px] font-bold   text-[#B0B0B0]">Audio File (MP3, max 30s)</label>
-                              <input name="audio" type="file" accept="audio/mpeg, audio/mp3, .mp3" required
-                                className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
+                              <label className="text-[13px] font-bold text-[#B0B0B0]">Audio File (MP3, max 30s)</label>
+                              <input
+                                name="audio"
+                                type="file"
+                                accept="audio/mpeg, audio/mp3, .mp3"
+                                required
+                                className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                              />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <label className="text-[13px] font-bold   text-[#B0B0B0]">Plays Purchased</label>
-                                <input name="plays_purchased" type="number" min={100} defaultValue={1000} required
-                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
+                                <label className="text-[13px] font-bold text-[#B0B0B0]">Plays Purchased</label>
+                                <input
+                                  name="plays_purchased"
+                                  type="number"
+                                  min={100}
+                                  value={adFormDraft.plays_purchased}
+                                  onChange={(e) => handleAdFieldChange('plays_purchased', parseInt(e.target.value) || '')}
+                                  required
+                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                                />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[13px] font-bold   text-[#B0B0B0]">Revenue Charged (MK)</label>
-                                <input name="revenue" type="number" min={0} defaultValue={0}
-                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors" />
+                                <label className="text-[13px] font-bold text-[#B0B0B0]">Revenue Charged (MK)</label>
+                                <input
+                                  name="revenue"
+                                  type="number"
+                                  min={0}
+                                  value={adFormDraft.revenue}
+                                  onChange={(e) => handleAdFieldChange('revenue', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                                />
                               </div>
                             </div>
 

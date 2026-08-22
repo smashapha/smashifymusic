@@ -1,17 +1,28 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import ReactGA from 'react-ga4';
+import toast from 'react-hot-toast';
 import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-// One-time takeover reload to prevent stale chunks
-let reloaded = false;
+// Non-disruptive update notice to avoid mid-task interruptions (e.g. ad uploads, form edits)
+let hasNotifiedUpdate = false;
+const notifyUpdate = () => {
+  if (!hasNotifiedUpdate) {
+    hasNotifiedUpdate = true;
+    toast("Smashify has been updated — refresh to get the latest version.", {
+      id: "smashify-sw-update",
+      duration: 8000,
+      icon: "🔄"
+    });
+  }
+};
+
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!reloaded && navigator.serviceWorker.controller) {
-      reloaded = true;
-      window.location.reload();
+    if (navigator.serviceWorker.controller) {
+      notifyUpdate();
     }
   });
 }
@@ -19,6 +30,9 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
 // Register Service Worker for PWA and fetch newest sw immediately
 registerSW({
   immediate: true,
+  onNeedReload() {
+    notifyUpdate();
+  },
   onRegistered(registration) {
     if (registration) {
       registration.update().catch(() => {});
