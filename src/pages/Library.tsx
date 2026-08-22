@@ -68,6 +68,7 @@ const Library: React.FC = () => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState<number>(0);
   const [storageInfo, setStorageInfo] = useState<any>(null);
+  const [likesLimit, setLikesLimit] = useState(10);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -83,6 +84,7 @@ const Library: React.FC = () => {
 
   const handleTabChange = (tab: 'purchased' | 'likes' | 'downloads' | 'playlists') => {
     setActiveTab(tab);
+    if (tab === 'likes') setLikesLimit(10);
     setSearchParams({ tab }, { replace: true });
   };
 
@@ -1040,10 +1042,20 @@ const Library: React.FC = () => {
               </span>
             </div>
             <div className="flex flex-col gap-2">
-              {filteredSongs.map((song, i) => (
+              {(activeTab === 'likes' ? filteredSongs.slice(0, likesLimit) : filteredSongs).map((song, i) => (
                 <SongCard key={`library-song-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
               ))}
             </div>
+            {activeTab === 'likes' && filteredSongs.length > likesLimit && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setLikesLimit(prev => prev + 10)}
+                  className="px-6 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 hover:bg-white/10 text-white rounded-[10px] text-[13px] font-semibold transition-all"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           /* EMPTY STATE */

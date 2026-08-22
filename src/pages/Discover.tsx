@@ -62,7 +62,7 @@ const Discover: React.FC = () => {
   const [songsPage, setSongsPage] = useState(0);
   const [hasMoreSongs, setHasMoreSongs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 5;
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const [refreshing, setRefreshing] = useState(false);

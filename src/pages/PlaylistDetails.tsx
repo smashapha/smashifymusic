@@ -13,6 +13,7 @@ import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
 import { copyToClipboard } from '../lib/shareUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
 import toast from 'react-hot-toast';
+import SongCard from "../components/common/SongCard";
 import SEO from '../components/common/SEO';
 import BrandLoader from '../components/common/BrandLoader';
 
@@ -627,101 +628,17 @@ const PlaylistDetails: React.FC = () => {
               </div>
             )
           ) : (
-            songs.map((song, index) => {
-              const isCurrent = checkCurrentlyPlaying(song.id);
-              const displayArtist = formatArtistName(song.artist_name, (song as any).featured_artist);
-
-              return (
-                <div 
-                  key={song.id} 
-                  onClick={() => playQueue(songs, index)}
-                  className={`flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 group cursor-pointer border border-transparent hover:border-white/5 transition-all duration-200 ${isCurrent ? 'bg-white/5 border-white/10' : ''}`}
-                >
-                  {/* Rank / Play Icon State */}
-                  <div className="w-10 text-center shrink-0 flex items-center justify-center">
-                    <span className="group-hover:hidden font-mono font-bold text-sm text-text-muted">
-                      {isCurrent && isPlaying ? (
-                        <div className="flex items-end justify-center gap-0.5 h-3.5 w-3.5">
-                          <div className="bg-[#1db954] w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.2s]" />
-                          <div className="bg-[#1db954] w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.4s]" />
-                          <div className="bg-[#1db954] w-[3px] rounded-full animate-[bounce_0.8s_infinite_0s]" />
-                        </div>
-                      ) : (
-                        index + 1
-                      )}
-                    </span>
-                    <span className="hidden group-hover:inline text-[#00A3FF]">
-                      {isCurrent && isPlaying ? (
-                        <PauseCircle size={18} fill="currentColor" className="text-black" />
-                      ) : (
-                        <PlayCircle size={18} fill="currentColor" className="text-black" />
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Thumbnail / Title & Artist */}
-                  <div className="flex-1 flex items-center gap-3.5 min-w-0">
-                    <div className="w-11 h-11 rounded-lg overflow-hidden relative shadow-md shrink-0 bg-white/5">
-                      <img src={optimizeImage(song.cover_url, 120, 120)} className="w-full h-full object-cover" alt={formatDisplayTitle(song.title)} loading="lazy" decoding="async" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Play fill="white" size={14} className="text-white" />
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-[#00A3FF]' : 'text-white group-hover:text-[#00A3FF]'}`}>
-                          {formatDisplayTitle(song.title)}
-                        </h4>
-                        {(song as any).is_explicit && (
-                          <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-semibold uppercase tracking-widest mt-0.5 shrink-0">
-                            E
-                          </span>
-                        )}
-                        {song.is_for_sale && (
-                          <span className="px-1.5 py-0.5 bg-[#00A3FF]/15 text-[#00A3FF] text-[8.5px] font-display font-semibold uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
-                            {isOnSale(song) ? (
-                              <>
-                                <span className="line-through opacity-50">MK {song.price}</span>
-                                <span>MK {getEffectivePrice(song)}</span>
-                              </>
-                            ) : (
-                              <span>MK {song.price}</span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-text-muted font-sans font-medium truncate mt-0.5">
-                        {displayArtist}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Play count */}
-                  <div className="hidden md:block w-32 text-right font-mono text-[13px] text-text-secondary font-semibold">
-                    {Number(song.plays || 0).toLocaleString()}
-                  </div>
-
-                  {/* Duration Time / Options */}
-                  <div className="w-16 shrink-0 text-right pr-2 flex items-center justify-end gap-2 text-xs font-mono font-semibold text-text-muted">
-                    <span className="group-hover:hidden">{formatDuration(song.duration)}</span>
-                    {isOwner && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); handleRemoveSong(song); }} className="p-1 text-[#B0B0B0] hover:text-red-400">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className="hidden group-hover:flex w-8 h-8 items-center justify-center hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-all ml-auto"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
+            <div className="flex flex-col gap-2">
+              {songs.map((song, index) => (
+                <SongCard
+                  key={song.id}
+                  song={song}
+                  queue={songs}
+                  layout="list"
+                  onRemove={isOwner ? () => handleRemoveSong(song) : undefined}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>

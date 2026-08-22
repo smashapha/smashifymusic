@@ -87,6 +87,7 @@ const ArtistProfile: React.FC = () => {
 
    const [discoFilter, setDiscoFilter] = useState<'popular' | 'albums' | 'singles'>('popular');
    const [discoLimit, setDiscoLimit] = useState(5);
+  const [popularLimit, setPopularLimit] = useState(5);
    
    const [fansAlsoLike, setFansAlsoLike] = useState<UserProfile[]>([]);
    const [appearsOn, setAppearsOn] = useState<Song[]>([]);
@@ -414,7 +415,8 @@ const ArtistProfile: React.FC = () => {
    );
 
    const isOwner = userProfile?.id === artist.id;
-   const popularTracks = [...songs].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 5);
+   const popularTracks = [...songs].sort((a, b) => (b.plays || 0) - (a.plays || 0));
+   const displayedPopularTracks = popularTracks.slice(0, popularLimit);
    const latestRelease = songs[0];
 
    return (
@@ -565,36 +567,21 @@ const ArtistProfile: React.FC = () => {
             {popularTracks.length > 0 && (
               <section>
                 <h2 className="text-sm font-semibold text-white/70 mb-4">Popular</h2>
-                <div className="space-y-1">
-                  {popularTracks.map((song, i) => (
-                    <div
-                      key={`pop-${song.id}`}
-                      className="group flex items-center gap-4 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
-                      onClick={() => playQueue(popularTracks, i)}
-                    >
-                      {/* Number / play icon */}
-                      <div className="w-5 flex items-center justify-center shrink-0">
-                        <span className="text-white/30 text-sm font-bold group-hover:hidden">{i + 1}</span>
-                        <Play size={14} fill="white" className="text-white hidden group-hover:block" />
-                      </div>
-                      {/* Cover */}
-                      <img
-                        src={optimizeImage(song.cover_url, 120, 120)}
-                        className="w-10 h-10 rounded-lg object-cover shrink-0"
-                        alt={song.title}
-                      loading="lazy" decoding="async" />
-                      {/* Title + genre */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-bold truncate">{song.title}</p>
-                        <p className="text-white/40 text-xs truncate">{song.genre}</p>
-                      </div>
-                      {/* Plays */}
-                      <span className="text-white/30 text-xs font-bold tabular-nums shrink-0">
-                        {(song.plays || 0).toLocaleString()}
-                      </span>
-                    </div>
+                <div className="flex flex-col gap-2">
+                  {displayedPopularTracks.map((song, i) => (
+                    <SongCard key={`pop-${song.id}-${i}`} song={song} queue={popularTracks} layout="list" />
                   ))}
                 </div>
+                {popularTracks.length > popularLimit && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => setPopularLimit(prev => prev + 5)}
+                      className="px-6 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 hover:bg-white/10 text-white rounded-[10px] text-[13px] font-semibold transition-all"
+                    >
+                      Show more
+                    </button>
+                  </div>
+                )}
               </section>
             )}
 

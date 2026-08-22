@@ -676,13 +676,13 @@ const SongDetails: React.FC = () => {
               </Link>
             </div>
 
-            <div className={GRID_SONG_CARDS}>
+            <div className="flex flex-col gap-2">
               {moreSongs.map((s, i) => (
                 <SongCard
                   key={`more-song-${s.id}-${i}`}
                   song={s}
                   queue={[song, ...moreSongs]}
-                  layout="grid"
+                  layout="list"
                 />
               ))}
             </div>

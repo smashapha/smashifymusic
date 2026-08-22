@@ -7,7 +7,6 @@ import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import UpcomingSongCard from '../components/common/UpcomingSongCard';
 import FollowedArtistCard from '../components/common/FollowedArtistCard';
-import QuickPickCard from '../components/common/QuickPickCard';
 import Avatar from '../components/common/Avatar';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -773,9 +772,9 @@ const Home: React.FC = () => {
             </button>
           </div>
           
-          <div className="grid grid-rows-4 grid-flow-col gap-x-4 gap-y-3 overflow-x-auto snap-x no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 auto-cols-[85vw] md:auto-cols-[320px]">
-            {trendingSongs.map((song, idx) => (
-              <QuickPickCard key={`quick-${song.id}`} song={song} queue={trendingSongs} />
+          <div className="flex flex-col gap-2">
+            {trendingSongs.slice(0, 5).map((song, idx) => (
+              <SongCard key={`quick-${song.id}`} song={song} queue={trendingSongs} layout="list" />
             ))}
           </div>
         </section>

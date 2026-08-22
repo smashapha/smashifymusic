@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "motion/react";
-import { Play, Pause, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Music2, ListMusic, Info, Gift, Download, Loader2 } from 'lucide-react';
+import { Play, Pause, Trash2, ShoppingBag, Heart, MoreVertical, Plus, Share2, User, Music2, ListMusic, Info, Gift, Download, Loader2 } from 'lucide-react';
 import { Song, UserProfile } from '../../types';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
@@ -28,7 +28,7 @@ interface SongCardProps {
   openOnClick?: boolean;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout = 'list', openOnClick = false }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout = 'list', openOnClick = false, onRemove }) => {
   const navigate = useNavigate();
   const { currentSong, isPlaying, playSong, addToQueue, playQueue, dataSaver, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
