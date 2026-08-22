@@ -172,7 +172,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
           {currentSong.is_for_sale && !currentSong.is_purchased && !purchasedIds.has(currentSong.id) ? (
             <div className="inline-flex flex-col items-center gap-1.5 mt-1">
               {isOnSale(currentSong) && (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-red-500/20 via-amber-500/20 to-red-500/20 border border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-red-500/20 via-amber-500/20 to-red-500/20 border border-red-500/40 text-red-400 text-[11px] font-semibold uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">
                   <Zap size={13} className="text-amber-400 fill-amber-400" />
                   <span>ON SALE! {currentSong.discount_percent}% OFF</span>
                   {getSaleTimeRemaining(currentSong) && (
@@ -284,7 +284,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
           >
             <Repeat size={20} />
             {repeatMode === 'one' && (
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-blue-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-blue-500 text-black text-[9px] font-semibold rounded-full flex items-center justify-center">
                 1
               </span>
             )}

@@ -32,17 +32,17 @@ export const OnboardingChecklist = ({ userProfile, songs, setActiveTab }: { user
       <button onClick={handleDismiss} className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors">
         <X size={20} />
       </button>
-      <h3 className="text-[14px] font-display font-black uppercase tracking-widest text-white mb-2">Getting Started</h3>
+      <h3 className="text-[14px] font-display font-semibold uppercase tracking-widest text-white mb-2">Getting Started</h3>
       <p className="text-sm font-sans text-text-secondary mb-6">Complete these steps to make the most out of your artist profile.</p>
       <div className="space-y-3">
         {steps.map(step => (
           <div key={step.id} className="flex items-center gap-3">
-            {step.done ? <CheckCircle size={20} className="text-smash-green" /> : <Circle size={20} className="text-text-muted" />}
+            {step.done ? <CheckCircle size={20} className="text-[#22C55E]" /> : <Circle size={20} className="text-text-muted" />}
             <span className={`text-sm font-sans ${step.done ? 'text-text-muted line-through' : 'text-white'}`}>{step.label}</span>
             {!step.done && (
               <button 
                 onClick={() => setActiveTab(step.tab)}
-                className="ml-auto text-[11px] font-display font-bold uppercase tracking-wider text-smash-purple hover:text-white transition-colors"
+                className="ml-auto text-[11px] font-display font-bold uppercase tracking-wider text-[#00A3FF] hover:text-white transition-colors"
               >
                 Go &rarr;
               </button>

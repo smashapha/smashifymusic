@@ -208,7 +208,7 @@ const Agent = () => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF]">
             SMASHIFY AGENT PROGRAMME
           </p>
-          <h1 className="text-4xl md:text-5xl font-studio font-black text-white leading-tight">
+          <h1 className="text-4xl md:text-5xl font-studio font-bold text-white leading-tight">
             Refer artists.<br/>
             Earn <span className="text-[#00A3FF]">commissions.</span>
           </h1>

@@ -4,7 +4,8 @@ import { motion } from "motion/react";
 import { 
   Mic2, Rocket, Star, ShieldCheck, 
   CircleCheck, TrendingUp, Music, LayoutDashboard,
-  Smartphone, Wallet, ChevronRight, Play, Heart, Star as StarIcon
+  Smartphone, Wallet, ChevronRight, Play, Heart, Star as StarIcon,
+  Music2, Users, DollarSign
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
@@ -29,15 +30,15 @@ const Nav = () => {
         <div className="hidden lg:flex items-center gap-8">
           <Link to="/" className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors uppercase tracking-widest">Listener App</Link>
           <div className="w-1 h-1 rounded-full bg-white/20" />
-          <span className="font-display font-bold text-[13px] text-smash-purple uppercase tracking-widest">Artist Studio</span>
+          <span className="font-display font-bold text-[13px] text-[#00A3FF] font-semibold">Artist Studio</span>
         </div>
       </div>
       
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/auth/artist')} className="px-6 h-[40px] font-display font-bold text-[12px] text-white/60 hover:text-white uppercase tracking-widest transition-all">Sign In</button>
+        <button onClick={() => navigate('/auth/artist')} className="px-6 h-[40px] font-display font-bold text-[12px] text-white/60 hover:text-white uppercase tracking-widest transition-all">Sign in</button>
         <button 
           onClick={() => navigate('/auth/artist?mode=signup')} 
-          className="h-[40px] px-6 bg-white text-black font-display font-bold text-[12px] uppercase tracking-widest rounded-full hover:bg-smash-purple hover:text-white transition-all transform hover:-translate-y-0.5 active:scale-95"
+          className="h-[40px] px-6 bg-white text-black font-display font-bold text-[12px] uppercase tracking-widest rounded-[10px] hover:bg-[#0084D6] hover:text-white transition-all transform hover:-translate-y-0.5 active:scale-95"
         >
           Join Studio
         </button>
@@ -89,7 +90,7 @@ const ArtistLanding: React.FC = () => {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#0A0A0D] text-white selection:bg-smash-purple/30 overflow-x-hidden pt-[72px]">
+    <main className="min-h-screen bg-[#0A0A0D] text-white selection:bg-[#00A3FF]/30 overflow-x-hidden pt-[72px]">
       <SEO 
         title="Artist Studio | Smashify Music" 
         description="Are you an artist? Join Smashify Studio, publish your music, and start earning up to 95% of your sales." 
@@ -103,9 +104,9 @@ const ArtistLanding: React.FC = () => {
              <motion.div
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
-               className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-smash-purple/10 border border-smash-purple/20 text-smash-purple font-display font-bold text-[10px] uppercase tracking-[0.2em] mb-8"
+               className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#00A3FF]/10 border border-[#00A3FF]/20 text-[#00A3FF] font-semibold text-[11px] uppercase tracking-[0.18em] mb-8"
              >
-               🚀 Artist Distribution Now Open
+               Artist distribution now open
              </motion.div>
 
              <motion.h1
@@ -114,8 +115,8 @@ const ArtistLanding: React.FC = () => {
                transition={{ duration: 0.6, delay: 0.2 }}
                className="text-[clamp(2.5rem,5vw,5rem)] font-display font-semibold leading-[1.05] tracking-tight text-white mb-8"
              >
-               Monetize your <span className="italic">African</span> fans <br/>
-               <span className="text-smash-purple">Keep up to 95% of your earnings.</span>
+               Monetize your African fans <br/>
+               <span className="text-[#00A3FF]">Keep up to 95% of your earnings.</span>
              </motion.h1>
 
              <motion.p
@@ -135,7 +136,7 @@ const ArtistLanding: React.FC = () => {
              >
                 <button 
                   onClick={() => navigate('/auth/artist?mode=signup')}
-                  className="h-[56px] px-10 bg-smash-purple text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:brightness-110 transform hover:-translate-y-1 transition-all shadow-2xl shadow-smash-purple/20"
+                  className="h-[56px] px-10 bg-[#0084D6] text-white rounded-[10px] font-semibold text-[14px] hover:bg-[#0084D6]/90 transition-all"
                 >
                    Get Started for Free
                 </button>
@@ -144,7 +145,7 @@ const ArtistLanding: React.FC = () => {
                     document.getElementById('pricing-section')
                       ?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="h-[56px] px-10 bg-transparent border-2 border-white/10 text-white rounded-[12px] font-display font-bold text-[14px] uppercase tracking-widest hover:border-smash-purple/50 transition-all"
+                  className="h-[56px] px-10 bg-transparent border border-white/10 text-white rounded-[10px] font-semibold text-[14px] hover:border-white/20 hover:bg-white/5 transition-all"
                 >
                    View Pricing
                 </button>
@@ -165,7 +166,7 @@ const ArtistLanding: React.FC = () => {
           </div>
 
           <div className="flex-1 w-full max-w-2xl relative">
-             <div className="aspect-[4/5] rounded-[24px] overflow-hidden group shadow-2xl border border-white/5">
+             <div className="aspect-[4/5] rounded-[16px] overflow-hidden group shadow-2xl border border-white/5">
                 <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Artist Studio" loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
              </div>
@@ -175,19 +176,19 @@ const ArtistLanding: React.FC = () => {
                initial={{ opacity: 0, x: 50 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ duration: 0.8, delay: 0.5 }}
-               className="absolute -right-6 top-1/2 -translate-y-1/2 w-[280px] bg-[#141418]/90 backdrop-blur-xl border border-white/10 rounded-[20px] p-5 shadow-2xl hidden md:block"
+               className="absolute -right-6 top-1/2 -translate-y-1/2 w-[280px] bg-[#141418]/90 backdrop-blur-xl border border-white/10 rounded-[16px] p-5 shadow-2xl hidden md:block"
              >
                 <div className="flex items-center gap-4 mb-4">
-                   <div className="w-12 h-12 rounded-full border-2 border-smash-purple p-0.5">
+                   <div className="w-12 h-12 rounded-full border-2 border-[#00A3FF] p-0.5">
                       <img src="https://placehold.co/100" className="w-full h-full rounded-full object-cover" loading="lazy" decoding="async" />
                    </div>
                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-black text-smash-purple uppercase tracking-widest mb-0.5">Featured Artist</p>
+                      <p className="text-[10px] font-bold text-[#00A3FF] font-semibold mb-0.5">Featured Artist</p>
                       <p className="text-[16px] font-display font-bold text-white truncate">Top African Star</p>
                    </div>
                 </div>
                 <div className="p-4 bg-white/5 rounded-[12px] border border-white/5 space-y-3">
-                   <span className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">This Month's Earnings</span>
+                   <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest block mb-2">This Month's Earnings</span>
                    
                    <div className="flex justify-between items-center text-[13px] font-sans">
                      <span className="text-white/60">💰 Track Sales</span>
@@ -204,7 +205,7 @@ const ArtistLanding: React.FC = () => {
                    
                    <div className="pt-2 border-t border-white/10 flex justify-between items-center">
                      <span className="text-[11px] uppercase tracking-widest text-white/40 font-bold">Total</span>
-                     <span className="text-[16px] font-studio font-bold text-smash-green">MK 75,500</span>
+                     <span className="text-[16px] font-studio font-bold text-[#22C55E]">MK 75,500</span>
                    </div>
 
                    <p className="text-[9px] text-center text-white/30 uppercase font-bold tracking-widest mt-2">Direct fan payments — no streams needed</p>
@@ -218,8 +219,8 @@ const ArtistLanding: React.FC = () => {
       <section className="py-20 px-6 md:px-12 bg-white/[0.02]">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
             <div>
-               <p className="text-[10px] font-display font-black text-white/40 uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
-               <h2 className="text-3xl font-studio font-black italic uppercase tracking-tighter">Earnings <span className="text-smash-purple underline underline-offset-8">Report</span></h2>
+               <p className="text-[10px] font-display font-bold text-white/40 uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
+               <h2 className="text-3xl font-studio font-bold uppercase tracking-tighter">Earnings <span className="text-[#00A3FF] underline underline-offset-8">Report</span></h2>
             </div>
             <div className="flex -space-x-4">
                {topEarners.length > 0 ? (
@@ -231,7 +232,7 @@ const ArtistLanding: React.FC = () => {
                ) : (
                  <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated" />
                )}
-               <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated flex items-center justify-center text-[12px] font-black italic uppercase tracking-widest text-text-muted">
+               <div className="w-14 h-14 rounded-full border-4 border-[#141418] bg-bg-elevated flex items-center justify-center text-[12px] font-bold uppercase tracking-widest text-text-muted">
                   +{platformStats.artists > 5 ? platformStats.artists - 5 : 0}
                </div>
             </div>
@@ -250,64 +251,64 @@ const ArtistLanding: React.FC = () => {
       <section className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <p className="text-[10px] font-display font-black text-smash-purple uppercase tracking-[0.4em] mb-4">
+            <p className="text-[10px] font-display font-bold text-[#00A3FF] uppercase tracking-[0.4em] mb-4">
               Your Money Your Way
             </p>
-            <h2 className="text-4xl md:text-6xl font-studio font-black italic uppercase leading-tight">
-              4 ways to earn on <span className="text-smash-purple">Smashify</span>
+            <h2 className="text-4xl md:text-6xl font-studio font-bold uppercase leading-tight">
+              4 ways to earn on <span className="text-[#00A3FF]">Smashify</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
             {[
               {
-                emoji: '💿',
+                icon: 'Music2',
                 title: 'Sell Your Tracks',
                 desc: 'Set your own price per song. Fans pay to download or unlock. You keep up to 95% of every sale.',
                 example: 'MK 500/track × 100 fans = MK 50,000',
-                color: 'border-smash-orange/30 hover:border-smash-orange/60',
+                color: 'border-white/10 hover:border-[#00A3FF]/30',
                 tag: 'Rising Star+',
               },
               {
-                emoji: '💸',
+                icon: 'Wallet',
                 title: 'Accept Tips',
                 desc: 'Fans can tip you directly from your profile page or while watching your MotoFeed. Any amount, any time.',
                 example: 'MK 1,000 tip × 50 fans = MK 50,000',
-                color: 'border-smash-cyan/30 hover:border-smash-cyan/60',
+                color: 'border-white/10 hover:border-[#00A3FF]/30',
                 tag: 'All Tiers',
               },
               {
-                emoji: '❤️',
+                icon: 'Heart',
                 title: 'Fan Subscriptions',
                 desc: 'Fans pay a monthly amount to support you and access exclusive content. Predictable monthly income.',
                 example: 'MK 500/mo × 200 fans = MK 100,000/mo',
-                color: 'border-smash-purple/30 hover:border-smash-purple/60',
+                color: 'border-[#00A3FF]/30 hover:border-[#00A3FF]/60',
                 tag: 'Rising Star+',
               },
               {
-                emoji: '🔒',
+                icon: 'Lock',
                 title: 'Exclusive Content',
                 desc: 'Lock your best tracks, remixes, or early releases behind a one-time payment. Fans pay once, access forever.',
                 example: 'MK 1,000 × 80 fans = MK 80,000',
-                color: 'border-smash-green/30 hover:border-smash-green/60',
+                color: 'border-white/10 hover:border-[#00A3FF]/30',
                 tag: 'Rising Star+',
               }
             ].map((item, i) => (
-              <div key={i} className={`p-8 bg-white/[0.02] rounded-[24px] border ${item.color} transition-all group`}>
+              <div key={i} className={`p-8 bg-white/[0.02] rounded-[16px] border ${item.color} transition-all group`}>
                 <div className="flex items-start justify-between mb-6">
-                  <span className="text-4xl">{item.emoji}</span>
-                  <span className="text-[10px] font-black px-3 py-1 bg-white/5 rounded-full text-white/40 uppercase tracking-widest">
+                  <div className="w-12 h-12 rounded-[12px] bg-[#00A3FF]/10 flex items-center justify-center text-[#00A3FF]">{item.icon === 'Music2' ? <Music2 size={24}/> : item.icon === 'Wallet' ? <Wallet size={24}/> : item.icon === 'Heart' ? <Heart size={24}/> : <Lock size={24}/>}</div>
+                  <span className="text-[10px] font-bold px-3 py-1 bg-white/5 rounded-full text-white/40 uppercase tracking-widest">
                     {item.tag}
                   </span>
                 </div>
-                <h3 className="text-xl font-studio font-bold uppercase italic text-white mb-3">
+                <h3 className="text-xl font-studio font-bold uppercase text-white mb-3">
                   {item.title}
                 </h3>
                 <p className="text-[14px] text-white/50 leading-relaxed font-sans mb-6">
                   {item.desc}
                 </p>
                 <div className="p-3 bg-smash-green/5 rounded-xl border border-smash-green/10">
-                  <p className="text-[11px] text-smash-green font-bold">
+                  <p className="text-[11px] text-[#22C55E] font-bold">
                     📊 {item.example}
                   </p>
                 </div>
@@ -317,16 +318,16 @@ const ArtistLanding: React.FC = () => {
 
           {/* Comparison vs Spotify */}
           <div className="max-w-3xl mx-auto">
-            <h3 className="text-center text-2xl font-studio font-black italic uppercase mb-8">
-              Why <span className="text-smash-purple">Smashify</span> beats waiting for streams
+            <h3 className="text-center text-2xl font-studio font-bold uppercase mb-8">
+              Why <span className="text-[#00A3FF]">Smashify</span> beats waiting for streams
             </h3>
-            <div className="overflow-x-auto rounded-[20px] border border-white/10">
+            <div className="overflow-x-auto rounded-[16px] border border-white/10">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
                     <th className="text-left p-4 text-xs text-white/40 font-display uppercase tracking-widest"></th>
                     <th className="p-4 text-center text-xs text-white/40 font-display uppercase tracking-widest">Spotify</th>
-                    <th className="p-4 text-center text-xs text-smash-purple font-black font-display uppercase tracking-widest">Smashify</th>
+                    <th className="p-4 text-center text-xs text-[#00A3FF] font-bold font-display uppercase tracking-widest">Smashify</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -341,7 +342,7 @@ const ArtistLanding: React.FC = () => {
                       <td className="p-4 text-sm text-white/60 font-medium">{feature}</td>
                       <td className="p-4 text-center text-xs text-white/30">{spotify}</td>
                       <td className="p-4 text-center">
-                        <span className="text-xs text-smash-green font-bold">{smashify}</span>
+                        <span className="text-xs text-[#22C55E] font-bold">{smashify}</span>
                       </td>
                     </tr>
                   ))}
@@ -356,8 +357,8 @@ const ArtistLanding: React.FC = () => {
       <section className="py-32 px-6 md:px-12 bg-white/[0.02]">
         <div className="max-w-4xl mx-auto">
            <div className="text-center mb-24">
-              <h2 className="text-[10px] font-display font-bold text-smash-purple uppercase tracking-[0.4em] mb-4">Journey to Success</h2>
-              <h3 className="text-5xl md:text-7xl font-studio font-black italic uppercase leading-tight">Three steps to <span className="text-smash-purple">monetising</span> your art.</h3>
+              <h2 className="text-[10px] font-display font-bold text-[#00A3FF] uppercase tracking-[0.4em] mb-4">Journey to Success</h2>
+              <h3 className="text-5xl md:text-7xl font-studio font-bold uppercase leading-tight">Three steps to <span className="text-[#00A3FF]">monetising</span> your art.</h3>
            </div>
            
            <div className="space-y-20 relative before:absolute before:left-10 md:before:left-1/2 before:top-0 before:bottom-0 before:w-px before:bg-white/10">
@@ -369,11 +370,11 @@ const ArtistLanding: React.FC = () => {
                 <div key={i} className={`flex flex-col md:flex-row items-center gap-12 relative z-10 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                    <div className="flex-1 md:text-right">
                       <div className={`flex flex-col ${i % 2 === 1 ? 'md:items-start' : 'md:items-end'}`}>
-                         <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold uppercase italic text-white mb-4">{s.title}</h4>
+                         <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold uppercase text-white mb-4">{s.title}</h4>
                          <p className="text-[15px] text-white/50 leading-relaxed font-sans max-w-sm">{s.desc}</p>
                       </div>
                    </div>
-                   <div className="w-20 h-20 rounded-full bg-smash-purple text-white font-studio font-black text-2xl flex items-center justify-center shrink-0 border-[8px] border-[#0A0A0D]">
+                   <div className="w-20 h-20 rounded-full bg-[#0084D6] text-white font-studio font-bold text-2xl flex items-center justify-center shrink-0 border-[8px] border-[#0A0A0D]">
                       {s.step}
                    </div>
                    <div className="flex-1" />
@@ -387,13 +388,13 @@ const ArtistLanding: React.FC = () => {
       <section id="pricing-section" className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
-             <h3 className="text-5xl md:text-8xl font-studio font-black italic uppercase tracking-tighter leading-none mb-4">STUDIO <span className="text-smash-purple">ACCESS</span></h3>
+             <h3 className="text-5xl md:text-8xl font-studio font-bold uppercase tracking-tighter leading-none mb-4">Studio plans</h3>
              <p className="text-white/50 text-xl font-medium tracking-tight">Simple 6-month plans with zero hidden fees.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
-             <div className="bg-bg-surface border border-white/10 rounded-[24px] p-10 flex flex-col">
-                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-white/60">Free Studio</h3>
+             <div className="bg-bg-surface border border-white/10 rounded-[16px] p-10 flex flex-col">
+                <h3 className="text-2xl font-studio font-bold uppercase mb-2 text-white/60">Free Studio</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                   <span className="text-4xl font-studio font-bold text-white">0</span>
                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">
@@ -418,14 +419,14 @@ const ArtistLanding: React.FC = () => {
                 </ul>
                 <button
                   onClick={() => navigate('/auth/artist?mode=signup')}
-                  className="w-full h-[54px] bg-white/5 border border-white/10 text-white/60 rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-white/10 transition-all mt-8"
+                  className="w-full h-[54px] bg-white/5 border border-white/10 text-white/60 rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-white/10 transition-all mt-8"
                 >
                   START FREE
                 </button>
              </div>
 
-             <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
-                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Rising Star</h3>
+             <div className="bg-bg-surface border border-border-subtle rounded-[16px] p-10 flex flex-col group hover:border-[#00A3FF]/30 transition-all">
+                <h3 className="text-2xl font-studio font-bold uppercase mb-2">Rising Star</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">8,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -442,22 +443,22 @@ const ArtistLanding: React.FC = () => {
                      "3 day payout speed"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
-                        <CircleCheck size={16} className="text-smash-purple shrink-0" />
+                        <CircleCheck size={16} className="text-[#00A3FF] shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
                    GET RISING STAR
                 </button>
              </div>
 
-             <div className="bg-bg-surface border-2 border-smash-purple rounded-[24px] p-10 flex flex-col relative overflow-hidden transform scale-105 z-10 shadow-3xl shadow-smash-purple/20">
-                <div className="absolute top-6 right-0 bg-smash-purple text-white text-[10px] font-black px-4 py-1.5 rounded-l-full uppercase tracking-widest">MOST POPULAR</div>
-                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2 text-smash-purple">Standard</h3>
+             <div className="bg-bg-surface border-2 border-[#00A3FF] rounded-[16px] p-10 flex flex-col relative overflow-hidden transform scale-105 z-10 shadow-3xl shadow-[#00A3FF]/20">
+                <div className="absolute top-6 right-0 bg-[#0084D6] text-white text-[10px] font-bold px-4 py-1.5 rounded-l-full uppercase tracking-widest">Most popular</div>
+                <h3 className="text-2xl font-studio font-bold uppercase mb-2 text-[#00A3FF]">Standard</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">16,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -475,21 +476,21 @@ const ArtistLanding: React.FC = () => {
                      "24 hour payout speed"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white font-medium font-sans">
-                        <CircleCheck size={16} className="text-smash-purple shrink-0" />
+                        <CircleCheck size={16} className="text-[#00A3FF] shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-smash-purple text-white rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-[#0084D6] text-white rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl mt-auto md:mt-8"
                 >
                    JOIN STANDARD
                 </button>
              </div>
 
-             <div className="bg-bg-surface border border-border-subtle rounded-[24px] p-10 flex flex-col group hover:border-smash-purple/30 transition-all">
-                <h3 className="text-2xl font-studio font-bold uppercase italic mb-2">Elite</h3>
+             <div className="bg-bg-surface border border-border-subtle rounded-[16px] p-10 flex flex-col group hover:border-[#00A3FF]/30 transition-all">
+                <h3 className="text-2xl font-studio font-bold uppercase mb-2">Elite</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">27,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -507,14 +508,14 @@ const ArtistLanding: React.FC = () => {
                      "Minimum withdrawal: MK 10,000"
                    ].map((f, i) => (
                      <li key={i} className="flex items-center gap-3 text-[14px] text-white/60 font-medium font-sans">
-                        <CircleCheck size={16} className="text-smash-purple shrink-0" />
+                        <CircleCheck size={16} className="text-[#00A3FF] shrink-0" />
                         {f}
                      </li>
                    ))}
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[14px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-smash-purple hover:text-white transition-all shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
                    JOIN ELITE
                 </button>
@@ -527,27 +528,27 @@ const ArtistLanding: React.FC = () => {
       <section className="py-24 px-6 md:px-12 bg-white/[0.02]">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-smash-green/10 border border-smash-green/20 rounded-full mb-6">
-            <span className="text-smash-green text-xs font-black uppercase tracking-widest">
+            <span className="text-[#22C55E] text-xs font-bold uppercase tracking-widest">
               💼 Earn With Smashify
             </span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-studio font-black uppercase italic mb-4">
-            Become a <span className="text-smash-green">Smashify Agent</span>
+          <h2 className="text-4xl md:text-6xl font-studio font-bold uppercase mb-4">
+            Become a <span className="text-[#22C55E]">Smashify Agent</span>
           </h2>
           <p className="text-white/50 text-base mb-10 max-w-2xl mx-auto">
             Know artists? Refer them and earn 10% of their first subscription. Artists succeed, you get paid — directly to your mobile money.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
             {[
-              { e: '🤝', t: 'Refer an Artist', 
+              { icon: 'users', t: 'Refer an Artist', 
                 d: 'Share your agent code with musicians who need to monetize their music' },
-              { e: '💰', t: 'They Subscribe', 
+              { icon: 'dollar', t: 'They Subscribe', 
                 d: 'When they pay Rising Star, Standard or Elite — you earn 10%' },
-              { e: '📱', t: 'You Get Paid', 
+              { icon: 'phone', t: 'You Get Paid', 
                 d: 'Commission sent straight to your Airtel Money or TNM Mpamba' }
             ].map((item, i) => (
               <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10 text-left">
-                <div className="text-3xl mb-4">{item.e}</div>
+                <div className="w-10 h-10 rounded-[10px] bg-white/5 flex items-center justify-center text-[#00A3FF] mb-4">{item.icon === 'users' ? <Users size={20}/> : item.icon === 'dollar' ? <DollarSign size={20}/> : <Smartphone size={20}/>}</div>
                 <h3 className="font-bold text-sm mb-2">
                   {item.t}
                 </h3>
@@ -556,9 +557,9 @@ const ArtistLanding: React.FC = () => {
             ))}
           </div>
           <div className="p-5 bg-smash-green/10 border border-smash-green/20 rounded-2xl inline-block mb-8">
-            <p className="text-smash-green font-bold text-sm">
+            <p className="text-[#22C55E] font-bold text-sm">
               Refer 10 artists on Rising Star = 
-              <span className="text-xl font-black ml-2">
+              <span className="text-xl font-bold ml-2">
                 MK 8,000 commission
               </span>
             </p>
@@ -568,24 +569,24 @@ const ArtistLanding: React.FC = () => {
             href="https://wa.me/265883728868?text=I%20want%20to%20become%20a%20Smashify%20Agent"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 h-14 px-10 bg-smash-green text-white rounded-full font-display font-black uppercase tracking-widest text-sm hover:brightness-110 transition-all"
+            className="inline-flex items-center gap-3 h-14 px-10 bg-smash-green text-white rounded-full font-display font-bold uppercase tracking-widest text-sm hover:brightness-110 transition-all"
           >
-            Apply via WhatsApp →
+            Apply via WhatsApp
           </a>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 px-6 md:px-12 bg-smash-purple overflow-hidden relative">
+      <section className="py-32 px-6 md:px-12 bg-[#0084D6] overflow-hidden relative">
          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/music.png')]" />
          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <h2 className="text-5xl md:text-8xl font-studio font-black italic uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
+            <h2 className="text-5xl md:text-8xl font-studio font-bold uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
             <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">
               Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week. Interested in details? See our <Link to="/pricing" className="underline hover:text-black transition-colors font-bold">Pricing Plans</Link>.
             </p>
             <button 
                onClick={() => navigate('/auth/artist?mode=signup')}
-               className="h-[64px] px-12 bg-white text-smash-purple font-display font-bold text-lg uppercase tracking-widest rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
+               className="h-[64px] px-12 bg-white text-[#00A3FF] font-display font-bold text-lg uppercase tracking-widest rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
             >
                Create Artist Account
             </button>

@@ -72,26 +72,26 @@ export default function Notifications() {
     if (notifs.length === 0) return null;
     return (
       <div className="mb-8">
-        <h3 className="text-[11px] font-black uppercase tracking-widest text-smash-gray mb-4 px-6">{title}</h3>
-        <div className="divide-y divide-white/5 bg-white/5 border border-white/5 rounded-[32px] overflow-hidden">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#737373] mb-3 px-2">{title}</h3>
+        <div className="divide-y divide-white/5 bg-[#1A1A1A] border border-white/10 rounded-[16px] overflow-hidden">
           {notifs.map(n => (
-            <div key={n.id} className={`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? (role === 'artist' ? 'bg-smash-purple/5' : 'bg-smash-orange/5') : ''}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? (role === 'artist' ? 'bg-smash-purple text-white' : 'bg-smash-orange text-white') : 'bg-white/5 text-smash-gray'}`}>
+            <div key={n.id} className={`p-5 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? 'bg-[#00A3FF]/5' : ''}`}>
+              <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 ${!n.read ? 'bg-[#0084D6] text-white' : 'bg-white/5 text-[#737373]'}`}>
                 {getIcon(n.type)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-1">
-                  <p className={`text-sm font-bold ${!n.read ? 'text-white' : 'text-white/60'}`}>{n.message}</p>
-                  <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest shrink-0 ml-4">{new Date(n.created_at).toLocaleDateString()}</span>
+                  <p className={`text-sm font-semibold ${!n.read ? 'text-white' : 'text-white/60'}`}>{n.message}</p>
+                  <span className="text-xs text-[#737373] font-mono shrink-0 ml-4">{new Date(n.created_at).toLocaleDateString()}</span>
                 </div>
                 {n.link && (
-                  <Link to={n.link} className={`text-[10px] font-black uppercase tracking-widest ${role === 'artist' ? 'text-smash-purple' : 'text-smash-orange'} hover:text-white transition-colors`}>
-                    View Details →
+                  <Link to={n.link} className="text-[11px] font-semibold text-[#00A3FF] hover:underline transition-colors">
+                    View details &rarr;
                   </Link>
                 )}
               </div>
               {!n.read && (
-                <button onClick={() => markAsRead(n.id)} className={`w-2 h-2 rounded-full mt-2 shrink-0 ${role === 'artist' ? 'bg-smash-purple' : 'bg-smash-orange'}`} title="Mark as read" />
+                <button onClick={() => markAsRead(n.id)} className="w-2 h-2 rounded-full mt-2 shrink-0 bg-[#00A3FF]" title="Mark as read" />
               )}
             </div>
           ))}
@@ -102,13 +102,13 @@ export default function Notifications() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic mb-8">
-        <Bell className={role === 'artist' ? 'text-smash-purple' : 'text-smash-orange'} /> 
+      <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-white mb-8">
+        <Bell className="text-[#00A3FF]" /> 
         Notifications
       </h2>
       
       {loading ? (
-        <div className="p-8 bg-white/5 border border-white/5 rounded-[40px]">
+        <div className="p-8 bg-[#1A1A1A] border border-white/10 rounded-[16px]">
           <BrandLoader label="Loading alerts" />
         </div>
       ) : notifications.length > 0 ? (
@@ -117,7 +117,7 @@ export default function Notifications() {
           {renderGroup(earlierNotifs, "Earlier")}
         </div>
       ) : (
-        <div className="bg-white/5 border border-white/5 rounded-[40px] p-20 text-center text-smash-gray font-bold uppercase tracking-widest italic opacity-50">
+        <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-16 text-center text-[#737373] text-sm font-medium">
           No notifications yet.
         </div>
       )}

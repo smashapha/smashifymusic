@@ -164,7 +164,7 @@ const AlbumDetails: React.FC = () => {
       <div className="pb-32 min-h-screen bg-bg-page flex flex-col items-center justify-center text-white">
         <HelpCircle size={48} className="text-text-muted mb-4" />
         <h3 className="text-xl font-bold">Album not found</h3>
-        <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 bg-smash-purple rounded-full text-sm font-bold">Back Home</button>
+        <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-[10px] text-sm font-semibold">Back Home</button>
       </div>
     );
   }
@@ -202,10 +202,10 @@ const AlbumDetails: React.FC = () => {
 
             {/* Title / Meta */}
             <div className="flex-1">
-              <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-smash-purple bg-smash-purple/10 px-2.5 py-1 rounded-full border border-smash-purple/20">
+              <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#00A3FF] bg-[#0084D6]/10 px-2.5 py-1 rounded-full border border-[#00A3FF]/20">
                 Album
               </span>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-studio font-black italic uppercase tracking-tighter text-white mt-4 mb-3 leading-none drop-shadow-md line-clamp-2">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mt-4 mb-3 leading-tight line-clamp-2">
                 {album.title}
               </h1>
               
@@ -220,7 +220,7 @@ const AlbumDetails: React.FC = () => {
                       className="w-5 h-5 rounded-full object-cover border border-white/10" 
                       alt="" 
                     loading="lazy" decoding="async" />
-                    <span className="font-black text-white">{artist.stage_name || artist.full_name}</span>
+                    <span className="font-semibold text-white">{artist.stage_name || artist.full_name}</span>
                   </div>
                 )}
                 <span className="text-white/30">•</span>
@@ -240,7 +240,7 @@ const AlbumDetails: React.FC = () => {
         <div className={`flex items-center gap-6 ${SECTION_SPACING}`}>
           <button 
             onClick={handlePlayAll} 
-            className="h-14 px-8 bg-smash-purple rounded-full flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-smash-purple/20 text-white font-display font-black uppercase tracking-widest text-xs"
+            className="h-11 px-6 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-[10px] flex items-center justify-center gap-2 font-semibold text-sm shadow-md transition-all"
             id="play_all_album"
           >
             <Play fill="white" size={18} /> Play Album
@@ -298,7 +298,7 @@ const AlbumDetails: React.FC = () => {
                 toast.error('Failed to update album: ' + err.message);
               }
             }}
-            className={`w-12 h-12 border ${isSaved ? 'border-smash-purple bg-smash-purple/5 text-smash-purple' : 'border-white/10 text-white/70 hover:border-white/30 hover:text-white'} rounded-full flex items-center justify-center transition-all active:scale-90`}
+            className={`w-12 h-12 border ${isSaved ? 'border-[#00A3FF] bg-[#0084D6]/5 text-[#00A3FF]' : 'border-white/10 text-white/70 hover:border-white/30 hover:text-white'} rounded-full flex items-center justify-center transition-all active:scale-90`}
             id="save_album"
           >
             <Heart size={20} fill={isSaved ? 'currentColor' : 'none'} />
@@ -316,7 +316,7 @@ const AlbumDetails: React.FC = () => {
         {/* Songs Grid List */}
         <div className="space-y-1">
           {/* Table Header */}
-          <div className="hidden md:flex items-center gap-4 px-4 py-2 border-b border-white/5 text-xs text-text-muted font-display font-black uppercase tracking-widest mb-3">
+          <div className="hidden md:flex items-center gap-4 px-4 py-2 border-b border-white/5 text-[11px] text-[#737373] font-semibold uppercase tracking-[0.18em] mb-3">
             <span className="w-10 text-center">#</span>
             <span className="flex-1">Title</span>
             <span className="w-32 text-right">Plays</span>
@@ -344,15 +344,15 @@ const AlbumDetails: React.FC = () => {
                     <span className="group-hover:hidden font-mono font-bold text-sm text-text-muted">
                       {isCurrent && isPlaying ? (
                         <div className="flex items-end justify-center gap-0.5 h-3.5 w-3.5">
-                          <div className="bg-smash-purple w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.2s]" />
-                          <div className="bg-smash-purple w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.4s]" />
-                          <div className="bg-smash-purple w-[3px] rounded-full animate-[bounce_0.8s_infinite_0s]" />
+                          <div className="bg-[#0084D6] w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.2s]" />
+                          <div className="bg-[#0084D6] w-[3px] rounded-full animate-[bounce_0.8s_infinite_-0.4s]" />
+                          <div className="bg-[#0084D6] w-[3px] rounded-full animate-[bounce_0.8s_infinite_0s]" />
                         </div>
                       ) : (
                         index + 1
                       )}
                     </span>
-                    <span className="hidden group-hover:inline text-smash-purple">
+                    <span className="hidden group-hover:inline text-[#00A3FF]">
                       {isCurrent && isPlaying ? (
                         <PauseCircle size={18} fill="currentColor" className="text-black" />
                       ) : (
@@ -372,16 +372,16 @@ const AlbumDetails: React.FC = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-smash-purple' : 'text-white group-hover:text-smash-purple'}`}>
+                        <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-[#00A3FF]' : 'text-white group-hover:text-[#00A3FF]'}`}>
                           {formatDisplayTitle(song.title)}
                         </h4>
                         {(song as any).is_explicit && (
-                          <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-black uppercase tracking-widest mt-0.5 shrink-0">
+                          <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-semibold uppercase tracking-widest mt-0.5 shrink-0">
                             E
                           </span>
                         )}
                         {song.is_for_sale && !song.is_purchased && !purchasedIds?.has(song.id) && (
-                          <span className="px-1.5 py-0.5 bg-smash-purple/25 text-smash-purple text-[8.5px] font-display font-black uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 bg-[#0084D6]/25 text-[#00A3FF] text-[8.5px] font-display font-semibold uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
                             {isOnSale(song) ? (
                               <>
                                 <span className="line-through opacity-50">MK {song.price}</span>

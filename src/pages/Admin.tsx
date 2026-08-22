@@ -6,7 +6,7 @@ import {
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
   Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send, RefreshCw,
-  Ticket, CheckSquare, Sparkles
+  Ticket, CheckSquare, Sparkles, CheckCircle2, AlertTriangle, Smartphone, Film, Check, XCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { verifyPayment } from '../lib/paychangu';
@@ -525,7 +525,7 @@ const Admin = () => {
         profile_id: payout.artist_id,
         user_type: 'artist',
         type: 'payout_paid',
-        message: `✅ Your withdrawal of MK ${Number(payout.requested_amount).toLocaleString()} has been paid! MK ${netAmount.toLocaleString()} sent to ${payout.network} ${payout.phone}.`,
+        message: `Your withdrawal of MK ${Number(payout.requested_amount).toLocaleString()} has been paid! MK ${netAmount.toLocaleString()} sent to ${payout.network} ${payout.phone}.`,
         link: '/artist-hub#wallet'
       });
 
@@ -1057,7 +1057,7 @@ const Admin = () => {
              <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-[#B0B0B0] hover:text-white transition-colors lg:hidden">
                 <Menu size={18} />
              </button>
-             <h2 className="text-[13px] font-studio font-bold   italic">{activeTab.replace('-', ' ')}</h2>
+             <h2 className="text-[14px] font-studio font-semibold text-white capitalize">{activeTab.replace('-', ' ')}</h2>
           </div>
 
           <div className="flex items-center gap-4">
@@ -1079,7 +1079,7 @@ const Admin = () => {
                   placeholder="Universal Audit..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#16161e] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-[11px] font-bold focus:outline-none focus:border-[#00A3FF] transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-[10px] py-2 pl-10 pr-4 text-[13px] text-white placeholder-[#737373] focus:outline-none focus:border-[#00A3FF] transition-all"
                 />
              </div>
              <div className="hidden md:block h-4 w-px bg-white/10 mx-2" />
@@ -1170,239 +1170,243 @@ const Admin = () => {
           )}
         </AnimatePresence>
 
-        <div className="flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar">
-           <div className="max-w-7xl mx-auto space-y-12">
-              {/* KPIs with refined design */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                 <KpiCard 
-                   title="Platform Rev" 
-                   value={`MK ${(platformStats.totalRevenue / 1000).toFixed(0)}k`} 
-                   trend="Net Earnings" 
-                   icon={DollarSign} 
-                   color="text-[#FF6B35]" 
-                 />
-                 <KpiCard 
-                   title="Users" 
-                   value={platformStats.totalListeners.toLocaleString()} 
-                   trend="Active" 
-                   icon={Users} 
-                   color="text-[#4C9AFF]" 
-                 />
-                 <KpiCard 
-                   title="Artists" 
-                   value={platformStats.totalArtists.toLocaleString()} 
-                   trend="Creators" 
-                   icon={Mic2} 
-                   color="text-[#A855F7]" 
-                 />
-                 <KpiCard 
-                   title="Songs Live" 
-                   value={platformStats.totalSongs.toLocaleString()} 
-                   trend="Catalog" 
-                   icon={Music2} 
-                   color="text-[#F59E0B]" 
-                 />
-                 <KpiCard 
-                   title="Review Queue" 
-                   value={applications.length + pendingSongs.length + pendingSnippets.length} 
-                   trend="Pending" 
-                   icon={Clock} 
-                   color="text-[#FF4757]" 
-                 />
-                 <KpiCard 
-                   title="Net Payouts" 
-                   value={payoutRequests.filter(p => p.status === 'processing').length} 
-                   trend="Action Req" 
-                   icon={Wallet} 
-                   color="text-[#22C55E]" 
-                 />
-              </div>
-
+        <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
+           <div className="max-w-7xl mx-auto space-y-8">
               {loading ? (
                  <div className="flex flex-col items-center justify-center p-20 gap-4">
                     <div className="w-10 h-10 border-2 border-[#00A3FF] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-[#B0B0B0] font-bold  text-[13px] ">Hydrating Terminal...</p>
+                    <p className="text-[#B0B0B0] font-medium text-[13px]">Loading admin workspace...</p>
                  </div>
               ) : (
                 <AnimatePresence mode="wait">
                   <div key={activeTab}>
                     {activeTab === 'overview' && (
-                <div className="space-y-6">
-                  {/* Quick Actions */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    {[
-                      {
-                        label: 'Pending Payouts',
-                        count: payoutRequests.filter(p => p.status === 'pending').length,
-                        color: 'yellow',
-                        tab: 'payouts',
-                        icon: '💸'
-                      },
-                      {
-                        label: 'Artist Applications',
-                        count: applications.length,
-                        color: 'purple',
-                        tab: 'applications',
-                        icon: '🎤'
-                      },
-                      {
-                        label: 'Songs to Review',
-                        count: pendingSongs.length,
-                        color: 'orange',
-                        tab: 'song-reviews',
-                        icon: '🎵'
-                      },
-                      {
-                        label: 'Feed Pending',
-                        count: pendingSnippets.length,
-                        color: 'blue',
-                        tab: 'snippet-reviews',
-                        icon: '📱'
-                      }
-                    ].map(action => (
-                      <button
-                        key={action.tab}
-                        onClick={() => setActiveTab(action.tab as any)}
-                        className="p-4 bg-white/5 border border-white/10 rounded-2xl text-left hover:border-[#00A3FF]/30 transition-all group"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[15px]">{action.icon}</span>
-                          {action.count > 0 && (
-                            <span className="text-[13px] font-bold bg-[#0084D6] text-white px-2 py-0.5 rounded-full animate-pulse">
-                              {action.count}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[13px] font-bold   text-[#B0B0B0] group-hover:text-white transition-colors">
-                          {action.label}
-                        </p>
-                        {action.count === 0 ? (
-                          <p className="text-[13px] text-[#B0B0B0]/50 mt-1">All clear</p>
-                        ) : (
-                          <p className="text-[13px] text-[#FF453A] mt-1">Needs attention →</p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Charts Row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6 hover:border-[#00A3FF]/30 transition-all">
-                      <h3 className="text-base font-semibold text-white mb-1">Revenue Overview</h3>
-                      <p className="text-[13px] text-[#B0B0B0] mb-6">Monthly revenue breakdown by source</p>
-                      <div className="h-[260px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#00A3FF" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#00A3FF" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `MK${v/1000}k`} />
-                            <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100, 116, 139, 0.3)', borderRadius: '8px' }} itemStyle={{ color: '#EAEAF2' }} />
-                            <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#00A3FF" fillOpacity={1} fill="url(#colorRev)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                <div className="space-y-8">
+                  {/* Row 1: 4 Stat Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 hover:border-[#00A3FF]/30 transition-all">
+                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF] mb-3">
+                        <Mic2 size={16} />
                       </div>
+                      <p className="text-[26px] font-mono font-semibold text-white leading-none">
+                        {platformStats.totalArtists.toLocaleString()}
+                      </p>
+                      <p className="text-[12px] text-[#B0B0B0] mt-1.5">Total artists</p>
                     </div>
 
-                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6 hover:border-[#00A3FF]/30 transition-all">
-                      <h3 className="text-base font-semibold text-white mb-1">Revenue Split</h3>
-                      <p className="text-[13px] text-[#B0B0B0] mb-6">By source this quarter</p>
-                      <div className="h-[230px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie isAnimationActive={false} data={revenueSplits} innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" stroke="none">
-                              {revenueSplits.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#1a2232', borderColor: 'rgba(100, 116, 139, 0.3)', borderRadius: '8px' }} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 hover:border-[#00A3FF]/30 transition-all">
+                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF] mb-3">
+                        <Users size={16} />
                       </div>
-                      <div className="flex flex-wrap justify-center gap-4 mt-2">
+                      <p className="text-[26px] font-mono font-semibold text-white leading-none">
+                        {platformStats.totalListeners.toLocaleString()}
+                      </p>
+                      <p className="text-[12px] text-[#B0B0B0] mt-1.5">Total listeners</p>
+                    </div>
+
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 hover:border-[#00A3FF]/30 transition-all">
+                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF] mb-3">
+                        <Music2 size={16} />
+                      </div>
+                      <p className="text-[26px] font-mono font-semibold text-white leading-none">
+                        {platformStats.totalSongs.toLocaleString()}
+                      </p>
+                      <p className="text-[12px] text-[#B0B0B0] mt-1.5">Total songs</p>
+                    </div>
+
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 hover:border-[#00A3FF]/30 transition-all">
+                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF] mb-3">
+                        <DollarSign size={16} />
+                      </div>
+                      <p className="text-[24px] font-mono font-semibold text-white leading-none truncate">
+                        MK {Number(platformStats.totalRevenue || 0).toLocaleString()}
+                      </p>
+                      <p className="text-[12px] text-[#B0B0B0] mt-1.5">Platform revenue</p>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Needs Attention Section */}
+                  <div>
+                    <h3 className="text-[11px] font-semibold text-[#737373] uppercase tracking-[0.12em] mb-3">
+                      Needs Attention
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {[
+                        {
+                          label: 'Pending songs',
+                          count: pendingSongs.length,
+                          tab: 'song-reviews' as const,
+                          icon: Music2,
+                        },
+                        {
+                          label: 'Artist applications',
+                          count: applications.length,
+                          tab: 'applications' as const,
+                          icon: Mic2,
+                        },
+                        {
+                          label: 'Feed pending',
+                          count: pendingSnippets.length,
+                          tab: 'snippet-reviews' as const,
+                          icon: Film,
+                        },
+                        {
+                          label: 'Pending payouts',
+                          count: payoutRequests.filter(p => p.status === 'pending').length,
+                          tab: 'payouts' as const,
+                          icon: Wallet,
+                        },
+                        {
+                          label: 'Agent applications',
+                          count: agentApplications.length,
+                          tab: 'agents' as const,
+                          icon: Users,
+                        }
+                      ].map((item) => (
+                        <div
+                          key={item.tab}
+                          className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-4 flex flex-col justify-between hover:border-[#00A3FF]/30 transition-all group"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-[#00A3FF]">
+                                <item.icon size={14} />
+                              </div>
+                              {item.count > 0 && (
+                                <span className="text-[11px] font-semibold bg-[#FF453A]/15 text-[#FF453A] border border-[#FF453A]/30 px-2 py-0.5 rounded-full font-mono">
+                                  {item.count}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[22px] font-mono font-semibold text-white leading-none">
+                              {item.count}
+                            </p>
+                            <p className="text-[12px] text-[#B0B0B0] mt-1 truncate">{item.label}</p>
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-white/5">
+                            {item.count > 0 ? (
+                              <button
+                                onClick={() => setActiveTab(item.tab)}
+                                className="text-[12px] font-semibold text-[#00A3FF] hover:text-white flex items-center gap-1 transition-colors"
+                              >
+                                Review &rarr;
+                              </button>
+                            ) : (
+                              <span className="text-[12px] text-[#737373]">Queue clear</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Row 3: Revenue Overview Chart */}
+                  <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 hover:border-[#00A3FF]/30 transition-all">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-base font-semibold text-white">Revenue Overview</h3>
+                        <p className="text-[13px] text-[#B0B0B0] mt-0.5">Monthly platform revenue trends</p>
+                      </div>
+                    </div>
+                    <div className="h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#00A3FF" stopOpacity={0.25}/>
+                              <stop offset="95%" stopColor="#00A3FF" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                          <XAxis dataKey="name" stroke="#737373" fontSize={11} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#737373" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `MK ${v/1000}k`} />
+                          <Tooltip contentStyle={{ backgroundColor: '#141414', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '10px' }} itemStyle={{ color: '#FFFFFF', fontSize: '12px' }} />
+                          <Area isAnimationActive={false} type="monotone" dataKey="revenue" stroke="#00A3FF" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Revenue Split & Recent Transactions */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 hover:border-[#00A3FF]/30 transition-all flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-semibold text-white mb-1">Revenue Split</h3>
+                        <p className="text-[13px] text-[#B0B0B0] mb-4">By category this quarter</p>
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie isAnimationActive={false} data={revenueSplits} innerRadius={60} outerRadius={85} paddingAngle={3} dataKey="value" stroke="none">
+                                {revenueSplits.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip contentStyle={{ backgroundColor: '#141414', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }} itemStyle={{ color: '#FFFFFF', fontSize: '12px' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                      <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
                         {revenueSplits.filter(s => s.name !== 'No Data').map(s => (
-                          <div key={s.name} className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                            <span className="text-[11px] text-[#B0B0B0] leading-none">{s.name}</span>
+                          <div key={s.name} className="flex items-center justify-between text-[12px]">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                              <span className="text-[#B0B0B0]">{s.name}</span>
+                            </div>
+                            <span className="font-mono text-white font-medium">MK {Number(s.value || 0).toLocaleString()}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Goal + Recent Txs */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6">
-                      <h3 className="text-base font-semibold text-white mb-1">Platform Goal</h3>
-                      <p className="text-[13px] text-[#B0B0B0] mb-6">Target: MK 5,000,000</p>
-                      <div className="mt-8">
-                        <div className="flex justify-between text-[13px] mb-2">
-                          <span className="text-[#B0B0B0]">Progress</span>
-                          <span className="font-bold text-[#00A3FF]">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%</span>
+                    <div className="lg:col-span-2 bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="text-base font-semibold text-white">Recent Transactions</h3>
+                          <button 
+                            onClick={handleRefreshStuckTransactions}
+                            disabled={fixStuckLoading}
+                            className="flex items-center gap-1.5 h-8 px-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-[10px] transition-colors text-[12px] font-semibold"
+                          >
+                            <RefreshCw size={13} className={fixStuckLoading ? 'animate-spin' : ''} />
+                            {fixStuckLoading ? 'Syncing...' : 'Sync Pending'}
+                          </button>
                         </div>
-                        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#00A3FF] to-[#00A3FF] rounded-full" style={{ width: `${Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}%` }} />
+                        <p className="text-[13px] text-[#B0B0B0] mb-4">Latest financial activity on the platform</p>
+                        
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-[13px]">
+                            <thead className="sticky top-0 bg-[#1A1A1A] border-b border-white/10 z-10">
+                              <tr className="text-[11px] font-semibold tracking-[0.12em] text-[#737373] uppercase">
+                                <th className="px-4 py-2.5">Artist</th>
+                                <th className="px-4 py-2.5">Type</th>
+                                <th className="text-right px-4 py-2.5">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                               {recentActivities.map(tx => (
+                                 <tr key={tx.id} className="hover:bg-white/5 transition-colors">
+                                   <td className="font-medium text-white px-4 py-3">{tx.profiles?.stage_name || tx.profiles?.full_name || 'System'}</td>
+                                   <td className="px-4 py-3">
+                                     <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-semibold border bg-white/5 text-[#00A3FF] border-[#00A3FF]/20 capitalize">
+                                       {tx.type || 'tx'}
+                                     </span>
+                                   </td>
+                                   <td className="text-right font-mono font-semibold text-[#22C55E] px-4 py-3">MK {Math.round(tx.net_amount || tx.platform_fee || 0).toLocaleString()}</td>
+                                 </tr>
+                               ))}
+                               {recentActivities.length === 0 && (
+                                 <tr><td colSpan={3} className="py-8 text-center text-[13px] text-[#737373]">No recent transactions</td></tr>
+                               )}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mt-8">
-                         <div className="text-center">
-                            <h4 className="text-xl font-bold text-white">MK {(platformStats.totalRevenue / 1000).toFixed(1)}K</h4>
-                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Earned</p>
-                         </div>
-                         <div className="text-center">
-                            <h4 className="text-xl font-bold text-[#F59E0B]">MK {Math.max(0, (5000000 - platformStats.totalRevenue) / 1000).toFixed(1)}K</h4>
-                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Remaining</p>
-                         </div>
-                         <div className="text-center">
-                            <h4 className="text-xl font-bold text-[#22C55E]">{platformStats.totalArtists}</h4>
-                            <p className="text-[11px] text-[#B0B0B0] mt-1   font-bold">Active Acts</p>
-                         </div>
-                      </div>
-                    </div>
 
-                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[14px] p-6">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-base font-semibold text-white">Recent Transactions</h3>
-                        <button 
-                          onClick={handleRefreshStuckTransactions}
-                          disabled={fixStuckLoading}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-[#0084D6]/20 text-[#00A3FF] hover:bg-[#0084D6]/30 rounded-lg transition-colors text-[13px] font-bold"
-                        >
-                          <RefreshCw size={14} className={fixStuckLoading ? 'animate-spin' : ''} />
-                          {fixStuckLoading ? 'Syncing...' : 'Sync Unresolved'}
-                        </button>
+                      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[12px] text-[#B0B0B0]">
+                        <span>Platform Target: MK 5,000,000</span>
+                        <span className="text-[#00A3FF] font-semibold">{Math.min(100, Math.round((platformStats.totalRevenue / 5000000) * 100))}% Achieved</span>
                       </div>
-                      <p className="text-[13px] text-[#B0B0B0] mb-6">Latest platform financial activity</p>
-                      <table className="w-full mt-2">
-                        <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
-                          <tr className="text-left text-[11px] font-medium tracking-[0.12em] text-[#737373] uppercase">
-                            <th className="text-white/50 px-4 py-3">Artist</th>
-                            <th className="text-white/50 px-4 py-3">Type</th>
-                            <th className="text-white/50 px-4 py-3">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#22223e]">
-                           {recentActivities.map(tx => (
-                             <tr key={tx.id} className="hover:bg-[#1a1a35] transition-colors">
-                               <td className="text-[13px] font-medium text-white px-4 py-3 md:px-5 text-[13px]">{tx.profiles?.stage_name || tx.profiles?.full_name || 'System'}</td>
-                               <td className="px-4 py-3 md:px-5 text-[13px]">
-                                 <span className={`px-2 py-1 rounded-md text-[11px] font-semibold capitalize ${tx.type?.includes('sub') ? 'bg-[#ff6b35]/15 text-[#ff6b35]' : tx.type?.includes('tip') || tx.type?.includes('donat') ? 'bg-[#00d68f]/15 text-[#00d68f]' : 'bg-[#4c9aff]/15 text-[#4c9aff]'}`}>
-                                   {tx.type || 'tx'}
-                                 </span>
-                               </td>
-                               <td className="text-[13px] font-bold font-mono text-[#00d68f] px-4 py-3 md:px-5 text-[13px]">MK {Math.round(tx.net_amount || tx.platform_fee || 0).toLocaleString()}</td>
-                             </tr>
-                           ))}
-                           {recentActivities.length === 0 && (
-                             <tr><td colSpan={3} className="py-6 text-center text-[13px] text-[#B0B0B0]">No recent transactions</td></tr>
-                           )}
-                        </tbody>
-                      </table>
                     </div>
                   </div>
                </div>
@@ -1482,7 +1486,7 @@ const Admin = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                   <div className="p-5 border-b border-white/10 flex items-center justify-between">
                      <div>
-                        <h3 className="font-studio font-bold italic  text-[15px]">Listener Network</h3>
+                        <h3 className="font-studio font-bold   text-[15px]">Listener Network</h3>
                         <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Fanbase Management</p>
                      </div>
                      <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
@@ -1538,7 +1542,7 @@ const Admin = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                    <div className="p-5 border-b border-white/10 flex items-center justify-between">
                       <div>
-                         <h3 className="font-studio font-bold italic  text-[15px]">Artist Ecosystem</h3>
+                         <h3 className="font-studio font-bold   text-[15px]">Artist Ecosystem</h3>
                          <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Verified Talent Management</p>
                       </div>
                       <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
@@ -1580,7 +1584,7 @@ const Admin = () => {
                              </td>
                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="space-y-1">
-                                   <p className="font-studio font-bold italic text-[#22C55E] text-[15px] leading-none">MK {a.wallet_balance?.toLocaleString() || 0}</p>
+                                   <p className="font-studio font-bold  text-[#22C55E] text-[15px] leading-none">MK {a.wallet_balance?.toLocaleString() || 0}</p>
                                    <p className="text-[13px] font-bold   text-[#B0B0B0]">Available Liquidity</p>
                                 </div>
                              </td>
@@ -1604,7 +1608,7 @@ const Admin = () => {
                                       {a.pending_songs} items
                                    </div>
                                 ) : (
-                                   <span className="text-[#B0B0B0] text-[13px]  font-bold italic  opacity-40">Clear</span>
+                                   <span className="text-[#B0B0B0] text-[13px]  font-bold   opacity-40">Clear</span>
                                 )}
                              </td>
                              <td className="md:px-5 text-right flex items-center justify-end gap-3 px-4 py-3 md:px-5 text-[13px]">
@@ -1662,7 +1666,7 @@ const Admin = () => {
         <div className="space-y-4">
           {payoutRequests.map((payout) => (
             <div key={payout.id}
-              className={`p-5 rounded-3xl border transition-all ${
+              className={`p-5 rounded-[16px] border transition-all ${
                 payout.status === 'pending'
                   ? 'bg-[#F59E0B]/5 border-[#F59E0B]/20'
                   : payout.status === 'paid'
@@ -1691,7 +1695,7 @@ const Admin = () => {
 
               {/* Payment details */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 bg-white/5 rounded-2xl">
+                <div className="p-3 bg-white/5 rounded-[16px]">
                   <p className="text-[13px] text-[#B0B0B0]   mb-1">
                     Network
                   </p>
@@ -1699,7 +1703,7 @@ const Admin = () => {
                     {payout.network || 'Not specified'}
                   </p>
                 </div>
-                <div className="p-3 bg-white/5 rounded-2xl">
+                <div className="p-3 bg-white/5 rounded-[16px]">
                   <p className="text-[13px] text-[#B0B0B0]   mb-1">
                     Phone Number
                   </p>
@@ -1713,13 +1717,13 @@ const Admin = () => {
               <div className="mb-4">
                 {(payout.status === 'pending' || payout.status === 'processing') && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize border bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30">
-                    ⏳ Awaiting Payment
+                    Awaiting Payment
                   </span>
                 )}
                 {payout.status === 'paid' && (
                   <div>
                     <span className="text-[13px] font-bold px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20 rounded-full">
-                      ✅ Paid
+                      Paid
                     </span>
                     {payout.paid_at && (
                       <p className="text-[13px] text-[#B0B0B0] mt-2">
@@ -1736,7 +1740,7 @@ const Admin = () => {
                 {(payout.status === 'rejected' || payout.status === 'failed') && (
                   <div>
                     <span className="text-[13px] font-bold px-3 py-1 bg-[#FF453A]/10 text-[#FF453A] border border-red-500/20 rounded-full">
-                      ✗ Rejected
+                      Rejected
                     </span>
                     {payout.admin_note && (
                       <p className="text-[13px] text-[#FF453A] mt-2">
@@ -1750,9 +1754,9 @@ const Admin = () => {
               {/* Admin actions — only for pending */}
               {(payout.status === 'pending' || payout.status === 'processing') && (
                 <div className="space-y-3 pt-3 border-t border-white/10">
-                  <div className="bg-[#0084D6]/10 border border-[#00A3FF]/20 rounded-2xl p-3">
+                  <div className="bg-[#0084D6]/10 border border-[#00A3FF]/20 rounded-[16px] p-3">
                     <p className="text-[13px] font-bold text-[#FF453A] mb-1">
-                      📱 Action Required
+                      Action Required
                     </p>
                     <p className="text-[13px] text-[#22C55E]/80">
                       Send <span className="text-white font-bold">MK {Math.round(Number(payout.amount || payout.requested_amount) * 0.97).toLocaleString()}</span> (Net of 3% Fee) to{' '}
@@ -1783,23 +1787,23 @@ const Admin = () => {
                         processingId === payout.id ? adminNote : ''
                       )}
                       disabled={processingId === payout.id ? (!adminNote && false) : false}
-                      className="flex-1 h-11 bg-[#22C55E] text-white rounded-2xl font-bold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                      className="flex-1 h-11 bg-[#22C55E] text-white rounded-[16px] font-bold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                      ✅ Mark as Paid
+                      Mark as Paid
                     </button>
                     <button
                       onClick={() => {
                         setRejectingId(payout.id);
                         setRejectReason('');
                       }}
-                      className="flex-1 h-11 bg-[#FF453A]/20 text-[#FF453A] border border-red-500/20 rounded-2xl font-bold text-[13px] hover:bg-[#FF453A]/30 transition-all"
+                      className="flex-1 h-11 bg-[#FF453A]/20 text-[#FF453A] border border-red-500/20 rounded-[16px] font-bold text-[13px] hover:bg-[#FF453A]/30 transition-all"
                     >
-                      ✗ Reject
+                      Reject
                     </button>
                   </div>
 
                   {rejectingId === payout.id && (
-                    <div className="mt-3 p-4 bg-[#FF453A]/5 border border-red-500/20 rounded-2xl space-y-3">
+                    <div className="mt-3 p-4 bg-[#FF453A]/5 border border-red-500/20 rounded-[16px] space-y-3">
                       <p className="text-[13px] font-bold text-[#FF453A]  ">
                         Rejection Reason
                       </p>
@@ -1840,7 +1844,7 @@ const Admin = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                   <div className="p-5 border-b border-white/10 flex items-center justify-between">
                      <div>
-                        <h3 className="font-studio font-bold italic  text-[15px]">Asset Master List</h3>
+                        <h3 className="font-studio font-bold   text-[15px]">Asset Master List</h3>
                         <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Full Song Database Governance</p>
                      </div>
                      <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
@@ -1905,7 +1909,7 @@ const Admin = () => {
                   {/* Agents Pipeline */}
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                     <div className="p-5 border-b border-white/10">
-                       <h3 className="font-studio font-bold italic  text-[15px]">Agent Applications</h3>
+                       <h3 className="font-studio font-bold   text-[15px]">Agent Applications</h3>
                        <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Pending approvals</p>
                     </div>
                     {agentApplications.length === 0 ? (
@@ -1957,7 +1961,7 @@ const Admin = () => {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                     <div className="p-5 border-b border-white/10 flex justify-between items-center">
                        <div>
-                         <h3 className="font-studio font-bold italic  text-[15px]">Approved Agents</h3>
+                         <h3 className="font-studio font-bold   text-[15px]">Approved Agents</h3>
                          <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Active roster & payouts</p>
                        </div>
                     </div>
@@ -2013,7 +2017,7 @@ const Admin = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                   <div className="p-5 border-b border-white/10 flex justify-between items-center">
                      <div>
-                        <h3 className="font-studio font-bold italic  text-[15px]">Onboarding Pipeline</h3>
+                        <h3 className="font-studio font-bold   text-[15px]">Onboarding Pipeline</h3>
                         <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Artist Intake Controls</p>
                      </div>
                   </div>
@@ -2068,7 +2072,7 @@ const Admin = () => {
                          <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <Users size={32} />
                          </div>
-                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Intake Queue Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] ">Intake Queue Clear.</p>
                       </div>
                     )}
                   </div>
@@ -2078,7 +2082,7 @@ const Admin = () => {
               {activeTab === 'song-reviews' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                   <div className="p-5 border-b border-white/10">
-                     <h3 className="font-studio font-bold italic  text-[15px]">Content Compliance</h3>
+                     <h3 className="font-studio font-bold   text-[15px]">Content Compliance</h3>
                      <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Song Review & Approval Node</p>
                   </div>
                   <div className="p-4 border-b border-white/5 flex items-center justify-between">
@@ -2096,7 +2100,7 @@ const Admin = () => {
                         onClick={bulkApproveSongs}
                         className="px-4 py-2 bg-[#22C55E] text-white rounded-xl font-bold text-[13px]  "
                       >
-                        ✅ Approve {selectedSongs.length} Selected
+                        Approve {selectedSongs.length} Selected
                       </button>
                     )}
                   </div>
@@ -2173,7 +2177,7 @@ const Admin = () => {
                          <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <ShieldCheck size={24} />
                          </div>
-                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Compliance Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] ">Compliance Clear.</p>
                       </div>
                     )}
                   </div>
@@ -2183,7 +2187,7 @@ const Admin = () => {
               {activeTab === 'snippet-reviews' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                   <div className="p-5 border-b border-white/10">
-                     <h3 className="font-studio font-bold italic  text-[15px]">Moto Feed Hub</h3>
+                     <h3 className="font-studio font-bold   text-[15px]">Moto Feed Hub</h3>
                      <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Video & Audio Snippet Governance</p>
                   </div>
                   <div className="overflow-x-auto">
@@ -2216,7 +2220,7 @@ const Admin = () => {
                                 <p className="font-bold text-white/80">{snippet.profiles?.stage_name || 'Unknown'}</p>
                               </td>
                               <td className="md:px-5 text-center px-4 py-3 md:px-5 text-[13px]">
-                                <a href={snippet.media_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] font-bold   hover:border-[#00A3FF] hover:text-[#00A3FF] transition-all italic">
+                                <a href={snippet.media_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] font-bold   hover:border-[#00A3FF] hover:text-[#00A3FF] transition-all ">
                                    Explore Meta {snippet.is_video ? '(VIDEO)' : '(AUDIO)'} <Radio size={12} />
                                 </a>
                               </td>
@@ -2235,7 +2239,7 @@ const Admin = () => {
                          <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#B0B0B0] opacity-20">
                            <Radio size={24} />
                          </div>
-                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] italic">Feed Queue Clear.</p>
+                         <p className="text-[#B0B0B0] font-bold  tracking-[0.2em] text-[13px] ">Feed Queue Clear.</p>
                       </div>
                     )}
                   </div>
@@ -2244,13 +2248,13 @@ const Admin = () => {
 
               {activeTab === 'ads' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                   <div className="relative group overflow-hidden p-10 bg-[#1A1A1A] border border-white/5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
+                   <div className="relative group overflow-hidden p-10 bg-[#1A1A1A] border border-white/5 rounded-[16px] flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
                       <div className="relative z-10 space-y-2">
                         <div className="flex items-center gap-2 mb-2">
                            <span className="w-2 h-2 bg-[#0084D6] rounded-full animate-ping" />
                            <p className="text-[13px] font-bold   text-[#FF453A]">Ad Serving Node</p>
                         </div>
-                        <h4 className="text-4xl font-studio font-bold italic text-white  tracking-tighter leading-none">Campaign Console</h4>
+                        <h4 className="text-4xl font-studio font-bold  text-white  tracking-tighter leading-none">Campaign Console</h4>
                         <p className="text-[13px] text-[#B0B0B0] font-bold max-w-sm">Inject audio-based commercial payloads directly into the global stream.</p>
                       </div>
                       <button 
@@ -2266,7 +2270,7 @@ const Admin = () => {
 
                    <motion.div className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
                      <div className="p-5 border-b border-white/10">
-                        <h4 className="font-studio font-bold italic text-[15px]  leading-none">Active Commercial Roster</h4>
+                        <h4 className="font-studio font-bold  text-[15px]  leading-none">Active Commercial Roster</h4>
                      </div>
                      <div className="overflow-x-auto">
                        <table className="w-full text-left text-[13px]">
@@ -2334,7 +2338,7 @@ const Admin = () => {
                       >
                         <motion.div 
                           initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                          className="w-full max-w-xl bg-[#111] border border-white/10 rounded-[40px] p-8 space-y-6 relative max-h-[90vh] overflow-y-auto"
+                          className="w-full max-w-xl bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 space-y-6 relative max-h-[90vh] overflow-y-auto"
                         >
                           <div className="flex items-center justify-between">
                             <h3 className="font-bold text-xl  ">Upload New Ad</h3>
@@ -2373,7 +2377,7 @@ const Admin = () => {
                             </div>
 
                             <button type="submit" disabled={adUploading}
-                              className="w-full py-4 bg-[#0084D6] text-black rounded-xl font-bold   text-[13px] hover:scale-[1.02] transition-all disabled:opacity-50 shadow-xl shadow-[#00A3FF]/20"
+                              className="w-full h-10 bg-[#0084D6] hover:bg-[#00A3FF] text-white rounded-[10px] font-semibold text-[13px] transition-colors disabled:opacity-50"
                             >
                               {adUploading ? 'Uploading...' : 'Activate Ad Campaign'}
                             </button>
@@ -2435,7 +2439,7 @@ const Admin = () => {
                    </div>
                    
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-[16px]">
                        <div className="flex items-center justify-between">
                          <div>
                            <p className="font-bold text-white text-[13px]">Manual Vault Job</p>
@@ -2458,7 +2462,7 @@ const Admin = () => {
                        </div>
                      </div>
 
-                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-[16px]">
                        <div className="flex items-center justify-between">
                          <div>
                            <p className="font-bold text-white text-[13px]">Slot Reclassification</p>
@@ -2617,7 +2621,7 @@ const Admin = () => {
 
                   {expiringArtists.length === 0 ? (
                     <div className="text-center py-16 text-[#B0B0B0]">
-                      <p className="text-4xl mb-4">✅</p>
+                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 text-[#00A3FF]"><CheckCircle2 size={24} /></div>
                       <p className="font-bold">No artists expiring in the next 30 days</p>
                     </div>
                   ) : (
@@ -2630,7 +2634,7 @@ const Admin = () => {
                         const isUrgent = daysLeft <= 7 && daysLeft > 0;
 
                         return (
-                          <div key={artist.id} className={`p-4 rounded-2xl border ${
+                          <div key={artist.id} className={`p-4 rounded-[16px] border ${
                             isExpired ? 'bg-[#FF453A]/5 border-red-500/20' :
                             isUrgent  ? 'bg-[#F59E0B]/5 border-[#F59E0B]/20' :
                                         'bg-white/5 border-white/10'
@@ -2672,7 +2676,7 @@ const Admin = () => {
               {selectedApp && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
                   <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
-                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
+                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#1A1A1A] z-10 rounded-t-[16px]">
                       <h3 className="font-bold text-[15px] text-white">Application Details</h3>
                       <button onClick={() => setSelectedApp(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-white/10 text-[#B0B0B0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
                         <X size={16} />
@@ -2708,7 +2712,7 @@ const Admin = () => {
                             {selectedApp.id_document_url ? (
                               <img src={selectedApp.id_document_url} alt="ID Document" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.id_document_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
+                              <div className="p-4 bg-white/5 rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                          <div>
@@ -2716,7 +2720,7 @@ const Admin = () => {
                             {selectedApp.selfie_url ? (
                               <img src={selectedApp.selfie_url} alt="Selfie" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedApp.selfie_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
+                              <div className="p-4 bg-white/5 rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                       </div>
@@ -2727,10 +2731,10 @@ const Admin = () => {
                       <div className="flex justify-between py-2 border-b border-white/10 text-[13px]"><span className="text-[#B0B0B0]">Agent Reference</span><span className={`font-semibold font-mono ${selectedApp.agent_reference || selectedApp.referral_code ? 'text-[#00d68f]' : 'text-white'}`}>{selectedApp.agent_reference || selectedApp.referral_code || 'N/A'}</span></div>
 
                       <div className="flex gap-3 mt-8 pt-5 border-t border-white/10">
-                         <button onClick={() => { approveArtist(selectedApp); setSelectedApp(null); }} className="flex-1 py-3 bg-[#00d68f] hover:brightness-110 text-black font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all">
+                         <button onClick={() => { approveArtist(selectedApp); setSelectedApp(null); }} className="flex-1 h-10 bg-[#0084D6] hover:bg-[#00A3FF] text-white font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <CircleCheck size={16} /> Approve Application
                          </button>
-                         <button onClick={() => { rejectArtist(selectedApp); setSelectedApp(null); }} className="flex-1 py-3 bg-[#ff4757]/15 border border-[#ff4757]/30 text-[#ff4757] hover:bg-[#ff4757] hover:text-white font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all">
+                         <button onClick={() => { rejectArtist(selectedApp); setSelectedApp(null); }} className="flex-1 h-10 bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/20 font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <X size={16} /> Reject
                          </button>
                       </div>
@@ -2741,7 +2745,7 @@ const Admin = () => {
               {selectedArtist && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
                   <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-[16px] max-h-[85vh] overflow-y-auto flex flex-col">
-                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#10101e] z-10 rounded-t-[16px]">
+                    <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#1A1A1A] z-10 rounded-t-[16px]">
                       <h3 className="font-bold text-[15px] text-white">Artist Profile</h3>
                       <button onClick={() => setSelectedArtist(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-white/10 text-[#B0B0B0] hover:text-[#ff4757] hover:border-[#ff4757] transition-all">
                         <X size={16} />
@@ -2766,11 +2770,11 @@ const Admin = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-white/10">
+                         <div className="p-4 bg-white/5 rounded-xl border border-white/10">
                             <p className="text-[11px] text-[#B0B0B0]  font-bold  mb-1">Wallet Balance</p>
                             <p className="text-xl font-bold text-[#00d68f]">MK {selectedArtist.wallet_balance?.toLocaleString() || 0}</p>
                          </div>
-                         <div className="p-4 bg-[#1a1a35] rounded-xl border border-white/10">
+                         <div className="p-4 bg-white/5 rounded-xl border border-white/10">
                             <p className="text-[11px] text-[#B0B0B0]  font-bold  mb-1">Pending Songs</p>
                             <p className="text-xl font-bold text-[#ffaa00]">{selectedArtist.pending_songs || 0}</p>
                          </div>
@@ -2791,7 +2795,7 @@ const Admin = () => {
                             {selectedArtist.id_document_url ? (
                               <img src={selectedArtist.id_document_url} alt="ID Document" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.id_document_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
+                              <div className="p-4 bg-white/5 rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                          <div>
@@ -2799,7 +2803,7 @@ const Admin = () => {
                             {selectedArtist.selfie_url ? (
                               <img src={selectedArtist.selfie_url} alt="Selfie" className="w-full rounded-lg border border-white/10 hover:scale-105 transition-transform cursor-pointer" onClick={() => window.open(selectedArtist.selfie_url, '_blank')} />
                             ) : (
-                              <div className="p-4 bg-[#22223e] rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
+                              <div className="p-4 bg-white/5 rounded-lg text-[11px] text-[#B0B0B0]">Not provided</div>
                             )}
                          </div>
                       </div>
@@ -2808,12 +2812,12 @@ const Admin = () => {
                          <button 
                             onClick={() => { toggleArtistVerification(selectedArtist.id, !!(selectedArtist.verified || selectedArtist.is_verified)); setSelectedArtist(null); }} 
                             className={`flex-1 py-3 font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all ${
-                              (selectedArtist.verified || selectedArtist.is_verified) ? 'bg-[#22223e] text-white hover:bg-white border text-black hover:text-black' : 'bg-[#00d68f] hover:brightness-110 text-black'
+                              (selectedArtist.verified || selectedArtist.is_verified) ? 'bg-white/5 text-white hover:bg-white border text-black hover:text-black' : 'bg-[#00d68f] hover:brightness-110 text-black'
                             }`}
                          >
                             <ShieldCheck size={16} /> {(selectedArtist.verified || selectedArtist.is_verified) ? 'Revoke Verification' : 'Verify Artist'}
                          </button>
-                         <button onClick={() => { deleteArtist(selectedArtist.id, selectedArtist.stage_name); setSelectedArtist(null); }} className="flex-1 py-3 bg-[#ff4757]/15 border border-[#ff4757]/30 text-[#ff4757] hover:bg-[#ff4757] hover:text-white font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 transition-all">
+                         <button onClick={() => { deleteArtist(selectedArtist.id, selectedArtist.stage_name); setSelectedArtist(null); }} className="flex-1 h-10 bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/20 font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <Trash2 size={16} /> Remove from Platform
                          </button>
                       </div>

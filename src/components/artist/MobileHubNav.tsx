@@ -21,7 +21,7 @@ export const MobileHubNav = ({ activeTab, setActiveTab }: { activeTab: any, setA
             onClick={() => setActiveTab(item.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-sm font-sans transition-colors ${
               isActive 
-                ? 'bg-smash-purple text-white' 
+                ? 'bg-[#0084D6] text-white' 
                 : 'bg-bg-elevated text-text-muted hover:text-text-primary'
             }`}
           >

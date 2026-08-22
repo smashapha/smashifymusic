@@ -39,28 +39,28 @@ const PaymentFailed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-smash-black flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 text-center">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-[#111111] border border-white/5 rounded-[48px] p-12 shadow-2xl relative"
+        className="max-w-md w-full bg-[#1A1A1A] border border-white/10 rounded-[16px] p-8 shadow-2xl relative"
       >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-500/10 blur-[100px] -z-10" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#FF453A]/10 blur-[100px] -z-10" />
 
         <div className="space-y-8">
-          <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-400">
+          <div className="w-24 h-24 bg-[#FF453A]/10 rounded-full flex items-center justify-center mx-auto text-[#FF453A]">
             <XCircle size={48} />
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-4xl font-studio font-black italic uppercase tracking-tighter text-white">
+            <h2 className="text-2xl font-display font-bold text-white">
               Payment Failed
             </h2>
-            <p className="text-smash-gray font-bold text-sm leading-relaxed px-4">
+            <p className="text-[#B0B0B0] text-sm leading-relaxed px-4">
               The transaction was not completed. This could be due to insufficient funds, a network error, or the payment being cancelled.
             </p>
             {type && (
-              <p className="text-smash-orange text-xs font-black uppercase tracking-widest">
+              <p className="text-[#FF453A] text-xs font-semibold">
                 {type.includes('LISTENER_PREMIUM') ? 'Premium Subscription Failed' :
                  type.includes('LISTENER_FAMILY') ? 'Family Plan Failed' :
                  type.includes('ARTIST') ? 'Artist Tier Payment Failed' :
@@ -73,7 +73,7 @@ const PaymentFailed = () => {
           <div className="pt-8 space-y-4">
              <button 
                 onClick={() => navigate(getRetryPath())}
-                className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-white text-smash-black font-black uppercase text-xs tracking-widest rounded-full hover:scale-105 transition-transform shadow-xl"
+                className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white font-semibold text-sm rounded-[10px] transition-all"
              >
                 <RefreshCw size={16} /> Try Again
              </button>
@@ -82,7 +82,7 @@ const PaymentFailed = () => {
                <button 
                   onClick={handleReVerify}
                   disabled={isVerifying}
-                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-smash-orange/10 text-smash-orange font-black uppercase text-xs tracking-widest rounded-full hover:bg-smash-orange/20 transition-all border border-smash-orange/20"
+                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-[#00A3FF]/10 text-[#00A3FF] font-semibold text-sm rounded-[10px] hover:bg-[#00A3FF]/15 transition-all border border-[#00A3FF]/20"
                >
                   <CheckCircle size={16} /> {isVerifying ? 'Checking...' : 'I paid, re-verify status'}
                </button>
@@ -92,14 +92,14 @@ const PaymentFailed = () => {
                 href="https://wa.me/265883728868" // Mock support link
                 target="_blank"
                 rel="noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-white/5 text-white font-black uppercase text-xs tracking-widest rounded-full hover:bg-white/10 transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 px-8 py-5 bg-white/5 border border-white/10 text-white font-semibold text-sm rounded-[10px] hover:bg-white/10 transition-all"
              >
                 <MessageCircle size={16} /> Contact Support
              </a>
 
              <Link 
                 to="/"
-                className="w-full inline-flex items-center justify-center gap-2 px-8 py-1 text-smash-gray font-black uppercase text-[10px] tracking-[0.2em] hover:text-white transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 px-8 py-1 text-[#B0B0B0] font-medium text-xs hover:text-white transition-colors"
               >
                 <ArrowLeft size={12} /> Back to Smashify
               </Link>
@@ -107,7 +107,7 @@ const PaymentFailed = () => {
 
           {tx_ref && (
             <div className="pt-6">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">
+              <p className="text-[10px] font-semibold text-white/20 tracking-[0.3em]">
                 Ref: {tx_ref}
               </p>
             </div>

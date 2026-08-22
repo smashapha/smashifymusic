@@ -191,7 +191,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
     <div className="space-y-8 max-w-5xl mx-auto text-left">
       <div>
         <h2 className="text-[28px] md:text-[32px] font-studio font-bold flex items-center justify-start gap-3 uppercase text-text-primary leading-tight">
-          <Wallet className="text-smash-purple shrink-0 animate-pulse" /> Wallet & <span className="text-smash-purple">Withdrawals</span>
+          <Wallet className="text-[#00A3FF] shrink-0 animate-pulse" /> Wallet & <span className="text-[#00A3FF]">Withdrawals</span>
         </h2>
         <p className="text-text-secondary text-[12px] md:text-[14px] font-sans mt-2">
           Manage your payout settings, verify identity details, and request mobile money transfers.
@@ -205,15 +205,15 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
           
           {/* WALLET BALANCE HEADER CARD */}
           <div className="bg-bg-surface border border-border-default rounded-[16px] p-8 relative overflow-hidden group shadow-md bg-gradient-to-br from-bg-surface to-bg-elevated/40">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-smash-purple/5 blur-[60px] rounded-full pointer-events-none" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#00A3FF]/5 blur-[60px] rounded-full pointer-events-none" />
             <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
               <div>
-                <span className="text-[10px] font-display font-bold uppercase tracking-wider text-smash-purple block mb-2">Available Balance</span>
-                <h3 className="text-[36px] md:text-[44px] font-studio font-bold text-white leading-none italic">
+                <span className="text-[10px] font-display font-bold uppercase tracking-wider text-[#00A3FF] block mb-2">Available Balance</span>
+                <h3 className="text-[36px] md:text-[44px] font-studio font-bold text-white leading-none">
                   MK {balance.toLocaleString()}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <div className="px-2.5 py-1 bg-smash-green/10 text-smash-green border border-smash-green/10 rounded-full text-[9px] font-display font-medium uppercase tracking-wider">
+                  <div className="px-2.5 py-1 bg-smash-green/10 text-[#22C55E] border border-smash-green/10 rounded-full text-[9px] font-display font-medium uppercase tracking-wider">
                      Payouts Active
                   </div>
                   <div className="px-2.5 py-1 bg-white/5 text-text-muted border border-white/5 rounded-full text-[9px] font-display font-medium uppercase tracking-wider">
@@ -228,13 +228,13 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                   {userProfile?.subscription_tier || userProfile?.artist_tier || 'Free'}
                 </p>
                 {limits.canWithdraw ? (
-                  <span className="text-[10px] font-sans text-smash-green font-medium flex items-center gap-1">
+                  <span className="text-[10px] font-sans text-[#22C55E] font-medium flex items-center gap-1">
                      <Check size={12} /> Standard Withdrawals Active
                   </span>
                 ) : (
                   <button 
                     onClick={() => setActiveTab('subscription')}
-                    className="text-[10px] text-smash-purple font-bold uppercase tracking-wider hover:underline block text-left"
+                    className="text-[10px] text-[#00A3FF] font-bold uppercase tracking-wider hover:underline block text-left"
                   >
                      Upgrade tier to payout &rarr;
                   </button>
@@ -245,13 +245,13 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
 
           {/* PARENT CONTAINER CONDITIONAL FOR VERIFICATION STATUS OR WITHDRAWAL CAPABILITY */}
           {!isVerified ? (
-            <div className="bg-bg-surface border border-smash-orange/20 rounded-[14px] p-6 space-y-6 shadow-sm">
+            <div className="bg-bg-surface border border-[#00A3FF]/20 rounded-[14px] p-6 space-y-6 shadow-sm">
               <div className="flex gap-4 items-start">
-                <div className="w-12 h-12 rounded-[10px] bg-smash-orange/10 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="text-smash-orange" size={24} />
+                <div className="w-12 h-12 rounded-[10px] bg-[#00A3FF]/10 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="text-[#00A3FF]" size={24} />
                 </div>
                 <div>
-                  <h4 className="text-smash-orange font-studio font-bold uppercase tracking-wider text-sm">
+                  <h4 className="text-[#00A3FF] font-studio font-bold uppercase tracking-wider text-sm">
                     {isPendingVerification ? 'Verification Pending Review' : 'Identity Verification Required'}
                   </h4>
                   <p className="text-text-secondary text-xs font-sans mt-1 leading-relaxed">
@@ -266,7 +266,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               {!isPendingVerification && (
                 <form onSubmit={handleVerificationSubmit} className="border-t border-border-default pt-6 space-y-5">
                   <div className="p-3.5 bg-zinc-950/40 border border-white/5 rounded-lg text-[11px] text-text-muted leading-relaxed">
-                    <span className="text-smash-orange font-bold uppercase tracking-wider block mb-1">Secure Payout Encryption Note</span>
+                    <span className="text-[#00A3FF] font-bold uppercase tracking-wider block mb-1">Secure Payout Encryption Note</span>
                     Your verification data is securely stored, highly encrypted, and strictly used to verify payment transfers.
                   </div>
 
@@ -276,7 +276,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       <select 
                         value={idType} 
                         onChange={e => setIdType(e.target.value)}
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary"
+                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary"
                       >
                         <option value="National ID">Malawi National ID</option>
                         <option value="Passport">Passport</option>
@@ -290,7 +290,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                         value={nrcNumber}
                         onChange={e => setNrcNumber(e.target.value.toUpperCase())}
                         placeholder="e.g. A1234567" 
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-40" 
+                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:opacity-40" 
                       />
                     </div>
                     <div>
@@ -300,7 +300,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                         value={verificationPhone}
                         onChange={e => setVerificationPhone(e.target.value)}
                         placeholder="e.g. +26599..." 
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-40" 
+                        className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:opacity-40" 
                       />
                     </div>
                   </div>
@@ -311,14 +311,14 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       type="file" 
                       accept="image/*" 
                       onChange={e => setIdFile(e.target.files?.[0] || null)}
-                      className="w-full bg-bg-elevated border border-border-default p-2 rounded-[10px] text-[12px] font-display outline-none file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-smash-orange file:text-white hover:file:bg-smash-orange/80 cursor-pointer text-text-muted" 
+                      className="w-full bg-bg-elevated border border-border-default p-2 rounded-[10px] text-[12px] font-display outline-none file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-[#00A3FF] file:text-white hover:file:bg-[#00A3FF]/80 cursor-pointer text-text-muted" 
                     />
                   </div>
 
                   <button 
                     type="submit" 
                     disabled={submittingVerification}
-                    className="w-full h-[46px] bg-smash-orange/20 border border-smash-orange/30 hover:border-smash-orange/60 text-smash-orange text-[12px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                    className="w-full h-[46px] bg-[#00A3FF]/20 border border-[#00A3FF]/30 hover:border-[#00A3FF]/60 text-[#00A3FF] text-[12px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                   >
                     {submittingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SUBMIT DETAILS FOR VERIFICATION'}
                   </button>
@@ -327,8 +327,8 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
             </div>
           ) : !limits.canWithdraw ? (
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 space-y-4 shadow-sm text-center">
-              <div className="w-12 h-12 rounded-full bg-smash-purple/10 flex items-center justify-center mx-auto mb-2">
-                <AlertTriangle className="text-smash-purple animate-bounce" size={24} />
+              <div className="w-12 h-12 rounded-full bg-[#00A3FF]/10 flex items-center justify-center mx-auto mb-2">
+                <AlertTriangle className="text-[#00A3FF] animate-bounce" size={24} />
               </div>
               <h4 className="text-white font-studio font-bold uppercase tracking-widest text-md">Upgrade to Payout</h4>
               <p className="text-text-secondary text-xs font-sans max-w-sm mx-auto leading-relaxed">
@@ -336,7 +336,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               </p>
               <button 
                 onClick={() => setActiveTab('subscription')} 
-                className="px-6 py-2.5 bg-smash-purple hover:bg-smash-purple/90 text-white text-[11px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-all"
+                className="px-6 py-2.5 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white text-[11px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-all"
               >
                 UPGRADE STUDIO ACCESS
               </button>
@@ -345,17 +345,17 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
             /* WITHDRAWAL TRANSFER CONTROLS */
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-8 space-y-6 shadow-sm">
               <h4 className="text-white font-studio font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                <Smartphone className="text-smash-purple" size={18} /> Transfer to Mobile Money
+                <Smartphone className="text-[#00A3FF]" size={18} /> Transfer to Mobile Money
               </h4>
 
               {/* NETWORK SELECTOR */}
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
                   Network Detected:
                 </span>
-                <span className={`text-xs font-black px-3 py-1 rounded-full ${
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
                   detectedNetwork === 'TNM'
-                    ? 'bg-smash-green/10 text-smash-green border border-smash-green/30'
+                    ? 'bg-smash-green/10 text-[#22C55E] border border-smash-green/30'
                     : 'bg-red-500/10 text-red-500 border border-red-500/30'
                 }`}>
                   {detectedNetwork === 'TNM' ? 'TNM (Mpamba)' : 'Airtel Money'}
@@ -371,11 +371,11 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                     readOnly
                     className="w-full h-[44px] bg-bg-muted/40 border border-border-default rounded-[10px] px-4 font-display text-[14px] text-text-muted cursor-not-allowed outline-none opacity-80"
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] text-smash-orange font-display font-bold uppercase tracking-widest pointer-events-none">
-                    <Lock size={12} className="text-smash-orange opacity-80" /> Locked secure
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] text-[#00A3FF] font-display font-bold uppercase tracking-widest pointer-events-none">
+                    <Lock size={12} className="text-[#00A3FF] opacity-80" /> Locked secure
                   </div>
                 </div>
-                <p className="text-[10px] text-text-secondary mt-1.5 italic">
+                <p className="text-[10px] text-text-secondary mt-1.5">
                   * This payout recipient number is securely locked after identity verification.
                 </p>
               </div>
@@ -389,7 +389,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                     value={withdrawalAmount || ''} 
                     onChange={e => setWithdrawalAmount(Math.max(0, Number(e.target.value)))}
                     placeholder="Minimum 10,000"
-                    className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-4 h-14 font-studio font-bold text-[24px] outline-none focus:border-smash-purple text-text-primary placeholder:text-text-muted"
+                    className="w-full bg-bg-elevated border border-border-default rounded-[14px] px-4 h-14 font-studio font-bold text-[24px] outline-none focus:border-[#00A3FF] text-text-primary placeholder:text-text-muted"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-display font-semibold uppercase tracking-widest text-text-muted">MWK</div>
                 </div>
@@ -397,7 +397,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                   <span className="text-[10px] text-text-muted uppercase font-semibold">Min: MK 10,000</span>
                   <button 
                     onClick={() => setWithdrawalAmount(balance)}
-                    className="text-[10px] text-smash-purple font-medium uppercase tracking-widest hover:underline"
+                    className="text-[10px] text-[#00A3FF] font-medium uppercase tracking-widest hover:underline"
                   >
                     Use Max (MK {balance.toLocaleString()})
                   </button>
@@ -412,11 +412,11 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       <p className="text-xs font-bold text-white">Network Transfer Fee (3%)</p>
                       <p className="text-[9px] text-smash-gray">Charged by {detectedNetwork} — not a Smashify fee</p>
                     </div>
-                    <p className="text-sm font-black text-red-400">-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-red-400">-MK {Math.round(withdrawalAmount * 0.03).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                    <p className="text-xs font-bold text-smash-green">Smashify Fee</p>
-                    <p className="text-sm font-black text-smash-green">MK 0 (0%)</p>
+                    <p className="text-xs font-bold text-[#22C55E]">Smashify Fee</p>
+                    <p className="text-sm font-semibold text-[#22C55E]">MK 0 (0%)</p>
                   </div>
                   <div className="pt-2 border-t border-white/10 flex justify-between items-center">
                     <span className="text-[11px] font-display font-bold uppercase tracking-widest text-text-primary">Net Transfer Disbursed</span>
@@ -429,7 +429,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               <button 
                 onClick={handleWithdrawRequest}
                 disabled={requesting || balance < 10000 || withdrawalAmount < 10000 || withdrawalAmount > balance}
-                className="w-full h-[48px] bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-smash-purple/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full h-[48px] bg-[#0084D6] text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-[#0084D6]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {requesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'INITIATE payout REQUEST'}
               </button>
@@ -440,7 +440,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
         {/* RIGHT COLUMN: RECENT PAYOUT HISTORY */}
         <div className="space-y-6">
           <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 shadow-sm">
-            <h3 className="text-[18px] font-studio font-semibold uppercase tracking-tight text-white mb-6">Recent <span className="text-smash-purple">Payouts</span></h3>
+            <h3 className="text-[18px] font-studio font-semibold uppercase tracking-tight text-white mb-6">Recent <span className="text-[#00A3FF]">Payouts</span></h3>
             
             {loadingHistory ? (
               <div className="py-6">
@@ -465,7 +465,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       </div>
                       <span className={`px-2 py-0.5 rounded text-[8px] font-display font-bold uppercase tracking-widest ${
                         req.status === 'completed' || req.status === 'success' || req.status === 'approved'
-                          ? 'bg-smash-green/10 text-smash-green'
+                          ? 'bg-smash-green/10 text-[#22C55E]'
                           : req.status === 'pending'
                             ? 'bg-yellow-500/10 text-yellow-500'
                             : 'bg-red-500/10 text-red-400'

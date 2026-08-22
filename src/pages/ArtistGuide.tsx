@@ -6,12 +6,12 @@ import { Link } from 'react-router-dom';
 const GuideSection = ({ idx, icon: Icon, title, children, isWarning = false }: any) => (
   <div className={`p-6 sm:p-8 rounded-[16px] border ${isWarning ? 'bg-red-500/5 border-red-500/20' : 'bg-bg-surface border-border-default'}`}>
     <div className="flex items-start gap-4">
-      <div className={`p-3 rounded-xl shrink-0 ${isWarning ? 'bg-red-500/10 text-red-400' : 'bg-smash-purple/10 text-smash-purple'}`}>
+      <div className={`p-3 rounded-xl shrink-0 ${isWarning ? 'bg-red-500/10 text-red-400' : 'bg-[#00A3FF]/10 text-[#00A3FF]'}`}>
         <Icon size={24} />
       </div>
       <div>
         <h2 className="text-xl font-studio font-bold text-white mb-4">
-          <span className={isWarning ? 'text-red-400 opacity-50 mr-2' : 'text-smash-purple opacity-50 mr-2'}>0{idx}</span>
+          <span className={isWarning ? 'text-red-400 opacity-50 mr-2' : 'text-[#00A3FF] opacity-50 mr-2'}>0{idx}</span>
           {title}
         </h2>
         <div className={`text-[14px] leading-relaxed space-y-4 ${isWarning ? 'text-red-400/90 font-medium' : 'text-text-secondary font-sans'}`}>
@@ -29,20 +29,20 @@ export default function ArtistGuide() {
     <div className="min-h-screen bg-bg-base/95 pb-20">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-bg-base/80 backdrop-blur-xl border-b border-white/5 py-4 px-6 md:px-12 flex justify-between items-center">
-        <Link to="/" className="text-xl font-studio font-black tracking-tight text-white flex items-center gap-2">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-smash-purple to-smash-orange">SMASHIFY</span>
+        <Link to="/" className="text-xl font-studio font-semibold tracking-tight text-white flex items-center gap-2">
+            <span className="text-[#00A3FF]">SMASHIFY</span>
             Studio
         </Link>
-        <Link to={userProfile ? "/artist" : "/auth"} className="text-xs font-bold uppercase tracking-widest text-text-secondary hover:text-white transition-colors">
+        <Link to={userProfile ? "/artist" : "/auth"} className="text-xs font-bold tracking-widest text-text-secondary hover:text-white transition-colors">
           {userProfile ? 'Back to Dashboard' : 'Sign In'}
         </Link>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 pt-16">
         <div className="mb-12 text-center">
-           <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-studio font-black text-white leading-tight uppercase relative inline-block">
-             Creator <span className="text-transparent bg-clip-text bg-gradient-to-r from-smash-purple to-smash-orange">Guide</span>
-             <Sparkles className="absolute -top-6 -right-8 text-smash-orange opacity-50 rotate-12" size={32} />
+           <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-studio font-semibold text-white leading-tight relative inline-block">
+             Creator <span className="text-[#00A3FF]">Guide</span>
+             <Sparkles className="absolute -top-6 -right-8 text-[#00A3FF] opacity-50 rotate-12" size={32} />
            </h1>
            <p className="text-lg text-text-secondary mt-6 max-w-2xl mx-auto font-sans">
              Everything you need to know to grow your audience, monetize your music, and succeed on Africa's fastest-growing platform.
@@ -76,33 +76,33 @@ export default function ArtistGuide() {
           <GuideSection idx={4} icon={TrendingUp} title="How to Maximize Your Earnings">
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Upload your best 3-5 tracks first before paying for a tier</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">On Elite plan: price tracks between MK 150-500 for maximum conversion — fans get permanent download access with every purchase</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Enable fan subscriptions once you have 50+ followers</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Use MotoFeed snippets to promote new releases — 15-30 second clips drive the most plays</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Respond to fan comments to build loyalty</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-purple mt-1 shrink-0" size={14} /> 
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} /> 
                 <span className="text-white font-medium">Keep your profile photo and bio updated — verified profiles get 3x more tips</span>
               </li>
               <li className="flex items-start gap-3">
-                <ArrowRight className="text-smash-orange mt-1 shrink-0" size={14} />
+                <ArrowRight className="text-[#00A3FF] mt-1 shrink-0" size={14} />
                 <span className="text-white font-medium">
-                  <span className="text-smash-orange font-black">Elite plan exclusive:</span> Sell individual tracks directly to fans. Buyers get a permanent download — no subscription needed to keep their music.
+                  <span className="text-[#00A3FF] font-semibold">Elite plan exclusive:</span> Sell individual tracks directly to fans. Buyers get a permanent download — no subscription needed to keep their music.
                 </span>
               </li>
             </ul>
@@ -115,7 +115,7 @@ export default function ArtistGuide() {
           </GuideSection>
 
           <GuideSection idx={6} icon={DollarSign} title="Payout Rules">
-            <ul className="space-y-3 list-disc pl-5 marker:text-smash-purple">
+            <ul className="space-y-3 list-disc pl-5 marker:text-[#00A3FF]">
               <li>Minimum withdrawal: <span className="text-white font-medium">MK 10,000</span></li>
               <li>Smashify withdrawal fee: <span className="text-white font-medium">0%</span></li>
               <li>Mobile money network transfer fee (Airtel/TNM): <span className="text-white font-medium">3%</span></li>
@@ -141,8 +141,8 @@ export default function ArtistGuide() {
 
         <p className="text-xs text-smash-gray text-center mt-12">
           By using Smashify as an artist, you agree to our{' '}
-          <Link to="/terms" className="text-smash-purple underline">Terms of Service</Link>.
-          Questions? Contact <a href="mailto:legal@smashify.mw" className="text-smash-purple underline">legal@smashify.mw</a>
+          <Link to="/terms" className="text-[#00A3FF] underline">Terms of Service</Link>.
+          Questions? Contact <a href="mailto:legal@smashify.mw" className="text-[#00A3FF] underline">legal@smashify.mw</a>
         </p>
       </div>
     </div>

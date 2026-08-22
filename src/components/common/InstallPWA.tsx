@@ -52,8 +52,8 @@ export default function InstallPWA() {
           exit={{ opacity: 0, y: 50 }}
           className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+8px)] left-2 right-2 md:bottom-6 md:left-auto md:right-6 md:w-96 z-[60] bg-bg-elevated border border-border-subtle rounded-xl p-3 shadow-2xl flex items-center gap-3"
         >
-          <div className="w-8 h-8 bg-smash-purple/20 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Download className="text-smash-purple" size={16} />
+          <div className="w-8 h-8 bg-[#00A3FF]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Download className="text-[#00A3FF]" size={16} />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -63,7 +63,7 @@ export default function InstallPWA() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleInstallClick}
-              className="px-3 py-1.5 bg-smash-purple text-white text-xs font-bold rounded-lg hover:bg-smash-purple/90 transition-colors"
+              className="px-3 py-1.5 bg-[#0084D6] text-white text-xs font-bold rounded-lg hover:bg-[#0084D6]/90 transition-colors"
             >
               Install
             </button>

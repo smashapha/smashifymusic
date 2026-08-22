@@ -260,7 +260,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                    style={{ willChange: 'height' }}
                    animate={{ height: [4, 12, 6, 10, 4] }}
                    transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
-                   className="w-0.5 bg-smash-orange rounded-full"
+                   className="w-0.5 bg-[#0084D6] rounded-full"
                  />
                ))}
              </div>
@@ -270,7 +270,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && song.price > 0 && artistCanSell && (
              <button
                onClick={handleBuy}
-               className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-smash-orange text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg`}
+               className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-[#0084D6] text-white text-[9px] font-semibold uppercase tracking-widest rounded-full shadow-lg`}
              >
                {isOnSale(song) ? (
                  <>
@@ -325,7 +325,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
          {/* Title + artist + actions row */}
          <div className="flex items-start justify-between gap-1 px-1 mt-1">
            <div className="flex-1 min-w-0">
-             <h3 className={`font-display font-semibold text-[13px] truncate leading-tight ${isCurrent ? 'text-smash-orange' : 'text-white'}`}>
+             <h3 className={`font-display font-semibold text-[13px] truncate leading-tight ${isCurrent ? 'text-[#00A3FF]' : 'text-white'}`}>
                {formatDisplayTitle(song.title) || "Unknown Title"}
              </h3>
              <p className="text-[11px] text-text-muted font-sans font-normal truncate mt-0.5">
@@ -352,7 +352,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   }
 
   return (
-    <div className={`group flex items-center gap-3 sm:gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-smash-orange shadow-sm border-smash-orange/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
+    <div className={`group flex items-center gap-3 sm:gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-[#00A3FF] shadow-sm border-[#00A3FF]/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
         <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
             <LazyImage src={optimizeImage(song.cover_url || null, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" />
@@ -373,7 +373,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                     style={{ willChange: 'height' }}
                    animate={{ height: [4, 12, 6, 10, 4] }}
                     transition={{ duration: 0.5 + i * 0.1, repeat: Infinity, ease: 'linear' }}
-                    className="w-0.5 bg-smash-orange rounded-full"
+                    className="w-0.5 bg-[#0084D6] rounded-full"
                   />
                 ))}
             </div>
@@ -381,7 +381,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`font-sans font-semibold text-[14px] md:text-[15px] truncate mb-0.5 ${isCurrent ? 'text-smash-orange' : 'text-text-primary'}`}>
+          <h4 className={`font-sans font-semibold text-[14px] md:text-[15px] truncate mb-0.5 ${isCurrent ? 'text-[#00A3FF]' : 'text-text-primary'}`}>
             {formatDisplayTitle(song.title) || "Unknown Title"}
           </h4>
           <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            {!song.is_purchased && !purchasedIds?.has(song.id) && song.is_for_sale && song.price > 0 && artistCanSell && (
              <button 
                onClick={handleBuy}
-               className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white`}
+               className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-[#00A3FF]/10 text-[#00A3FF] hover:bg-[#0084D6] text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-widest rounded-full transition-all hover:text-white`}
                title={`Buy track for MK ${getEffectivePrice(song)}`}
              >
                {isOnSale(song) ? (
@@ -430,7 +430,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
            )}
            <button 
              onClick={handleSupportClick}
-             className="hidden sm:inline-flex p-2 rounded-full text-smash-purple hover:bg-smash-purple/20 transition-colors opacity-40 group-hover:opacity-100"
+             className="hidden sm:inline-flex p-2 rounded-full text-[#00A3FF] hover:bg-[#00A3FF]/20 transition-colors opacity-40 group-hover:opacity-100"
              title="Support Artist"
            >
               <Gift size={16} />
@@ -525,7 +525,7 @@ export const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, ar
             <div className="h-px w-full bg-border-default my-1" />
             <button 
               onClick={onBuy}
-              className={`w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 transition-colors uppercase tracking-widest`}
+              className={`w-full px-4 py-2.5 text-left text-[13px] font-display font-semibold flex items-center gap-3 bg-[#00A3FF]/10 text-[#00A3FF] hover:bg-[#00A3FF]/20 transition-colors uppercase tracking-widest`}
             >
               {isOnSale(song) ? (
                 <>

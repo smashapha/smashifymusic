@@ -58,7 +58,7 @@ export default function QuickPickCard({ song, queue }: { song: any, queue: any[]
       <div className="flex-1 min-w-0 z-10">
         <h4 className="text-[15px] font-bold text-white truncate mb-1 group-hover:text-[#00A3FF] transition-colors">{song.title}</h4>
         <div className="flex items-center gap-2">
-          {song.is_explicit && <span className="px-1 py-[1px] bg-white/10 text-white rounded-[4px] text-[9px] font-black tracking-wider uppercase">E</span>}
+          {song.is_explicit && <span className="px-1 py-[1px] bg-white/10 text-white rounded-[4px] text-[9px] font-semibold tracking-wider uppercase">E</span>}
           <span className="text-[13px] text-[#B0B0B0] truncate group-hover:text-white/80 transition-colors">{song.artist_name || song.profiles?.stage_name || song.profiles?.full_name}</span>
         </div>
       </div>

@@ -367,7 +367,7 @@ const AuthArtist: React.FC = () => {
       />
       {/* Background SVG Waveforms */}
       <div className="absolute inset-0 pointer-events-none opacity-40 flex items-center justify-center">
-        <svg viewBox="0 0 1000 400" className="w-[150vw] max-w-none text-smash-orange/5" preserveAspectRatio="none">
+        <svg viewBox="0 0 1000 400" className="w-[150vw] max-w-none text-[#00A3FF]/5" preserveAspectRatio="none">
            <path d="M0,200 C200,100 300,300 500,200 C700,100 800,300 1000,200" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="10 10"/>
            <path d="M0,250 C200,150 300,350 500,250 C700,150 800,350 1000,250" fill="none" stroke="currentColor" strokeWidth="1" />
            <path d="M0,150 C200,50 300,250 500,150 C700,50 800,250 1000,150" fill="none" stroke="currentColor" strokeWidth="1" />
@@ -385,13 +385,13 @@ const AuthArtist: React.FC = () => {
       <div className="w-full max-w-[420px] bg-[#141418]/85 backdrop-blur-[24px] saturate-180 border border-white/10 rounded-[24px] p-8 md:p-10 relative z-10 mx-auto shadow-2xl pb-16 h-[85vh] overflow-y-auto no-scrollbar">
         <div className="text-center mb-8">
           <Logo size="lg" className="mx-auto mb-4" />
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-smash-purple/10 border border-smash-purple/20 rounded-full mb-3">
-            <Mic2 size={16} className="text-smash-purple" />
-            <span className="text-smash-purple text-xs font-black uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-full mb-3">
+            <Mic2 size={16} className="text-[#00A3FF]" />
+            <span className="text-[#00A3FF] text-xs font-semibold tracking-wide">
               Artist Studio
             </span>
           </div>
-          <h1 className="text-2xl font-studio font-black uppercase italic text-white">
+          <h1 className="text-2xl font-studio font-semibold uppercase text-white">
             {mode === 'login' ? 'Studio Access' : 'Apply as Artist'}
           </h1>
           <p className="text-text-muted text-sm mt-1">
@@ -423,13 +423,13 @@ const AuthArtist: React.FC = () => {
                  
                  <div className="flex justify-between items-center py-1">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                       <input type="checkbox" className="w-4 h-4 rounded border-white/20 bg-white/5 text-smash-orange focus:ring-smash-orange focus:ring-offset-0 transition-all cursor-pointer" />
+                       <input type="checkbox" className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#00A3FF] focus:ring-[#00A3FF] focus:ring-offset-0 transition-all cursor-pointer" />
                        <span className="text-[13px] font-sans text-text-muted group-hover:text-text-primary transition-colors">Remember me</span>
                     </label>
                     <button type="button" onClick={handleForgotPassword} className="text-[13px] font-sans text-text-muted hover:text-text-primary transition-colors">Forgot password?</button>
                  </div>
 
-                 <button type="submit" disabled={loadingState} className="w-full h-[52px] rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide text-white shadow-sm transition-all hover:brightness-110 hover:scale-[1.01] active:scale-[0.98] mt-2" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
+                 <button type="submit" disabled={loadingState} className="w-full h-[52px] rounded-[12px] font-display font-bold text-[15px] font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:scale-[1.01] active:scale-[0.98] mt-2" style={{ background: '#0084D6' }}>
                     LOG IN TO STUDIO
                  </button>
 
@@ -447,7 +447,7 @@ const AuthArtist: React.FC = () => {
                     <div className="flex items-center gap-2 mb-4">
                        {[1, 2, 3].map(s => (
                           <div key={s} className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                             <motion.div initial={{ width: 0 }} animate={{ width: artistStep >= s ? '100%' : '0%' }} className="h-full bg-smash-orange" />
+                             <motion.div initial={{ width: 0 }} animate={{ width: artistStep >= s ? '100%' : '0%' }} className="h-full bg-[#00A3FF]" />
                           </div>
                        ))}
                     </div>
@@ -460,7 +460,7 @@ const AuthArtist: React.FC = () => {
                           <AuthInput icon={Mic2} type="text" placeholder="Stage Name" value={stageName} onChange={setStageName} />
                           <AuthInput icon={Mail} type="email" placeholder="Professional Email" value={email} onChange={setEmail} />
                           <div>
-                            <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                            <label className="text-[11px] font-semibold text-text-muted tracking-wide block mb-2">
                               Referral Code
                               <span className="text-[10px] normal-case font-normal ml-2 text-text-muted">
                                 (optional — enter if someone referred you)
@@ -473,10 +473,10 @@ const AuthArtist: React.FC = () => {
                                 e.target.value.toUpperCase().trim()
                               )}
                               placeholder="e.g. AGENT-ABC123"
-                              className="w-full h-12 bg-white/5 border border-white/10 rounded-2xl px-5 text-white text-sm outline-none focus:border-smash-orange/50 font-mono"
+                              className="w-full h-12 bg-white/5 border border-white/10 rounded-2xl px-5 text-white text-sm outline-none focus:border-[#00A3FF]/50 font-mono"
                             />
                           </div>
-                          <button onClick={nextArtistStep} className="w-full h-[52px] rounded-[14px] bg-bg-elevated text-text-primary font-display font-bold text-[13px] uppercase tracking-wide flex items-center justify-center gap-2 mt-4 hover:bg-white/10 transition-colors">
+                          <button onClick={nextArtistStep} className="w-full h-[52px] rounded-[12px] bg-bg-elevated text-text-primary font-display font-bold text-[13px] font-semibold flex items-center justify-center gap-2 mt-4 hover:bg-white/10 transition-colors">
                              Next Step <ArrowRight size={16} />
                           </button>
                        </motion.div>
@@ -484,17 +484,17 @@ const AuthArtist: React.FC = () => {
                     {artistStep === 2 && (
                        <motion.div key="as2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                           <div>
-                             <label className="text-[11px] font-black text-text-muted uppercase tracking-widest block mb-1">
+                             <label className="text-[11px] font-semibold text-text-muted tracking-wide block mb-1">
                                Primary Genre
                              </label>
                              <div className="relative group">
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-smash-orange transition-colors pointer-events-none">
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-[#00A3FF] transition-colors pointer-events-none">
                                    <Disc size={18} strokeWidth={1.5} />
                                 </div>
                                 <select
                                    value={genre}
                                    onChange={(e) => setGenre(e.target.value)}
-                                   className="w-full h-[52px] pl-4 pr-12 bg-white/5 border border-white/10 rounded-[14px] text-[14px] font-sans text-text-primary focus:outline-none focus:border-smash-orange/60 focus:ring-[3px] focus:ring-smash-orange/12 transition-all appearance-none cursor-pointer"
+                                   className="w-full h-[52px] pl-4 pr-12 bg-white/5 border border-white/10 rounded-[12px] text-[14px] font-sans text-text-primary focus:outline-none focus:border-[#00A3FF]/60 focus:ring-[3px] focus:ring-[#00A3FF]/12 transition-all appearance-none cursor-pointer"
                                 >
                                    <option value="" disabled className="bg-[#141418] text-text-muted">Select Primary Genre</option>
                                    <option value="Afropop" className="bg-[#141418] text-text-primary">Afropop</option>
@@ -521,7 +521,7 @@ const AuthArtist: React.FC = () => {
                                   type="button"
                                   onClick={sendOtp}
                                   disabled={otpLoading || !phone}
-                                  className="w-full h-[44px] rounded-[12px] border border-smash-orange/40 text-smash-orange text-[13px] font-bold hover:bg-smash-orange/10 transition-all disabled:opacity-40"
+                                  className="w-full h-[44px] rounded-[12px] border border-[#00A3FF]/40 text-[#00A3FF] text-[13px] font-bold hover:bg-[#00A3FF]/10 transition-all disabled:opacity-40"
                                 >
                                   {otpLoading ? 'Sending...' : 'Send Verification Code'}
                                 </button>
@@ -537,14 +537,14 @@ const AuthArtist: React.FC = () => {
                                     placeholder="000000"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                                    className="w-full h-[48px] text-center text-xl font-mono tracking-[0.5em] bg-white/5 border border-white/10 rounded-[12px] text-white focus:outline-none focus:border-smash-orange/60 transition-all"
+                                    className="w-full h-[48px] text-center text-xl font-mono tracking-[0.5em] bg-white/5 border border-white/10 rounded-[12px] text-white focus:outline-none focus:border-[#00A3FF]/60 transition-all"
                                   />
                                   <button
                                     type="button"
                                     onClick={verifyOtp}
                                     disabled={otpLoading || otpCode.length < 4}
                                     className="w-full h-[44px] rounded-[12px] text-white font-bold text-[13px] uppercase disabled:opacity-40 transition-all"
-                                    style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}
+                                    style={{ background: '#0084D6' }}
                                   >
                                     {otpLoading ? 'Verifying...' : 'Verify Code'}
                                   </button>
@@ -564,18 +564,18 @@ const AuthArtist: React.FC = () => {
                           <AuthInput icon={MapPin} type="text" placeholder="City" value={city} onChange={setCity} />
 
                           <div className="flex gap-2 pt-2">
-                             <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
-                             <button onClick={nextArtistStep} className="flex-1 h-[52px] bg-bg-elevated text-text-primary rounded-[14px] font-display font-bold text-[13px] uppercase tracking-wide hover:bg-white/10 transition-all">Review</button>
+                             <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[12px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
+                             <button onClick={nextArtistStep} className="flex-1 h-[52px] bg-bg-elevated text-text-primary rounded-[12px] font-display font-bold text-[13px] font-semibold hover:bg-white/10 transition-all">Review</button>
                           </div>
                        </motion.div>
                     )}
                     {artistStep === 3 && (
                        <motion.div key="as3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                           <AuthInput icon={AppLockIcon} type="password" placeholder="Create Password" value={password} onChange={setPassword} />
-                          <div className="p-4 rounded-[14px] bg-white/5 border border-white/10 space-y-2 text-left">
+                          <div className="p-4 rounded-[12px] bg-white/5 border border-white/10 space-y-2 text-left">
                              <div className="flex items-center gap-2">
-                                <ShieldCheck className="text-smash-orange" size={16} />
-                                <p className="text-[11px] font-display font-medium text-text-primary uppercase tracking-wide">Verification</p>
+                                <ShieldCheck className="text-[#00A3FF]" size={16} />
+                                <p className="text-[11px] font-display font-medium text-text-primary font-semibold">Verification</p>
                              </div>
                              <p className="text-[12px] text-text-muted font-sans font-medium">Applications are reviewed within 48 hours. By applying, you agree to our Terms.</p>
                           </div>
@@ -587,7 +587,7 @@ const AuthArtist: React.FC = () => {
                                    flex items-center justify-center shrink-0
                                    transition-all cursor-pointer
                                    ${agreedToTerms
-                                     ? 'bg-smash-orange border-smash-orange'
+                                     ? 'bg-[#00A3FF] border-[#00A3FF]'
                                      : 'border-white/20 bg-white/5'
                                    }`}
                                >
@@ -607,8 +607,8 @@ const AuthArtist: React.FC = () => {
                                </span>
                              </label>
                              <div className="flex gap-2">
-                               <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[14px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
-                               <button onClick={submitApplication} disabled={loadingState || !agreedToTerms} className="flex-1 h-[52px] text-white rounded-[14px] font-display font-bold text-[15px] uppercase tracking-wide transition-all shadow-sm hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #ff5f00, #ff8c00)' }}>
+                               <button onClick={prevArtistStep} className="w-[52px] h-[52px] flex items-center justify-center bg-white/5 text-white rounded-[12px] hover:bg-white/10 transition-all"><ChevronLeft size={20} /></button>
+                               <button onClick={submitApplication} disabled={loadingState || !agreedToTerms} className="flex-1 h-[52px] text-white rounded-[12px] font-display font-bold text-[15px] font-semibold transition-all shadow-sm hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: '#0084D6' }}>
                                   {loadingState ? 'Submitting...' : 'Submit Application'}
                                </button>
                              </div>
@@ -617,7 +617,7 @@ const AuthArtist: React.FC = () => {
                     )}
                     {artistStep === 4 && (
                        <motion.div key="as4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                          <h3 className="text-[16px] font-display font-bold text-center mb-6 text-smash-orange">Choose Plan</h3>
+                          <h3 className="text-[16px] font-display font-bold text-center mb-6 text-[#00A3FF]">Choose Plan</h3>
                           
                           <div onClick={() => handlePlanSelection('Free')} className="p-4 rounded-[16px] border border-white/10 bg-white/5 hover:border-white/20 transition-all cursor-pointer">
                              <div className="flex justify-between items-center mb-1">
@@ -627,10 +627,10 @@ const AuthArtist: React.FC = () => {
                              <p className="text-[12px] text-text-muted">3 Uploads, 5% fee on tips, basic analytics.</p>
                           </div>
 
-                          <div onClick={() => handlePlanSelection('Standard')} className="p-4 rounded-[16px] border-[2px] border-smash-orange bg-smash-orange/10 hover:bg-smash-orange/15 transition-all cursor-pointer relative overflow-hidden">
-                             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-smash-orange text-white text-[9px] font-semibold px-2 py-[2px] rounded-b-[4px] uppercase tracking-widest">Popular</div>
+                          <div onClick={() => handlePlanSelection('Standard')} className="p-4 rounded-[16px] border-[2px] border-[#00A3FF] bg-[#00A3FF]/10 hover:bg-[#00A3FF]/15 transition-all cursor-pointer relative overflow-hidden">
+                             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#00A3FF] text-white text-[9px] font-semibold px-2 py-[2px] rounded-b-[4px] tracking-wide">Popular</div>
                              <div className="flex justify-between items-center mb-1 mt-2">
-                                <h4 className="font-sans font-semibold text-[14px] text-smash-orange">Standard</h4>
+                                <h4 className="font-sans font-semibold text-[14px] text-[#00A3FF]">Standard</h4>
                                 <span className="font-sans font-semibold text-[13px] text-white">MK 16,000 / 6mo</span>
                              </div>
                              <p className="text-[12px] text-text-muted">15 uploads per 6 months, 5% fee on tips, advanced analytics.</p>
@@ -649,7 +649,7 @@ const AuthArtist: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/auth/listener')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-smash-orange/10 border border-smash-orange/20 rounded-full text-smash-orange text-xs font-bold hover:bg-smash-orange/20 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-full text-[#00A3FF] text-xs font-bold hover:bg-[#00A3FF]/20 transition-all"
           >
             <Headphones size={14} />
             Go to Listener Sign Up →
@@ -672,7 +672,7 @@ const AuthInput = ({ icon: Icon, value, onChange, type, ...props }: any) => {
    
    return (
       <div className="relative group">
-         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-smash-orange transition-colors pointer-events-none">
+         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-[#00A3FF] transition-colors pointer-events-none">
             {isPassword ? null : <Icon size={18} strokeWidth={1.5} />}
          </div>
          <input 
@@ -680,7 +680,7 @@ const AuthInput = ({ icon: Icon, value, onChange, type, ...props }: any) => {
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             {...props} 
-            className="w-full h-[52px] pl-4 pr-12 bg-white/5 border border-white/10 rounded-[14px] text-[14px] font-sans text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-smash-orange/60 focus:ring-[3px] focus:ring-smash-orange/12 transition-all"
+            className="w-full h-[52px] pl-4 pr-12 bg-white/5 border border-white/10 rounded-[12px] text-[14px] font-sans text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-[#00A3FF]/60 focus:ring-[3px] focus:ring-[#00A3FF]/12 transition-all"
          />
          {isPassword && (
             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors focus:outline-none">

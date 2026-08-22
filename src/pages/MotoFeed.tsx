@@ -306,9 +306,9 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
   };
 
   return (
-    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={handleContainerClick}>
+    <div className="relative h-full w-full bg-[#0A0A0A] overflow-hidden flex flex-col items-center justify-center cursor-pointer" onClick={handleContainerClick}>
       {/* Background Layer */}
-      <div className="absolute inset-0 bg-smash-black">
+      <div className="absolute inset-0 bg-[#0A0A0A]">
         <img 
           src={optimizeImage(song.cover_url, 600, 600)} 
           className="w-full h-full object-cover blur-3xl opacity-40 scale-150" 
@@ -337,7 +337,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
               referrerPolicy="no-referrer"
             loading="lazy" decoding="async" />
             {/* Swipe Indicators */}
-            <motion.div style={{ opacity: likeOpacity }} className="absolute inset-0 bg-smash-green/20 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
+            <motion.div style={{ opacity: likeOpacity }} className="absolute inset-0 bg-[#22C55E]/20 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
                <Heart size={80} className="text-white fill-current" />
             </motion.div>
             <motion.div style={{ opacity: passOpacity }} className="absolute inset-0 bg-black/60 rounded-[40px] md:rounded-[60px] flex items-center justify-center backdrop-blur-sm pointer-events-none z-10 p-4">
@@ -374,17 +374,17 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                  onClick={(e: any) => e.stopPropagation()}
                >
                   <p className="text-white font-studio font-bold uppercase text-[16px]">30 sec preview ending</p>
-                  <p className="text-smash-gray text-xs font-bold uppercase tracking-widest pb-2">Buy to hear the rest</p>
+                  <p className="text-[#B0B0B0] text-xs font-bold uppercase tracking-widest pb-2">Buy to hear the rest</p>
                   <div className="flex gap-3">
                      <button 
                        onClick={handleBuy}
-                       className="flex-1 py-3 bg-smash-orange text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
+                       className="flex-1 py-3 bg-[#0084D6] text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
                      >
                         BUY (MK {getEffectivePrice(song)})
                      </button>
                      <button 
                        onClick={(e) => { e.stopPropagation(); onSkip(); }}
-                       className="flex-1 py-3 bg-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-colors"
+                       className="flex-1 py-3 bg-white/10 text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-colors"
                      >
                         SKIP SONG
                      </button>
@@ -395,18 +395,18 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
          {isPreviewLimit && !song.is_unreleased && (
             <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px] cursor-default" onClick={(e: any) => e.stopPropagation()}>
-               <ShoppingBag size={48} className="text-smash-orange mb-4" />
+               <ShoppingBag size={48} className="text-[#00A3FF] mb-4" />
                <h3 className="text-[24px] font-studio font-bold uppercase mb-2 text-white">Full Track Available</h3>
-               <p className="text-sm text-smash-gray font-bold mb-6 italic tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
+               <p className="text-sm text-[#B0B0B0] font-bold mb-6 tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
                <button 
                  onClick={handleBuy}
-                 className="w-full max-w-[240px] px-8 py-4 bg-smash-orange text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-smash-orange/20 mb-4 hover:scale-105 transition-transform"
+                 className="w-full max-w-[240px] px-8 py-4 bg-[#0084D6] text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest shadow-xl shadow-[#00A3FF]/20 mb-4 hover:scale-105 transition-transform"
                >
                   BUY FOR MK {getEffectivePrice(song)}
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onSkip(); }}
-                 className="w-full max-w-[240px] px-8 py-4 bg-transparent border border-white/20 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/5 transition-colors"
+                 className="w-full max-w-[240px] px-8 py-4 bg-transparent border border-white/20 text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:bg-white/5 transition-colors"
                >
                   SKIP THIS SONG
                </button>
@@ -417,7 +417,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowTipModal(false); }}>
                <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl" onClick={(e: any) => e.stopPropagation()}>
                   <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-20 h-20 mb-4" />
-                  <h3 className="text-xl font-black italic uppercase mb-1">Send a tip</h3>
+                  <h3 className="text-xl font-semibold uppercase mb-1">Send a tip</h3>
                   <p className="text-sm font-bold text-gray-500 mb-6">to {song.artist_name}</p>
                   
                   <div className="grid grid-cols-2 gap-3 w-full mb-4">
@@ -425,7 +425,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                         <button 
                            key={amt} 
                            onClick={() => setTipAmount(amt)}
-                           className={`py-3 rounded-xl font-bold transition-all border-2 ${tipAmount === amt ? 'bg-smash-black text-white border-smash-black' : 'bg-gray-100 text-black border-transparent hover:border-smash-black/40'}`}
+                           className={`py-3 rounded-xl font-bold transition-all border-2 ${tipAmount === amt ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]' : 'bg-gray-100 text-black border-transparent hover:border-[#0A0A0A]/40'}`}
                         >
                            MK {amt.toLocaleString()}
                         </button>
@@ -455,7 +455,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       })
     }, 'Sign in to tip this artist');
                      }}
-                     className="w-full py-4 bg-smash-cyan text-black font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
+                     className="w-full py-4 bg-[#0084D6] text-black font-semibold uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
                   >
                      Send MK {tipAmount.toLocaleString()}
                   </button>
@@ -469,8 +469,8 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
          {showSubModal && (
             <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowSubModal(false); }}>
                <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl text-center" onClick={(e: any) => e.stopPropagation()}>
-                  <Heart size={48} className={isSubscribed ? "fill-smash-green text-smash-green mb-4" : "fill-smash-purple text-smash-purple mb-4"} />
-                  <h3 className="text-xl font-black italic uppercase mb-2">
+                  <Heart size={48} className={isSubscribed ? "fill-[#22C55E] text-[#22C55E] mb-4" : "fill-[#00A3FF] text-[#00A3FF] mb-4"} />
+                  <h3 className="text-xl font-semibold uppercase mb-2">
                      {isSubscribed ? 'Cancel Support?' : `Support ${song.artist_name}`}
                   </h3>
                   <p className="text-sm font-bold text-gray-500 mb-8">
@@ -491,7 +491,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                               toast.success('Subscription cancelled');
                            }
                         }}
-                        className="w-full py-4 bg-gray-200 text-black font-black uppercase text-sm tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-full py-4 bg-gray-200 text-black font-semibold uppercase text-sm tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-colors"
                      >
                         Yes, Cancel
                      </button>
@@ -505,7 +505,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       });
     }, 'Sign in to subscribe to this artist');
                         }}
-                        className="w-full py-4 bg-smash-purple text-white font-black uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform shadow-xl shadow-smash-purple/20"
+                        className="w-full py-4 bg-[#0084D6] text-white font-semibold uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform shadow-xl shadow-[#00A3FF]/20"
                      >
                         Subscribe via Airtel/TNM
                      </button>
@@ -518,18 +518,18 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
          <div className="absolute bottom-10 left-8 right-24 space-y-4 pointer-events-auto">
             <div className="flex flex-wrap gap-2">
                {song.is_unreleased && (
-                  <span className="px-3 py-1 bg-smash-purple text-white text-[10px] font-black rounded-full uppercase tracking-widest flex items-center gap-1">
+                  <span className="px-3 py-1 bg-[#0084D6] text-white text-[10px] font-semibold rounded-full uppercase tracking-widest flex items-center gap-1">
                      <Flame size={12} /> Unreleased Snippet
                   </span>
                )}
-               <span className="px-3 py-1 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase tracking-widest">{song.genre || 'Trending'}</span>
-               {song.region && <span className="px-3 py-1 bg-white/10 text-white text-[10px] font-black rounded-full uppercase tracking-widest">{song.region}</span>}
+               <span className="px-3 py-1 bg-[#0084D6] text-white text-[10px] font-semibold rounded-full uppercase tracking-widest">{song.genre || 'Trending'}</span>
+               {song.region && <span className="px-3 py-1 bg-white/10 text-white text-[10px] font-semibold rounded-full uppercase tracking-widest">{song.region}</span>}
             </div>
             <div>
                <h2 className="text-[32px] md:text-[44px] font-studio font-bold uppercase tracking-tight leading-[1.1] mb-2 text-white">{formatDisplayTitle(song.title)}</h2>
                <div className="flex items-center gap-2">
                   <p className="text-xl font-bold text-white/80">{song.artist_name || (song.profiles as any)?.stage_name || (song.profiles as any)?.full_name}</p>
-                  {song.profiles?.verified && <div className="w-4 h-4 bg-smash-cyan rounded-full flex items-center justify-center"><Check size={10} className="text-black" /></div>}
+                  {song.profiles?.verified && <div className="w-4 h-4 bg-[#0084D6] rounded-full flex items-center justify-center"><Check size={10} className="text-black" /></div>}
                </div>
             </div>
          </div>
@@ -538,14 +538,14 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
          <div className="absolute right-6 bottom-32 flex flex-col items-center gap-8 pointer-events-auto">
             <div className="flex flex-col items-center gap-0">
                <div 
-                  className="w-14 h-14 rounded-full border-4 border-smash-black overflow-hidden bg-smash-dark ring-2 ring-smash-orange relative hover:scale-110 transition-transform cursor-pointer"
+                  className="w-14 h-14 rounded-full border-4 border-[#0A0A0A] overflow-hidden bg-[#141414] ring-2 ring-[#00A3FF] relative hover:scale-110 transition-transform cursor-pointer"
                   onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); }}
                >
                   <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-full h-full" />
                </div>
                <button 
                   onClick={handleFollow}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-white border-2 border-smash-black z-10 -mt-3 hover:scale-110 transition-transform shadow-lg ${isFollowing ? 'bg-smash-green' : 'bg-smash-orange'}`}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-white border-2 border-[#0A0A0A] z-10 -mt-3 hover:scale-110 transition-transform shadow-lg ${isFollowing ? 'bg-[#22C55E]' : 'bg-[#0084D6]'}`}
                >
                   {isFollowing ? <Check size={14} className="text-black" /> : <UserPlus size={14} />}
                </button>
@@ -556,7 +556,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   onClick={handleLike}
                   className="w-14 h-14 bg-white/5 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:scale-110 transition-all border border-white/10"
                >
-                  <Heart size={24} className={isLiked ? "fill-smash-orange text-smash-orange" : ""} />
+                  <Heart size={24} className={isLiked ? "fill-[#00A3FF] text-[#00A3FF]" : ""} />
                </button>
             </div>
 
@@ -572,22 +572,22 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             <div className="flex flex-col items-center gap-2">
                <button 
                   onClick={(e) => { e.stopPropagation(); setShowTipModal(true); }}
-                  className="w-14 h-14 bg-smash-cyan rounded-full flex items-center justify-center text-black hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)]"
+                  className="w-14 h-14 bg-[#0084D6] rounded-full flex items-center justify-center text-black hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)]"
                >
                   <Gift size={24} />
                </button>
-               <span className="text-[10px] font-black text-smash-cyan uppercase tracking-widest">TIP</span>
+               <span className="text-[10px] font-semibold text-[#00A3FF] uppercase tracking-widest">Tip</span>
             </div>
 
             {(song.profiles as any)?.subscription_tier !== 'free' && (song.profiles as any)?.subscription_tier !== 'Free' && (
                <div className="flex flex-col items-center gap-2">
                   <button 
                      onClick={(e) => { e.stopPropagation(); setShowSubModal(true); }}
-                     className={`w-14 h-14 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)] ${isSubscribed ? 'bg-smash-green' : 'bg-smash-purple'}`}
+                     className={`w-14 h-14 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,0,0,0.4)] ${isSubscribed ? 'bg-[#22C55E]' : 'bg-[#0084D6]'}`}
                   >
                      <Heart size={24} className={isSubscribed ? "fill-white" : ""} />
                   </button>
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: isSubscribed ? '#00FF66' : '#9900FF' }}>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: isSubscribed ? '#22C55E' : '#00A3FF' }}>
                      {isSubscribed ? 'SUBBED' : 'SUB'}
                   </span>
                </div>
@@ -597,28 +597,28 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                <div className="flex flex-col items-center gap-2">
                   <button 
                     onClick={handleBuy}
-                    className="w-14 h-14 bg-smash-orange rounded-full flex items-center justify-center text-white hover:scale-110 transition-all shadow-[0_0_20px_rgba(255,95,0,0.4)]"
+                    className="w-14 h-14 bg-[#22C55E] rounded-full flex items-center justify-center text-white hover:scale-105 transition-all shadow-lg"
                   >
                      <ShoppingBag size={24} />
                   </button>
-                  <span className="text-[10px] font-black text-smash-orange uppercase tracking-widest">BUY</span>
+                  <span className="text-[10px] font-semibold text-[#22C55E] font-medium">Buy</span>
                </div>
             )}
 
             <motion.div 
                animate={{ rotate: isPlaying ? 360 : 0 }}
                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-               className="w-14 h-14 rounded-full bg-smash-dark border-4 border-white/20 flex items-center justify-center p-2 mt-4 cursor-pointer"
+               className="w-14 h-14 rounded-full bg-[#141414] border-4 border-white/20 flex items-center justify-center p-2 mt-4 cursor-pointer"
                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             >
-               <Disc className="text-smash-gray" size={24} />
+               <Disc className="text-[#B0B0B0]" size={24} />
             </motion.div>
          </div>
          {/* Progress Bar */}
          {!isPurchased && !song.is_unreleased && (
             <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-50">
                <div 
-                  className={`h-full transition-all duration-300 ${isApproachingLimit ? 'bg-smash-cyan' : 'bg-smash-orange'}`}
+                  className={`h-full transition-all duration-300 ${isApproachingLimit ? 'bg-[#0084D6]' : 'bg-[#0084D6]'}`}
                   style={{ width: `${Math.min((currentTime / 30) * 100, 100)}%` }}
                />
             </div>
@@ -640,7 +640,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   }}
                >
                   <div 
-                     className="h-full bg-smash-orange transition-all duration-100 group-hover:bg-smash-cyan"
+                     className="h-full bg-[#0084D6] transition-all duration-100 group-hover:bg-[#0084D6]"
                      style={{ width: `${Math.min((currentTime / duration) * 100, 100)}%` }}
                   />
                </div>
@@ -660,12 +660,12 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
               <motion.div 
                  initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                 className="absolute bottom-0 left-0 right-0 h-[60vh] bg-smash-black border-t border-white/10 rounded-t-[32px] z-50 flex flex-col cursor-auto"
+                 className="absolute bottom-0 left-0 right-0 h-[60vh] bg-[#0A0A0A] border-t border-white/10 rounded-t-[32px] z-50 flex flex-col cursor-auto"
                  onClick={(e: any) => e.stopPropagation()}
               >
                  <div className="p-4 flex flex-col items-center border-b border-white/10 shrink-0 relative">
                     <div className="w-12 h-1.5 bg-white/20 rounded-full mb-4" />
-                    <h3 className="text-lg font-black uppercase text-white tracking-widest">Comments <span className="text-smash-gray text-sm ml-1">({commentCount})</span></h3>
+                    <h3 className="text-lg font-semibold uppercase text-white tracking-widest">Comments <span className="text-[#B0B0B0] text-sm ml-1">({commentCount})</span></h3>
                     <button onClick={() => setShowComments(false)} className="absolute right-6 top-6 p-2 rounded-full bg-white/5 hover:bg-white/10">
                        <XIcon size={20} />
                     </button>
@@ -673,7 +673,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                  
                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {comments.length === 0 ? (
-                       <div className="h-full flex flex-col items-center justify-center text-smash-gray/50">
+                       <div className="h-full flex flex-col items-center justify-center text-[#B0B0B0]/50">
                           <MessageCircle size={48} className="mb-4" />
                           <p className="font-bold uppercase tracking-widest">No comments yet.</p>
                        </div>
@@ -682,7 +682,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                           <div key={c.id} className="flex gap-4 items-start">
                              <Avatar src={c.profiles?.avatar_url} name={c.profiles?.stage_name || c.profiles?.full_name} className="w-10 h-10 rounded-full shrink-0" />
                              <div className="flex-1">
-                                <span className="text-xs font-black text-smash-gray">{c.profiles?.stage_name || c.profiles?.full_name}</span>
+                                <span className="text-xs font-semibold text-[#B0B0B0]">{c.profiles?.stage_name || c.profiles?.full_name}</span>
                                 <p className="text-sm text-white font-bold leading-relaxed">{c.content}</p>
                              </div>
                           </div>
@@ -690,7 +690,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                     )}
                  </div>
 
-                 <div className="p-4 border-t border-white/10 bg-smash-dark/80 shrink-0">
+                 <div className="p-4 border-t border-white/10 bg-[#141414]/80 shrink-0">
                     <form onSubmit={handlePostComment} className="flex gap-3 items-center">
                        <input 
                          type="text" 
@@ -698,12 +698,12 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                          onChange={(e) => setNewComment(e.target.value)}
                          maxLength={200}
                          placeholder="Add a comment..."
-                         className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-3 text-sm text-white focus:outline-none focus:border-smash-orange font-bold transition-colors"
+                         className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-3 text-sm text-white focus:outline-none focus:border-[#00A3FF] font-bold transition-colors"
                        />
                        <button 
                          type="submit" 
                          disabled={!newComment.trim()}
-                         className="w-12 h-12 bg-smash-orange text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-white/10"
+                         className="w-12 h-12 bg-[#0084D6] text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-white/10"
                        >
                           <Send size={18} />
                        </button>
@@ -755,14 +755,14 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
   };
 
   return (
-    <div className="relative h-full w-full bg-smash-black overflow-hidden flex flex-col items-center justify-center">
+    <div className="relative h-full w-full bg-[#0A0A0A] overflow-hidden flex flex-col items-center justify-center">
        {/* Background */}
        <div className="absolute inset-0 bg-gradient-to-br from-smash-black via-smash-dark to-[#090909]">
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
        </div>
        
        <div className="absolute top-8 left-8 z-50">
-          <span className="px-4 py-1.5 bg-smash-orange text-white text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-xl border border-smash-orange/20">
+          <span className="px-4 py-1.5 bg-[#0084D6] text-white text-[10px] font-semibold rounded-full uppercase tracking-[0.2em] shadow-xl border border-[#00A3FF]/20">
              AD
           </span>
        </div>
@@ -783,7 +783,7 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
              <h2 className="text-[40px] font-studio font-bold uppercase tracking-tight mb-4 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                 {ad.advertiser_name || 'Smashify'}
              </h2>
-             <p className="text-xl text-smash-gray font-bold italic tracking-tight uppercase">
+             <p className="text-xl text-[#B0B0B0] font-bold tracking-tight uppercase">
                 {ad.title}
              </p>
           </motion.div>
@@ -802,12 +802,12 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
                       delay: i * 0.05,
                       ease: "easeInOut"
                    }}
-                   className="w-1.5 bg-smash-orange rounded-full shadow-[0_0_10px_rgba(255,95,0,0.5)]"
+                   className="w-1.5 bg-[#0084D6] rounded-full shadow-[0_0_10px_rgba(255,95,0,0.5)]"
                 />
              ))}
           </div>
           
-          <p className="text-xs font-black text-white/40 tracking-[0.3em] uppercase">
+          <p className="text-xs font-semibold text-white/40 tracking-[0.3em] uppercase">
              Completing in {timeLeft}s
           </p>
        </div>
@@ -818,12 +818,12 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
             className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 flex items-center justify-between"
           >
              <div className="text-left">
-                <p className="text-[10px] font-black text-smash-gray uppercase tracking-widest mb-1">Skip ads forever</p>
-                <p className="text-sm font-black italic text-white uppercase tracking-tight">Premium MK 2,000/month</p>
+                <p className="text-[10px] font-semibold text-[#B0B0B0] uppercase tracking-widest mb-1">Skip ads forever</p>
+                <p className="text-sm font-semibold text-white uppercase tracking-tight">Premium MK 2,000/month</p>
              </div>
              <button 
                onClick={() => navigate('/pricing')} 
-               className="px-6 py-3 bg-white text-smash-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-smash-orange hover:text-white transition-all shadow-xl"
+               className="px-6 py-3 bg-white text-black rounded-[16px] font-semibold text-[10px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl"
              >
                 Upgrade
              </button>
@@ -877,9 +877,9 @@ const LiveActivity = () => {
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 50, opacity: 0 }}
-                  className="absolute bottom-10 left-6 z-50 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(0,255,102,0.1)] max-w-xs"
+                  className="absolute bottom-10 left-6 z-50 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-3 rounded-[16px] flex items-center gap-3 shadow-[0_0_20px_rgba(0,255,102,0.1)] max-w-xs"
               >
-                  <div className="w-2 h-2 rounded-full bg-smash-cyan animate-pulse shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-[#0084D6] animate-pulse shrink-0" />
                   <p className="text-[10px] font-bold text-white uppercase tracking-widest">{toastMsg.message}</p>
               </motion.div>
           )}
@@ -1101,31 +1101,31 @@ const MotoFeed: React.FC = () => {
   };
 
   if (loading) return (
-     <div className="h-screen bg-smash-black flex items-center justify-center">
-        <Flame className="text-smash-orange animate-pulse" size={60} />
+     <div className="h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <Flame className="text-[#00A3FF] animate-pulse" size={60} />
      </div>
   );
 
   if (songs.length === 0) return (
-     <div className="h-screen bg-smash-black flex flex-col items-center justify-center p-8 text-center">
+     <div className="h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-8 text-center">
         <motion.div 
            animate={{ scale: [1, 1.05, 1], rotate: [0, 180, 360] }}
            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
         >
-           <Disc className="text-smash-gray/20 mb-8" size={120} />
+           <Disc className="text-[#B0B0B0]/20 mb-8" size={120} />
         </motion.div>
         <h2 className="text-[32px] font-studio font-bold uppercase tracking-tight mb-4 text-white">The Feed is Cold</h2>
-        <p className="text-smash-gray font-bold max-w-sm mx-auto mb-12">No anthems found in the warm heart today. Check back soon for fresh drops.</p>
+        <p className="text-[#B0B0B0] font-bold max-w-sm mx-auto mb-12">No anthems found in the warm heart today. Check back soon for fresh drops.</p>
         <div className="flex flex-col gap-4">
            <button 
              onClick={() => { setLoading(true); fetchSongs(); }}
-             className="px-8 py-4 bg-white text-smash-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+             className="px-8 py-4 bg-white text-black rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
            >
              <Music2 size={18} /> Refresh Feed
            </button>
            <button 
              onClick={() => navigate('/')}
-             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
+             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
            >
              Back to Home
            </button>
@@ -1135,7 +1135,7 @@ const MotoFeed: React.FC = () => {
   );
 
   return (
-    <div className="h-[100dvh] w-screen bg-smash-black overflow-hidden touch-none flex flex-col relative">
+    <div className="h-[100dvh] w-screen bg-[#0A0A0A] overflow-hidden touch-none flex flex-col relative">
        <SEO 
           title="Moto Feed | Smashify Music" 
           description="Scroll through vertical short-form musical previews and audio ads on Smashify Music." 
@@ -1143,8 +1143,8 @@ const MotoFeed: React.FC = () => {
        {/* UI Tooltips */}
        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 pointer-events-none">
           <div className="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center gap-2">
-             <div className="w-2 h-2 bg-smash-orange rounded-full animate-pulse" />
-             <span className="text-[10px] font-black uppercase tracking-[0.2em]">MOTO FEED LIVE</span>
+             <div className="w-2 h-2 bg-[#0084D6] rounded-full animate-pulse" />
+             <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">Moto feed</span>
           </div>
        </div>
 

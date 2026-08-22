@@ -85,9 +85,9 @@ const NotificationsTab = ({ userProfile }: any) => {
 
   return (
     <div className="space-y-8 max-w-4xl">
-      <h2 className="text-3xl font-studio font-black flex items-center gap-3 uppercase italic"><Bell className="text-smash-purple" /> Notifications</h2>
+      <h2 className="text-3xl font-studio font-bold flex items-center gap-3 uppercase "><Bell className="text-[#00A3FF]" /> Notifications</h2>
       
-      <div className="bg-white/5 border border-white/5 rounded-[40px] overflow-hidden">
+      <div className="bg-white/5 border border-white/5 rounded-[16px] overflow-hidden">
         {loading ? (
           <div className="p-8">
             <BrandLoader label="Loading alerts" />
@@ -95,27 +95,27 @@ const NotificationsTab = ({ userProfile }: any) => {
         ) : notifications.length > 0 ? (
           <div className="divide-y divide-white/5">
             {notifications.map(n => (
-              <div key={n.id} className={`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? 'bg-smash-purple/5' : ''}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? 'bg-smash-purple text-white' : 'bg-white/5 text-smash-gray'}`}>
+              <div key={n.id} className={`p-6 flex items-start gap-4 hover:bg-white/5 transition-colors ${!n.read ? 'bg-[#00A3FF]/5' : ''}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? 'bg-[#00A3FF] text-white' : 'bg-white/5 text-[#737373]'}`}>
                   <Bell size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
                     <p className={`text-sm font-bold ${!n.read ? 'text-white' : 'text-white/60'}`}>{n.message}</p>
-                    <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-[#737373] font-bold uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
                   </div>
                   {n.link && (
-                    <Link to={n.link} className="text-[10px] font-black uppercase tracking-widest text-smash-purple hover:text-white transition-colors">View Details →</Link>
+                    <Link to={n.link} className="text-[10px] font-bold uppercase tracking-widest text-[#00A3FF] hover:text-white transition-colors">View Details →</Link>
                   )}
                 </div>
                 {!n.read && (
-                  <button onClick={() => markAsRead(n.id)} className="w-2 h-2 rounded-full bg-smash-purple mt-2" title="Mark as read" />
+                  <button onClick={() => markAsRead(n.id)} className="w-2 h-2 rounded-full bg-[#00A3FF] mt-2" title="Mark as read" />
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-20 text-center text-smash-gray font-bold uppercase tracking-widest italic opacity-50">No notifications yet.</div>
+          <div className="p-20 text-center text-[#737373] font-bold uppercase tracking-widest  opacity-50">No notifications yet.</div>
         )}
       </div>
     </div>
@@ -354,30 +354,30 @@ export default function ArtistHub() {
       <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-bg-surface border-r border-white/5 z-50 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 flex flex-col`}>
         {/* Brand */}
         <div className="h-16 flex items-center px-6 border-b border-white/5 gap-3">
-          <div className="w-8 h-8 rounded-full bg-smash-purple flex items-center justify-center text-white shadow-lg shadow-smash-purple/20">
+          <div className="w-8 h-8 rounded-full bg-[#00A3FF] flex items-center justify-center text-white shadow-lg shadow-[#00A3FF]/20">
             <Disc size={18} />
           </div>
           <div className="leading-tight">
-            <h1 className="font-studio font-black text-lg tracking-tight uppercase">Smashify</h1>
-            <p className="text-[10px] text-smash-purple uppercase tracking-widest font-black">Artist Studio</p>
+            <h1 className="font-studio font-bold text-lg tracking-tight uppercase">Smashify</h1>
+            <p className="text-[10px] text-[#00A3FF] uppercase tracking-widest font-bold">Artist Studio</p>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 flex flex-col hide-scrollbar">
           {/* Artist Card */}
           <div className="px-6 mb-6">
-            <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-all hover:border-smash-purple/30 group">
+            <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/5 border border-white/5 transition-all hover:border-[#00A3FF]/30 group">
               <img 
                 src={userProfile?.avatar_url || "https://placehold.co/42x42/18162C/9B5DE5?text=♪"} 
-                className="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-smash-purple/50 transition-colors" 
+                className="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-[#00A3FF]/50 transition-colors" 
               loading="lazy" decoding="async" />
               <div className="overflow-hidden">
                 <p className="text-sm font-bold truncate">{userProfile?.stage_name || userProfile?.full_name || 'Artist'}</p>
-                <p className="text-[10px] text-smash-purple uppercase tracking-widest font-bold">{getTierLabel(userProfile?.subscription_tier)}</p>
+                <p className="text-[10px] text-[#00A3FF] uppercase tracking-widest font-bold">{getTierLabel(userProfile?.subscription_tier)}</p>
                 {artistTier !== 'elite' && (
                   <button
                     onClick={() => { setActiveTab('subscription'); setSidebarOpen(false); }}
-                    className="mt-1 w-full text-[9px] font-black uppercase tracking-widest text-smash-purple hover:text-white transition-colors text-left"
+                    className="mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-[#00A3FF] hover:text-white transition-colors text-left"
                   >
                     ↑ Upgrade plan
                   </button>
@@ -386,11 +386,11 @@ export default function ArtistHub() {
             </div>
             
             {/* Wallet Quick View */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-smash-purple/10 to-transparent border border-smash-purple/20 shadow-inner">
-              <div className="flex items-center gap-2 text-smash-purple text-[10px] font-bold uppercase tracking-widest mb-1">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-[#00A3FF]/10 to-transparent border border-[#00A3FF]/20 shadow-inner">
+              <div className="flex items-center gap-2 text-[#00A3FF] text-[10px] font-bold uppercase tracking-widest mb-1">
                 <Wallet size={12} /> Wallet Balance
               </div>
-              <div className="text-xl font-studio font-black text-white truncate italic">
+              <div className="text-xl font-studio font-bold text-white truncate ">
                 MK {(userProfile?.wallet_balance || 0).toLocaleString()}
               </div>
             </div>
@@ -407,14 +407,14 @@ export default function ArtistHub() {
                     onClick={() => { handleTabChange(item.id as TabType); setSidebarOpen(false); }}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       activeTab === item.id 
-                        ? 'bg-smash-purple/10 text-smash-purple shadow-sm' 
-                        : 'text-smash-gray hover:text-white hover:bg-white/5'
+                        ? 'bg-[#00A3FF]/10 text-[#00A3FF] shadow-sm' 
+                        : 'text-[#737373] hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <item.icon size={18} className={activeTab === item.id ? 'text-smash-purple' : 'text-smash-gray'} />
+                    <item.icon size={18} className={activeTab === item.id ? 'text-[#00A3FF]' : 'text-[#737373]'} />
                     {item.label}
                     {(item as any).count > 0 && (
-                      <span className="ml-auto w-5 h-5 bg-smash-orange rounded-full text-[9px] font-black text-white flex items-center justify-center shrink-0">
+                      <span className="ml-auto w-5 h-5 bg-[#00A3FF] rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0">
                         {(item as any).count > 9 ? '9+' : (item as any).count}
                       </span>
                     )}
@@ -437,27 +437,27 @@ export default function ArtistHub() {
             <a 
               href="/artist-guide"
               target="_blank"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold text-smash-orange hover:text-white hover:bg-smash-orange/10 transition-all"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold text-[#00A3FF] hover:text-white hover:bg-[#00A3FF]/10 transition-all"
             >
               <BookOpen size={16} /> Creator Guide & Tips
             </a>
 
             <Link 
               to={`/artist/${userProfile?.id}`}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-smash-gray hover:text-smash-purple hover:bg-smash-purple/5 transition-all"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#737373] hover:text-[#00A3FF] hover:bg-[#00A3FF]/5 transition-all"
             >
               <ExternalLink size={18} /> My Public Page
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-smash-gray hover:text-red-400 hover:bg-red-500/5 transition-all text-left"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#737373] hover:text-red-400 hover:bg-red-500/5 transition-all text-left"
             >
               <LogOut size={18} /> Log Out
             </button>
           </nav>
         </div>
         
-        <div className="p-4 text-center text-[10px] uppercase font-black tracking-widest text-smash-gray border-t border-white/5">
+        <div className="p-4 text-center text-[10px] uppercase font-bold tracking-widest text-[#737373] border-t border-white/5">
           © {new Date().getFullYear()} Smashify Studio
         </div>
       </aside>
@@ -467,10 +467,10 @@ export default function ArtistHub() {
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/5 bg-bg-surface/80 backdrop-blur-md z-30 shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 lg:hidden text-smash-gray hover:text-white">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 lg:hidden text-[#737373] hover:text-white">
               <Menu size={20} />
             </button>
-            <h2 className="text-lg font-studio font-black uppercase italic tracking-tight">{getPageTitle()}</h2>
+            <h2 className="text-lg font-semibold text-white  tracking-tight">{getPageTitle()}</h2>
           </div>
           
           <div className="flex items-center gap-4">
@@ -480,7 +480,7 @@ export default function ArtistHub() {
                 fetchData(false);
               }}
               disabled={isRefreshing}
-              className="p-2 text-smash-gray hover:text-white transition-colors disabled:opacity-50"
+              className="p-2 text-[#737373] hover:text-white transition-colors disabled:opacity-50"
               title="Refresh Data"
             >
               <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
@@ -488,17 +488,17 @@ export default function ArtistHub() {
             {isAdmin && (
               <Link 
                 to="/admin" 
-                className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
+                className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
               >
                 <ShieldCheck size={14} /> Admin Access
               </Link>
             )}
             {isApproved ? (
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-smash-green/10 text-smash-green border border-smash-green/20 rounded-full text-xs font-bold uppercase tracking-widest">
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20 rounded-full text-xs font-bold uppercase tracking-widest">
                 <CircleCheck size={12} /> Approved
               </div>
             ) : (
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-smash-orange/10 text-smash-orange border border-smash-orange/20 rounded-full text-xs font-bold uppercase tracking-widest">
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-[#00A3FF]/10 text-[#00A3FF] border border-[#00A3FF]/20 rounded-full text-xs font-bold uppercase tracking-widest">
                 <Clock size={12} /> Pending
               </div>
             )}
@@ -506,7 +506,7 @@ export default function ArtistHub() {
             <Link to="/artist-hub" onClick={() => setActiveTab('profile')}>
               <img 
                 src={userProfile?.avatar_url || "https://placehold.co/34x34/18162C/9B5DE5?text=♪"} 
-                className="w-8 h-8 rounded-full border-2 border-smash-purple object-cover hover:opacity-80 transition-opacity shadow-lg shadow-smash-purple/20"
+                className="w-8 h-8 rounded-full border-2 border-[#00A3FF] object-cover hover:opacity-80 transition-opacity shadow-lg shadow-[#00A3FF]/20"
               loading="lazy" decoding="async" />
             </Link>
           </div>
@@ -516,7 +516,7 @@ export default function ArtistHub() {
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-6xl mx-auto pb-24 md:pb-0">
             {isPending && (
-              <div className="mb-6 p-4 bg-smash-orange/10 border border-smash-orange/20 rounded-2xl flex items-start gap-4 text-smash-orange">
+              <div className="mb-6 p-4 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-2xl flex items-start gap-4 text-[#00A3FF]">
                 <Clock className="shrink-0 mt-0.5" size={20} />
                 <div>
                   <p className="font-bold">Your application is under review (24–48 hrs).</p>
@@ -528,7 +528,7 @@ export default function ArtistHub() {
             )}
 
             {isExpiringSoon && (
-              <div className="mb-6 p-4 bg-smash-orange/15 border border-smash-orange/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-smash-orange animate-pulse">
+              <div className="mb-6 p-4 bg-[#00A3FF]/15 border border-[#00A3FF]/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[#00A3FF] animate-pulse">
                 <div className="flex items-start gap-4 flex-1">
                   <AlertTriangle className="shrink-0 mt-0.5" size={20} />
                   <div>
@@ -540,7 +540,7 @@ export default function ArtistHub() {
                 </div>
                 <button 
                   onClick={() => setActiveTab('subscription')}
-                  className="px-5 py-2.5 bg-smash-orange text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] hover:bg-smash-orange/90 transition-all font-bold shrink-0 self-end md:self-center"
+                  className="px-5 py-2.5 bg-[#00A3FF] text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] hover:bg-[#00A3FF]/90 transition-all font-bold shrink-0 self-end md:self-center"
                 >
                   Renew Subscription
                 </button>
@@ -629,13 +629,13 @@ const MotoAnalytics = ({ limits }: { limits: any }) => {
     <div className="bg-bg-surface border border-border-default rounded-[14px] overflow-hidden p-6 md:p-8 text-left col-span-1 md:col-span-2 relative mt-4 shadow-sm">
        {!limits.hasFullAnalytics && (
          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-bg-page/80 backdrop-blur-md px-6 text-center">
-           <div className="bg-bg-elevated p-3 rounded-[10px] border border-border-default mb-4 shadow-sm"><AppLockIcon size={24} className="text-smash-purple" /></div>
+           <div className="bg-bg-elevated p-3 rounded-[10px] border border-border-default mb-4 shadow-sm"><AppLockIcon size={24} className="text-[#00A3FF]" /></div>
            <p className="font-display font-semibold text-text-primary uppercase tracking-widest text-[14px] mb-2">Advanced Moto Stats</p>
            <p className="text-text-secondary text-[13px] font-sans">Engagement metrics locked to Standard tier.</p>
          </div>
        )}
-       <h3 className="font-studio font-bold uppercase tracking-tight flex items-center gap-3 mb-6 text-[22px] text-text-primary">
-           <Flame className="text-smash-orange" /> MotoFeed Performance
+       <h3 className="font-semibold text-white tracking-tight flex items-center gap-3 mb-6 text-[22px] text-text-primary">
+           <Flame className="text-[#00A3FF]" /> MotoFeed Performance
        </h3>
        
        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -649,7 +649,7 @@ const MotoAnalytics = ({ limits }: { limits: any }) => {
           <div className="bg-red-500/10 border border-red-500/20 rounded-[10px] p-5 flex items-start gap-4">
              <AlertCircle className="text-red-400 shrink-0 mt-1" size={24} />
              <div>
-                <p className="text-red-400 font-display font-semibold uppercase tracking-widest text-[11px] mb-2">Low Hook Score Warning</p>
+                <p className="text-red-400 font-semibold text-[11px] mb-2">Low Hook Score Warning</p>
                 <p className="text-red-400/80 text-[13px] font-sans leading-relaxed">Your tracks have a skip rate of {skipRate}%. Try uploading snippets with stronger intros or engaging captions to capture listeners in the first 5 seconds.</p>
              </div>
           </div>
@@ -685,12 +685,12 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
       <OnboardingChecklist userProfile={userProfile} songs={songs} setActiveTab={setActiveTab} />
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="flex-1 min-w-0">
-           <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><TrendingUp className="text-smash-purple shrink-0" /> Artist <span className="text-smash-purple">Growth</span></h2>
+           <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><TrendingUp className="text-[#00A3FF] shrink-0" /> Artist <span className="text-[#00A3FF]">Growth</span></h2>
            <p className="text-text-secondary text-[12px] md:text-[14px] font-sans mt-1 md:mt-2">Real-time performance metrics</p>
         </div>
         <div className="flex gap-3">
            <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-border-default hover:bg-border-subtle text-text-primary rounded-[10px] font-display font-semibold uppercase text-[11px] tracking-widest transition-all inline-flex items-center justify-center">New Upload</button>
-           <button onClick={() => setActiveTab('promotion')} className="h-[44px] px-6 bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[11px] rounded-[10px] hover:bg-smash-purple/90 transition-all inline-flex items-center justify-center">Promote Track</button>
+           <button onClick={() => setActiveTab('promotion')} className="h-[44px] px-6 bg-[#00A3FF] text-white font-semibold text-[11px] rounded-[10px] hover:bg-[#00A3FF]/90 transition-all inline-flex items-center justify-center">Promote Track</button>
         </div>
       </div>
 
@@ -699,19 +699,19 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
         {userProfile?.is_admin && (
            <Link 
              to="/admin" 
-             className="w-full p-6 bg-gradient-to-r from-red-500/20 via-smash-purple/20 to-transparent border border-red-500/30 rounded-[30px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group hover:border-red-500 transition-all shadow-2xl shadow-red-500/10"
+             className="w-full p-6 bg-gradient-to-r from-red-500/20 via-[#00A3FF]/20 to-transparent border border-red-500/30 rounded-[30px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group hover:border-red-500 transition-all shadow-2xl shadow-red-500/10"
            >
               <div className="flex items-center gap-6">
                  <div className="w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-2xl bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
                     <ShieldCheck className="w-6 h-6 md:w-8 md:h-8" />
                  </div>
                  <div>
-                    <h3 className="text-xl font-studio font-black uppercase italic text-white leading-tight">Terminal Control</h3>
-                    <p className="text-[10px] text-red-400 font-black uppercase tracking-[0.3em] mt-1">Platform Moderation & Payout Engine</p>
+                    <h3 className="text-xl font-semibold text-white  text-white leading-tight">Terminal Control</h3>
+                    <p className="text-[10px] text-red-400 font-bold uppercase tracking-[0.3em] mt-1">Platform Moderation & Payout Engine</p>
                  </div>
               </div>
               <div className="flex items-center gap-3 pr-4">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Enter System</span>
+                 <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Enter System</span>
                  <ArrowRight className="text-red-400 group-hover:translate-x-2 transition-transform" />
               </div>
            </Link>
@@ -733,15 +733,15 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-8 md:p-10 relative overflow-hidden group shadow-sm min-h-[300px]">
                {stats.revenue === 0 ? (
                   <div className="relative z-10 flex flex-col items-center justify-center text-center h-full space-y-4 py-8">
-                    <div className="w-16 h-16 bg-smash-purple/10 rounded-full flex items-center justify-center mb-2">
-                       <DollarSign className="w-8 h-8 text-smash-purple" />
+                    <div className="w-16 h-16 bg-[#00A3FF]/10 rounded-full flex items-center justify-center mb-2">
+                       <DollarSign className="w-8 h-8 text-[#00A3FF]" />
                     </div>
                     <h3 className="text-2xl font-bold text-text-primary">No earnings yet</h3>
                     <p className="text-text-secondary max-w-sm mx-auto">
                       Start promoting your tracks and engage with your fans to earn from tips, purchases, and subscriptions. Your withdrawable balance will appear here.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 mt-4 justify-center">
-                       <button onClick={() => setActiveTab('promotion')} className="px-6 py-3 bg-smash-purple text-white font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-smash-purple/90 transition-colors">
+                       <button onClick={() => setActiveTab('promotion')} className="px-6 py-3 bg-[#00A3FF] text-white font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-[#00A3FF]/90 transition-colors">
                           Promote Your Music
                        </button>
                        <button onClick={() => setActiveTab('withdraw')} className="px-6 py-3 bg-bg-elevated border border-border-default text-text-primary font-bold text-sm uppercase tracking-widest rounded-[10px] hover:bg-border-default transition-colors">
@@ -751,20 +751,20 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
                   </div>
                ) : (
                  <>
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-smash-purple/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A3FF]/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
                    <div className="relative z-10 flex flex-col items-center justify-center gap-4 py-4">
                      <div className="text-center">
-                       <p className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-smash-green leading-none">
+                       <p className="text-[clamp(1.8rem,7vw,4.5rem)] font-studio font-bold text-[#22C55E] leading-none">
                          MK {balance.toLocaleString()}
                        </p>
-                       <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-2">
+                       <p className="text-[10px] font-bold uppercase tracking-widest text-[#737373] mt-2">
                          Available Balance
                        </p>
                      </div>
                      <button
                        onClick={() => setActiveTab('withdraw')}
                        disabled={balance < 10000}
-                       className="w-full max-w-sm h-12 bg-smash-green text-white rounded-2xl font-black text-sm uppercase tracking-widest disabled:opacity-40 hover:brightness-110 transition-all shadow-lg shadow-smash-green/20 mt-4"
+                       className="w-full max-w-sm h-12 bg-[#22C55E] text-white rounded-2xl font-bold text-sm uppercase tracking-widest disabled:opacity-40 hover:brightness-110 transition-all shadow-lg shadow-smash-green/20 mt-4"
                      >
                        {balance < 10000 ? `Min MK 10,000 required` : `Withdraw Earnings`}
                      </button>
@@ -775,7 +775,7 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
 
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 lg:p-8 shadow-sm">
                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-[20px] font-studio font-bold uppercase tracking-tight text-text-primary">Recent <span className="text-smash-purple">Payouts</span></h3>
+                  <h3 className="text-[20px] font-semibold text-white tracking-tight text-text-primary">Recent <span className="text-[#00A3FF]">Payouts</span></h3>
                   <button className="text-[11px] font-display font-medium uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors">See Ledger &rarr;</button>
                </div>
                <div className="space-y-3">
@@ -784,7 +784,7 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
                          const styles: Record<string, string> = {
                            pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
                            approved: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-                           paid: 'bg-smash-green/10 text-smash-green border-smash-green/20',
+                           paid: 'bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20',
                            rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
                          };
                          const labels: Record<string, string> = {
@@ -802,7 +802,7 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
 
                      return (
                      <div key={payout.id} className="flex items-center gap-5 p-4 md:p-5 bg-bg-elevated rounded-[10px] group transition-colors cursor-default border border-transparent hover:border-border-default hover:bg-bg-elevated/80 h-auto min-h-[60px]">
-                        <div className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 border bg-smash-orange/10 text-smash-orange border-smash-orange/20">
+                        <div className="w-10 h-10 rounded-[8px] flex items-center justify-center shrink-0 border bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/20">
                            <Wallet size={16} />
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -815,17 +815,17 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
                              <p className="text-xs text-red-400 mt-1">Reason: {payout.admin_note}</p>
                            )}
                            {payout.status === 'paid' && payout.admin_note && (
-                             <p className="text-xs text-smash-green/80 mt-1">Note: {payout.admin_note}</p>
+                             <p className="text-xs text-[#22C55E]/80 mt-1">Note: {payout.admin_note}</p>
                            )}
                         </div>
                         <div className="text-right flex flex-col justify-center h-full">
-                           <p className="text-[14px] font-sans font-black text-white/80">
+                           <p className="text-[14px] font-sans font-bold text-white/80">
                               -MK {Number(payout.amount || payout.requested_amount || 0).toLocaleString()}
                            </p>
-                           <p className="text-[11px] font-sans text-smash-orange mt-0.5">
+                           <p className="text-[11px] font-sans text-[#00A3FF] mt-0.5">
                               Fee: MK {Math.round(Number(payout.amount || payout.requested_amount || 0) * 0.03).toLocaleString()}
                            </p>
-                           <p className="text-[12px] font-display font-bold text-smash-green mt-0.5 uppercase tracking-widest">
+                           <p className="text-[12px] font-display font-bold text-[#22C55E] mt-0.5 uppercase tracking-widest">
                               Net: MK {Math.round(Number(payout.amount || payout.requested_amount || 0) * 0.97).toLocaleString()}
                            </p>
                         </div>
@@ -841,11 +841,11 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
          <div className="space-y-8">
             <MotoAnalytics limits={limits} />
             
-            <div className="bg-bg-surface border border-smash-orange/30 rounded-[14px] p-8 space-y-5 shadow-sm text-center md:text-left">
-               <Sparkles className="text-smash-orange mx-auto md:mx-0" size={28} />
-               <h3 className="text-[20px] font-studio font-bold uppercase text-text-primary">Premium Access</h3>
+            <div className="bg-bg-surface border border-[#00A3FF]/30 rounded-[14px] p-8 space-y-5 shadow-sm text-center md:text-left">
+               <Sparkles className="text-[#00A3FF] mx-auto md:mx-0" size={28} />
+               <h3 className="text-[20px] font-semibold text-white text-text-primary">Premium Access</h3>
                <p className="text-[14px] font-sans text-text-secondary leading-relaxed">"Verified artists receive 15% higher discoverability in MotoFeed algorythms. Complete your profile to qualify."</p>
-               <button onClick={() => setActiveTab('subscription')} className="w-full h-[44px] bg-bg-elevated border border-border-default text-text-primary rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-border-default transition-all shadow-sm">Upgrade to Elite</button>
+               <button onClick={() => setActiveTab('subscription')} className="w-full h-[44px] bg-bg-elevated border border-border-default text-text-primary rounded-[10px] font-semibold text-[11px] hover:bg-border-default transition-all shadow-sm">Upgrade to Elite</button>
             </div>
          </div>
       </div>
@@ -854,12 +854,12 @@ const DashboardTab = ({ stats, balance, userProfile, songs, setActiveTab }: any)
 };
 
 const MetricCard = ({ label, value, icon, sub, color }: any) => (
-  <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-smash-purple/50 transition-colors group shadow-sm flex flex-col justify-between">
+  <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 hover:border-[#00A3FF]/50 transition-colors group shadow-sm flex flex-col justify-between">
      <div className="flex items-center justify-between mb-4">
-        <div className={`w-10 h-10 rounded-[10px] bg-bg-elevated border border-border-default flex items-center justify-center ${color || 'text-text-muted'} group-hover:text-smash-purple transition-colors`}>
+        <div className={`w-10 h-10 rounded-[10px] bg-bg-elevated border border-border-default flex items-center justify-center ${color || 'text-text-muted'} group-hover:text-[#00A3FF] transition-colors`}>
            {icon}
         </div>
-        <svg className="w-16 h-6 text-smash-purple/10 group-hover:text-smash-purple transition-colors opacity-50 relative top-1" viewBox="0 0 100 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-16 h-6 text-[#00A3FF]/10 group-hover:text-[#00A3FF] transition-colors opacity-50 relative top-1" viewBox="0 0 100 25" fill="none" xmlns="http://www.w3.org/2000/svg">
            <path d="M0 25L20 15L40 20L60 5L75 10L100 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
      </div>
@@ -996,7 +996,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex-1 min-w-0">
           <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight">
-            <Flame className="text-smash-orange shrink-0" /> Promote Music
+            <Flame className="text-[#00A3FF] shrink-0" /> Promote Music
           </h2>
           <p className="text-text-secondary text-[12px] md:text-[14px] font-sans mt-1 md:mt-2">Audio ads play between songs. Radio-style promotion for Malawian artists.</p>
         </div>
@@ -1011,7 +1011,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
               setUseFreePlacement(false);
               setShowForm(true);
             }}
-            className="h-[44px] px-6 bg-smash-orange text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-smash-orange/90 transition-all"
+            className="h-[44px] px-6 bg-[#00A3FF] text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#00A3FF]/90 transition-all"
           >
             <Plus size={18} /> New Campaign
           </button>
@@ -1021,7 +1021,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
       {showForm ? (
         <form onSubmit={handleCreateAds} className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-sm">
            <div className="flex items-center justify-between mb-2">
-             <h3 className="text-[22px] font-studio font-bold uppercase text-text-primary">Create Ad Campaign</h3>
+             <h3 className="text-[22px] font-semibold text-white text-text-primary">Create Ad Campaign</h3>
              <button type="button" onClick={() => setShowForm(false)} className="text-text-muted hover:text-text-primary transition-colors">
                <X size={24} />
              </button>
@@ -1030,7 +1030,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
              <div className="space-y-6">
                 <div className="space-y-2">
-                   <label className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple flex items-center gap-2">
+                   <label className="text-[11px] font-display font-medium uppercase tracking-wider text-[#00A3FF] flex items-center gap-2">
                       <Music2 size={12} /> Campaign Name
                    </label>
                    <input 
@@ -1038,17 +1038,17 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                       value={title}
                       onChange={e => setTitle(e.target.value)}
                       placeholder="e.g. New Single Promo - Summer 2024"
-                      className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary placeholder:text-text-muted"
+                      className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:text-text-muted"
                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                    <div className="space-y-2">
-                      <label className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-orange">Target City (Optional)</label>
+                      <label className="text-[11px] font-display font-medium uppercase tracking-wider text-[#00A3FF]">Target City (Optional)</label>
                       <select 
                         value={targetCity}
                         onChange={e => setTargetCity(e.target.value)}
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 text-text-primary"
+                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 text-text-primary"
                       >
                         <option value="">All Malaŵi</option>
                         <option value="Lilongwe">Lilongwe</option>
@@ -1058,11 +1058,11 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                       </select>
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-orange">Target Genre</label>
+                      <label className="text-[11px] font-display font-medium uppercase tracking-wider text-[#00A3FF]">Target Genre</label>
                       <select 
                         value={targetGenre}
                         onChange={e => setTargetGenre(e.target.value)}
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 text-text-primary"
+                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 text-text-primary"
                       >
                         <option value="">All Genres</option>
                         <option value="Afrobeat">Afrobeat</option>
@@ -1074,10 +1074,10 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple">Ad Audio (Max 30s)</label>
+                   <label className="text-[11px] font-display font-medium uppercase tracking-wider text-[#00A3FF]">Ad Audio (Max 30s)</label>
                    <div 
                      onClick={() => document.getElementById('ad-audio-input')?.click()}
-                     className="w-full h-32 border border-dashed border-border-default rounded-[10px] flex flex-col items-center justify-center cursor-pointer hover:border-smash-purple/50 transition-all bg-bg-elevated group"
+                     className="w-full h-32 border border-dashed border-border-default rounded-[10px] flex flex-col items-center justify-center cursor-pointer hover:border-[#00A3FF]/50 transition-all bg-bg-elevated group"
                    >
                       <input 
                         id="ad-audio-input"
@@ -1095,12 +1095,12 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                       />
                       {audioFile ? (
                         <>
-                          <CircleCheck className="text-smash-green mb-2" size={24} />
+                          <CircleCheck className="text-[#22C55E] mb-2" size={24} />
                           <p className="text-[14px] font-display font-medium text-text-primary truncate max-w-[200px]">{audioFile.name}</p>
                         </>
                       ) : (
                         <>
-                          <FileAudio className="text-text-muted group-hover:text-smash-purple transition-colors mb-2" size={24} />
+                          <FileAudio className="text-text-muted group-hover:text-[#00A3FF] transition-colors mb-2" size={24} />
                           <p className="text-[13px] font-display font-medium text-text-secondary">Click to upload ad audio</p>
                         </>
                       )}
@@ -1109,11 +1109,11 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
              </div>
 
              <div className="space-y-6">
-                <div className="bg-bg-elevated border border-smash-purple/20 rounded-[14px] p-6 shadow-sm">
-                   <h4 className="text-[11px] font-display font-medium uppercase tracking-wider text-smash-purple mb-4">Campaign Budget</h4>
+                <div className="bg-bg-elevated border border-[#00A3FF]/20 rounded-[14px] p-6 shadow-sm">
+                   <h4 className="text-[11px] font-display font-medium uppercase tracking-wider text-[#00A3FF] mb-4">Campaign Budget</h4>
                     
                     {remainingFreePlacements > 0 && (
-                      <div className="mt-4 mb-6 flex items-center gap-3 p-3 bg-smash-purple/10 border border-smash-purple/20 rounded-[10px]">
+                      <div className="mt-4 mb-6 flex items-center gap-3 p-3 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-[10px]">
                         <input
                           type="checkbox"
                           id="use-free-placement"
@@ -1125,7 +1125,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                               setPlaysPurchased(1000);
                             }
                           }}
-                          className="w-4 h-4 accent-smash-purple rounded cursor-pointer"
+                          className="w-4 h-4 accent-#00A3FF rounded cursor-pointer"
                         />
                         <label htmlFor="use-free-placement" className="text-[12px] font-display font-semibold text-white cursor-pointer select-none">
                           🎁 Use Free Monthly Slot ({remainingFreePlacements} remaining)
@@ -1142,7 +1142,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                           <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">Guaranteed Plays</p>
                         </div>
                         <div className="text-right flex flex-col gap-1">
-                          <p className="text-[28px] font-studio font-bold text-smash-green">
+                          <p className="text-[28px] font-studio font-bold text-[#22C55E]">
                             {totalCost === 0 ? "FREE" : `MK ${totalCost.toLocaleString()}`}
                           </p>
                           <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">Total Cost</p>
@@ -1157,7 +1157,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                         value={playsPurchased}
                         onChange={e => setPlaysPurchased(Number(e.target.value))}
                         disabled={useFreePlacement}
-                        className="w-full accent-smash-purple bg-border-default h-2 rounded-full appearance-none slider-custom-thumb disabled:opacity-50"
+                        className="w-full accent-#00A3FF bg-border-default h-2 rounded-full appearance-none slider-custom-thumb disabled:opacity-50"
                       />
                       
                       <div className="flex justify-between text-[10px] font-display font-medium text-text-muted uppercase tracking-wider">
@@ -1169,7 +1169,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 
                 <div className="bg-bg-elevated border border-border-default rounded-[10px] p-5">
                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-smash-orange/10 rounded-full flex items-center justify-center text-smash-orange flex-shrink-0">
+                      <div className="w-10 h-10 bg-[#00A3FF]/10 rounded-full flex items-center justify-center text-[#00A3FF] flex-shrink-0">
                          <Info size={18} />
                       </div>
                       <p className="text-[13px] text-text-secondary font-sans leading-relaxed">
@@ -1181,7 +1181,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                 <button 
                   type="submit"
                   disabled={uploading}
-                  className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest text-[12px] rounded-[10px] hover:bg-smash-purple/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full h-[48px] bg-[#00A3FF] text-white font-semibold text-[12px] rounded-[10px] hover:bg-[#00A3FF]/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {uploading ? (
                     <>Processing...</>
@@ -1200,18 +1200,18 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
              ))
           ) : ads.length > 0 ? (
             ads.map(ad => (
-              <div key={ad.id} className="group relative bg-bg-surface border border-border-default rounded-[14px] overflow-hidden p-6 hover:border-smash-purple/50 transition-all flex flex-col shadow-sm">
+              <div key={ad.id} className="group relative bg-bg-surface border border-border-default rounded-[14px] overflow-hidden p-6 hover:border-[#00A3FF]/50 transition-all flex flex-col shadow-sm">
                  <div className="absolute top-6 right-6">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-display font-semibold uppercase tracking-wider ${ad.active ? 'bg-smash-green/10 text-smash-green border border-smash-green/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-display font-semibold uppercase tracking-wider ${ad.active ? 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                        {ad.active ? 'Active' : 'Expired'}
                     </span>
                  </div>
 
-                 <div className="w-12 h-12 bg-smash-purple/10 rounded-[10px] flex items-center justify-center text-smash-purple mb-4 group-hover:-translate-y-1 transition-transform">
+                 <div className="w-12 h-12 bg-[#00A3FF]/10 rounded-[10px] flex items-center justify-center text-[#00A3FF] mb-4 group-hover:-translate-y-1 transition-transform">
                     <FileAudio size={20} />
                  </div>
 
-                 <h3 className="text-[20px] font-studio font-bold uppercase text-text-primary mb-1 truncate group-hover:text-smash-purple transition-colors">
+                 <h3 className="text-[20px] font-semibold text-white text-text-primary mb-1 truncate group-hover:text-[#00A3FF] transition-colors">
                     {ad.title}
                  </h3>
                  <p className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider mb-6">
@@ -1228,7 +1228,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${(ad.plays_used / ad.plays_purchased) * 100}%` }}
-                            className="h-full bg-smash-purple rounded-full"
+                            className="h-full bg-[#00A3FF] rounded-full"
                           />
                        </div>
                     </div>
@@ -1236,7 +1236,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 
                  <div className="flex items-center justify-between pt-4 border-t border-border-default">
                     <div className="flex items-center gap-2">
-                       <Play size={14} className="text-smash-purple" />
+                       <Play size={14} className="text-[#00A3FF]" />
                        <span className="text-[20px] font-studio font-bold text-text-primary">{ad.plays_used.toLocaleString()}</span>
                     </div>
                     <button className="p-2 bg-bg-elevated hover:bg-border-default rounded-[10px] transition-colors text-text-muted hover:text-text-primary">
@@ -1248,7 +1248,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
           ) : (
             <div className="col-span-full py-16 text-center bg-bg-surface rounded-[14px] border border-border-default border-dashed">
                <Flame size={40} className="text-text-muted/50 mx-auto mb-4" />
-               <h4 className="text-[20px] font-studio font-bold uppercase text-text-primary mb-2">No active campaigns</h4>
+               <h4 className="text-[20px] font-semibold text-white text-text-primary mb-2">No active campaigns</h4>
                <p className="text-text-secondary text-[14px] font-sans mb-6">Reach more fans and grow your audience.</p>
                <button onClick={() => setShowForm(true)} className="h-[44px] px-6 bg-border-default hover:bg-border-subtle text-text-primary rounded-[10px] font-display font-semibold uppercase text-[11px] tracking-widest transition-all inline-flex items-center justify-center">
                   Get Started
@@ -1454,39 +1454,39 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
     <div className="space-y-8">
       {editModalSong && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setEditModalSong(null); }}>
-          <div className="w-full max-w-md bg-bg-surface border border-border-default rounded-[24px] p-6">
-            <h3 className="text-base font-studio font-black uppercase tracking-wider text-white mb-6">Edit Song details</h3>
+          <div className="w-full max-w-md bg-bg-surface border border-border-default rounded-[16px] p-6">
+            <h3 className="text-base font-semibold text-white tracking-wider text-white mb-6">Edit Song details</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Title</label>
+                <label className="text-[11px] text-text-muted font-semibold block mb-2">Title</label>
                 <input 
                   type="text" 
                   value={editTitle} 
                   onChange={e => setEditTitle(e.target.value)} 
-                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all"
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-[#00A3FF] transition-all"
                   placeholder="Song title"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Genre</label>
+                <label className="text-[11px] text-text-muted font-semibold block mb-2">Genre</label>
                 <input 
                   type="text" 
                   value={editGenre} 
                   onChange={e => setEditGenre(e.target.value)} 
-                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all"
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-[#00A3FF] transition-all"
                   placeholder="e.g. Hip Hop, Afrobeat"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Lyrics</label>
+                <label className="text-[11px] text-text-muted font-semibold block mb-2">Lyrics</label>
                 <textarea 
                   value={editLyrics} 
                   onChange={e => setEditLyrics(e.target.value)} 
                   rows={4}
-                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-smash-purple transition-all resize-y"
+                  className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-[#00A3FF] transition-all resize-y"
                   placeholder="Optional lyrics..."
                 />
               </div>
@@ -1494,7 +1494,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
 
             <div className="flex items-center gap-3 mt-8">
               <button onClick={() => setEditModalSong(null)} className="flex-1 px-4 py-3 bg-bg-elevated text-text-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors">Cancel</button>
-              <button onClick={saveEdit} className="flex-1 px-4 py-3 bg-smash-purple text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-smash-purple/90 transition-colors">Save Changes</button>
+              <button onClick={saveEdit} className="flex-1 px-4 py-3 bg-[#00A3FF] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#00A3FF]/90 transition-colors">Save Changes</button>
             </div>
           </div>
         </div>
@@ -1502,34 +1502,34 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
       
       {promoModalSong && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setPromoModalSong(null); }}>
-          <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[24px] p-6">
-            <h3 className="text-base font-studio font-black uppercase tracking-wider text-white mb-1">Run a Promotion</h3>
-            <p className="text-[11px] text-smash-gray mb-6">{promoModalSong.title} — currently MK {promoModalSong.price?.toLocaleString()}</p>
+          <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[16px] p-6">
+            <h3 className="text-base font-semibold text-white tracking-wider text-white mb-1">Run a Promotion</h3>
+            <p className="text-[11px] text-[#737373] mb-6">{promoModalSong.title} — currently MK {promoModalSong.price?.toLocaleString()}</p>
 
-            <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Discount</label>
+            <label className="text-[11px] text-text-muted font-semibold block mb-2">Discount</label>
             <input type="range" min={5} max={90} step={5} value={promoPercent} onChange={e => setPromoPercent(Number(e.target.value))} className="w-full mb-1" />
             <p className="text-[13px] font-display font-bold text-white mb-4">
               {promoPercent}% off → MK {Math.max(Math.round(promoModalSong.price * (1 - promoPercent / 100)), 1).toLocaleString()}
             </p>
 
-            <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2">Ends at</label>
+            <label className="text-[11px] text-text-muted font-semibold block mb-2">Ends at</label>
             <input type="datetime-local" value={promoEndsAt} onChange={e => setPromoEndsAt(e.target.value)} className="w-full h-12 bg-bg-elevated border border-white/5 rounded-xl px-4 text-[14px] font-display font-bold text-white outline-none mb-6" />
 
             <div className="flex gap-2">
               {promoModalSong.discount_percent > 0 && (
-                <button onClick={cancelPromo} className="flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest bg-white/5 text-text-secondary hover:text-white transition-all">Remove Promo</button>
+                <button onClick={cancelPromo} className="flex-1 h-12 rounded-xl text-[11px] font-semibold bg-white/5 text-text-secondary hover:text-white transition-all">Remove Promo</button>
               )}
-              <button onClick={savePromo} className="flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest bg-smash-orange text-white transition-all">Save</button>
+              <button onClick={savePromo} className="flex-1 h-12 rounded-xl text-[11px] font-semibold bg-[#00A3FF] text-white transition-all">Save</button>
             </div>
           </div>
         </div>
       )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex-1 min-w-0">
-           <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><Music2 className="text-smash-purple shrink-0" /> Track <span className="text-smash-purple">Inventory</span></h2>
+           <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary leading-tight"><Music2 className="text-[#00A3FF] shrink-0" /> Track <span className="text-[#00A3FF]">Inventory</span></h2>
            <p className="text-text-secondary text-[12px] md:text-[14px] font-sans mt-1 md:mt-2">Manage your distributed catalog</p>
         </div>
-        <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-smash-purple text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-smash-purple/90 transition-all shadow-sm">
+        <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-[#00A3FF] text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#00A3FF]/90 transition-all shadow-sm">
           <Plus size={18} /> New Release
         </button>
       </div>
@@ -1537,17 +1537,17 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
       {catalogStats && totalSlotted > 0 && (
         <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[11px] font-black uppercase tracking-widest text-text-muted">Catalog Efficiency</span>
-            <span className={`text-2xl font-studio font-black ${
-              efficiencyPct >= 60 ? 'text-smash-green' :
+            <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">Catalog Efficiency</span>
+            <span className={`text-2xl font-studio font-bold ${
+              efficiencyPct >= 60 ? 'text-[#22C55E]' :
               efficiencyPct >= 30 ? 'text-yellow-400' : 'text-red-400'
             }`}>
               {efficiencyPct}%
             </span>
           </div>
-          <div className="flex gap-4 text-[11px] font-display font-semibold uppercase tracking-widest mb-4">
+          <div className="flex gap-4 text-[11px] font-semibold mb-4">
              <span className="text-orange-400">🔥 {hotCount} Hot</span>
-             <span className="text-smash-green">✅ {activeCount} Active</span>
+             <span className="text-[#22C55E]">✅ {activeCount} Active</span>
              <span className="text-blue-400">🧊 {coldCount} Cold</span>
              <span className="text-text-muted">📦 {archiveCount} Archive ( free )</span>
           </div>
@@ -1572,8 +1572,8 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
              <button 
                key={t.id}
                onClick={() => setFilter(t.id as any)}
-               className={`px-6 py-[10px] rounded-full text-[11px] font-display font-semibold uppercase tracking-widest transition-all whitespace-nowrap ${
-                 filter === t.id ? 'bg-smash-purple text-white' : 'bg-bg-elevated text-text-secondary border border-border-default hover:text-text-primary'
+               className={`px-6 py-[10px] rounded-full text-[11px] font-semibold transition-all whitespace-nowrap ${
+                 filter === t.id ? 'bg-[#00A3FF] text-white' : 'bg-bg-elevated text-text-secondary border border-border-default hover:text-text-primary'
                }`}
              >
                {t.label}
@@ -1602,7 +1602,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                       <div className="flex items-center gap-4">
                         <img src={optimizeImage(song.cover_url, 120, 120)} className="w-[40px] h-[40px] rounded-[10px] object-cover" loading="lazy" decoding="async" />
                         <div>
-                          <p className="text-[14px] font-display font-semibold text-text-primary group-hover:text-smash-purple transition-colors truncate max-w-[200px]">{song.title}</p>
+                          <p className="text-[14px] font-display font-semibold text-text-primary group-hover:text-[#00A3FF] transition-colors truncate max-w-[200px]">{song.title}</p>
                           <p className="text-[12px] text-text-muted font-sans">{song.genre || 'Afro'} • {new Date(song.created_at).getFullYear()}</p>
                         </div>
                       </div>
@@ -1628,8 +1628,8 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                           );
                         }
                         return (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-smash-green/10 text-smash-green border border-smash-green/30 inline-flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-smash-green" />
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30 inline-flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
                             Live
                           </span>
                         );
@@ -1648,16 +1648,16 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                         </div>
                     </td>
                     <td className="px-4 py-3">
-                       <span className={`inline-flex items-center px-2 py-1 rounded-[6px] text-[10px] font-display font-bold uppercase tracking-wider border ${song.is_for_sale ? 'bg-smash-green/10 text-smash-green border-smash-green/20' : 'bg-bg-surface text-text-secondary border-border-default'}`}>
+                       <span className={`inline-flex items-center px-2 py-1 rounded-[6px] text-[10px] font-display font-bold uppercase tracking-wider border ${song.is_for_sale ? 'bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20' : 'bg-bg-surface text-text-secondary border-border-default'}`}>
                          {song.is_for_sale ? `MK ${song.price?.toLocaleString()}` : 'Free Feed'}
                        </span>
                        {song.slot_mode === 'archive' && (
-                         <span className="text-[9px] text-text-muted block mt-1 font-display uppercase tracking-widest">
+                         <span className="text-[9px] text-text-muted block mt-1 font-medium">
                            Free slot · Playable
                          </span>
                        )}
                        {song.slot_mode === 'cold' && (
-                         <span className="text-[9px] text-text-muted block mt-1 font-display uppercase tracking-widest">
+                         <span className="text-[9px] text-text-muted block mt-1 font-medium">
                            Auto-archives soon
                          </span>
                        )}
@@ -1673,7 +1673,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                          title={song.slot_mode === 'archive' ? 'Restore from Archive' : 'Move to Archive'}
                          className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 inline-flex items-center justify-center gap-1.5 ${
                            song.slot_mode === 'archive'
-                             ? 'bg-smash-green/10 text-smash-green hover:bg-smash-green/20 border-smash-green/20'
+                             ? 'bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E]/20 border-[#22C55E]/20'
                              : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
                          }`}
                        >
@@ -1686,7 +1686,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                            title={song.discount_percent > 0 ? 'Edit promotion' : 'Run a promotion'}
                            className={`px-3 py-1.5 rounded-[8px] text-[10px] font-display font-bold uppercase tracking-wider transition-all border shrink-0 inline-flex items-center justify-center gap-1.5 ${
                              song.discount_percent > 0
-                               ? 'bg-smash-orange/10 text-smash-orange hover:bg-smash-orange/20 border-smash-orange/20'
+                               ? 'bg-[#00A3FF]/10 text-[#00A3FF] hover:bg-[#00A3FF]/20 border-[#00A3FF]/20'
                                : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-border-default border-border-default'
                            }`}
                          >
@@ -1705,7 +1705,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
             <div className="p-16 text-center">
               <Music2 className="mx-auto text-text-muted/30 mb-4" size={48} />
               <p className="text-[15px] font-display font-medium text-text-secondary mb-4">No assets found in this segment.</p>
-              <button onClick={() => setFilter('all')} className="text-smash-purple font-display font-semibold uppercase tracking-widest text-[11px] hover:underline">Show all tracks &rarr;</button>
+              <button onClick={() => setFilter('all')} className="text-[#00A3FF] font-semibold text-[11px] hover:underline">Show all tracks &rarr;</button>
             </div>
           )}
         </div>
@@ -1742,8 +1742,8 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                           );
                         }
                         return (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-smash-green/10 text-smash-green border border-smash-green/30 inline-flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-smash-green" />
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30 inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
                             Live
                           </span>
                         );
@@ -1755,7 +1755,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                         title={song.slot_mode === 'archive' ? 'Restore' : 'Archive'}
                         className={`w-7 h-7 inline-flex items-center justify-center rounded transition-colors ${
                           song.slot_mode === 'archive'
-                            ? 'bg-smash-green/10 text-smash-green'
+                            ? 'bg-[#22C55E]/10 text-[#22C55E]'
                             : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
                         }`}
                       >
@@ -1767,7 +1767,7 @@ const SongsTab = ({ songs, onRefresh, setActiveTab, userProfile }: any) => {
                           onClick={(e) => { e.stopPropagation(); openPromoModal(song); }}
                           title={song.discount_percent > 0 ? 'Edit promotion' : 'Run a promotion'}
                           className={`w-7 h-7 inline-flex items-center justify-center rounded disabled:opacity-50 transition-colors ${
-                            song.discount_percent > 0 ? 'bg-smash-orange/10 text-smash-orange' : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
+                            song.discount_percent > 0 ? 'bg-[#00A3FF]/10 text-[#00A3FF]' : 'bg-bg-elevated text-text-secondary hover:bg-border-default'
                           }`}
                         >
                           <Tag size={14} />
@@ -1810,9 +1810,9 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
   return (
     <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary"><Disc className="text-smash-purple shrink-0" /> Albums</h2>
+          <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 uppercase text-text-primary"><Disc className="text-[#00A3FF] shrink-0" /> Albums</h2>
         {limits.canCreateAlbums ? (
-          <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-smash-purple text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-smash-purple/90 transition-all shadow-sm">
+          <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-[#00A3FF] text-white font-display font-semibold text-[11px] uppercase tracking-widest rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#00A3FF]/90 transition-all shadow-sm">
             <Plus size={16} /> New Album
           </button>
         ) : (
@@ -1824,11 +1824,11 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
 
       <div className="flex flex-col gap-4 md:gap-6">
         {albums.map((al:any) => (
-          <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-smash-purple/50 transition-all group shadow-sm flex flex-col">
+          <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-[#00A3FF]/50 transition-all group shadow-sm flex flex-col">
             <div className="aspect-square rounded-[10px] overflow-hidden relative mb-4">
               <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                <button className="px-4 py-2 bg-smash-purple text-white text-[11px] font-display font-semibold uppercase tracking-widest rounded-[8px] hover:bg-smash-purple/90 transition-all">View Songs</button>
+                <button className="px-4 py-2 bg-[#00A3FF] text-white text-[11px] font-semibold rounded-[8px] hover:bg-[#00A3FF]/90 transition-all">View Songs</button>
               </div>
             </div>
             <h4 className="font-display font-semibold text-[14px] text-text-primary mb-1 truncate">{al.title}</h4>
@@ -2454,11 +2454,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   if (isSuccess) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-6">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-bg-surface border border-white/5 rounded-[40px] p-12 text-center shadow-2xl">
-          <div className="w-24 h-24 bg-smash-purple/20 rounded-full flex items-center justify-center mx-auto mb-8">
-            <CircleCheck size={48} className="text-smash-purple" />
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-bg-surface border border-white/5 rounded-[16px] p-12 text-center shadow-2xl">
+          <div className="w-24 h-24 bg-[#00A3FF]/20 rounded-full flex items-center justify-center mx-auto mb-8">
+            <CircleCheck size={48} className="text-[#00A3FF]" />
           </div>
-          <h2 className="text-4xl font-studio font-black italic uppercase text-white mb-4">
+          <h2 className="text-4xl font-studio font-bold  uppercase text-white mb-4">
             {isDrafting ? 'Draft Saved!' : 'Submission Sent!'}
           </h2>
           <p className="text-text-secondary font-medium mb-12">
@@ -2479,8 +2479,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                 setAudioUploadError(null);
                 setDraftSavedAt(null);
                 setCurrentDraftId(null);
-              }} className="w-full h-16 bg-smash-purple text-white font-display font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
-            <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-display font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
+              }} className="w-full h-16 bg-[#00A3FF] text-white font-semibold rounded-2xl hover:brightness-110 transition-all">{isDrafting ? 'Upload Another' : 'Submit Another'}</button>
+            <button onClick={() => window.location.reload()} className="w-full h-16 bg-white/5 border border-white/10 text-white font-semibold rounded-2xl hover:bg-white/10 transition-all">Back to Studio</button>
           </div>
         </motion.div>
       </div>
@@ -2490,7 +2490,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
   return (
     <div className="max-w-4xl mx-auto pb-20 mt-6 px-4 md:px-8">
       {draftSavedAt && (
-        <div className="flex items-center justify-center gap-2 mb-4 text-[10px] font-bold text-smash-gray uppercase tracking-widest">
+        <div className="flex items-center justify-center gap-2 mb-4 text-[10px] font-bold text-[#737373] uppercase tracking-widest">
           <Save size={12} />
           Draft auto-saved at {draftSavedAt.toLocaleTimeString()} — find it in your Drafts tab
         </div>
@@ -2499,55 +2499,55 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       <div className="flex items-center justify-center max-w-lg mx-auto mb-14 px-4">
         <div className="flex items-center w-full">
            <div className="relative flex flex-col items-center group cursor-pointer" onClick={() => currentStep > 1 && setCurrentStep(1)}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 1 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : currentStep > 1 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[14px] transition-all relative z-10 ${currentStep === 1 ? 'bg-[#00A3FF] text-white ring-4 ring-#00A3FF/30 shadow-lg shadow-[#00A3FF]/30' : currentStep > 1 ? 'bg-[#22C55E]/20 text-[#22C55E]' : 'bg-white/5 text-text-muted'}`}>
                 {currentStep > 1 ? <CircleCheck size={20} /> : '1'}
               </div>
-              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Details</div>
+              <div className="absolute top-12 whitespace-nowrap text-[10px] font-semibold text-text-muted group-hover:text-white transition-colors">Details</div>
            </div>
            
-           <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 1 ? 'bg-smash-purple/60' : 'bg-white/10'}`} />
+           <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 1 ? 'bg-[#00A3FF]/60' : 'bg-white/10'}`} />
            
            <div className="relative flex flex-col items-center group cursor-pointer" onClick={() => currentStep > 2 && setCurrentStep(2)}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 2 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : currentStep > 2 ? 'bg-smash-green/20 text-smash-green' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[14px] transition-all relative z-10 ${currentStep === 2 ? 'bg-[#00A3FF] text-white ring-4 ring-#00A3FF/30 shadow-lg shadow-[#00A3FF]/30' : currentStep > 2 ? 'bg-[#22C55E]/20 text-[#22C55E]' : 'bg-white/5 text-text-muted'}`}>
                 {currentStep > 2 ? <CircleCheck size={20} /> : '2'}
               </div>
-              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted group-hover:text-white transition-colors">Upload</div>
+              <div className="absolute top-12 whitespace-nowrap text-[10px] font-semibold text-text-muted group-hover:text-white transition-colors">Upload</div>
            </div>
            
-           <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 2 ? 'bg-smash-purple/60' : 'bg-white/10'}`} />
+           <div className={`flex-1 h-[2px] transition-all relative z-0 -mx-1 ${currentStep > 2 ? 'bg-[#00A3FF]/60' : 'bg-white/10'}`} />
 
            <div className="relative flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-black text-[14px] transition-all relative z-10 ${currentStep === 3 ? 'bg-smash-purple text-white ring-4 ring-smash-purple/30 shadow-lg shadow-smash-purple/30' : 'bg-white/5 text-text-muted'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[14px] transition-all relative z-10 ${currentStep === 3 ? 'bg-[#00A3FF] text-white ring-4 ring-#00A3FF/30 shadow-lg shadow-[#00A3FF]/30' : 'bg-white/5 text-text-muted'}`}>
                 3
               </div>
-              <div className="absolute top-12 whitespace-nowrap text-[10px] font-display font-black uppercase tracking-widest text-text-muted">Publish</div>
+              <div className="absolute top-12 whitespace-nowrap text-[10px] font-semibold text-text-muted">Publish</div>
            </div>
         </div>
       </div>
 
-      <div className="bg-bg-surface border border-white/5 rounded-[40px] overflow-hidden shadow-2xl backdrop-blur-md transition-all duration-500">
+      <div className="bg-bg-surface border border-white/5 rounded-[16px] overflow-hidden shadow-2xl backdrop-blur-md transition-all duration-500">
          {uploading ? (
              <motion.div key="uploading" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-12 py-20 px-6 max-w-2xl mx-auto">
-                <div className="space-y-8 bg-bg-elevated p-8 rounded-[24px] border border-white/5 shadow-inner">
+                <div className="space-y-8 bg-bg-elevated p-8 rounded-[16px] border border-white/5 shadow-inner">
                    <div className="flex flex-col gap-2">
-                     <div className="flex justify-between text-[11px] font-display font-black uppercase tracking-widest text-text-muted">
+                     <div className="flex justify-between text-[11px] font-semibold text-text-muted">
                         <span>Syncing {mode === 'album' ? 'Album' : 'Track'}</span>
-                        <span className="text-smash-purple">{uploadProgress}%</span>
+                        <span className="text-[#00A3FF]">{uploadProgress}%</span>
                      </div>
                      <div className="w-full h-3 bg-bg-surface rounded-full overflow-hidden border border-white/5">
                         <motion.div 
                           initial={{ width: 0 }} 
                           animate={{ width: `${uploadProgress}%` }} 
                           transition={{ ease: "linear" }}
-                          className="h-full bg-gradient-to-r from-smash-purple to-smash-pink rounded-full relative" 
+                          className="h-full bg-gradient-to-r from-[#00A3FF] to-smash-pink rounded-full relative" 
                         />
                      </div>
                    </div>
                    <div className="text-center space-y-2">
-                     <h3 className="text-xl font-studio font-black uppercase italic text-white tracking-widest animate-pulse">Engine Processing</h3>
+                     <h3 className="text-xl font-semibold text-white  text-white tracking-widest animate-pulse">Engine Processing</h3>
                      <p className="text-[13px] font-sans text-text-muted">
                         Compressing &amp; distributing "{title}" to the nodes.<br/>
-                        <span className="text-smash-purple text-[11px]">Audio is being optimised to save storage. Please don't close this page.</span>
+                        <span className="text-[#00A3FF] text-[11px]">Audio is being optimised to save storage. Please don't close this page.</span>
                      </p>
                    </div>
                 </div>
@@ -2563,7 +2563,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                     guardResult.allowed 
                       ? (guardResult.daysRemaining !== null && guardResult.daysRemaining <= 7)
                         ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                        : 'bg-smash-green/10 border-smash-green/20 text-smash-green'
+                        : 'bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]'
                       : 'bg-red-500/10 border-red-500/20 text-red-500'
                   }`}>
                     {guardResult.allowed ? (
@@ -2579,9 +2579,9 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                 )}
                 
                 {currentStep === 2 && (
-                  <div className={`p-4 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-smash-orange bg-smash-orange/5' : ''}`}>
+                  <div className={`p-4 md:p-12 transition-all ${isDraggingAudio ? 'ring-2 ring-#00A3FF bg-[#00A3FF]/5' : ''}`}>
                     <div 
-                      className={`min-h-[240px] md:min-h-[320px] rounded-[32px] border-2 border-dashed flex flex-col items-center justify-center p-6 md:p-8 text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingAudio ? 'border-smash-orange bg-smash-orange/5' : 'border-white/10 bg-bg-elevated hover:border-smash-orange/50'}`}
+                      className={`min-h-[240px] md:min-h-[320px] rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center p-6 md:p-8 text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingAudio ? 'border-[#00A3FF] bg-[#00A3FF]/5' : 'border-white/10 bg-bg-elevated hover:border-[#00A3FF]/50'}`}
                       onDragOver={(e) => { e.preventDefault(); setIsDraggingAudio(true) }}
                       onDragLeave={(e) => { e.preventDefault(); setIsDraggingAudio(false) }}
                       onDrop={(e) => {
@@ -2619,11 +2619,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                             )}
                             
                             <div className="flex flex-col items-center max-w-xl mx-auto space-y-6">
-                               <CircleCheck size={56} className="text-smash-green mx-auto bg-smash-green/10 p-3 rounded-full" />
+                               <CircleCheck size={56} className="text-[#22C55E] mx-auto bg-[#22C55E]/10 p-3 rounded-full" />
                                
                                {mode === 'album' ? (
                                   <div className="w-full bg-black/40 rounded-2xl p-4 border border-white/10 space-y-2">
-                                     <h3 className="font-studio font-black text-xl text-white mb-2">{albumTracks.length} Tracks Selected</h3>
+                                     <h3 className="font-studio font-bold text-xl text-white mb-2">{albumTracks.length} Tracks Selected</h3>
                                      <div className="max-h-[150px] overflow-y-auto space-y-2 pr-2 custom-scrollbar pointer-events-auto">
                                         {albumTracks.map((track) => (
                                            <div key={track.id} className="bg-white/5 rounded-xl px-4 py-2">
@@ -2632,12 +2632,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                                 <span className="text-[12px] font-mono text-text-muted">{(track.file.size / (1024*1024)).toFixed(1)} MB</span>
                                               </div>
                                               {track.uploadStatus === 'compressing' && (
-                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-purple">Compressing...</div>
+                                                <div className="text-[10px] font-semibold text-[#00A3FF]">Compressing...</div>
                                               )}
                                               {track.uploadStatus === 'uploading' && (
                                                 <div>
                                                   <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
-                                                    <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
+                                                    <div className="h-full bg-[#00A3FF] rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
                                                   </div>
                                                   <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
                                                     <span>{track.uploadProgress}% · {formatSpeed(track.uploadSpeedBps)}</span>
@@ -2646,10 +2646,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                                 </div>
                                               )}
                                               {track.uploadStatus === 'done' && (
-                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-green">✓ Uploaded</div>
+                                                <div className="text-[10px] font-semibold text-[#22C55E]">✓ Uploaded</div>
                                               )}
                                               {track.uploadStatus === 'error' && (
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 hover:text-red-300">
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-semibold text-red-400 hover:text-red-300">
                                                   ⚠ {track.uploadError || 'Failed'} — Tap to retry
                                                 </button>
                                               )}
@@ -2661,13 +2661,13 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                   <div className="space-y-4 w-full pointer-events-auto">
                                      <div className="flex items-center justify-between gap-4">
                                         <div className="text-left min-w-0">
-                                           <h3 className="font-studio font-black text-xl md:text-2xl text-white truncate max-w-[280px] md:max-w-[360px]">{songFile.name}</h3>
+                                           <h3 className="font-studio font-bold text-xl md:text-2xl text-white truncate max-w-[280px] md:max-w-[360px]">{songFile.name}</h3>
                                            <p className="text-text-muted text-[13px] font-sans">{audioFileSize}{audioDuration ? ` • ${audioDuration}` : ''}</p>
                                         </div>
                                         <button 
                                           type="button" 
                                           onClick={(e) => { e.stopPropagation(); document.getElementById('audio-file-wizard')?.click(); }}
-                                          className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[11px] font-display font-black text-white uppercase tracking-widest transition-all shrink-0"
+                                          className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[11px] font-display font-bold text-white uppercase tracking-widest transition-all shrink-0"
                                         >
                                           Replace File
                                         </button>
@@ -2675,8 +2675,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
                                      {audioPreviewUrl && (
                                        <div className="bg-black/40 border border-white/10 p-3 rounded-2xl">
-                                         <p className="text-[10px] font-display font-black uppercase tracking-widest text-text-muted mb-1 text-left">Preview Audio Track</p>
-                                         <audio controls src={audioPreviewUrl} className="w-full h-8 accent-smash-purple" />
+                                         <p className="text-[10px] font-semibold text-text-muted mb-1 text-left">Preview Audio Track</p>
+                                         <audio controls src={audioPreviewUrl} className="w-full h-8 accent-#00A3FF" />
                                        </div>
                                      )}
 
@@ -2684,7 +2684,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                         {audioUploading ? (
                                            <div>
                                              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
-                                               <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${audioUploadProgress}%` }} />
+                                               <div className="h-full bg-[#00A3FF] rounded-full transition-all" style={{ width: `${audioUploadProgress}%` }} />
                                              </div>
                                              <div className="flex items-center justify-between text-[11px] font-mono text-text-muted">
                                                <span>{audioUploadProgress}% · {formatSpeed(audioUploadSpeedBps)}</span>
@@ -2692,11 +2692,11 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                              </div>
                                            </div>
                                         ) : audioUploadError ? (
-                                           <button type="button" onClick={() => uploadAudioInBackground(songFile!)} className="w-full h-10 border border-red-500/20 bg-red-500/10 text-red-500 font-display font-bold uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-500/20 transition-all">
+                                           <button type="button" onClick={() => uploadAudioInBackground(songFile!)} className="w-full h-10 border border-red-500/20 bg-red-500/10 text-red-500 font-semibold text-[11px] rounded-xl hover:bg-red-500/20 transition-all">
                                              ⚠ Upload Failed — Tap to retry
                                            </button>
                                         ) : audioUploadUrl ? (
-                                           <div className="flex items-center justify-between text-smash-green font-display font-black uppercase tracking-widest text-[12px]">
+                                           <div className="flex items-center justify-between text-[#22C55E] font-semibold text-[12px]">
                                               <span className="flex items-center gap-2"><CircleCheck size={16} /> Audio Processed &amp; Ready</span>
                                               <span className="text-[10px] font-mono text-text-muted">Direct Stream URL Saved</span>
                                            </div>
@@ -2709,8 +2709,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        ) : (
                          <div className="flex flex-col items-center justify-center space-y-6 max-w-sm mx-auto pointer-events-none">
                             <div className="w-24 h-24 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center relative shadow-lg">
-                               <Music2 size={40} className={`text-white transition-all ${isDraggingAudio ? 'scale-110 text-smash-orange' : ''}`} />
-                               <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-smash-orange text-black flex items-center justify-center shadow-lg">
+                               <Music2 size={40} className={`text-white transition-all ${isDraggingAudio ? 'scale-110 text-[#00A3FF]' : ''}`} />
+                               <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#00A3FF] text-black flex items-center justify-center shadow-lg">
                                   <Upload size={16} />
                                </div>
                             </div>
@@ -2721,7 +2721,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                 return (
                                 <div 
                                   key={i} 
-                                  className="w-1.5 bg-smash-orange rounded-full" 
+                                  className="w-1.5 bg-[#00A3FF] rounded-full" 
                                   style={{ 
                                     height: `${h * 100}%`,
                                     animation: `waveBar 1.2s ease-in-out infinite alternate`,
@@ -2735,7 +2735,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                <h3 className="font-studio text-2xl md:text-3xl text-white uppercase tracking-tight mb-2">Drop your MP3 here</h3>
                                <p className="text-text-muted text-[13px] md:text-sm font-sans">MP3 Only · Max 50MB · Fast direct upload</p>
                             </div>
-                            <button type="button" className="px-8 py-3 rounded-full bg-smash-orange text-black font-display font-black uppercase text-xs tracking-widest hover:brightness-110 shadow-[0_0_20px_rgba(255,95,0,0.3)] transition-all pointer-events-auto">
+                            <button type="button" className="px-8 py-3 rounded-full bg-[#00A3FF] text-black font-display font-bold uppercase text-xs tracking-widest hover:brightness-110 shadow-[0_0_20px_rgba(255,95,0,0.3)] transition-all pointer-events-auto">
                                Browse Files
                             </button>
                          </div>
@@ -2777,7 +2777,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                        <button
                          type="button"
                          onClick={() => setCurrentStep(1)}
-                         className="h-14 px-8 border border-white/10 hover:bg-white/5 text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl transition-all"
+                         className="h-14 px-8 border border-white/10 hover:bg-white/5 text-white font-semibold text-[13px] rounded-2xl transition-all"
                        >
                          ← BACK
                        </button>
@@ -2785,7 +2785,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                          type="button"
                          disabled={mode === 'album' ? albumTracks.length === 0 : !songFile}
                          onClick={() => setCurrentStep(3)} 
-                         className="flex-1 h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                         className="flex-1 h-14 bg-[#00A3FF] text-white font-semibold text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2"
                        >
                          NEXT: Final Check <ChevronRight size={18} />
                        </button>
@@ -2801,7 +2801,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            if (m === 'album' && !limits.canCreateAlbums) return toast.error('Standard Plan required');
                            if (m === 'snippet' && !limits.canPostSnippets) return toast.error('Rising Star plan required to post MotoFeed snippets');
                            setMode(m as any);
-                         }} className={`flex-1 md:flex-none whitespace-nowrap px-4 md:px-8 py-3 rounded-full text-[11px] font-display font-black uppercase tracking-widest transition-all ${mode === m ? 'bg-smash-purple text-white shadow-xl scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}>
+                         }} className={`flex-1 md:flex-none whitespace-nowrap px-4 md:px-8 py-3 rounded-full text-[11px] font-semibold transition-all ${mode === m ? 'bg-[#00A3FF] text-white shadow-xl scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}>
                            {m}
                          </button>
                        ))}
@@ -2811,7 +2811,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                         {/* LEFT COLUMN: COVER */}
                         <div>
                            <div 
-                             className={`aspect-square w-full max-w-[280px] mx-auto md:mx-0 rounded-[32px] border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingCover ? 'border-smash-purple bg-smash-purple/10' : 'border-white/10 bg-bg-elevated hover:border-smash-purple/50'}`}
+                             className={`aspect-square w-full max-w-[280px] mx-auto md:mx-0 rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all relative overflow-hidden group shadow-inner ${isDraggingCover ? 'border-[#00A3FF] bg-[#00A3FF]/10' : 'border-white/10 bg-bg-elevated hover:border-[#00A3FF]/50'}`}
                              onClick={() => document.getElementById('cover-file-wizard')?.click()}
                              onDragOver={(e) => { e.preventDefault(); setIsDraggingCover(true) }}
                              onDragLeave={(e) => { e.preventDefault(); setIsDraggingCover(false) }}
@@ -2826,13 +2826,13 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                 <div className="absolute inset-0 w-full h-full group">
                                   <img src={coverPreviewUrl} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                     <button type="button" className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-white font-display font-black text-[11px] uppercase tracking-widest">Change</button>
+                                     <button type="button" className="px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-white font-display font-bold text-[11px] uppercase tracking-widest">Change</button>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="absolute inset-0 bg-gradient-to-br from-smash-purple/20 to-smash-orange/10 flex flex-col items-center justify-center pointer-events-none p-6">
-                                   <ImageIcon size={40} className="text-smash-purple mb-4" />
-                                   <h4 className="text-[14px] font-display font-black uppercase tracking-widest text-white mb-2">Cover Art</h4>
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#00A3FF]/20 to-[#00A3FF]/10 flex flex-col items-center justify-center pointer-events-none p-6">
+                                   <ImageIcon size={40} className="text-[#00A3FF] mb-4" />
+                                   <h4 className="text-[14px] font-semibold text-white mb-2">Cover Art</h4>
                                    <p className="text-text-muted text-[12px] font-sans">1:1 square, min 500×500px</p>
                                 </div>
                               )}
@@ -2840,20 +2840,20 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  if (e.target.files && e.target.files[0]) setCoverFile(e.target.files[0]);
                               }} className="hidden" />
                            </div>
-                           <p className="mt-4 text-[11px] text-text-muted italic max-w-[280px] mx-auto md:mx-0 text-center md:text-left">💡 High contrast covers get 40% more clicks</p>
+                           <p className="mt-4 text-[11px] text-text-muted  max-w-[280px] mx-auto md:mx-0 text-center md:text-left">💡 High contrast covers get 40% more clicks</p>
                         </div>
 
                         {/* RIGHT COLUMN: METADATA */}
                         <div className="space-y-6">
                            <div className="group">
-                             <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Release Title *</label>
-                             <input value={title} onChange={e=>setTitle(e.target.value)} required placeholder={mode === 'album' ? "e.g. The Recovery" : "e.g. Mapulani"} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20" />
+                             <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">Release Title *</label>
+                             <input value={title} onChange={e=>setTitle(e.target.value)} required placeholder={mode === 'album' ? "e.g. The Recovery" : "e.g. Mapulani"} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-[#00A3FF] transition-all outline-none text-white placeholder:text-white/20" />
                            </div>
 
                            <div className="grid grid-cols-2 gap-4">
                              <div className="group">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Primary Genre *</label>
-                               <select required value={genre} onChange={e=>setGenre(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none">
+                               <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">Primary Genre *</label>
+                               <select required value={genre} onChange={e=>setGenre(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-[#00A3FF] transition-all appearance-none text-white outline-none">
                                  <option value="">Select genre</option>
                                  <option value="Afropop">Afropop</option>
                                  <option value="Afrobeats">Afrobeats</option>
@@ -2872,8 +2872,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                </select>
                              </div>
                              <div className="group">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Language</label>
-                               <select required value={language} onChange={e=>setLanguage(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none">
+                               <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">Language</label>
+                               <select required value={language} onChange={e=>setLanguage(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-[#00A3FF] transition-all appearance-none text-white outline-none">
                                  <option value="Chichewa">Chichewa</option>
                                  <option value="English">English</option>
                                  <option value="Tumbuka">Tumbuka</option>
@@ -2885,7 +2885,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
                            <div className="grid grid-cols-2 gap-4">
                              <div className="group col-span-2">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">
+                               <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">
                                  Featured Artists
                                </label>
 
@@ -2893,17 +2893,17 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                {featuredArtists.length > 0 && (
                                  <div className="flex flex-wrap gap-2 mb-3">
                                    {featuredArtists.map(f => (
-                                     <div key={f.name} className="flex items-center gap-2 px-3 py-1.5 bg-smash-purple/20 border border-smash-purple/30 rounded-full">
+                                     <div key={f.name} className="flex items-center gap-2 px-3 py-1.5 bg-[#00A3FF]/20 border border-[#00A3FF]/30 rounded-full">
                                        {f.avatarUrl ? (
                                          <img src={optimizeImage(f.avatarUrl, 80, 80)} className="w-5 h-5 rounded-full object-cover" alt="" loading="lazy" decoding="async" />
                                        ) : (
-                                         <div className="w-5 h-5 rounded-full bg-smash-purple/40 flex items-center justify-center text-[9px] font-black text-white">
+                                         <div className="w-5 h-5 rounded-full bg-[#00A3FF]/40 flex items-center justify-center text-[9px] font-bold text-white">
                                            {f.name[0]}
                                          </div>
                                        )}
                                        <span className="text-xs font-bold text-white">{f.name}</span>
                                        {f.profileId && (
-                                         <span className="text-[9px] font-black text-smash-purple bg-smash-purple/20 px-1.5 py-0.5 rounded-full">
+                                         <span className="text-[9px] font-bold text-[#00A3FF] bg-[#00A3FF]/20 px-1.5 py-0.5 rounded-full">
                                            ON SMASHIFY
                                          </span>
                                        )}
@@ -2932,13 +2932,13 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                        }
                                      }}
                                      placeholder="Search artist name or type to add..."
-                                     className="flex-1 h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white placeholder:text-white/20"
+                                     className="flex-1 h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-[#00A3FF] transition-all outline-none text-white placeholder:text-white/20"
                                    />
                                    <button
                                      type="button"
                                      onClick={() => addFeaturedArtist()}
                                      disabled={!featuredInput.trim()}
-                                     className="h-14 px-5 bg-smash-purple text-white rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-30 hover:bg-smash-purple/80 transition-all shrink-0"
+                                     className="h-14 px-5 bg-[#00A3FF] text-white rounded-2xl font-bold text-xs uppercase tracking-widest disabled:opacity-30 hover:bg-[#00A3FF]/80 transition-all shrink-0"
                                    >
                                      + Add
                                    </button>
@@ -2948,7 +2948,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  {(featuredSuggestions.length > 0 || featuredSearching) && (
                                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f0f0f] border border-white/10 rounded-2xl overflow-hidden z-50 shadow-2xl">
                                      {featuredSearching ? (
-                                       <div className="px-4 py-3 text-xs text-smash-gray">Searching...</div>
+                                       <div className="px-4 py-3 text-xs text-[#737373]">Searching...</div>
                                      ) : featuredSuggestions.map(artist => (
                                        <button
                                          key={artist.id}
@@ -2959,7 +2959,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                          {artist.avatar_url ? (
                                            <img src={optimizeImage(artist.avatar_url, 120, 120)} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                                          ) : (
-                                           <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center font-black text-smash-purple shrink-0">
+                                           <div className="w-9 h-9 rounded-full bg-[#00A3FF]/20 flex items-center justify-center font-bold text-[#00A3FF] shrink-0">
                                              {(artist.stage_name || artist.full_name || '?')[0]}
                                             </div>
                                          )}
@@ -2967,22 +2967,22 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                            <p className="text-sm font-bold text-white truncate">
                                              {artist.stage_name || artist.full_name}
                                            </p>
-                                           <p className="text-[10px] text-smash-gray">
+                                           <p className="text-[10px] text-[#737373]">
                                              {artist.artist_tier} · On Smashify
                                            </p>
                                          </div>
                                          {artist.verified && (
-                                           <span className="text-[9px] font-black text-smash-purple shrink-0">✓ VERIFIED</span>
+                                           <span className="text-[9px] font-bold text-[#00A3FF] shrink-0">✓ VERIFIED</span>
                                          )}
                                        </button>
                                      ))}
                                      {featuredSuggestions.length === 0 && !featuredSearching && featuredInput.length >= 2 && (
                                        <div className="px-4 py-3">
-                                         <p className="text-xs text-smash-gray">No Smashify artist found.</p>
+                                         <p className="text-xs text-[#737373]">No Smashify artist found.</p>
                                          <button
                                            type="button"
                                            onClick={() => addFeaturedArtist()}
-                                           className="text-xs text-smash-purple font-bold mt-1 hover:underline"
+                                           className="text-xs text-[#00A3FF] font-bold mt-1 hover:underline"
                                          >
                                            Add "{featuredInput}" as external artist
                                          </button>
@@ -2991,7 +2991,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                    </div>
                                  )}
                                </div>
-                               <p className="text-[9px] text-smash-gray mt-2">
+                               <p className="text-[9px] text-[#737373] mt-2">
                                  Artists with Smashify accounts will be linked to their profile automatically.
                                </p>
                              </div>
@@ -3014,8 +3014,8 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
 
                            {(mode === 'album' || albums.length > 0) && mode !== 'snippet' && (
                              <div className="group">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Album / EP (Optional)</label>
-                               <select value={albumId} onChange={e=>setAlbumId(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-smash-purple transition-all appearance-none text-white outline-none">
+                               <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">Album / EP (Optional)</label>
+                               <select value={albumId} onChange={e=>setAlbumId(e.target.value)} className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-4 text-[14px] font-display font-bold focus:border-[#00A3FF] transition-all appearance-none text-white outline-none">
                                  <option value="">No Album (Single)</option>
                                  {albums.map((al: any) => (
                                    <option key={al.id} value={al.id}>{al.title}</option>
@@ -3029,7 +3029,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                  <div className="text-[13px] font-display font-bold text-white mb-1">🔞 Contains explicit content</div>
                                  <div className="text-[11px] text-text-muted font-sans">Will show a warning badge on the track</div>
                               </div>
-                              <button type="button" onClick={() => setIsExplicit(!isExplicit)} className={`w-12 h-6 rounded-full transition-all relative ${isExplicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
+                              <button type="button" onClick={() => setIsExplicit(!isExplicit)} className={`w-12 h-6 rounded-full transition-all relative ${isExplicit ? 'bg-[#00A3FF]' : 'bg-white/10'}`}>
                                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${isExplicit ? 'right-1' : 'left-1'}`} />
                               </button>
                            </div>}
@@ -3037,29 +3037,29 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            {mode !== 'snippet' && (
                              <>
                              <div className="pt-4 border-t border-white/5">
-                               <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-4 transition-colors">Distribution Mode</label>
+                               <label className="text-[11px] text-text-muted font-semibold block mb-4 transition-colors">Distribution Mode</label>
                                <div className="flex gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl mb-4">
-                                  <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
+                                  <button type="button" onClick={() => setIsForSale(false)} className={`flex-1 h-12 rounded-xl text-[11px] font-semibold transition-all ${!isForSale ? 'bg-white/10 text-white shadow-lg' : 'text-text-muted hover:text-white'}`}>Free Stream</button>
                                   <button type="button" onClick={() => {
                                     if (!canSellTracks) {
                                       toast.error('Track sales are available on the Elite plan only. Upgrade in Artist Hub.');
                                       return;
                                     }
                                     setIsForSale(true);
-                                  }} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all ${isForSale ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'} ${!canSellTracks ? 'opacity-50' : ''}`}>Paid Download</button>
+                                  }} className={`flex-1 h-12 rounded-xl text-[11px] font-semibold transition-all ${isForSale ? 'bg-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/20' : 'text-text-muted hover:text-white'} ${!canSellTracks ? 'opacity-50' : ''}`}>Paid Download</button>
                                </div>
                                {(isForSale && (mode !== 'album' || albumPricingMode === 'album')) && (
                                  canSellTracks ? (
                                    <div className="relative">
-                                      <input type="number" required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-purple transition-all outline-none text-white pr-20" />
-                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK</div>
+                                      <input type="number" required={isForSale} value={price === 0 ? '' : price} onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-[#00A3FF] transition-all outline-none text-white pr-20" />
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-bold text-text-muted uppercase">MWK</div>
                                    </div>
                                  ) : (
                                    <div className="p-4 bg-white/5 border border-white/10 rounded-xl mt-4">
-                                     <p className="text-xs font-bold text-smash-gray">
-                                       🔒 Track sales & downloads are available on the <span className="text-smash-orange">Elite plan</span> only.
+                                     <p className="text-xs font-bold text-[#737373]">
+                                       🔒 Track sales & downloads are available on the <span className="text-[#00A3FF]">Elite plan</span> only.
                                      </p>
-                                     <p className="text-[10px] text-smash-gray mt-1">
+                                     <p className="text-[10px] text-[#737373] mt-1">
                                        Upgrade to Elite to sell your tracks and give buyers permanent download access.
                                      </p>
                                    </div>
@@ -3072,14 +3072,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                <div className="flex items-center justify-between">
                                  <div>
                                    <p className="text-sm font-bold text-white">Subscriber Exclusive</p>
-                                   <p className="text-[10px] text-smash-gray mt-0.5">
+                                   <p className="text-[10px] text-[#737373] mt-0.5">
                                      Only fans who subscribe monthly can access this track
                                    </p>
                                  </div>
                                  <button
                                    type="button"
                                    onClick={() => setIsExclusive(prev => !prev)}
-                                   className={`w-12 h-6 rounded-full transition-colors ${isExclusive ? 'bg-smash-orange' : 'bg-white/10'}`}
+                                   className={`w-12 h-6 rounded-full transition-colors ${isExclusive ? 'bg-[#00A3FF]' : 'bg-white/10'}`}
                                  >
                                    <div className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${isExclusive ? 'translate-x-6' : 'translate-x-0'}`} />
                                  </button>
@@ -3087,12 +3087,12 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                
                                {isExclusive && (
                                  <div className="pt-4 border-t border-white/10">
-                                   <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">Monthly Subscription Price</label>
+                                   <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">Monthly Subscription Price</label>
                                    <div className="relative">
-                                      <input type="number" required={isExclusive} value={subscriptionPrice === 0 ? '' : subscriptionPrice} onChange={e => setSubscriptionPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-smash-orange transition-all outline-none text-white pr-20" />
-                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-black text-text-muted uppercase">MWK / MO</div>
+                                      <input type="number" required={isExclusive} value={subscriptionPrice === 0 ? '' : subscriptionPrice} onChange={e => setSubscriptionPrice(e.target.value === '' ? 0 : Number(e.target.value))} min="0" step="100" className="w-full h-14 bg-bg-elevated border border-white/5 rounded-2xl px-6 text-[15px] font-display font-bold focus:border-[#00A3FF] transition-all outline-none text-white pr-20" />
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-display font-bold text-text-muted uppercase">MWK / MO</div>
                                    </div>
-                                   <p className="text-[10px] text-smash-gray mt-2">
+                                   <p className="text-[10px] text-[#737373] mt-2">
                                      Set the monthly price for fans to access all your exclusive content.
                                    </p>
                                  </div>
@@ -3104,7 +3104,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                      </div>
 
                      <div className="flex gap-4 mt-10">
-                        <button type="button" onClick={() => setCurrentStep(2)} disabled={!coverFile || !title || !genre} className="flex-1 h-14 bg-smash-purple text-white font-display font-black uppercase tracking-widest text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2">NEXT: Upload Audio <ChevronRight size={18} /></button>
+                        <button type="button" onClick={() => setCurrentStep(2)} disabled={!coverFile || !title || !genre} className="flex-1 h-14 bg-[#00A3FF] text-white font-semibold text-[13px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center gap-2">NEXT: Upload Audio <ChevronRight size={18} /></button>
                      </div>
                   </div>
                 )}
@@ -3119,14 +3119,14 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                               {coverPreviewUrl ? <img src={coverPreviewUrl} className="w-full h-full object-cover" loading="lazy" decoding="async" /> : <div className="w-full h-full bg-white/5" />}
                            </div>
                            <div className="flex-1 min-w-0">
-                              <h3 className="font-studio font-black uppercase text-xl text-white truncate">{title}</h3>
+                              <h3 className="font-semibold text-white text-xl text-white truncate">{title}</h3>
                               <p className="font-sans text-[14px] text-text-secondary truncate">{userProfile?.stage_name || userProfile?.full_name}</p>
                               <div className="flex items-center gap-2 mt-2">
-                                 <span className="px-2.5 py-1 bg-white/10 rounded-md text-[10px] font-display font-black uppercase tracking-widest text-white">{genre}</span>
+                                 <span className="px-2.5 py-1 bg-white/10 rounded-md text-[10px] font-semibold text-white">{genre}</span>
                                  {isForSale ? (
-                                    <span className="px-2.5 py-1 bg-smash-purple/20 text-smash-purple rounded-md text-[10px] font-display font-black uppercase tracking-widest">MK {price.toLocaleString()}</span>
+                                    <span className="px-2.5 py-1 bg-[#00A3FF]/20 text-[#00A3FF] rounded-md text-[10px] font-semibold">MK {price.toLocaleString()}</span>
                                  ) : (
-                                    <span className="px-2.5 py-1 bg-smash-green/20 text-smash-green rounded-md text-[10px] font-display font-black uppercase tracking-widest">Free Stream</span>
+                                    <span className="px-2.5 py-1 bg-[#22C55E]/20 text-[#22C55E] rounded-md text-[10px] font-semibold">Free Stream</span>
                                  )}
                               </div>
                            </div>
@@ -3136,26 +3136,26 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                               <div className="pt-4 border-t border-white/5 space-y-4">
                                  {isForSale && (
                                    <div className="space-y-4">
-                                      <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Pricing Mode</label>
+                                      <label className="text-[11px] text-text-muted font-semibold block mb-1 transition-colors">Pricing Mode</label>
                                       <div className="flex flex-col md:flex-row gap-2 p-1.5 bg-bg-elevated border border-white/5 rounded-2xl">
-                                         <button type="button" onClick={() => setAlbumPricingMode('album')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all px-4 ${albumPricingMode === 'album' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Single Price for full Album</button>
-                                         <button type="button" onClick={() => setAlbumPricingMode('individual')} className={`flex-1 h-12 rounded-xl text-[11px] font-display font-black uppercase tracking-widest transition-all px-4 ${albumPricingMode === 'individual' ? 'bg-smash-purple text-white shadow-lg shadow-smash-purple/20' : 'text-text-muted hover:text-white'}`}>Set Track Prices</button>
+                                         <button type="button" onClick={() => setAlbumPricingMode('album')} className={`flex-1 h-12 rounded-xl text-[11px] font-semibold transition-all px-4 ${albumPricingMode === 'album' ? 'bg-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/20' : 'text-text-muted hover:text-white'}`}>Single Price for full Album</button>
+                                         <button type="button" onClick={() => setAlbumPricingMode('individual')} className={`flex-1 h-12 rounded-xl text-[11px] font-semibold transition-all px-4 ${albumPricingMode === 'individual' ? 'bg-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/20' : 'text-text-muted hover:text-white'}`}>Set Track Prices</button>
                                       </div>
                                    </div>
                                  )}
-                                 <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-1 transition-colors">Individual Tracks Metadata</label>
+                                 <label className="text-[11px] text-text-muted font-semibold block mb-1 transition-colors">Individual Tracks Metadata</label>
                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                    {albumTracks.map((track) => (
                                       <div key={track.id} className="bg-bg-elevated p-4 rounded-2xl border border-white/5">
                                          {/* Background upload status */}
                                          <div className="mb-3">
                                             {track.uploadStatus === 'compressing' && (
-                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-purple">Compressing...</div>
+                                                <div className="text-[10px] font-semibold text-[#00A3FF]">Compressing...</div>
                                             )}
                                             {track.uploadStatus === 'uploading' && (
                                                 <div>
                                                   <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
-                                                    <div className="h-full bg-smash-orange rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
+                                                    <div className="h-full bg-[#00A3FF] rounded-full transition-all" style={{ width: `${track.uploadProgress}%` }} />
                                                   </div>
                                                   <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
                                                     <span>{track.uploadProgress}% · {formatSpeed(track.uploadSpeedBps)}</span>
@@ -3164,10 +3164,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                                 </div>
                                             )}
                                             {track.uploadStatus === 'done' && (
-                                                <div className="text-[10px] font-display font-bold uppercase tracking-widest text-smash-green">✓ Uploaded</div>
+                                                <div className="text-[10px] font-semibold text-[#22C55E]">✓ Uploaded</div>
                                             )}
                                             {track.uploadStatus === 'error' && (
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 hover:text-red-300">
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); retryAlbumTrackUpload(track.id); }} className="text-[10px] font-semibold text-red-400 hover:text-red-300">
                                                   ⚠ {track.uploadError || 'Failed'} — Tap to retry
                                                 </button>
                                             )}
@@ -3177,22 +3177,22 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                            {isForSale && albumPricingMode === 'individual' && (
                                               canSellTracks ? (
                                                 <div className="relative">
-                                                  <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, price: e.target.value === '' ? 0 : Number(e.target.value) } : t))} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-smash-purple pr-16 outline-none" />
-                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-black text-text-muted uppercase">MWK</div>
+                                                  <input type="number" required value={track.price === 0 ? '' : track.price} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, price: e.target.value === '' ? 0 : Number(e.target.value) } : t))} min="0" step="100" className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white focus:border-[#00A3FF] pr-16 outline-none" />
+                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-display font-bold text-text-muted uppercase">MWK</div>
                                                 </div>
                                               ) : (
                                                 <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                                                  <p className="text-xs font-bold text-smash-gray">
-                                                    🔒 Track sales & downloads are available on the <span className="text-smash-orange">Elite plan</span> only.
+                                                  <p className="text-xs font-bold text-[#737373]">
+                                                    🔒 Track sales & downloads are available on the <span className="text-[#00A3FF]">Elite plan</span> only.
                                                   </p>
                                                 </div>
                                               )
                                            )}
-                                           <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, featured_artist: e.target.value } : t))} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple" />
-                                           <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, lyrics: e.target.value } : t))} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-smash-purple resize-y max-h-[100px]" />
+                                           <input placeholder="Featured Artist" value={track.featured_artist} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, featured_artist: e.target.value } : t))} className="w-full h-10 bg-black/20 border border-white/5 rounded-xl px-4 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-[#00A3FF]" />
+                                           <textarea placeholder="Lyrics (optional)" value={track.lyrics} onChange={e => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, lyrics: e.target.value } : t))} rows={2} className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-[13px] font-sans text-white placeholder:text-white/20 outline-none focus:border-[#00A3FF] resize-y max-h-[100px]" />
                                            <div className="flex items-center justify-between pt-1">
                                               <span className="text-[11px] font-sans text-text-muted">🔞 Contains explicit content</span>
-                                              <button type="button" onClick={() => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, is_explicit: !track.is_explicit } : t))} className={`w-10 h-5 rounded-full transition-all relative ${track.is_explicit ? 'bg-smash-orange' : 'bg-white/10'}`}>
+                                              <button type="button" onClick={() => setAlbumTracks(prev => prev.map(t => t.id === track.id ? { ...t, is_explicit: !track.is_explicit } : t))} className={`w-10 h-5 rounded-full transition-all relative ${track.is_explicit ? 'bg-[#00A3FF]' : 'bg-white/10'}`}>
                                                 <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${track.is_explicit ? 'right-0.5' : 'left-0.5'}`} />
                                               </button>
                                            </div>
@@ -3204,50 +3204,50 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                            )}
 
                         <div className="space-y-4">
-                           <h4 className="text-[11px] font-display font-black uppercase tracking-widest text-text-muted mb-2">Checklist</h4>
+                           <h4 className="text-[11px] font-semibold text-text-muted mb-2">Checklist</h4>
                            
                            <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              <CircleCheck size={20} className="text-smash-green shrink-0" />
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Audio:</strong> {mode === 'album' ? `${albumTracks.length} tracks` : songFile?.name}</div>
+                              <CircleCheck size={20} className="text-[#22C55E] shrink-0" />
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Audio:</strong> {mode === 'album' ? `${albumTracks.length} tracks` : songFile?.name}</div>
                            </div>
                            
                            <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              <CircleCheck size={20} className="text-smash-green shrink-0" />
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Cover:</strong> Uploaded</div>
+                              <CircleCheck size={20} className="text-[#22C55E] shrink-0" />
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Cover:</strong> Uploaded</div>
                            </div>
 
                            <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              <CircleCheck size={20} className="text-smash-green shrink-0" />
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Title:</strong> {title}</div>
+                              <CircleCheck size={20} className="text-[#22C55E] shrink-0" />
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Title:</strong> {title}</div>
                            </div>
 
                            <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              <CircleCheck size={20} className="text-smash-green shrink-0" />
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Genre:</strong> {genre}</div>
+                              <CircleCheck size={20} className="text-[#22C55E] shrink-0" />
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Genre:</strong> {genre}</div>
                            </div>
 
                            {mode !== 'album' && <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              {lyrics ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <AlertTriangle size={20} className="text-smash-orange shrink-0" />}
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Lyrics:</strong> {lyrics ? 'Added' : 'Not added (optional but helps fans)'}</div>
+                              {lyrics ? <CircleCheck size={20} className="text-[#22C55E] shrink-0" /> : <AlertTriangle size={20} className="text-[#00A3FF] shrink-0" />}
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Lyrics:</strong> {lyrics ? 'Added' : 'Not added (optional but helps fans)'}</div>
                            </div>}
                            
                            {mode !== 'album' && <div className="flex items-center gap-3 bg-bg-elevated p-4 rounded-2xl border border-white/5">
-                              {featuredArtists.length > 0 ? <CircleCheck size={20} className="text-smash-green shrink-0" /> : <div className="w-5 text-center text-text-muted shrink-0">—</div>}
-                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-display uppercase tracking-widest text-[10px] text-text-muted mr-2">Featured:</strong> {featuredArtists.length > 0 ? featuredArtists.map(f => f.name).join(', ') : 'None'}</div>
+                              {featuredArtists.length > 0 ? <CircleCheck size={20} className="text-[#22C55E] shrink-0" /> : <div className="w-5 text-center text-text-muted shrink-0">—</div>}
+                              <div className="text-[13px] font-sans text-white truncate"><strong className="font-medium text-[10px] text-text-muted mr-2">Featured:</strong> {featuredArtists.length > 0 ? featuredArtists.map(f => f.name).join(', ') : 'None'}</div>
                            </div>}
                         </div>
 
                         {mode !== 'album' && <div>
-                           <label className="text-[11px] text-text-muted font-display font-black uppercase tracking-widest block mb-2 transition-colors">📝 Lyrics (optional — helps fans sing along)</label>
-                           <textarea value={lyrics} onChange={e=>setLyrics(e.target.value)} rows={6} placeholder="Paste your lyrics here..." className="w-full min-h-[120px] bg-bg-elevated border border-white/5 rounded-2xl px-6 py-4 text-[14px] font-sans focus:border-smash-purple transition-all outline-none text-white resize-y" />
+                           <label className="text-[11px] text-text-muted font-semibold block mb-2 transition-colors">📝 Lyrics (optional — helps fans sing along)</label>
+                           <textarea value={lyrics} onChange={e=>setLyrics(e.target.value)} rows={6} placeholder="Paste your lyrics here..." className="w-full min-h-[120px] bg-bg-elevated border border-white/5 rounded-2xl px-6 py-4 text-[14px] font-sans focus:border-[#00A3FF] transition-all outline-none text-white resize-y" />
                         </div>}
 
-                        <div className="bg-smash-purple/10 border border-smash-purple/20 rounded-2xl p-6">
-                           <h4 className="text-[12px] font-display font-black text-smash-purple uppercase tracking-widest mb-3">After Publishing</h4>
+                        <div className="bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-2xl p-6">
+                           <h4 className="text-[12px] font-display font-bold text-[#00A3FF] uppercase tracking-widest mb-3">After Publishing</h4>
                            <ul className="text-[13px] font-sans text-white space-y-2">
-                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-smash-purple flex-shrink-0" /> Your music goes to our review team (2–4 hours)</li>
-                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-smash-purple flex-shrink-0" /> You'll get notified when it's live</li>
-                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-smash-purple flex-shrink-0" /> Fans worldwide will discover your sound</li>
+                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00A3FF] flex-shrink-0" /> Your music goes to our review team (2–4 hours)</li>
+                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00A3FF] flex-shrink-0" /> You'll get notified when it's live</li>
+                              <li className="flex items-start gap-2"><div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00A3FF] flex-shrink-0" /> Fans worldwide will discover your sound</li>
                            </ul>
                         </div>
 
@@ -3265,10 +3265,10 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                </p>
                              </div>
                            )}
-                           <button type="submit" disabled={uploading || (mode === 'single' && audioUploading) || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-smash-purple to-smash-orange text-white font-studio font-black uppercase tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
+                           <button type="submit" disabled={uploading || (mode === 'single' && audioUploading) || (mode === "album" && albumTracks.some(t => ["pending","compressing","uploading"].includes(t.uploadStatus))) || guardResult?.allowed === false} onClick={() => setIsDrafting(false)} className="w-full h-16 bg-gradient-to-r from-[#00A3FF] to-[#00A3FF] text-white font-semibold text-white tracking-widest text-[14px] rounded-2xl disabled:opacity-50 hover:brightness-110 transition-all flex items-center justify-center shadow-[0_10px_30px_rgba(168,85,247,0.3)]">
                              🚀 PUBLISH TO SMASHIFY
                            </button>
-                           <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-display font-bold uppercase tracking-widest text-[11px] transition-all">← EDIT DETAILS</button>
+                           <button type="button" onClick={() => setCurrentStep(2)} className="h-12 text-text-muted hover:text-white font-semibold text-[11px] transition-all">← EDIT DETAILS</button>
                         </div>
 
                      </div>
@@ -3392,13 +3392,13 @@ const ProfileTab = ({ userProfile }: any) => {
 
   return (
     <div className="space-y-8 max-w-4xl text-left">
-      <h2 className="text-[32px] font-studio font-bold flex items-center justify-start gap-4 uppercase text-text-primary"><UserCircle className="text-smash-purple" /> Studio Settings</h2>
+      <h2 className="text-[32px] font-studio font-bold flex items-center justify-start gap-4 uppercase text-text-primary"><UserCircle className="text-[#00A3FF]" /> Studio Settings</h2>
       <form onSubmit={handleSave} className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-8 space-y-6 shadow-sm">
          <div className="flex flex-col gap-6">
             <div className="space-y-2 relative">
               <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Studio Banner</label>
               <div 
-                className="w-full aspect-[4/1] rounded-[14px] border border-border-default flex flex-col items-center justify-center cursor-pointer hover:border-smash-purple/50 transition-all relative overflow-hidden group shadow-sm bg-bg-elevated"
+                className="w-full aspect-[4/1] rounded-[14px] border border-border-default flex flex-col items-center justify-center cursor-pointer hover:border-[#00A3FF]/50 transition-all relative overflow-hidden group shadow-sm bg-bg-elevated"
                 onClick={() => document.getElementById('artist-banner-input')?.click()}
               >
                 <img 
@@ -3407,11 +3407,11 @@ const ProfileTab = ({ userProfile }: any) => {
                 loading="lazy" decoding="async" />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload size={24} className="text-white mb-2" />
-                  <span className="text-[11px] font-display font-semibold uppercase tracking-widest text-white">Change Banner</span>
+                  <span className="text-[11px] font-semibold text-white">Change Banner</span>
                 </div>
                 {saving && bannerFile && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
-                    <Loader2 size={32} className="text-smash-purple animate-spin" />
+                    <Loader2 size={32} className="text-[#00A3FF] animate-spin" />
                   </div>
                 )}
                 <input id="artist-banner-input" type="file" accept="image/*" onChange={e => setBannerFile(e.target.files?.[0] || null)} className="hidden" />
@@ -3421,7 +3421,7 @@ const ProfileTab = ({ userProfile }: any) => {
             <div className="space-y-2 mt-4">
               <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Studio Avatar</label>
               <div 
-                className="w-24 h-24 rounded-full border border-border-default flex flex-col items-center justify-center cursor-pointer hover:border-smash-purple/50 transition-all relative overflow-hidden group shadow-sm bg-bg-elevated"
+                className="w-24 h-24 rounded-full border border-border-default flex flex-col items-center justify-center cursor-pointer hover:border-[#00A3FF]/50 transition-all relative overflow-hidden group shadow-sm bg-bg-elevated"
                 onClick={() => document.getElementById('artist-avatar-input')?.click()}
               >
                 <img 
@@ -3433,7 +3433,7 @@ const ProfileTab = ({ userProfile }: any) => {
                 </div>
                 {saving && avatarFile && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
-                    <Loader2 size={24} className="text-smash-purple animate-spin" />
+                    <Loader2 size={24} className="text-[#00A3FF] animate-spin" />
                   </div>
                 )}
                 <input id="artist-avatar-input" type="file" accept="image/*" onChange={e => setAvatarFile(e.target.files?.[0] || null)} className="hidden" />
@@ -3444,11 +3444,11 @@ const ProfileTab = ({ userProfile }: any) => {
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div>
                <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Full Legal Name</label>
-               <input name="full_name" defaultValue={userProfile?.full_name} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary" />
+               <input name="full_name" defaultValue={userProfile?.full_name} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary" />
             </div>
             <div>
                <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Stage/Artist Name</label>
-               <input name="stage_name" defaultValue={userProfile?.stage_name} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary" />
+               <input name="stage_name" defaultValue={userProfile?.stage_name} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary" />
             </div>
          </div>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3463,43 +3463,43 @@ const ProfileTab = ({ userProfile }: any) => {
                    disabled={true}
                    placeholder={userProfile?.is_verified ? "+265..." : "See Identity Verification below"}
                    title={userProfile?.is_verified ? "Locked for withdrawal security" : "Please register your phone number below under Identity Verification"}
-                   className={`w-full h-[44px] bg-bg-elevated border px-4 pr-10 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary ${userProfile?.phone ? 'border-dashed border-border-default opacity-60 cursor-not-allowed' : 'border-border-default'}`} 
+                   className={`w-full h-[44px] bg-bg-elevated border px-4 pr-10 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary ${userProfile?.phone ? 'border-dashed border-border-default opacity-60 cursor-not-allowed' : 'border-border-default'}`} 
                  />
                  {userProfile?.phone && (
-                   <AppLockIcon size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-smash-orange opacity-80" />
+                   <AppLockIcon size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00A3FF] opacity-80" />
                  )}
                </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
                <div>
                   <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Core Genre</label>
-                  <select name="genre" defaultValue={userProfile?.genre} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary">
+                  <select name="genre" defaultValue={userProfile?.genre} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary">
                     <option>Afropop</option><option>Gospel</option><option>Hip Hop</option><option>R&B</option>
                   </select>
                </div>
                <div>
                   <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Location</label>
-                  <input name="location" defaultValue={userProfile?.location} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all text-text-primary" />
+                  <input name="location" defaultValue={userProfile?.location} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary" />
                </div>
             </div>
          </div>
          <div>
             <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Artist Bio</label>
-            <textarea name="bio" rows={4} defaultValue={userProfile?.bio} className="w-full bg-bg-elevated border border-border-default py-3 px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all resize-none placeholder:opacity-50 text-text-primary" placeholder="Tell your fans about yourself..." />
+            <textarea name="bio" rows={4} defaultValue={userProfile?.bio} className="w-full bg-bg-elevated border border-border-default py-3 px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all resize-none placeholder:opacity-50 text-text-primary" placeholder="Tell your fans about yourself..." />
          </div>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">IG Handle</label>
-               <input name="instagram" defaultValue={userProfile?.instagram} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all placeholder:opacity-50 text-text-primary" placeholder="@handle" />
+               <input name="instagram" defaultValue={userProfile?.instagram} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all placeholder:opacity-50 text-text-primary" placeholder="@handle" />
             </div>
             <div>
                <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">X / Twitter Handle</label>
-               <input name="twitter" defaultValue={userProfile?.twitter} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all placeholder:opacity-50 text-text-primary" placeholder="@handle" />
+               <input name="twitter" defaultValue={userProfile?.twitter} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all placeholder:opacity-50 text-text-primary" placeholder="@handle" />
             </div>
          </div>
 
          <div className="space-y-4 pt-4 border-t border-white/10">
-           <p className="text-[11px] font-display font-bold uppercase tracking-widest text-text-muted">Social Links (Optional)</p>
+           <p className="text-[11px] font-semibold text-text-muted">Social Links (Optional)</p>
            <div className="grid grid-cols-1 gap-4">
              {[
                { key: 'instagram_url', label: 'Instagram', placeholder: 'https://instagram.com/yourhandle' },
@@ -3516,7 +3516,7 @@ const ProfileTab = ({ userProfile }: any) => {
                    type="url"
                    defaultValue={userProfile?.[field.key]}
                    placeholder={field.placeholder}
-                   className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] text-text-primary placeholder:opacity-50 outline-none focus:border-smash-purple focus:ring-[3px] focus:ring-smash-purple/15 transition-all"
+                   className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] text-text-primary placeholder:opacity-50 outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all"
                  />
                </div>
              ))}
@@ -3524,24 +3524,24 @@ const ProfileTab = ({ userProfile }: any) => {
          </div>
          
          {!userProfile?.is_verified && (
-           <div className="p-6 bg-smash-orange/5 border border-smash-orange/20 rounded-[14px] space-y-4">
+           <div className="p-6 bg-[#00A3FF]/5 border border-[#00A3FF]/20 rounded-[14px] space-y-4">
               <div className="flex gap-3 items-center mb-2">
-                 <ShieldCheck className="text-smash-orange shrink-0" size={24} />
+                 <ShieldCheck className="text-[#00A3FF] shrink-0" size={24} />
                  <div>
-                    <h4 className="text-smash-orange font-studio font-bold uppercase tracking-widest text-sm">Action Required: Identity Verification</h4>
+                    <h4 className="text-[#00A3FF] font-semibold text-white tracking-widest text-sm">Action Required: Identity Verification</h4>
                     <p className="text-text-muted text-xs font-sans mt-1">To withdraw funds, you must provide your National ID details. If you already submitted a photo during onboarding, just provide the number below.</p>
                  </div>
               </div>
               
               <div className="p-3 bg-zinc-950/40 border border-white/5 rounded-lg text-[11px] text-text-muted leading-relaxed">
-                 <span className="text-smash-orange font-bold uppercase tracking-wider block mb-1">Privacy Note</span>
+                 <span className="text-[#00A3FF] font-bold uppercase tracking-wider block mb-1">Privacy Note</span>
                  Your ID number is collected strictly to verify ownership for financial payouts and prevent fraud. Smashify encrypts this data securely and will never share it with third parties.
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Document Type</label>
-                    <select name="id_type" defaultValue={userProfile?.id_type || "National ID"} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary">
+                    <select name="id_type" defaultValue={userProfile?.id_type || "National ID"} className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary">
                        <option value="National ID">Malawi National ID</option>
                        <option value="Passport">Passport</option>
                        <option value="Driver License">Driver's License</option>
@@ -3549,24 +3549,24 @@ const ProfileTab = ({ userProfile }: any) => {
                  </div>
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Document Number</label>
-                    <input name="nrc_number" defaultValue={userProfile?.nrc_number} type="text" placeholder="e.g. A1234567" className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-50" />
+                    <input name="nrc_number" defaultValue={userProfile?.nrc_number} type="text" placeholder="e.g. A1234567" className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:opacity-50" />
                  </div>
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Registered Phone Number</label>
-                    <input name="phone" defaultValue={userProfile?.phone} type="text" placeholder="e.g. +26599..." className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all text-text-primary placeholder:opacity-50" />
+                    <input name="phone" defaultValue={userProfile?.phone} type="text" placeholder="e.g. +26599..." className="w-full h-[44px] bg-bg-elevated border border-border-default px-4 rounded-[10px] text-[14px] font-display outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:opacity-50" />
                  </div>
               </div>
 
               {!userProfile?.id_document_url && (
                  <div>
                     <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Upload ID Document Photo</label>
-                    <input name="id_document_file" type="file" accept="image/*" className="w-full bg-bg-elevated border border-border-default p-2 rounded-[10px] text-[12px] font-display outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-smash-orange file:text-white hover:file:bg-smash-orange/80 cursor-pointer text-text-muted" />
+                    <input name="id_document_file" type="file" accept="image/*" className="w-full bg-bg-elevated border border-border-default p-2 rounded-[10px] text-[12px] font-display outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-[#00A3FF] file:text-white hover:file:bg-[#00A3FF]/80 cursor-pointer text-text-muted" />
                  </div>
               )}
            </div>
          )}
 
-         <button disabled={saving} type="submit" className="w-full h-[48px] bg-smash-purple text-white font-display font-semibold uppercase tracking-widest rounded-[10px] mt-4 hover:bg-smash-purple/90 transition-colors disabled:opacity-50 text-[13px] flex items-center justify-center gap-2">
+         <button disabled={saving} type="submit" className="w-full h-[48px] bg-[#00A3FF] text-white font-semibold rounded-[10px] mt-4 hover:bg-[#00A3FF]/90 transition-colors disabled:opacity-50 text-[13px] flex items-center justify-center gap-2">
             {saving ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
@@ -3602,17 +3602,17 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
   return (
     <div className={`space-y-12 max-w-5xl mx-auto`}>
       <div className="text-center">
-        <h2 className="text-[32px] font-studio font-bold mb-4 uppercase text-text-primary"><Sparkles className="inline text-smash-purple mr-3 mb-2"/> Studio Access</h2>
+        <h2 className="text-[32px] font-studio font-bold mb-4 uppercase text-text-primary"><Sparkles className="inline text-[#00A3FF] mr-3 mb-2"/> Studio Access</h2>
         <p className="text-text-secondary text-[16px] font-sans">Choose a level that matches your career goals.</p>
         {isPending && (
-          <div className="mt-6 p-6 bg-smash-purple/10 border border-smash-purple/20 rounded-[14px] max-w-2xl mx-auto">
+          <div className="mt-6 p-6 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-[14px] max-w-2xl mx-auto">
              <div className="flex items-center gap-4 text-left">
-                <div className="w-12 h-12 rounded-[10px] bg-smash-purple/20 flex items-center justify-center shrink-0">
-                   <ShieldCheck className="text-smash-purple" />
+                <div className="w-12 h-12 rounded-[10px] bg-[#00A3FF]/20 flex items-center justify-center shrink-0">
+                   <ShieldCheck className="text-[#00A3FF]" />
                 </div>
                 <div>
-                   <p className="text-[14px] font-display font-semibold uppercase tracking-widest text-text-primary mb-1">Pending Application</p>
-                   <p className="text-[13px] font-sans text-text-secondary leading-relaxed text-left">You can still subscribe to unlock Studio features! <span className="text-smash-purple font-semibold">Subscribing while pending grants instant approval</span> so you can start distributing your music immediately.</p>
+                   <p className="text-[14px] font-semibold text-text-primary mb-1">Pending Application</p>
+                   <p className="text-[13px] font-sans text-text-secondary leading-relaxed text-left">You can still subscribe to unlock Studio features! <span className="text-[#00A3FF] font-semibold">Subscribing while pending grants instant approval</span> so you can start distributing your music immediately.</p>
                 </div>
              </div>
           </div>
@@ -3620,72 +3620,72 @@ const SubscriptionTab = ({ userProfile, role }: any) => {
       </div>
 
       <div className="p-4 bg-bg-surface border border-border-default rounded-[14px] text-center shadow-sm">
-         <p className="text-[12px] font-display font-semibold uppercase tracking-widest text-text-primary">Current Status: <strong className={currentTier === 'free' && isPending ? 'text-smash-orange' : 'text-smash-green'}>{currentTier === 'free' ? (isPending ? 'PENDING' : 'FREE') : currentTier.replace('_', ' ').toUpperCase()}</strong></p>
+         <p className="text-[12px] font-semibold text-text-primary">Current Status: <strong className={currentTier === 'free' && isPending ? 'text-[#00A3FF]' : 'text-[#22C55E]'}>{currentTier === 'free' ? (isPending ? 'PENDING' : 'FREE') : currentTier.replace('_', ' ').toUpperCase()}</strong></p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20">
          <div className="bg-bg-surface border border-border-subtle rounded-[14px] p-6 flex flex-col group relative overflow-hidden">
-            {currentTier === 'rising_star' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
-            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Rocket className="text-smash-orange" size={20} /> Rising Star</h4>
+            {currentTier === 'rising_star' && <div className="mb-4"><span className="px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] rounded-full text-[10px] font-semibold">Current Plan</span></div>}
+            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Rocket className="text-[#00A3FF]" size={20} /> Rising Star</h4>
             <div className="flex items-baseline gap-1 mb-8">
                <span className="text-[32px] font-studio font-bold text-text-primary">8,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 10 uploads per 6 months</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Accept fan subscriptions</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> 10 uploads per 6 months</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Accept fan subscriptions</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('RisingStar')} 
               disabled={currentTier === 'rising_star'}
-              className="w-full h-[44px] bg-transparent border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-xs rounded-[10px] hover:border-smash-orange hover:text-smash-orange transition-colors disabled:opacity-50 disabled:border-border-default disabled:text-text-muted"
+              className="w-full h-[44px] bg-transparent border border-border-default text-text-primary font-semibold text-xs rounded-[10px] hover:border-[#00A3FF] hover:text-[#00A3FF] transition-colors disabled:opacity-50 disabled:border-border-default disabled:text-text-muted"
             >
               Subscribe
             </button>
          </div>
          
-         <div className="bg-bg-surface border-2 border-smash-orange rounded-[14px] p-6 relative flex flex-col">
-            <div className="absolute top-0 right-6 -translate-y-1/2 bg-smash-orange text-white text-[10px] font-display font-semibold uppercase tracking-widest py-1 px-3 rounded-[6px]">Most Popular</div>
-            {currentTier === 'standard' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
-            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Star className="text-smash-orange" size={20} /> Standard</h4>
+         <div className="bg-bg-surface border-2 border-[#00A3FF] rounded-[14px] p-6 relative flex flex-col">
+            <div className="absolute top-0 right-6 -translate-y-1/2 bg-[#00A3FF] text-white text-[10px] font-semibold py-1 px-3 rounded-[6px]">Most Popular</div>
+            {currentTier === 'standard' && <div className="mb-4"><span className="px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] rounded-full text-[10px] font-semibold">Current Plan</span></div>}
+            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><Star className="text-[#00A3FF]" size={20} /> Standard</h4>
             <div className="flex items-baseline gap-1 mb-8">
                <span className="text-[32px] font-studio font-bold text-text-primary">16,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 15 uploads per 6 months</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> 1 free featured placement/mo</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-orange shrink-0 mt-0.5" /> Advanced analytics suite</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> 15 uploads per 6 months</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Tips & fan subscriptions only (no track sales)</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> 1 free featured placement/mo</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Advanced analytics suite</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('Standard')}
               disabled={currentTier === 'standard'}
-              className="w-full h-[44px] bg-smash-orange text-white font-display font-semibold uppercase tracking-widest text-xs rounded-[10px] hover:bg-smash-orange/90 transition-colors disabled:opacity-50"
+              className="w-full h-[44px] bg-[#00A3FF] text-white font-semibold text-xs rounded-[10px] hover:bg-[#00A3FF]/90 transition-colors disabled:opacity-50"
             >
               Subscribe
             </button>
          </div>
 
          <div className="bg-bg-surface border border-border-subtle rounded-[14px] p-6 flex flex-col">
-            {currentTier === 'elite' && <div className="mb-4"><span className="px-3 py-1 bg-smash-green/10 text-smash-green rounded-full text-[10px] font-display font-bold uppercase tracking-widest">Current Plan</span></div>}
-            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><ShieldCheck className="text-smash-purple" size={20} /> Elite</h4>
+            {currentTier === 'elite' && <div className="mb-4"><span className="px-3 py-1 bg-[#22C55E]/10 text-[#22C55E] rounded-full text-[10px] font-semibold">Current Plan</span></div>}
+            <h4 className="font-studio font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2"><ShieldCheck className="text-[#8B5CF6]" size={20} /> Elite</h4>
             <div className="flex items-baseline gap-1 mb-8">
                <span className="text-[32px] font-studio font-bold text-text-primary">27,000</span>
                <span className="text-[11px] font-display font-medium text-text-muted uppercase tracking-widest">MWK / 6 MO</span>
             </div>
             <ul className="space-y-4 mb-8 flex-1">
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 25 uploads per 6 months</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Sell tracks to fans — with fan download access</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Elite exclusive: track sales & downloads</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> 3 free featured placements/mo</li>
-               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-smash-purple shrink-0 mt-0.5" /> Full analytics with CSV export</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> 25 uploads per 6 months</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Sell tracks to fans — with fan download access</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Elite exclusive: track sales & downloads</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> 3 free featured placements/mo</li>
+               <li className="flex items-start gap-3 text-[13px] text-text-secondary font-sans"><CircleCheck size={18} className="text-[#00A3FF] shrink-0 mt-0.5" /> Full analytics with CSV export</li>
             </ul>
             <button 
               onClick={() => handleSubscribe('Elite')}
               disabled={currentTier === 'elite'}
-              className="w-full h-[44px] bg-transparent border border-border-default text-text-primary font-display font-semibold uppercase tracking-widest text-xs rounded-[10px] hover:border-smash-purple hover:text-smash-purple transition-colors disabled:opacity-50 disabled:border-border-default disabled:text-text-muted"
+              className="w-full h-[44px] bg-transparent border border-border-default text-text-primary font-semibold text-xs rounded-[10px] hover:border-[#00A3FF] hover:text-[#00A3FF] transition-colors disabled:opacity-50 disabled:border-border-default disabled:text-text-muted"
             >
               Subscribe
             </button>
@@ -3749,13 +3749,13 @@ const AnalyticsTab = ({ userProfile }: any) => {
     fetch();
   }, [userProfile?.id]);
 
-  if (loading) return <div className="py-20 text-center text-smash-gray">Loading analytics...</div>;
+  if (loading) return <div className="py-20 text-center text-[#737373]">Loading analytics...</div>;
 
   return (
     <div className="space-y-8 max-w-5xl">
       <div>
-        <h2 className="text-[28px] font-studio font-bold uppercase text-text-primary flex items-center gap-3">
-          <BarChart2 className="text-smash-purple" /> Analytics
+        <h2 className="text-[28px] font-semibold text-white text-text-primary flex items-center gap-3">
+          <BarChart2 className="text-[#00A3FF]" /> Analytics
         </h2>
         <p className="text-text-secondary text-sm mt-1">Track your performance across all your music</p>
       </div>
@@ -3763,7 +3763,7 @@ const AnalyticsTab = ({ userProfile }: any) => {
       {/* Monthly Earnings Chart */}
       <div className="bg-bg-surface border border-border-default rounded-[14px] p-6">
         <h3 className="font-bold text-white mb-1">Monthly Earnings</h3>
-        <p className="text-xs text-smash-gray mb-6">Net earnings after platform fee</p>
+        <p className="text-xs text-[#737373] mb-6">Net earnings after platform fee</p>
         {monthlyEarnings.length > 0 ? (
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -3782,7 +3782,7 @@ const AnalyticsTab = ({ userProfile }: any) => {
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-center text-smash-gray py-8 text-sm">No earnings data yet. Start promoting your music!</p>
+          <p className="text-center text-[#737373] py-8 text-sm">No earnings data yet. Start promoting your music!</p>
         )}
       </div>
 
@@ -3791,31 +3791,31 @@ const AnalyticsTab = ({ userProfile }: any) => {
         <h3 className="font-bold text-white mb-6">Top Songs Performance</h3>
         <div className="space-y-4">
           {songStats.length === 0 ? (
-            <p className="text-center text-smash-gray py-8 text-sm">No songs uploaded yet.</p>
+            <p className="text-center text-[#737373] py-8 text-sm">No songs uploaded yet.</p>
           ) : songStats.map((song, i) => {
             const maxPlays = songStats[0]?.plays || 1;
             const pct = Math.round((song.plays / maxPlays) * 100);
             return (
               <div key={song.id} className="flex items-center gap-4">
-                <span className="text-[10px] font-black text-smash-gray w-4 shrink-0">#{i + 1}</span>
+                <span className="text-[10px] font-bold text-[#737373] w-4 shrink-0">#{i + 1}</span>
                 <img src={optimizeImage(song.cover_url, 120, 120)} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="" loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-bold text-white truncate">{song.title}</p>
                     <div className="flex items-center gap-3 shrink-0 ml-3">
-                      <span className="text-[10px] font-black text-smash-gray">{song.plays?.toLocaleString()} plays</span>
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
+                      <span className="text-[10px] font-bold text-[#737373]">{song.plays?.toLocaleString()} plays</span>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                         song.slot_mode === 'hot' ? 'bg-orange-500/20 text-orange-400' :
                         song.slot_mode === 'active' ? 'bg-green-500/20 text-green-400' :
                         song.slot_mode === 'cold' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-white/10 text-smash-gray'
+                        'bg-white/10 text-[#737373]'
                       }`}>
                         {song.slot_mode || 'active'}
                       </span>
                     </div>
                   </div>
                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-smash-purple rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-[#00A3FF] rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               </div>
@@ -3833,9 +3833,9 @@ const AnalyticsTab = ({ userProfile }: any) => {
               <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div>
                   <p className="text-sm font-bold text-white">MK {Number(tip.gross_amount).toLocaleString()}</p>
-                  <p className="text-[10px] text-smash-gray">{new Date(tip.created_at).toLocaleDateString('en-GB')}</p>
+                  <p className="text-[10px] text-[#737373]">{new Date(tip.created_at).toLocaleDateString('en-GB')}</p>
                 </div>
-                <p className="text-xs text-smash-green font-bold">Net: MK {Number(tip.net_amount).toLocaleString()}</p>
+                <p className="text-xs text-[#22C55E] font-bold">Net: MK {Number(tip.net_amount).toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -3879,13 +3879,13 @@ const FansTab = ({ userProfile }: any) => {
     fetch();
   }, [userProfile?.id]);
 
-  if (loading) return <div className="py-20 text-center text-smash-gray">Loading fans...</div>;
+  if (loading) return <div className="py-20 text-center text-[#737373]">Loading fans...</div>;
 
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <h2 className="text-[28px] font-studio font-bold uppercase text-text-primary flex items-center gap-3">
-          <Users className="text-smash-purple" /> Fan Base
+        <h2 className="text-[28px] font-semibold text-white text-text-primary flex items-center gap-3">
+          <Users className="text-[#00A3FF]" /> Fan Base
         </h2>
         <p className="text-text-secondary text-sm mt-1">Your active subscribers and top supporters</p>
       </div>
@@ -3893,14 +3893,14 @@ const FansTab = ({ userProfile }: any) => {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-bg-surface border border-border-default rounded-2xl p-5 text-center">
-          <p className="text-3xl font-black text-smash-purple">{subscribers.length}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Active Subscribers</p>
-          <p className="text-xs text-smash-gray mt-1">MK {(subscribers.length * 150).toLocaleString()} monthly</p>
+          <p className="text-3xl font-bold text-[#00A3FF]">{subscribers.length}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#737373] mt-1">Active Subscribers</p>
+          <p className="text-xs text-[#737373] mt-1">MK {(subscribers.length * 150).toLocaleString()} monthly</p>
         </div>
         <div className="bg-bg-surface border border-border-default rounded-2xl p-5 text-center">
-          <p className="text-3xl font-black text-smash-green">{topTippers.length}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-smash-gray mt-1">Tip Supporters</p>
-          <p className="text-xs text-smash-gray mt-1">Total tips received</p>
+          <p className="text-3xl font-bold text-[#22C55E]">{topTippers.length}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#737373] mt-1">Tip Supporters</p>
+          <p className="text-xs text-[#737373] mt-1">Total tips received</p>
         </div>
       </div>
 
@@ -3912,23 +3912,23 @@ const FansTab = ({ userProfile }: any) => {
         {subscribers.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-4xl mb-3">🎯</p>
-            <p className="text-smash-gray text-sm">No subscribers yet.</p>
-            <p className="text-smash-gray text-xs mt-1">Promote your profile to attract monthly fans.</p>
+            <p className="text-[#737373] text-sm">No subscribers yet.</p>
+            <p className="text-[#737373] text-xs mt-1">Promote your profile to attract monthly fans.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {subscribers.map((sub, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-smash-purple/20 flex items-center justify-center text-smash-purple font-black text-sm">
+                  <div className="w-9 h-9 rounded-full bg-[#00A3FF]/20 flex items-center justify-center text-[#00A3FF] font-bold text-sm">
                     {sub.user_profiles?.full_name?.[0] || '?'}
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">{sub.user_profiles?.full_name || 'Anonymous Fan'}</p>
-                    <p className="text-[10px] text-smash-gray">Since {new Date(sub.started_at).toLocaleDateString('en-GB')}</p>
+                    <p className="text-[10px] text-[#737373]">Since {new Date(sub.started_at).toLocaleDateString('en-GB')}</p>
                   </div>
                 </div>
-                <span className="text-xs font-black text-smash-green px-2 py-1 bg-smash-green/10 rounded-full">
+                <span className="text-xs font-bold text-[#22C55E] px-2 py-1 bg-[#22C55E]/10 rounded-full">
                   Active
                 </span>
               </div>
@@ -3945,13 +3945,13 @@ const FansTab = ({ userProfile }: any) => {
             {topTippers.map((tip, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-smash-gray w-5">#{i + 1}</span>
-                  <div className="w-8 h-8 rounded-full bg-smash-orange/20 flex items-center justify-center text-smash-orange font-black text-sm">
+                  <span className="text-[10px] font-bold text-[#737373] w-5">#{i + 1}</span>
+                  <div className="w-8 h-8 rounded-full bg-[#00A3FF]/20 flex items-center justify-center text-[#00A3FF] font-bold text-sm">
                     {tip.user_profiles?.full_name?.[0] || '?'}
                   </div>
                   <p className="text-sm font-bold text-white">{tip.user_profiles?.full_name || 'Anonymous'}</p>
                 </div>
-                <p className="text-sm font-black text-smash-orange">MK {Number(tip.gross_amount).toLocaleString()}</p>
+                <p className="text-sm font-bold text-[#00A3FF]">MK {Number(tip.gross_amount).toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -3985,11 +3985,11 @@ const CatalogHealthWidget = ({ artistId }: { artistId: string }) => {
         { label: '🔥 Hot', count: data.hot, color: 'text-orange-400' },
         { label: '✅ Active', count: data.active, color: 'text-green-400' },
         { label: '🧊 Cold', count: data.cold, color: 'text-blue-400' },
-        { label: '📦 Archive (free)', count: data.archive, color: 'text-smash-gray' },
+        { label: '📦 Archive (free)', count: data.archive, color: 'text-[#737373]' },
       ].map(item => (
         <div key={item.label} className="flex items-center gap-2">
-          <span className={`text-sm font-black ${item.color}`}>{item.count}</span>
-          <span className="text-[10px] text-smash-gray font-bold uppercase tracking-widest">{item.label}</span>
+          <span className={`text-sm font-bold ${item.color}`}>{item.count}</span>
+          <span className="text-[10px] text-[#737373] font-bold uppercase tracking-widest">{item.label}</span>
         </div>
       ))}
       {total > 0 && (

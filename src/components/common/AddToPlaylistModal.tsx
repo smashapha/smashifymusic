@@ -172,7 +172,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-smash-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-sm"
       />
       
       <motion.div
@@ -183,10 +183,10 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
       >
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-black font-display italic uppercase tracking-tighter">Add to Playlist</h2>
-            <p className="text-xs font-black text-smash-gray uppercase tracking-widest mt-1">Select or create a new library</p>
+            <h2 className="text-xl font-semibold font-display uppercase tracking-tighter">Add to Playlist</h2>
+            <p className="text-xs font-semibold text-[#B0B0B0] uppercase tracking-widest mt-1">Select or create a new library</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-smash-gray hover:text-white">
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#B0B0B0] hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -196,8 +196,8 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
           <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/5">
             <img src={song.cover_url} alt={song.title} className="w-12 h-12 rounded-lg object-cover" loading="lazy" decoding="async" />
             <div className="min-w-0">
-              <p className="font-display font-black italic uppercase text-sm truncate leading-none mb-1">{song.title}</p>
-              <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest truncate">{song.artist_name}</p>
+              <p className="font-display font-semibold uppercase text-sm truncate leading-none mb-1">{song.title}</p>
+              <p className="text-[10px] text-[#B0B0B0] font-semibold uppercase tracking-widest truncate">{song.artist_name}</p>
             </div>
           </div>
 
@@ -205,9 +205,9 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
             <div className="space-y-4">
               <button 
                 onClick={() => setShowCreate(true)}
-                className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest text-smash-gray hover:text-white hover:border-smash-orange/50 transition-all group"
+                className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center gap-3 text-sm font-semibold uppercase tracking-widest text-[#B0B0B0] hover:text-white hover:border-[#00A3FF]/50 transition-all group"
               >
-                <Plus size={20} className="group-hover:text-smash-orange transition-colors" /> Create New Playlist
+                <Plus size={20} className="group-hover:text-[#00A3FF] transition-colors" /> Create New Playlist
               </button>
 
               <div className="space-y-2">
@@ -228,14 +228,14 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                           {playlist.cover_url ? (
                             <img src={playlist.cover_url} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                           ) : (
-                            <Music2 size={24} className="text-smash-gray" />
+                            <Music2 size={24} className="text-[#B0B0B0]" />
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-display font-black italic uppercase text-sm group-hover:text-smash-orange transition-colors">{playlist.name}</p>
+                          <p className="font-display font-semibold uppercase text-sm group-hover:text-[#00A3FF] transition-colors">{playlist.name}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            {playlist.is_public ? <Globe size={10} className="text-smash-gray" /> : <AppLockIcon size={10} className="text-smash-gray" />}
-                            <p className="text-[10px] text-smash-gray font-black uppercase tracking-widest">{playlist.is_public ? 'Public' : 'Private'}</p>
+                            {playlist.is_public ? <Globe size={10} className="text-[#B0B0B0]" /> : <AppLockIcon size={10} className="text-[#B0B0B0]" />}
+                            <p className="text-[10px] text-[#B0B0B0] font-semibold uppercase tracking-widest">{playlist.is_public ? 'Public' : 'Private'}</p>
                           </div>
                         </div>
                       </div>
@@ -247,14 +247,14 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                       ) : addingTo === playlist.id ? (
                         <Loader2 className="animate-spin text-[#00A3FF]" size={20} />
                       ) : (
-                        <div className="w-8 h-8 rounded-full border border-white/10 group-hover:border-smash-orange/50 flex items-center justify-center transition-all">
-                          <Plus size={16} className="text-smash-gray group-hover:text-smash-orange" />
+                        <div className="w-8 h-8 rounded-full border border-white/10 group-hover:border-[#00A3FF]/50 flex items-center justify-center transition-all">
+                          <Plus size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF]" />
                         </div>
                       )}
                     </button>
                   ))
                 ) : (
-                  <p className="text-center py-8 text-sm text-smash-gray font-medium">You don't have any playlists yet.</p>
+                  <p className="text-center py-8 text-sm text-[#B0B0B0] font-medium">You don't have any playlists yet.</p>
                 )}
               </div>
 
@@ -265,7 +265,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
                     navigate('/library?tab=playlists');
                     onClose();
                   }}
-                  className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-smash-orange hover:underline py-2"
+                  className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#00A3FF] hover:underline py-2"
                 >
                   <Library size={14} /> View All Playlists in Library
                 </button>
@@ -274,28 +274,28 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest ml-1">Playlist Name</label>
+                <label className="text-[10px] font-semibold text-[#B0B0B0] uppercase tracking-widest ml-1">Playlist Name</label>
                 <input 
                   type="text"
                   autoFocus
                   placeholder="E.g. Summer Anthems"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-smash-orange transition-all font-bold"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#00A3FF] transition-all font-bold"
                 />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                 <div className="flex items-center gap-3">
-                  {isPublic ? <Globe size={18} className="text-smash-orange" /> : <AppLockIcon size={18} className="text-smash-gray" />}
+                  {isPublic ? <Globe size={18} className="text-[#00A3FF]" /> : <AppLockIcon size={18} className="text-[#B0B0B0]" />}
                   <div>
-                    <p className="text-sm font-black uppercase tracking-widest">Public Playlist</p>
-                    <p className="text-[10px] text-smash-gray font-medium">Anyone can see this playlist</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest">Public Playlist</p>
+                    <p className="text-[10px] text-[#B0B0B0] font-medium">Anyone can see this playlist</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setIsPublic(!isPublic)}
-                  className={`w-12 h-6 rounded-full transition-all relative ${isPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+                  className={`w-12 h-6 rounded-full transition-all relative ${isPublic ? 'bg-[#0084D6]' : 'bg-white/10'}`}
                 >
                   <motion.div 
                     animate={{ x: isPublic ? 24 : 4 }}
@@ -307,14 +307,14 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({ song, onClose }
               <div className="flex gap-4 pt-4">
                 <button 
                   onClick={() => setShowCreate(false)}
-                  className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/5 transition-all text-smash-gray"
+                  className="flex-1 py-4 rounded-2xl font-semibold uppercase tracking-widest text-xs hover:bg-white/5 transition-all text-[#B0B0B0]"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleCreatePlaylist}
                   disabled={!newName.trim() || loading}
-                  className="flex-1 py-4 bg-white text-smash-black rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-smash-orange hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-smash-black shadow-xl"
+                  className="flex-1 py-4 bg-white text-[#0A0A0A] rounded-2xl font-semibold uppercase tracking-widest text-xs hover:bg-[#0084D6] hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-[#0A0A0A] shadow-xl"
                 >
                   {loading ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Create & Add'}
                 </button>

@@ -411,32 +411,32 @@ const PlaylistDetails: React.FC = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-8 w-full">
             {/* Playlist Dynamic Cover Design (Spotify/Smashify styled) */}
             {displayInfo.cover_url ? (
-              <div className="w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative border border-white/10 group">
+              <div className="w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-[16px] overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative border border-white/10 group">
                 <img src={optimizeImage(displayInfo.cover_url, 400, 400)} className="w-full h-full object-cover" alt={displayInfo.title} loading="lazy" decoding="async" />
               </div>
             ) : (
-              <div className={`w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-2xl bg-gradient-to-br ${displayInfo.style} shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative flex flex-col justify-between p-5 border border-white/10 group`}>
+              <div className={`w-40 h-40 md:w-52 md:h-52 shrink-0 rounded-[16px] bg-gradient-to-br ${displayInfo.style} shadow-[0_16px_32px_rgba(0,0,0,0.6)] relative flex flex-col justify-between p-5 border border-white/10 group`}>
                 <div className="flex justify-between items-start">
                   <div className="w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                    <Headphones size={13} className="text-smash-cyan animate-pulse" />
+                    <Headphones size={13} className="text-[#00A3FF] animate-pulse" />
                   </div>
-                  <div className="text-[9px] font-display font-black tracking-widest text-white/50 uppercase">
+                  <div className="text-[9px] font-display font-semibold tracking-widest text-white/50 uppercase">
                     {chartInfo.type}
                   </div>
                 </div>
                 
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-studio font-black italic tracking-tighter leading-none mb-1 text-white">
+                  <h2 className="text-2xl md:text-3xl font-studio font-semibold tracking-tighter leading-none mb-1 text-white">
                     {chartInfo.cardTitle}
                   </h2>
-                  <h3 className="text-lg font-display font-black tracking-widest text-[#1db954] uppercase leading-none">
+                  <h3 className="text-lg font-display font-semibold tracking-widest text-[#00A3FF] uppercase leading-none">
                     {chartInfo.cardSub}
                   </h3>
                 </div>
                 
                 <div className="flex items-center gap-1.5 mt-2">
                   <TrendingUp size={11} className="text-white/70" />
-                  <span className="text-[9px] font-sans font-black tracking-widest uppercase text-white/60">
+                  <span className="text-[9px] font-sans font-semibold tracking-widest uppercase text-white/60">
                     {chartInfo.iconText}
                   </span>
                 </div>
@@ -446,15 +446,15 @@ const PlaylistDetails: React.FC = () => {
             {/* Title / Meta */}
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#1db954] bg-[#1db954]/10 px-3 py-1 rounded-full flex items-center gap-1.5 border border-[#1db954]/20">
+                <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#00A3FF] bg-[#00A3FF]/10 px-3 py-1 rounded-full flex items-center gap-1.5 border border-[#00A3FF]/20">
                   {displayInfo.isCustom ? (
                     <>
-                      {displayInfo.is_public ? <Globe size={12} className="text-[#1db954]" /> : <Lock size={12} className="text-[#1db954]" />}
+                      {displayInfo.is_public ? <Globe size={12} className="text-[#00A3FF]" /> : <Lock size={12} className="text-[#00A3FF]" />}
                       {displayInfo.is_public ? 'Public Playlist' : 'Private Playlist'}
                     </>
                   ) : (
                     <>
-                      <Globe size={12} className="text-[#1db954]" />
+                      <Globe size={12} className="text-[#00A3FF]" />
                       Public Playlist
                     </>
                   )}
@@ -462,13 +462,13 @@ const PlaylistDetails: React.FC = () => {
                 {isOwner && (
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="text-[10px] font-black uppercase tracking-wider text-white/80 hover:text-white bg-white/10 hover:bg-smash-orange px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white/80 hover:text-white bg-white/10 hover:bg-[#0084D6] px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
                   >
                     <Pencil size={12} /> Edit Settings
                   </button>
                 )}
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-studio font-black italic uppercase tracking-tighter text-white mt-4 mb-3 leading-none drop-shadow-md">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mt-4 mb-3 leading-tight">
                 {displayInfo.title}
               </h1>
               <p className="font-sans text-sm md:text-base text-text-secondary max-w-2xl font-medium leading-relaxed mb-4">
@@ -476,13 +476,13 @@ const PlaylistDetails: React.FC = () => {
               </p>
               
               <div className="flex items-center gap-2 text-xs text-text-muted font-sans flex-wrap">
-                <span className="font-black text-white hover:underline cursor-pointer">Smashify</span>
+                <span className="font-semibold text-white hover:underline cursor-pointer">Smashify</span>
                 <span className="text-white/30">•</span>
                 <span className="text-white/80 font-bold">{savesCount.toLocaleString()} saves</span>
                 <span className="text-white/30">•</span>
                 <span className="text-white/80 font-bold">{songs.length} songs, about {durationText}</span>
                 <span className="text-white/30">•</span>
-                <span className="text-[#1db954] font-black">{songs.length > 10 ? '2 new entries' : 'Updated daily'}</span>
+                <span className="text-[#00A3FF] font-semibold">{songs.length > 10 ? '2 new entries' : 'Updated daily'}</span>
               </div>
             </div>
           </div>
@@ -494,7 +494,7 @@ const PlaylistDetails: React.FC = () => {
         <div className={`flex items-center gap-6 ${SECTION_SPACING}`}>
           <button 
             onClick={handlePlayAll} 
-            className="h-14 px-8 bg-[#1db954] rounded-full flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#1db954]/20 text-black font-display font-black uppercase tracking-widest text-xs"
+            className="h-14 px-8 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-[10px] flex items-center justify-center gap-2 h-11 px-6 font-semibold text-sm shadow-md transition-all"
             id="play_all_playlist"
           >
             <Play fill="black" size={18} /> Play Playlist
@@ -503,7 +503,7 @@ const PlaylistDetails: React.FC = () => {
           <button
             onClick={handleShufflePlay}
             disabled={songs.length === 0}
-            className="h-14 px-6 border border-white/10 rounded-full flex items-center justify-center gap-2 text-white/80 hover:border-white/30 hover:text-white transition-all active:scale-95 font-display font-black uppercase tracking-widest text-xs disabled:opacity-30"
+            className="h-14 px-6 border border-white/10 hover:border-white/20 text-white rounded-[10px] flex items-center justify-center gap-2 h-11 px-5 font-semibold text-sm hover:bg-white/5 transition-all disabled:opacity-30"
           >
             <Shuffle size={16} /> Shuffle
           </button>
@@ -578,7 +578,7 @@ const PlaylistDetails: React.FC = () => {
                 toast.error('Failed to update playlist: ' + err.message);
               }
             }}
-            className={`w-12 h-12 border ${isSaved ? 'border-[#1db954] bg-[#1db954]/5 text-[#1db954]' : 'border-white/10 text-white/70 hover:border-white/30 hover:text-white'} rounded-full flex items-center justify-center transition-all active:scale-90`}
+            className={`w-12 h-12 border ${isSaved ? 'border-[#1db954] bg-[#1db954]/5 text-[#00A3FF]' : 'border-white/10 text-white/70 hover:border-white/30 hover:text-white'} rounded-full flex items-center justify-center transition-all active:scale-90`}
             id="save_playlist"
           >
             <Heart size={20} fill={isSaved ? 'currentColor' : 'none'} />
@@ -605,7 +605,7 @@ const PlaylistDetails: React.FC = () => {
         {/* Dynamic Songs Table in Spotify Grid Line-item layout */}
         <div className="space-y-1">
           {/* Table Header */}
-          <div className="hidden md:flex items-center gap-4 px-4 py-2 border-b border-white/5 text-xs text-text-muted font-display font-black uppercase tracking-widest mb-3">
+          <div className="hidden md:flex items-center gap-4 px-4 py-2 border-b border-white/5 text-[11px] text-[#737373] font-semibold uppercase tracking-[0.18em] mb-3">
             <span className="w-10 text-center">#</span>
             <span className="flex-1">Title</span>
             <span className="w-32 text-right">Plays</span>
@@ -614,13 +614,13 @@ const PlaylistDetails: React.FC = () => {
 
           {songs.length === 0 ? (
             customPlaylistInfo?.isCustom ? (
-              <div className="text-center py-20 bg-white/2 p-8 rounded-2xl border border-white/5">
+              <div className="text-center py-20 bg-white/2 p-8 rounded-[16px] border border-white/5">
                 <Music size={40} className="mx-auto text-white/10 mb-4" />
                 <p className="text-sm font-semibold text-text-muted mb-1">This playlist is empty</p>
                 <p className="text-xs text-white/30">Add songs using the "Add to Playlist" option on any track.</p>
               </div>
             ) : (
-              <div className="text-center py-20 bg-white/2 p-8 rounded-2xl border border-white/5">
+              <div className="text-center py-20 bg-white/2 p-8 rounded-[16px] border border-white/5">
                 <Music size={40} className="mx-auto text-white/10 mb-4 animate-bounce" />
                 <p className="text-sm font-semibold text-text-muted mb-1">No tracks found in database yet</p>
                 <p className="text-xs text-white/10">Keep uploading great local hits to populate charts!</p>
@@ -650,7 +650,7 @@ const PlaylistDetails: React.FC = () => {
                         index + 1
                       )}
                     </span>
-                    <span className="hidden group-hover:inline text-[#1db954]">
+                    <span className="hidden group-hover:inline text-[#00A3FF]">
                       {isCurrent && isPlaying ? (
                         <PauseCircle size={18} fill="currentColor" className="text-black" />
                       ) : (
@@ -670,16 +670,16 @@ const PlaylistDetails: React.FC = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-[#1db954]' : 'text-white group-hover:text-[#1db954]'}`}>
+                        <h4 className={`font-sans font-bold text-[14px] md:text-[15px] truncate transition-colors ${isCurrent ? 'text-[#00A3FF]' : 'text-white group-hover:text-[#00A3FF]'}`}>
                           {formatDisplayTitle(song.title)}
                         </h4>
                         {(song as any).is_explicit && (
-                          <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-black uppercase tracking-widest mt-0.5 shrink-0">
+                          <span className="px-1.5 py-0.5 bg-white/10 text-text-muted rounded-[3px] text-[8.5px] font-display font-semibold uppercase tracking-widest mt-0.5 shrink-0">
                             E
                           </span>
                         )}
                         {song.is_for_sale && (
-                          <span className="px-1.5 py-0.5 bg-smash-purple/25 text-smash-purple text-[8.5px] font-display font-black uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 bg-[#00A3FF]/15 text-[#00A3FF] text-[8.5px] font-display font-semibold uppercase tracking-widest rounded-[3px] mt-0.5 shrink-0 flex items-center gap-1">
                             {isOnSale(song) ? (
                               <>
                                 <span className="line-through opacity-50">MK {song.price}</span>
@@ -707,7 +707,7 @@ const PlaylistDetails: React.FC = () => {
                     <span className="group-hover:hidden">{formatDuration(song.duration)}</span>
                     {isOwner && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); handleRemoveSong(song); }} className="p-1 text-smash-gray hover:text-red-400">
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveSong(song); }} className="p-1 text-[#B0B0B0] hover:text-red-400">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -736,25 +736,25 @@ const PlaylistDetails: React.FC = () => {
             <h3 className="text-xl font-studio font-bold uppercase tracking-tight text-white">Playlist Settings</h3>
 
             <div>
-              <label className="text-[10px] font-black text-smash-gray uppercase tracking-widest block mb-2">Playlist Name</label>
+              <label className="text-[10px] font-semibold text-[#B0B0B0] uppercase tracking-widest block mb-2">Playlist Name</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 outline-none focus:border-smash-orange transition-all font-bold text-white"
+                className="w-full bg-white/5 border border-white/10 rounded-[16px] px-5 py-3 outline-none focus:border-[#00A3FF] transition-all font-bold text-white"
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-[16px] border border-white/5">
               <div className="flex items-center gap-3">
-                {editPublic ? <Globe size={18} className="text-smash-orange" /> : <Lock size={18} className="text-smash-gray" />}
+                {editPublic ? <Globe size={18} className="text-[#00A3FF]" /> : <Lock size={18} className="text-[#B0B0B0]" />}
                 <div>
-                  <p className="text-sm font-black uppercase tracking-widest text-white">Public Playlist</p>
-                  <p className="text-[10px] text-smash-gray font-medium">Anyone can find and play this</p>
+                  <p className="text-sm font-semibold uppercase tracking-widest text-white">Public Playlist</p>
+                  <p className="text-[10px] text-[#B0B0B0] font-medium">Anyone can find and play this</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditPublic(!editPublic)}
-                className={`w-12 h-6 rounded-full transition-all relative ${editPublic ? 'bg-smash-orange' : 'bg-white/10'}`}
+                className={`w-12 h-6 rounded-full transition-all relative ${editPublic ? 'bg-[#0084D6]' : 'bg-white/10'}`}
               >
                 <div 
                   className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform ${editPublic ? 'translate-x-7' : 'translate-x-1'}`} 
@@ -765,13 +765,13 @@ const PlaylistDetails: React.FC = () => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs text-smash-gray hover:bg-white/5 transition-all"
+                className="flex-1 py-3.5 rounded-[16px] font-semibold uppercase tracking-widest text-xs text-[#B0B0B0] hover:bg-white/5 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSavePlaylistSettings}
-                className="flex-1 py-3.5 bg-white text-smash-black rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-smash-orange hover:text-white transition-all"
+                className="flex-1 py-3.5 bg-white text-black rounded-[16px] font-semibold uppercase tracking-widest text-xs hover:bg-[#0084D6] hover:text-white transition-all"
               >
                 Save Changes
               </button>
@@ -779,7 +779,7 @@ const PlaylistDetails: React.FC = () => {
 
             <button
               onClick={handleDeletePlaylist}
-              className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-[16px] font-semibold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2"
             >
               <Trash2 size={14} /> Delete Playlist
             </button>

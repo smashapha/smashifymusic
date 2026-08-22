@@ -59,7 +59,7 @@ export default function FollowedArtistCard({ song, queue }: { song: Song, queue:
         </div>
 
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#00A3FF] mb-1">New Release</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#00A3FF] mb-1">New Release</p>
           <h3 className="text-[16px] md:text-[18px] font-bold text-white truncate drop-shadow-md">{song.title}</h3>
         </div>
       </div>

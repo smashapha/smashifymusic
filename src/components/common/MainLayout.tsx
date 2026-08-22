@@ -12,10 +12,8 @@ import Footer from './Footer';
 
 const TopBar = ({ unreadCount }: { unreadCount: number }) => {
   const { dataSaver, toggleDataSaver } = usePlayer();
-  const { user, userProfile, signOut, role } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const navigate = useNavigate();
-
-  const accentColor = role === 'artist' ? 'text-smash-purple' : 'text-smash-orange';
 
   return (
     <div className="h-16 flex items-center px-4 lg:px-8 bg-bg-page sticky top-0 z-30 border-b border-border-subtle">
@@ -34,12 +32,12 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
              navigate(`/discover?q=${encodeURIComponent(q.toString())}`);
           }
         }}>
-           <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:${accentColor} transition-colors`} />
+           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-[#00A3FF] transition-colors" />
            <input 
             type="text" 
             name="q"
             placeholder="Search artists, songs, podcasts..." 
-            className="w-full bg-border-subtle border border-border-default rounded-[10px] h-[44px] pl-12 pr-4 text-sm font-display focus:outline-none focus:border-smash-orange focus:ring-[3px] focus:ring-smash-orange/15 transition-all"
+            className="w-full bg-border-subtle border border-border-default rounded-[10px] h-[44px] pl-12 pr-4 text-sm font-display focus:outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all"
            />
         </form>
       </div>
@@ -48,7 +46,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
         {userProfile?.is_admin && (
            <Link 
              to="/admin" 
-             className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
+             className="hidden md:flex items-center gap-2 px-3.5 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[8px] text-xs font-semibold hover:bg-red-500 hover:text-white transition-all shadow-sm"
            >
               <ShieldCheck size={14} /> Admin access
            </Link>
@@ -68,7 +66,7 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
                    initial={{ scale: 0 }}
                    animate={{ scale: 1 }}
                    exit={{ scale: 0 }}
-                   className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-smash-orange text-white text-[8px] font-semibold flex items-center justify-center px-1 border-2 border-bg-page"
+                   className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[#00A3FF] text-white text-[8px] font-semibold flex items-center justify-center px-1 border-2 border-bg-page"
                  >
                    {unreadCount > 99 ? '99+' : unreadCount}
                  </motion.div>
@@ -80,10 +78,10 @@ const TopBar = ({ unreadCount }: { unreadCount: number }) => {
         <ThemeToggle />
         <button aria-label="Toggle Data Saver" 
            onClick={toggleDataSaver}
-           className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-smash-orange focus:ring-offset-2 focus:ring-offset-bg-page"
+           className="p-2.5 bg-bg-elevated border border-border-subtle rounded-[8px] text-text-muted hover:text-text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-[#00A3FF] focus:ring-offset-2 focus:ring-offset-bg-page"
            title={dataSaver ? 'Turn Data Saver Off' : 'Turn Data Saver On'}
         >
-          {dataSaver ? <WifiOff size={16} className="text-smash-orange" /> : <Wifi size={16} />}
+          {dataSaver ? <WifiOff size={16} className="text-[#00A3FF]" /> : <Wifi size={16} />}
         </button>
         {user && (
           <button aria-label="Sign out" 

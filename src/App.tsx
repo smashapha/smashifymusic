@@ -230,7 +230,7 @@ const Contact = () => {
 const NotFound = () => {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center text-center px-4">
-      <h1 className="text-8xl font-black font-studio tracking-tighter text-[#00A3FF] mb-2 drop-shadow-2xl">404</h1>
+      <h1 className="text-8xl font-semibold font-studio tracking-tighter text-[#00A3FF] mb-2 drop-shadow-2xl">404</h1>
       <h2 className="text-2xl font-bold uppercase tracking-wider mb-4 text-white">Track Not Found</h2>
       <p className="text-[#B0B0B0] font-normal max-w-md mb-8 text-[14px]">
         Looks like you've navigated off the playlist. The page you're looking for doesn't exist or has moved.
@@ -273,7 +273,7 @@ const LoadingSpinner = () => (
       
       {/* Loading Text */}
       <motion.p 
-        className="mt-6 text-xs font-display font-black tracking-[0.25em] text-white uppercase"
+        className="mt-6 text-xs font-display font-semibold tracking-[0.25em] text-white uppercase"
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >

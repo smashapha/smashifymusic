@@ -30,9 +30,9 @@ const Avatar: React.FC<AvatarProps> = ({ src, name, className = "" }) => {
   return (
     <div className={`flex items-center justify-center bg-white/10 text-white ${className}`}>
       {name ? (
-        <span className="text-xl font-black">{initials}</span>
+        <span className="text-xl font-semibold">{initials}</span>
       ) : (
-        <User className="text-smash-gray" size={Number(className.match(/w-(\d+)/)?.[1] || 24) / 2} />
+        <User className="text-[#B0B0B0]" size={Number(className.match(/w-(\d+)/)?.[1] || 24) / 2} />
       )}
     </div>
   );

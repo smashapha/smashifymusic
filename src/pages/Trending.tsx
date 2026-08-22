@@ -87,36 +87,35 @@ const Trending: React.FC = () => {
            </div>
          )}
          {/* Hero Header */}
-         <div className="relative p-6 md:p-12 rounded-[24px] md:rounded-[40px] overflow-hidden bg-gradient-to-br from-smash-orange to-red-500 text-white shadow-2xl">
-            <div className="absolute top-0 right-0 p-6 md:p-12 opacity-10">
-               <Trophy className="w-32 h-32 md:w-[200px] md:h-[200px]" strokeWidth={1} />
+         <div className="relative p-6 md:p-10 rounded-[16px] overflow-hidden bg-[#1A1A1A] border border-white/10 text-white shadow-xl">
+            <div className="absolute top-0 right-0 p-6 md:p-10 opacity-5 pointer-events-none">
+               <Trophy className="w-32 h-32 md:w-[180px] md:h-[180px]" strokeWidth={1} />
             </div>
-            <div className="relative z-10 space-y-4 md:space-y-6">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
-                     <Flame size={20} className="md:w-6 md:h-6" />
+            <div className="relative z-10 space-y-3">
+               <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-[#00A3FF]/10 text-[#00A3FF] rounded-[8px]">
+                     <Flame size={18} />
                   </div>
-                  <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em]">Charts</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF]">Top Charts</span>
                </div>
-               <h1 className="text-4xl md:text-8xl font-black font-display italic uppercase tracking-tighter leading-[0.9] translate-x-[-2px] md:translate-x-[-4px]">
-                  SMASHIFY <br />
-                  <span className="text-smash-black font-outline text-transparent" style={{ WebkitTextStroke: '1px white' }}>HOT 20</span>
+               <h1 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tight">
+                  Smashify Hot 20
                </h1>
-               <p className="max-w-md font-bold text-sm md:text-lg opacity-80 leading-relaxed">The most played anthems in Malawi right now. Updated daily based on community streams.</p>
+               <p className="max-w-md text-[#B0B0B0] text-sm leading-relaxed">The most played anthems in Malawi right now. Updated daily based on verified community streams.</p>
             </div>
          </div>
 
          {/* Chart List */}
-         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-            <div className="lg:col-span-3 space-y-8">
-               <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl md:text-3xl font-black font-display italic uppercase tracking-tighter flex items-center gap-4">
-                     <TrendingUp className="text-smash-orange shrink-0" /> Current Standings
+         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3 space-y-6">
+               <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg md:text-xl font-display font-bold text-white flex items-center gap-2.5">
+                     <TrendingUp className="text-[#00A3FF] shrink-0" size={20} /> Current standings
                   </h2>
 
                   <div className="flex items-center gap-4">
-                     <button className="text-xs font-black text-smash-gray hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors">
-                        <Filter size={16} /> Filter Region
+                     <button className="text-xs font-semibold text-[#737373] hover:text-white flex items-center gap-2 transition-colors">
+                        <Filter size={14} /> Filter region
                      </button>
                   </div>
                </div>
@@ -129,7 +128,7 @@ const Trending: React.FC = () => {
                      ))}
                   </div>
                ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                      {songs.map((song, index) => (
                         <motion.div 
                           key={`trending-song-${song.id}-${index}`}
@@ -146,30 +145,30 @@ const Trending: React.FC = () => {
             </div>
 
             {/* Sidebar Stats */}
-            <div className="space-y-8">
-               <div className="bento-card p-8 bg-white/5 space-y-6">
-                  <h3 className="text-xl font-black font-display italic uppercase border-b border-white/10 pb-4">Top Genere</h3>
-                  <div className="space-y-4">
+            <div className="space-y-6">
+               <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-4">
+                  <h3 className="text-sm font-semibold text-white border-b border-white/10 pb-3">Top Genres</h3>
+                  <div className="space-y-3">
                      {['Afropop', 'Hip Hop', 'Amapiano'].map((g, i) => (
                         <div key={g} className="flex items-center justify-between">
-                           <span className="text-sm font-bold text-smash-gray uppercase tracking-widest">{g}</span>
-                           <div className="flex-1 mx-4 h-1 bg-white/5 rounded-full overflow-hidden">
-                              <div className="h-full bg-smash-orange" style={{ width: `${80 - i * 15}%` }} />
+                           <span className="text-xs font-medium text-[#B0B0B0]">{g}</span>
+                           <div className="flex-1 mx-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-[#00A3FF] rounded-full" style={{ width: `${80 - i * 15}%` }} />
                            </div>
-                           <span className="font-bold text-xs">{80 - i * 15}%</span>
+                           <span className="font-mono text-xs text-[#737373]">{80 - i * 15}%</span>
                         </div>
                      ))}
                   </div>
                </div>
 
-               <div className="bento-card p-8 bg-smash-purple/10 border-smash-purple/20 space-y-6">
-                  <div className="flex items-center gap-3">
-                     <PlayCircle className="text-smash-purple" />
-                     <h3 className="text-xl font-black font-display italic uppercase">Coming Up</h3>
+               <div className="p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-4">
+                  <div className="flex items-center gap-2 text-white">
+                     <PlayCircle className="text-[#00A3FF]" size={18} />
+                     <h3 className="text-sm font-semibold">Coming Soon</h3>
                   </div>
-                  <p className="text-sm text-smash-gray font-medium leading-relaxed">Local live stream charts coming in June. Stay tuned for the real-time radio charts.</p>
-                  <button className="w-full py-4 bg-smash-purple text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-smash-purple transition-all">
-                     FOLLOW UPDATES
+                  <p className="text-xs text-[#B0B0B0] leading-relaxed">Local live stream charts coming in June. Stay tuned for real-time radio charts.</p>
+                  <button className="w-full py-2.5 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-[10px] font-semibold text-xs transition-all">
+                     Follow updates
                   </button>
                </div>
             </div>

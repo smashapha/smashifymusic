@@ -2,12 +2,12 @@ import React from 'react';
 import { Wallet, DollarSign, Play, Music2 } from 'lucide-react';
 
 const MetricCard = ({ label, value, icon, sub, color }: any) => (
-  <div className="bg-bg-surface border border-border-default rounded-[14px] p-4 md:p-6 hover:border-smash-purple/50 transition-colors group shadow-sm flex flex-col justify-between h-full">
+  <div className="bg-bg-surface border border-border-default rounded-[14px] p-4 md:p-6 hover:border-[#00A3FF]/50 transition-colors group shadow-sm flex flex-col justify-between h-full">
      <div className="flex items-center justify-between mb-4">
-        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[8px] md:rounded-[10px] bg-bg-elevated border border-border-default flex items-center justify-center ${color || 'text-text-muted'} group-hover:text-smash-purple transition-colors`}>
+        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[8px] md:rounded-[10px] bg-bg-elevated border border-border-default flex items-center justify-center ${color || 'text-text-muted'} group-hover:text-[#00A3FF] transition-colors`}>
            {icon}
         </div>
-        <svg className="w-12 h-4 md:w-16 md:h-6 text-smash-purple/10 group-hover:text-smash-purple transition-colors opacity-50 relative top-1" viewBox="0 0 100 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-12 h-4 md:w-16 md:h-6 text-[#00A3FF]/10 group-hover:text-[#00A3FF] transition-colors opacity-50 relative top-1" viewBox="0 0 100 25" fill="none" xmlns="http://www.w3.org/2000/svg">
            <path d="M0 25L20 15L40 20L60 5L75 10L100 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
      </div>
@@ -30,21 +30,21 @@ export const OverviewCards = ({ stats, balance, songs }: { stats: any, balance: 
         label="AVAILABLE BALANCE"
         value={balance > 0 ? `MK ${balance.toLocaleString()}` : 'No data yet'}
         icon={<Wallet size={20} />}
-        color="text-smash-green"
+        color="text-[#22C55E]"
         sub="Ready for withdrawal"
       />
       <MetricCard
         label="TOTAL EARNINGS"
         value={stats.revenue > 0 ? `MK ${stats.revenue.toLocaleString()}` : 'No data yet'}
         icon={<DollarSign size={20} />}
-        color="text-smash-green"
+        color="text-[#22C55E]"
         sub="Lifetime earnings"
       />
       <MetricCard
         label="RECENT PLAYS"
         value={stats.streams > 0 ? stats.streams.toLocaleString() : 'No data yet'}
         icon={<Play size={20} />}
-        color="text-smash-cyan"
+        color="text-[#00A3FF]"
         sub="NOT tied to earnings"
       />
       <MetricCard

@@ -17,13 +17,13 @@ export const SlotUsageCard = ({ songs, userProfile }: { songs: any[], userProfil
   return (
     <div className="bg-bg-surface border border-border-default rounded-[14px] p-4 md:p-6 mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[14px] font-display font-black uppercase tracking-widest text-white">Track Slots Usage</h3>
+        <h3 className="text-[14px] font-display font-semibold uppercase tracking-widest text-white">Track Slots Usage</h3>
         <span className="text-sm font-sans text-text-secondary">{totalSlotted} / {songLimit === Infinity ? '∞' : songLimit} used</span>
       </div>
       
       {songLimit !== Infinity && (
         <div className="w-full h-2 bg-bg-elevated rounded-full overflow-hidden mb-6">
-          <div className="h-full bg-smash-purple" style={{ width: `${pct}%` }}></div>
+          <div className="h-full bg-[#0084D6]" style={{ width: `${pct}%` }}></div>
         </div>
       )}
 
@@ -33,7 +33,7 @@ export const SlotUsageCard = ({ songs, userProfile }: { songs: any[], userProfil
           <span className="text-lg md:text-xl font-studio font-bold text-white">{hotCount}</span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-smash-green flex items-center gap-1 text-[9px] sm:text-[10px] md:text-[11px] font-display font-bold uppercase"><CheckCircle size={12}/> Active</span>
+          <span className="text-[#22C55E] flex items-center gap-1 text-[9px] sm:text-[10px] md:text-[11px] font-display font-bold uppercase"><CheckCircle size={12}/> Active</span>
           <span className="text-lg md:text-xl font-studio font-bold text-white">{activeCount}</span>
         </div>
         <div className="flex flex-col gap-1">

@@ -409,7 +409,7 @@ const ArtistProfile: React.FC = () => {
       <div className="min-h-[60vh] flex flex-col justify-center items-center p-8 text-center">
          <Users size={48} className="text-text-muted/30 mb-6" />
          <h1 className="text-2xl font-bold font-display uppercase tracking-tight text-text-primary mb-4">Artist Vault Empty</h1>
-         <button onClick={() => navigate(-1)} className="h-[44px] px-6 bg-smash-purple text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-smash-purple/90 transition-colors">Back to Discover</button>
+         <button onClick={() => navigate(-1)} className="h-[44px] px-6 bg-[#0084D6] text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-[#0084D6]/90 transition-colors">Back to Discover</button>
       </div>
    );
 
@@ -447,11 +447,11 @@ const ArtistProfile: React.FC = () => {
         <div className="flex-1 min-w-0 pb-1">
           {artist.verified && (
             <div className="flex items-center gap-1 mb-1">
-              <CircleCheck size={13} className="text-smash-cyan" />
-              <span className="text-smash-cyan text-[10px] font-black uppercase tracking-widest">Verified Artist</span>
+              <CircleCheck size={13} className="text-[#00A3FF]" />
+              <span className="text-[#00A3FF] text-[10px] font-semibold uppercase tracking-widest">Verified Artist</span>
             </div>
           )}
-          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white truncate leading-none">
+          <h1 className="text-3xl md:text-5xl font-semibold uppercase tracking-tight text-white truncate leading-none">
             {artist.stage_name || artist.full_name}
           </h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -478,7 +478,7 @@ const ArtistProfile: React.FC = () => {
       {/* Play button */}
       <button
         onClick={() => playQueue(songs, 0)}
-        className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-smash-orange/30 shrink-0"
+        className="w-12 h-12 bg-[#0084D6] rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-[#00A3FF]/20 shrink-0"
       >
         <Play size={20} fill="white" className="text-white ml-0.5" />
       </button>
@@ -499,7 +499,7 @@ const ArtistProfile: React.FC = () => {
       {/* Support */}
       <button
         onClick={() => setShowSupportModal(true)}
-        className="h-9 px-5 rounded-full font-black text-xs uppercase tracking-widest border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all"
+        className="h-9 px-4 rounded-[10px] border border-[#00A3FF]/30 bg-[#00A3FF]/10 text-[#00A3FF] text-[13px] font-semibold hover:bg-[#00A3FF]/20 transition-all"
       >
         Support
       </button>
@@ -524,7 +524,7 @@ const ArtistProfile: React.FC = () => {
       {isOwner && (
         <button
           onClick={() => navigate('/artist-hub')}
-          className="h-9 px-4 rounded-full border border-smash-purple/30 text-smash-purple text-xs font-black uppercase tracking-widest hover:bg-smash-purple/10 transition-all"
+          className="h-9 px-4 rounded-full border border-[#00A3FF]/30 text-[#00A3FF] text-xs font-semibold uppercase tracking-widest hover:bg-[#0084D6]/10 transition-all"
         >
           Edit Profile
         </button>
@@ -541,13 +541,13 @@ const ArtistProfile: React.FC = () => {
         <button
           key={tab.key}
           onClick={() => setActiveTab(tab.key as any)}
-          className={`relative py-4 px-4 text-xs font-black uppercase tracking-widest transition-colors ${
+          className={`relative py-4 px-4 text-xs font-semibold uppercase tracking-widest transition-colors ${
             activeTab === tab.key ? 'text-white' : 'text-white/30 hover:text-white/60'
           }`}
         >
           {tab.label}
           {activeTab === tab.key && (
-            <motion.div layoutId="artistTabLine" className="absolute bottom-0 left-0 right-0 h-[2px] bg-smash-orange" />
+            <motion.div layoutId="artistTabLine" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0084D6]" />
           )}
         </button>
       ))}
@@ -564,7 +564,7 @@ const ArtistProfile: React.FC = () => {
             {/* Popular — Spotify-style numbered list */}
             {popularTracks.length > 0 && (
               <section>
-                <h2 className="text-sm font-black uppercase tracking-widest text-white/50 mb-4">Popular</h2>
+                <h2 className="text-sm font-semibold text-white/70 mb-4">Popular</h2>
                 <div className="space-y-1">
                   {popularTracks.map((song, i) => (
                     <div
@@ -601,27 +601,27 @@ const ArtistProfile: React.FC = () => {
             {/* Exclusive Content Section */}
             <div className="mt-8">
               <div className="flex items-center gap-2 mb-4">
-                <Crown size={16} className="text-smash-orange" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                <Crown size={16} className="text-[#00A3FF]" />
+                <h3 className="text-sm font-semibold uppercase tracking-widest text-white">
                   Exclusive Content
                 </h3>
                 {isSubscribed && (
-                  <span className="text-[9px] font-black bg-smash-orange/20 text-smash-orange px-2 py-0.5 rounded-full">
+                  <span className="text-[9px] font-semibold bg-[#0084D6]/20 text-[#00A3FF] px-2 py-0.5 rounded-full">
                     SUBSCRIBER ACCESS
                   </span>
                 )}
               </div>
 
               {!isSubscribed ? (
-                <div className="p-6 bg-white/5 border border-smash-orange/20 rounded-2xl text-center mb-8">
-                  <Crown size={32} className="text-smash-orange mx-auto mb-3" />
+                <div className="p-6 bg-white/5 border border-[#00A3FF]/20 rounded-[16px] text-center mb-8">
+                  <Crown size={32} className="text-[#00A3FF] mx-auto mb-3" />
                   <p className="text-sm font-bold text-white mb-1">Subscriber Only Content</p>
                   <p className="text-xs text-smash-gray mb-4">
                     Subscribe to {artist?.stage_name || artist?.full_name} for MK {(artist?.subscription_price || 1500).toLocaleString()}/month to unlock exclusive tracks, early releases, and behind-the-scenes content.
                   </p>
                   <button
                     onClick={() => handleSubscribe()}
-                    className="px-6 py-2 bg-smash-orange text-white rounded-full font-black text-xs uppercase tracking-widest"
+                    className="px-6 py-2 bg-[#0084D6] text-white rounded-full font-semibold text-xs uppercase tracking-widest"
                   >
                     Subscribe · MK {(artist?.subscription_price || 1500).toLocaleString()}/mo
                   </button>
@@ -644,7 +644,7 @@ const ArtistProfile: React.FC = () => {
                <section className={SECTION_SPACING}>
                   <div className="flex items-center justify-between mb-4 md:mb-6">
                      <div>
-                        <p className="text-[11px] font-black uppercase tracking-widest text-[#00A3FF] mb-1">Coming Soon</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-[#00A3FF] mb-1">Coming Soon</p>
                         <h2 className="text-xl md:text-2xl font-bold text-white">Upcoming Drops</h2>
                      </div>
                   </div>
@@ -700,7 +700,7 @@ const ArtistProfile: React.FC = () => {
                             <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
                                <img src={optimizeImage(item.data.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                 <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
+                                 <div className="w-12 h-12 bg-[#0084D6] rounded-full flex items-center justify-center shadow-lg">
                                    <Play size={18} fill="white" className="text-white ml-0.5" />
                                  </div>
                                </div>
@@ -796,7 +796,7 @@ const ArtistProfile: React.FC = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-12 h-12 bg-smash-orange rounded-full flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-[#0084D6] rounded-full flex items-center justify-center shadow-lg">
                           <Play size={18} fill="white" className="text-white ml-0.5" />
                         </div>
                       </div>
@@ -818,30 +818,30 @@ const ArtistProfile: React.FC = () => {
             ) : (
               <>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
-                    <Trophy size={14} className="text-smash-orange" /> Top Supporters
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
+                    <Trophy size={14} className="text-[#00A3FF]" /> Top Supporters
                   </h3>
                   {communityData.topSupporters.length === 0 ? (
-                    <p className="text-white/20 text-sm italic">No tips yet — be the first!</p>
+                    <p className="text-white/20 text-sm">No tips yet — be the first!</p>
                   ) : (
                     <div className="space-y-2">
                       {communityData.topSupporters.map((t, i) => (
                         <div key={i} className="flex items-center gap-4 p-3 bg-white/5 rounded-xl">
-                          <span className="text-smash-orange font-black text-sm w-5">#{i + 1}</span>
+                          <span className="text-[#00A3FF] font-semibold text-sm w-5">#{i + 1}</span>
                           <Avatar src={t.user_profiles?.avatar_url} name={t.user_profiles?.full_name} className="w-9 h-9" />
                           <p className="text-white font-bold text-sm flex-1">{t.user_profiles?.full_name || 'Anonymous'}</p>
-                          <p className="text-smash-orange font-black text-sm">MK {Number(t.gross_amount).toLocaleString()}</p>
+                          <p className="text-[#22C55E] font-mono font-semibold text-sm">MK {Number(t.gross_amount).toLocaleString()}</p>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
-                    <MessageCircle size={14} className="text-smash-cyan" /> Fan Comments
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
+                    <MessageCircle size={14} className="text-[#00A3FF]" /> Fan Comments
                   </h3>
                   {communityData.recentComments.length === 0 ? (
-                    <p className="text-white/20 text-sm italic">No comments yet.</p>
+                    <p className="text-white/20 text-sm">No comments yet.</p>
                   ) : (
                     <div className="space-y-3">
                       {communityData.recentComments.map(c => (
@@ -880,7 +880,7 @@ const SocialLink = ({ href, icon, label }: { href: string; icon: React.ReactNode
     href={href}
     target="_blank"
     rel="noreferrer"
-    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-black uppercase tracking-widest text-white/50 hover:text-white transition-all"
+    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold uppercase tracking-widest text-white/50 hover:text-white transition-all"
   >
     {icon} {label}
   </a>

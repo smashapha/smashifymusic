@@ -34,10 +34,10 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', showText = tru
       </div>
       {showText && (
         <div className="flex flex-col">
-          <span className={`${textSizes[size]} font-black font-display tracking-tight text-[#00A6FF] uppercase leading-none`}>
+          <span className={`${textSizes[size]} font-semibold font-display tracking-tight text-[#00A6FF] uppercase leading-none`}>
             SMASHIFY
           </span>
-          <span className="text-[10px] font-sans font-bold italic tracking-tight text-white/70 mt-0.5">
+          <span className="text-[10px] font-sans font-bold tracking-tight text-white/70 mt-0.5">
             Stream music. Support Artists.
           </span>
         </div>
