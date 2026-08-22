@@ -316,7 +316,7 @@ export const BottomNav = () => {
             <>
               <div className={`absolute top-1 w-[28px] h-[3px] rounded-full transition-opacity ${isActive ? activeBgClass : 'opacity-0'}`} />
               <tab.icon size={22} strokeWidth={1.5} className="mt-2" />
-              <span className={`text-[9px] font-display font-medium uppercase tracking-wide transition-opacity ${isActive ? 'opacity-100' : 'opacity-50'}`}>
+              <span className={`text-[9px] font-display font-medium transition-opacity ${isActive ? 'opacity-100' : 'opacity-50'}`}>
                 {tab.label}
               </span>
             </>

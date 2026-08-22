@@ -262,7 +262,7 @@ const AuthListener: React.FC = () => {
               Listener Portal
             </span>
           </div>
-          <h1 className="text-2xl font-studio font-semibold uppercase text-white">
+          <h1 className="text-2xl font-studio font-semibold text-white">
             {mode === 'login' ? 'Welcome Back' : 'Join Smashify Free'}
           </h1>
           <p className="text-text-muted text-sm mt-1">

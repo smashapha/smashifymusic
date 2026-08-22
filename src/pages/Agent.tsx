@@ -246,7 +246,7 @@ const Agent = () => {
         <form onSubmit={handleApply} className="max-w-md mx-auto p-6 bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-5">
           <h3 className="text-lg font-semibold text-white">Apply now</h3>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block mb-2">
+            <label className="text-[11px] font-semibold text-[#B0B0B0] block mb-2">
               Mobile Money Number
             </label>
             <input 
@@ -331,7 +331,7 @@ const Agent = () => {
       {/* Referral Card */}
       <div className="p-6 md:p-8 bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-6">
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block mb-2">
+          <label className="text-[11px] font-semibold text-[#B0B0B0] block mb-2">
             Share this link to claim referrals
           </label>
           <div className="flex flex-col sm:flex-row gap-3">

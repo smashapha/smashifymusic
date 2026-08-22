@@ -391,7 +391,7 @@ const AuthArtist: React.FC = () => {
               Artist Studio
             </span>
           </div>
-          <h1 className="text-2xl font-studio font-semibold uppercase text-white">
+          <h1 className="text-2xl font-studio font-semibold text-white">
             {mode === 'login' ? 'Studio Access' : 'Apply as Artist'}
           </h1>
           <p className="text-text-muted text-sm mt-1">
@@ -543,7 +543,7 @@ const AuthArtist: React.FC = () => {
                                     type="button"
                                     onClick={verifyOtp}
                                     disabled={otpLoading || otpCode.length < 4}
-                                    className="w-full h-[44px] rounded-[12px] text-white font-bold text-[13px] uppercase disabled:opacity-40 transition-all"
+                                    className="w-full h-[44px] rounded-[12px] text-white font-bold text-[13px] disabled:opacity-40 transition-all"
                                     style={{ background: '#0084D6' }}
                                   >
                                     {otpLoading ? 'Verifying...' : 'Verify Code'}

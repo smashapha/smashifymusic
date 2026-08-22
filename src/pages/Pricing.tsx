@@ -358,7 +358,7 @@ const Pricing = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <label className="block text-[12px] font-semibold text-[#B0B0B0] uppercase tracking-wider mb-3">
+                <label className="block text-[12px] font-semibold text-[#B0B0B0] mb-3">
                   Estimated Fan Tips / Sales
                 </label>
                 <div className="flex items-center gap-4 mb-3">

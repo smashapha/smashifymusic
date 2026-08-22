@@ -408,8 +408,8 @@ const ArtistProfile: React.FC = () => {
     if (!artist) return (
       <div className="min-h-[60vh] flex flex-col justify-center items-center p-8 text-center">
          <Users size={48} className="text-text-muted/30 mb-6" />
-         <h1 className="text-2xl font-bold font-display uppercase tracking-tight text-text-primary mb-4">Artist Vault Empty</h1>
-         <button onClick={() => navigate(-1)} className="h-[44px] px-6 bg-[#0084D6] text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[11px] hover:bg-[#0084D6]/90 transition-colors">Back to Discover</button>
+         <h1 className="text-2xl font-bold font-display tracking-tight text-text-primary mb-4">Artist Vault Empty</h1>
+         <button onClick={() => navigate(-1)} className="h-[44px] px-6 bg-[#0084D6] text-white rounded-[10px] font-display font-semibold text-[11px] hover:bg-[#0084D6]/90 transition-colors">Back to Discover</button>
       </div>
    );
 
@@ -451,7 +451,7 @@ const ArtistProfile: React.FC = () => {
               <span className="text-[#00A3FF] text-[10px] font-semibold uppercase tracking-widest">Verified Artist</span>
             </div>
           )}
-          <h1 className="text-3xl md:text-5xl font-semibold uppercase tracking-tight text-white truncate leading-none">
+          <h1 className="text-3xl md:text-5xl font-semibold tracking-tight text-white truncate leading-none">
             {artist.stage_name || artist.full_name}
           </h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -524,7 +524,7 @@ const ArtistProfile: React.FC = () => {
       {isOwner && (
         <button
           onClick={() => navigate('/artist-hub')}
-          className="h-9 px-4 rounded-full border border-[#00A3FF]/30 text-[#00A3FF] text-xs font-semibold uppercase tracking-widest hover:bg-[#0084D6]/10 transition-all"
+          className="h-9 px-4 rounded-full border border-[#00A3FF]/30 text-[#00A3FF] text-xs font-semibold hover:bg-[#0084D6]/10 transition-all"
         >
           Edit Profile
         </button>
@@ -541,7 +541,7 @@ const ArtistProfile: React.FC = () => {
         <button
           key={tab.key}
           onClick={() => setActiveTab(tab.key as any)}
-          className={`relative py-4 px-4 text-xs font-semibold uppercase tracking-widest transition-colors ${
+          className={`relative py-4 px-4 text-xs font-semibold transition-colors ${
             activeTab === tab.key ? 'text-white' : 'text-white/30 hover:text-white/60'
           }`}
         >
@@ -602,7 +602,7 @@ const ArtistProfile: React.FC = () => {
             <div className="mt-8">
               <div className="flex items-center gap-2 mb-4">
                 <Crown size={16} className="text-[#00A3FF]" />
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-white">
+                <h3 className="text-sm font-semibold text-white">
                   Exclusive Content
                 </h3>
                 {isSubscribed && (
@@ -621,7 +621,7 @@ const ArtistProfile: React.FC = () => {
                   </p>
                   <button
                     onClick={() => handleSubscribe()}
-                    className="px-6 py-2 bg-[#0084D6] text-white rounded-full font-semibold text-xs uppercase tracking-widest"
+                    className="px-6 py-2 bg-[#0084D6] text-white rounded-full font-semibold text-xs"
                   >
                     Subscribe · MK {(artist?.subscription_price || 1500).toLocaleString()}/mo
                   </button>
@@ -644,7 +644,7 @@ const ArtistProfile: React.FC = () => {
                <section className={SECTION_SPACING}>
                   <div className="flex items-center justify-between mb-4 md:mb-6">
                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-widest text-[#00A3FF] mb-1">Coming Soon</p>
+                        <p className="text-[11px] font-semibold text-[#00A3FF] mb-1">Coming soon</p>
                         <h2 className="text-xl md:text-2xl font-bold text-white">Upcoming Drops</h2>
                      </div>
                   </div>
@@ -662,7 +662,7 @@ const ArtistProfile: React.FC = () => {
                 <h2 className="text-xl md:text-2xl font-bold text-white">Discography</h2>
                 <button
                   onClick={() => setDiscoLimit(0)}
-                  className="text-xs text-white/50 font-bold uppercase hover:underline"
+                  className="text-xs text-white/50 font-bold hover:underline"
                 >
                   Show all
                 </button>
@@ -720,7 +720,7 @@ const ArtistProfile: React.FC = () => {
                <section className="mb-8 pt-4">
                  <div className="flex items-center justify-between mb-4">
                    <h2 className="text-xl md:text-2xl font-bold text-white">Appears On</h2>
-                   <button className="text-xs text-white/50 font-bold uppercase hover:underline">Show all</button>
+                   <button className="text-xs text-white/50 font-bold hover:underline">Show all</button>
                  </div>
                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
                    {appearsOn.map(song => (
@@ -737,7 +737,7 @@ const ArtistProfile: React.FC = () => {
                <section className="mb-8 pt-4">
                  <div className="flex items-center justify-between mb-4">
                    <h2 className="text-xl md:text-2xl font-bold text-white">Fans also like</h2>
-                   <button className="text-xs text-white/50 font-bold uppercase hover:underline">Show all</button>
+                   <button className="text-xs text-white/50 font-bold hover:underline">Show all</button>
                  </div>
                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
                    {fansAlsoLike.map(fanArtist => (
@@ -818,7 +818,7 @@ const ArtistProfile: React.FC = () => {
             ) : (
               <>
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-white/50 mb-4 flex items-center gap-2">
                     <Trophy size={14} className="text-[#00A3FF]" /> Top Supporters
                   </h3>
                   {communityData.topSupporters.length === 0 ? (
@@ -837,7 +837,7 @@ const ArtistProfile: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-white/50 mb-4 flex items-center gap-2">
                     <MessageCircle size={14} className="text-[#00A3FF]" /> Fan Comments
                   </h3>
                   {communityData.recentComments.length === 0 ? (
@@ -880,7 +880,7 @@ const SocialLink = ({ href, icon, label }: { href: string; icon: React.ReactNode
     href={href}
     target="_blank"
     rel="noreferrer"
-    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold uppercase tracking-widest text-white/50 hover:text-white transition-all"
+    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-all"
   >
     {icon} {label}
   </a>

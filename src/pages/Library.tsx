@@ -722,7 +722,7 @@ const Library: React.FC = () => {
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                    <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                       Playlist Name
                     </label>
                     <input 
@@ -800,7 +800,7 @@ const Library: React.FC = () => {
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                    <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                       Playlist Name
                     </label>
                     <input 

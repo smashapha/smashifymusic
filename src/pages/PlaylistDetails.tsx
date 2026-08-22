@@ -429,7 +429,7 @@ const PlaylistDetails: React.FC = () => {
                   <h2 className="text-2xl md:text-3xl font-studio font-semibold tracking-tighter leading-none mb-1 text-white">
                     {chartInfo.cardTitle}
                   </h2>
-                  <h3 className="text-lg font-display font-semibold tracking-widest text-[#00A3FF] uppercase leading-none">
+                  <h3 className="text-lg font-display font-semibold text-[#00A3FF] leading-none">
                     {chartInfo.cardSub}
                   </h3>
                 </div>
@@ -462,7 +462,7 @@ const PlaylistDetails: React.FC = () => {
                 {isOwner && (
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-white/80 hover:text-white bg-white/10 hover:bg-[#0084D6] px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
+                    className="text-[10px] font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-[#0084D6] px-3 py-1 rounded-full transition-all flex items-center gap-1.5"
                   >
                     <Pencil size={12} /> Edit Settings
                   </button>
@@ -733,10 +733,10 @@ const PlaylistDetails: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
             className="bg-smash-dark border border-white/10 p-6 md:p-8 rounded-[32px] max-w-md w-full shadow-2xl space-y-5 transform scale-100 opacity-100" // simpler since animate isn't strictly imported per user instruct but motion might be
           >
-            <h3 className="text-xl font-studio font-bold uppercase tracking-tight text-white">Playlist Settings</h3>
+            <h3 className="text-xl font-studio font-bold tracking-tight text-white">Playlist Settings</h3>
 
             <div>
-              <label className="text-[10px] font-semibold text-[#B0B0B0] uppercase tracking-widest block mb-2">Playlist Name</label>
+              <label className="text-[10px] font-semibold text-[#B0B0B0] block mb-2">Playlist Name</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
@@ -748,7 +748,7 @@ const PlaylistDetails: React.FC = () => {
               <div className="flex items-center gap-3">
                 {editPublic ? <Globe size={18} className="text-[#00A3FF]" /> : <Lock size={18} className="text-[#B0B0B0]" />}
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-widest text-white">Public Playlist</p>
+                  <p className="text-sm font-semibold text-white">Public Playlist</p>
                   <p className="text-[10px] text-[#B0B0B0] font-medium">Anyone can find and play this</p>
                 </div>
               </div>
@@ -765,13 +765,13 @@ const PlaylistDetails: React.FC = () => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 py-3.5 rounded-[16px] font-semibold uppercase tracking-widest text-xs text-[#B0B0B0] hover:bg-white/5 transition-all"
+                className="flex-1 py-3.5 rounded-[16px] font-semibold text-xs text-[#B0B0B0] hover:bg-white/5 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSavePlaylistSettings}
-                className="flex-1 py-3.5 bg-white text-black rounded-[16px] font-semibold uppercase tracking-widest text-xs hover:bg-[#0084D6] hover:text-white transition-all"
+                className="flex-1 py-3.5 bg-white text-black rounded-[16px] font-semibold text-xs hover:bg-[#0084D6] hover:text-white transition-all"
               >
                 Save Changes
               </button>
@@ -779,7 +779,7 @@ const PlaylistDetails: React.FC = () => {
 
             <button
               onClick={handleDeletePlaylist}
-              className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-[16px] font-semibold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 text-red-400 hover:bg-red-500/10 rounded-[16px] font-semibold text-xs transition-all flex items-center justify-center gap-2"
             >
               <Trash2 size={14} /> Delete Playlist
             </button>

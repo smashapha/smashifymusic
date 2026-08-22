@@ -373,18 +373,18 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                  className="absolute bottom-6 left-6 right-6 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl z-40 shadow-2xl flex flex-col gap-4 text-center cursor-default"
                  onClick={(e: any) => e.stopPropagation()}
                >
-                  <p className="text-white font-studio font-bold uppercase text-[16px]">30 sec preview ending</p>
-                  <p className="text-[#B0B0B0] text-xs font-bold uppercase tracking-widest pb-2">Buy to hear the rest</p>
+                  <p className="text-white font-studio font-bold text-[16px]">30 sec preview ending</p>
+                  <p className="text-[#B0B0B0] text-xs font-bold pb-2">Buy to hear the rest</p>
                   <div className="flex gap-3">
                      <button 
                        onClick={handleBuy}
-                       className="flex-1 py-3 bg-[#0084D6] text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
+                       className="flex-1 py-3 bg-[#0084D6] text-white rounded-xl font-semibold text-[10px] hover:scale-105 transition-transform"
                      >
                         BUY (MK {getEffectivePrice(song)})
                      </button>
                      <button 
                        onClick={(e) => { e.stopPropagation(); onSkip(); }}
-                       className="flex-1 py-3 bg-white/10 text-white rounded-xl font-semibold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-colors"
+                       className="flex-1 py-3 bg-white/10 text-white rounded-xl font-semibold text-[10px] hover:bg-white/20 transition-colors"
                      >
                         SKIP SONG
                      </button>
@@ -396,17 +396,17 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
          {isPreviewLimit && !song.is_unreleased && (
             <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-8 rounded-[40px] md:rounded-[60px] cursor-default" onClick={(e: any) => e.stopPropagation()}>
                <ShoppingBag size={48} className="text-[#00A3FF] mb-4" />
-               <h3 className="text-[24px] font-studio font-bold uppercase mb-2 text-white">Full Track Available</h3>
+               <h3 className="text-[24px] font-studio font-bold mb-2 text-white">Full Track Available</h3>
                <p className="text-sm text-[#B0B0B0] font-bold mb-6 tracking-tight">Buy this anthem to support {song.artist_name} and hear the rest.</p>
                <button 
                  onClick={handleBuy}
-                 className="w-full max-w-[240px] px-8 py-4 bg-[#0084D6] text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest shadow-xl shadow-[#00A3FF]/20 mb-4 hover:scale-105 transition-transform"
+                 className="w-full max-w-[240px] px-8 py-4 bg-[#0084D6] text-white rounded-[16px] font-semibold text-sm shadow-xl shadow-[#00A3FF]/20 mb-4 hover:scale-105 transition-transform"
                >
                   BUY FOR MK {getEffectivePrice(song)}
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onSkip(); }}
-                 className="w-full max-w-[240px] px-8 py-4 bg-transparent border border-white/20 text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:bg-white/5 transition-colors"
+                 className="w-full max-w-[240px] px-8 py-4 bg-transparent border border-white/20 text-white rounded-[16px] font-semibold text-sm hover:bg-white/5 transition-colors"
                >
                   SKIP THIS SONG
                </button>
@@ -417,7 +417,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowTipModal(false); }}>
                <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl" onClick={(e: any) => e.stopPropagation()}>
                   <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-20 h-20 mb-4" />
-                  <h3 className="text-xl font-semibold uppercase mb-1">Send a tip</h3>
+                  <h3 className="text-xl font-semibold mb-1">Send a tip</h3>
                   <p className="text-sm font-bold text-gray-500 mb-6">to {song.artist_name}</p>
                   
                   <div className="grid grid-cols-2 gap-3 w-full mb-4">
@@ -455,11 +455,11 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       })
     }, 'Sign in to tip this artist');
                      }}
-                     className="w-full py-4 bg-[#0084D6] text-black font-semibold uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform"
+                     className="w-full py-4 bg-[#0084D6] text-black font-semibold text-sm rounded-xl hover:scale-105 transition-transform"
                   >
                      Send MK {tipAmount.toLocaleString()}
                   </button>
-                  <p className="text-[10px] text-gray-400 mt-4 uppercase font-bold text-center">
+                  <p className="text-[10px] text-gray-400 mt-4 font-bold text-center">
                      90% goes directly to {song.artist_name}
                   </p>
                </div>
@@ -470,7 +470,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
             <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 cursor-default" onClick={(e: any) => { e.stopPropagation(); setShowSubModal(false); }}>
                <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl text-center" onClick={(e: any) => e.stopPropagation()}>
                   <Heart size={48} className={isSubscribed ? "fill-[#22C55E] text-[#22C55E] mb-4" : "fill-[#00A3FF] text-[#00A3FF] mb-4"} />
-                  <h3 className="text-xl font-semibold uppercase mb-2">
+                  <h3 className="text-xl font-semibold mb-2">
                      {isSubscribed ? 'Cancel Support?' : `Support ${song.artist_name}`}
                   </h3>
                   <p className="text-sm font-bold text-gray-500 mb-8">
@@ -491,7 +491,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                               toast.success('Subscription cancelled');
                            }
                         }}
-                        className="w-full py-4 bg-gray-200 text-black font-semibold uppercase text-sm tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-full py-4 bg-gray-200 text-black font-semibold text-sm rounded-xl hover:bg-red-500 hover:text-white transition-colors"
                      >
                         Yes, Cancel
                      </button>
@@ -505,7 +505,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
       });
     }, 'Sign in to subscribe to this artist');
                         }}
-                        className="w-full py-4 bg-[#0084D6] text-white font-semibold uppercase text-sm tracking-widest rounded-xl hover:scale-105 transition-transform shadow-xl shadow-[#00A3FF]/20"
+                        className="w-full py-4 bg-[#0084D6] text-white font-semibold text-sm rounded-xl hover:scale-105 transition-transform shadow-xl shadow-[#00A3FF]/20"
                      >
                         Subscribe via Airtel/TNM
                      </button>
@@ -526,7 +526,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                {song.region && <span className="px-3 py-1 bg-white/10 text-white text-[10px] font-semibold rounded-full uppercase tracking-widest">{song.region}</span>}
             </div>
             <div>
-               <h2 className="text-[32px] md:text-[44px] font-studio font-bold uppercase tracking-tight leading-[1.1] mb-2 text-white">{formatDisplayTitle(song.title)}</h2>
+               <h2 className="text-[32px] md:text-[44px] font-studio font-bold tracking-tight leading-[1.1] mb-2 text-white">{formatDisplayTitle(song.title)}</h2>
                <div className="flex items-center gap-2">
                   <p className="text-xl font-bold text-white/80">{song.artist_name || (song.profiles as any)?.stage_name || (song.profiles as any)?.full_name}</p>
                   {song.profiles?.verified && <div className="w-4 h-4 bg-[#0084D6] rounded-full flex items-center justify-center"><Check size={10} className="text-black" /></div>}
@@ -576,7 +576,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                >
                   <Gift size={24} />
                </button>
-               <span className="text-[10px] font-semibold text-[#00A3FF] uppercase tracking-widest">Tip</span>
+               <span className="text-[10px] font-semibold text-[#00A3FF]">Tip</span>
             </div>
 
             {(song.profiles as any)?.subscription_tier !== 'free' && (song.profiles as any)?.subscription_tier !== 'Free' && (
@@ -587,7 +587,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   >
                      <Heart size={24} className={isSubscribed ? "fill-white" : ""} />
                   </button>
-                  <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: isSubscribed ? '#22C55E' : '#00A3FF' }}>
+                  <span className="text-[10px] font-semibold" style={{ color: isSubscribed ? '#22C55E' : '#00A3FF' }}>
                      {isSubscribed ? 'SUBBED' : 'SUB'}
                   </span>
                </div>
@@ -665,7 +665,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
               >
                  <div className="p-4 flex flex-col items-center border-b border-white/10 shrink-0 relative">
                     <div className="w-12 h-1.5 bg-white/20 rounded-full mb-4" />
-                    <h3 className="text-lg font-semibold uppercase text-white tracking-widest">Comments <span className="text-[#B0B0B0] text-sm ml-1">({commentCount})</span></h3>
+                    <h3 className="text-lg font-semibold text-white">Comments <span className="text-[#B0B0B0] text-sm ml-1">({commentCount})</span></h3>
                     <button onClick={() => setShowComments(false)} className="absolute right-6 top-6 p-2 rounded-full bg-white/5 hover:bg-white/10">
                        <XIcon size={20} />
                     </button>
@@ -675,7 +675,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                     {comments.length === 0 ? (
                        <div className="h-full flex flex-col items-center justify-center text-[#B0B0B0]/50">
                           <MessageCircle size={48} className="mb-4" />
-                          <p className="font-bold uppercase tracking-widest">No comments yet.</p>
+                          <p className="font-bold">No comments yet.</p>
                        </div>
                     ) : (
                        comments.map((c) => (
@@ -780,10 +780,10 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
             animate={{ scale: 1, opacity: 1 }}
             className="mb-12"
           >
-             <h2 className="text-[40px] font-studio font-bold uppercase tracking-tight mb-4 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+             <h2 className="text-[40px] font-studio font-bold tracking-tight mb-4 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                 {ad.advertiser_name || 'Smashify'}
              </h2>
-             <p className="text-xl text-[#B0B0B0] font-bold tracking-tight uppercase">
+             <p className="text-xl text-[#B0B0B0] font-bold tracking-tight">
                 {ad.title}
              </p>
           </motion.div>
@@ -818,12 +818,12 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
             className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 flex items-center justify-between"
           >
              <div className="text-left">
-                <p className="text-[10px] font-semibold text-[#B0B0B0] uppercase tracking-widest mb-1">Skip ads forever</p>
-                <p className="text-sm font-semibold text-white uppercase tracking-tight">Premium MK 2,000/month</p>
+                <p className="text-[10px] font-semibold text-[#B0B0B0] mb-1">Skip ads forever</p>
+                <p className="text-sm font-semibold text-white">Premium MK 2,000/month</p>
              </div>
              <button 
                onClick={() => navigate('/pricing')} 
-               className="px-6 py-3 bg-white text-black rounded-[16px] font-semibold text-[10px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl"
+               className="px-6 py-3 bg-white text-black rounded-[16px] font-semibold text-[10px] hover:bg-[#0084D6] hover:text-white transition-all shadow-xl"
              >
                 Upgrade
              </button>
@@ -880,7 +880,7 @@ const LiveActivity = () => {
                   className="absolute bottom-10 left-6 z-50 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-3 rounded-[16px] flex items-center gap-3 shadow-[0_0_20px_rgba(0,255,102,0.1)] max-w-xs"
               >
                   <div className="w-2 h-2 rounded-full bg-[#0084D6] animate-pulse shrink-0" />
-                  <p className="text-[10px] font-bold text-white uppercase tracking-widest">{toastMsg.message}</p>
+                  <p className="text-[10px] font-bold text-white">{toastMsg.message}</p>
               </motion.div>
           )}
       </AnimatePresence>
@@ -1114,18 +1114,18 @@ const MotoFeed: React.FC = () => {
         >
            <Disc className="text-[#B0B0B0]/20 mb-8" size={120} />
         </motion.div>
-        <h2 className="text-[32px] font-studio font-bold uppercase tracking-tight mb-4 text-white">The Feed is Cold</h2>
+        <h2 className="text-[32px] font-studio font-bold tracking-tight mb-4 text-white">The Feed is Cold</h2>
         <p className="text-[#B0B0B0] font-bold max-w-sm mx-auto mb-12">No anthems found in the warm heart today. Check back soon for fresh drops.</p>
         <div className="flex flex-col gap-4">
            <button 
              onClick={() => { setLoading(true); fetchSongs(); }}
-             className="px-8 py-4 bg-white text-black rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+             className="px-8 py-4 bg-white text-black rounded-[16px] font-semibold text-sm hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
            >
              <Music2 size={18} /> Refresh Feed
            </button>
            <button 
              onClick={() => navigate('/')}
-             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-[16px] font-semibold text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
+             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-[16px] font-semibold text-sm hover:bg-white/10 transition-all"
            >
              Back to Home
            </button>

@@ -30,7 +30,7 @@ const ApplicationPending: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          <h1 className="text-4xl font-semibold font-display uppercase tracking-tighter">
+          <h1 className="text-4xl font-semibold font-display tracking-tight">
             Application<br />
             <span className="text-[#00A3FF]">Under Review</span>
           </h1>
@@ -63,9 +63,9 @@ const ApplicationPending: React.FC = () => {
 
         <button
           onClick={signOut}
-          className="w-full py-4 bg-white/5 border border-white/10 text-[#B0B0B0] hover:text-white rounded-2xl font-semibold text-xs uppercase tracking-widest transition-colors"
+          className="w-full py-4 bg-white/5 border border-white/10 text-[#B0B0B0] hover:text-white rounded-2xl font-semibold text-xs transition-colors"
         >
-          Sign Out
+          Sign out
         </button>
       </motion.div>
     </div>

@@ -5,7 +5,7 @@ import {
   Mic2, Rocket, Star, ShieldCheck, 
   CircleCheck, TrendingUp, Music, LayoutDashboard,
   Smartphone, Wallet, ChevronRight, Play, Heart, Star as StarIcon,
-  Music2, Users, DollarSign
+  Music2, Users, DollarSign, Lock
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
@@ -28,17 +28,17 @@ const Nav = () => {
       <div className="flex items-center gap-8">
         <Logo size="md" />
         <div className="hidden lg:flex items-center gap-8">
-          <Link to="/" className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors uppercase tracking-widest">Listener App</Link>
+          <Link to="/" className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors">Listener App</Link>
           <div className="w-1 h-1 rounded-full bg-white/20" />
           <span className="font-display font-bold text-[13px] text-[#00A3FF] font-semibold">Artist Studio</span>
         </div>
       </div>
       
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/auth/artist')} className="px-6 h-[40px] font-display font-bold text-[12px] text-white/60 hover:text-white uppercase tracking-widest transition-all">Sign in</button>
+        <button onClick={() => navigate('/auth/artist')} className="px-6 h-[40px] font-display font-bold text-[12px] text-white/60 hover:text-white transition-all">Sign in</button>
         <button 
           onClick={() => navigate('/auth/artist?mode=signup')} 
-          className="h-[40px] px-6 bg-white text-black font-display font-bold text-[12px] uppercase tracking-widest rounded-[10px] hover:bg-[#0084D6] hover:text-white transition-all transform hover:-translate-y-0.5 active:scale-95"
+          className="h-[40px] px-6 bg-white text-black font-display font-bold text-[12px] rounded-[10px] hover:bg-[#0084D6] hover:text-white transition-all transform hover:-translate-y-0.5 active:scale-95"
         >
           Join Studio
         </button>
@@ -220,7 +220,7 @@ const ArtistLanding: React.FC = () => {
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
             <div>
                <p className="text-[10px] font-display font-bold text-white/40 uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
-               <h2 className="text-3xl font-studio font-bold uppercase tracking-tighter">Earnings <span className="text-[#00A3FF] underline underline-offset-8">Report</span></h2>
+               <h2 className="text-3xl font-studio font-bold tracking-tight">Earnings <span className="text-[#00A3FF] underline underline-offset-8">Report</span></h2>
             </div>
             <div className="flex -space-x-4">
                {topEarners.length > 0 ? (
@@ -254,7 +254,7 @@ const ArtistLanding: React.FC = () => {
             <p className="text-[10px] font-display font-bold text-[#00A3FF] uppercase tracking-[0.4em] mb-4">
               Your Money Your Way
             </p>
-            <h2 className="text-4xl md:text-6xl font-studio font-bold uppercase leading-tight">
+            <h2 className="text-4xl md:text-6xl font-studio font-bold leading-tight">
               4 ways to earn on <span className="text-[#00A3FF]">Smashify</span>
             </h2>
           </div>
@@ -301,7 +301,7 @@ const ArtistLanding: React.FC = () => {
                     {item.tag}
                   </span>
                 </div>
-                <h3 className="text-xl font-studio font-bold uppercase text-white mb-3">
+                <h3 className="text-xl font-studio font-bold text-white mb-3">
                   {item.title}
                 </h3>
                 <p className="text-[14px] text-white/50 leading-relaxed font-sans mb-6">
@@ -318,7 +318,7 @@ const ArtistLanding: React.FC = () => {
 
           {/* Comparison vs Spotify */}
           <div className="max-w-3xl mx-auto">
-            <h3 className="text-center text-2xl font-studio font-bold uppercase mb-8">
+            <h3 className="text-center text-2xl font-studio font-bold mb-8">
               Why <span className="text-[#00A3FF]">Smashify</span> beats waiting for streams
             </h3>
             <div className="overflow-x-auto rounded-[16px] border border-white/10">
@@ -358,7 +358,7 @@ const ArtistLanding: React.FC = () => {
         <div className="max-w-4xl mx-auto">
            <div className="text-center mb-24">
               <h2 className="text-[10px] font-display font-bold text-[#00A3FF] uppercase tracking-[0.4em] mb-4">Journey to Success</h2>
-              <h3 className="text-5xl md:text-7xl font-studio font-bold uppercase leading-tight">Three steps to <span className="text-[#00A3FF]">monetising</span> your art.</h3>
+              <h3 className="text-5xl md:text-7xl font-studio font-bold leading-tight">Three steps to <span className="text-[#00A3FF]">monetising</span> your art.</h3>
            </div>
            
            <div className="space-y-20 relative before:absolute before:left-10 md:before:left-1/2 before:top-0 before:bottom-0 before:w-px before:bg-white/10">
@@ -370,7 +370,7 @@ const ArtistLanding: React.FC = () => {
                 <div key={i} className={`flex flex-col md:flex-row items-center gap-12 relative z-10 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                    <div className="flex-1 md:text-right">
                       <div className={`flex flex-col ${i % 2 === 1 ? 'md:items-start' : 'md:items-end'}`}>
-                         <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold uppercase text-white mb-4">{s.title}</h4>
+                         <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold text-white mb-4">{s.title}</h4>
                          <p className="text-[15px] text-white/50 leading-relaxed font-sans max-w-sm">{s.desc}</p>
                       </div>
                    </div>
@@ -388,13 +388,13 @@ const ArtistLanding: React.FC = () => {
       <section id="pricing-section" className="py-32 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
-             <h3 className="text-5xl md:text-8xl font-studio font-bold uppercase tracking-tighter leading-none mb-4">Studio plans</h3>
+             <h3 className="text-5xl md:text-8xl font-studio font-bold tracking-tight leading-none mb-4">Studio plans</h3>
              <p className="text-white/50 text-xl font-medium tracking-tight">Simple 6-month plans with zero hidden fees.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
              <div className="bg-bg-surface border border-white/10 rounded-[16px] p-10 flex flex-col">
-                <h3 className="text-2xl font-studio font-bold uppercase mb-2 text-white/60">Free Studio</h3>
+                <h3 className="text-2xl font-studio font-bold mb-2 text-white/60">Free Studio</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                   <span className="text-4xl font-studio font-bold text-white">0</span>
                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">
@@ -419,14 +419,14 @@ const ArtistLanding: React.FC = () => {
                 </ul>
                 <button
                   onClick={() => navigate('/auth/artist?mode=signup')}
-                  className="w-full h-[54px] bg-white/5 border border-white/10 text-white/60 rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-white/10 transition-all mt-8"
+                  className="w-full h-[54px] bg-white/5 border border-white/10 text-white/60 rounded-[10px] font-display font-bold text-[12px] hover:bg-white/10 transition-all mt-8"
                 >
-                  START FREE
+                  Start Free
                 </button>
              </div>
 
              <div className="bg-bg-surface border border-border-subtle rounded-[16px] p-10 flex flex-col group hover:border-[#00A3FF]/30 transition-all">
-                <h3 className="text-2xl font-studio font-bold uppercase mb-2">Rising Star</h3>
+                <h3 className="text-2xl font-studio font-bold mb-2">Rising Star</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">8,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -450,15 +450,15 @@ const ArtistLanding: React.FC = () => {
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
-                   GET RISING STAR
+                   Get Rising Star
                 </button>
              </div>
 
              <div className="bg-bg-surface border-2 border-[#00A3FF] rounded-[16px] p-10 flex flex-col relative overflow-hidden transform scale-105 z-10 shadow-3xl shadow-[#00A3FF]/20">
                 <div className="absolute top-6 right-0 bg-[#0084D6] text-white text-[10px] font-bold px-4 py-1.5 rounded-l-full uppercase tracking-widest">Most popular</div>
-                <h3 className="text-2xl font-studio font-bold uppercase mb-2 text-[#00A3FF]">Standard</h3>
+                <h3 className="text-2xl font-studio font-bold mb-2 text-[#00A3FF]">Standard</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">16,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -483,14 +483,14 @@ const ArtistLanding: React.FC = () => {
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-[#0084D6] text-white rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:brightness-110 shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-[#0084D6] text-white rounded-[10px] font-display font-bold text-[12px] hover:brightness-110 shadow-xl mt-auto md:mt-8"
                 >
-                   JOIN STANDARD
+                   Join Standard
                 </button>
              </div>
 
              <div className="bg-bg-surface border border-border-subtle rounded-[16px] p-10 flex flex-col group hover:border-[#00A3FF]/30 transition-all">
-                <h3 className="text-2xl font-studio font-bold uppercase mb-2">Elite</h3>
+                <h3 className="text-2xl font-studio font-bold mb-2">Elite</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">27,000</span>
                    <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
@@ -515,9 +515,9 @@ const ArtistLanding: React.FC = () => {
                 </ul>
                 <button 
                    onClick={() => navigate('/auth/artist?mode=signup')}
-                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] uppercase tracking-widest hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
+                   className="w-full h-[54px] bg-white text-black rounded-[10px] font-display font-bold text-[12px] hover:bg-[#0084D6] hover:text-white transition-all shadow-xl mt-auto md:mt-8"
                 >
-                   JOIN ELITE
+                   Join Elite
                 </button>
              </div>
           </div>
@@ -532,7 +532,7 @@ const ArtistLanding: React.FC = () => {
               💼 Earn With Smashify
             </span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-studio font-bold uppercase mb-4">
+          <h2 className="text-4xl md:text-6xl font-studio font-bold mb-4">
             Become a <span className="text-[#22C55E]">Smashify Agent</span>
           </h2>
           <p className="text-white/50 text-base mb-10 max-w-2xl mx-auto">
@@ -569,7 +569,7 @@ const ArtistLanding: React.FC = () => {
             href="https://wa.me/265883728868?text=I%20want%20to%20become%20a%20Smashify%20Agent"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 h-14 px-10 bg-smash-green text-white rounded-full font-display font-bold uppercase tracking-widest text-sm hover:brightness-110 transition-all"
+            className="inline-flex items-center gap-3 h-14 px-10 bg-smash-green text-white rounded-full font-display font-bold text-sm hover:brightness-110 transition-all"
           >
             Apply via WhatsApp
           </a>
@@ -580,13 +580,13 @@ const ArtistLanding: React.FC = () => {
       <section className="py-32 px-6 md:px-12 bg-[#0084D6] overflow-hidden relative">
          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/music.png')]" />
          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <h2 className="text-5xl md:text-8xl font-studio font-bold uppercase leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
+            <h2 className="text-5xl md:text-8xl font-studio font-bold leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
             <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">
               Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week. Interested in details? See our <Link to="/pricing" className="underline hover:text-black transition-colors font-bold">Pricing Plans</Link>.
             </p>
             <button 
                onClick={() => navigate('/auth/artist?mode=signup')}
-               className="h-[64px] px-12 bg-white text-[#00A3FF] font-display font-bold text-lg uppercase tracking-widest rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
+               className="h-[64px] px-12 bg-white text-[#00A3FF] font-display font-bold text-lg rounded-[16px] transform hover:scale-105 active:scale-95 transition-all shadow-2xl"
             >
                Create Artist Account
             </button>

@@ -190,7 +190,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
   return (
     <div className="space-y-8 max-w-5xl mx-auto text-left">
       <div>
-        <h2 className="text-[28px] md:text-[32px] font-studio font-bold flex items-center justify-start gap-3 uppercase text-text-primary leading-tight">
+        <h2 className="text-[28px] md:text-[32px] font-studio font-bold flex items-center justify-start gap-3 text-text-primary leading-tight">
           <Wallet className="text-[#00A3FF] shrink-0 animate-pulse" /> Wallet & <span className="text-[#00A3FF]">Withdrawals</span>
         </h2>
         <p className="text-text-secondary text-[12px] md:text-[14px] font-sans mt-2">
@@ -251,7 +251,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                   <ShieldCheck className="text-[#00A3FF]" size={24} />
                 </div>
                 <div>
-                  <h4 className="text-[#00A3FF] font-studio font-bold uppercase tracking-wider text-sm">
+                  <h4 className="text-[#00A3FF] font-studio font-bold text-sm">
                     {isPendingVerification ? 'Verification Pending Review' : 'Identity Verification Required'}
                   </h4>
                   <p className="text-text-secondary text-xs font-sans mt-1 leading-relaxed">
@@ -266,13 +266,13 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               {!isPendingVerification && (
                 <form onSubmit={handleVerificationSubmit} className="border-t border-border-default pt-6 space-y-5">
                   <div className="p-3.5 bg-zinc-950/40 border border-white/5 rounded-lg text-[11px] text-text-muted leading-relaxed">
-                    <span className="text-[#00A3FF] font-bold uppercase tracking-wider block mb-1">Secure Payout Encryption Note</span>
+                    <span className="text-[#00A3FF] font-bold block mb-1">Secure Payout Encryption Note</span>
                     Your verification data is securely stored, highly encrypted, and strictly used to verify payment transfers.
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Document Type</label>
+                      <label className="block text-[11px] font-display font-medium text-text-muted mb-2">ID Document Type</label>
                       <select 
                         value={idType} 
                         onChange={e => setIdType(e.target.value)}
@@ -284,7 +284,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Document Number</label>
+                      <label className="block text-[11px] font-display font-medium text-text-muted mb-2">Document Number</label>
                       <input 
                         type="text" 
                         value={nrcNumber}
@@ -294,7 +294,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">ID Registered Phone Number</label>
+                      <label className="block text-[11px] font-display font-medium text-text-muted mb-2">ID Registered Phone Number</label>
                       <input 
                         type="text" 
                         value={verificationPhone}
@@ -306,7 +306,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-display font-medium uppercase tracking-wider text-text-muted mb-2">Upload ID Photo (Clear scan or snapshot)</label>
+                    <label className="block text-[11px] font-display font-medium text-text-muted mb-2">Upload ID Photo (Clear scan or snapshot)</label>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -318,7 +318,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                   <button 
                     type="submit" 
                     disabled={submittingVerification}
-                    className="w-full h-[46px] bg-[#00A3FF]/20 border border-[#00A3FF]/30 hover:border-[#00A3FF]/60 text-[#00A3FF] text-[12px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                    className="w-full h-[46px] bg-[#00A3FF]/20 border border-[#00A3FF]/30 hover:border-[#00A3FF]/60 text-[#00A3FF] text-[12px] font-display font-bold rounded-[10px] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                   >
                     {submittingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SUBMIT DETAILS FOR VERIFICATION'}
                   </button>
@@ -330,13 +330,13 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               <div className="w-12 h-12 rounded-full bg-[#00A3FF]/10 flex items-center justify-center mx-auto mb-2">
                 <AlertTriangle className="text-[#00A3FF] animate-bounce" size={24} />
               </div>
-              <h4 className="text-white font-studio font-bold uppercase tracking-widest text-md">Upgrade to Payout</h4>
+              <h4 className="text-white font-studio font-bold text-md">Upgrade to Payout</h4>
               <p className="text-text-secondary text-xs font-sans max-w-sm mx-auto leading-relaxed">
                 Your available wallet balance is safe and protected, however payouts are restricted to standard/elite subscribers. Upgrade your tier to activate payouts today!
               </p>
               <button 
                 onClick={() => setActiveTab('subscription')} 
-                className="px-6 py-2.5 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white text-[11px] font-display font-bold uppercase tracking-widest rounded-[10px] transition-all"
+                className="px-6 py-2.5 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white text-[11px] font-display font-bold rounded-[10px] transition-all"
               >
                 UPGRADE STUDIO ACCESS
               </button>
@@ -344,7 +344,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
           ) : (
             /* WITHDRAWAL TRANSFER CONTROLS */
             <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-8 space-y-6 shadow-sm">
-              <h4 className="text-white font-studio font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+              <h4 className="text-white font-studio font-bold text-sm flex items-center gap-2">
                 <Smartphone className="text-[#00A3FF]" size={18} /> Transfer to Mobile Money
               </h4>
 
@@ -364,7 +364,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
 
               {/* PHONE IN */}
               <div>
-                <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Verified Mobile Money Phone Number</label>
+                <label className="text-[11px] text-text-muted font-display font-medium block mb-2">Verified Mobile Money Phone Number</label>
                 <div className="relative">
                   <input 
                     value={phone || "Not set. Save verified ID registered phone number first."}
@@ -382,7 +382,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
 
               {/* AMOUNT IN */}
               <div>
-                <label className="text-[11px] text-text-muted font-display font-medium uppercase tracking-wider block mb-2">Withdraw Amount</label>
+                <label className="text-[11px] text-text-muted font-display font-medium block mb-2">Withdraw Amount</label>
                 <div className="relative">
                   <input 
                     type="number" 
@@ -429,7 +429,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
               <button 
                 onClick={handleWithdrawRequest}
                 disabled={requesting || balance < 10000 || withdrawalAmount < 10000 || withdrawalAmount > balance}
-                className="w-full h-[48px] bg-[#0084D6] text-white rounded-[10px] font-display font-semibold uppercase tracking-widest text-[12px] shadow-sm hover:bg-[#0084D6]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full h-[48px] bg-[#0084D6] text-white rounded-[10px] font-display font-semibold text-[12px] shadow-sm hover:bg-[#0084D6]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {requesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'INITIATE payout REQUEST'}
               </button>
@@ -440,7 +440,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
         {/* RIGHT COLUMN: RECENT PAYOUT HISTORY */}
         <div className="space-y-6">
           <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 shadow-sm">
-            <h3 className="text-[18px] font-studio font-semibold uppercase tracking-tight text-white mb-6">Recent <span className="text-[#00A3FF]">Payouts</span></h3>
+            <h3 className="text-[18px] font-studio font-semibold tracking-tight text-white mb-6">Recent <span className="text-[#00A3FF]">Payouts</span></h3>
             
             {loadingHistory ? (
               <div className="py-6">

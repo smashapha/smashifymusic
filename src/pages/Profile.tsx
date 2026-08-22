@@ -212,7 +212,7 @@ const Profile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Profile Picture / Avatar change */}
                 <div className="space-y-1.5 col-span-full">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                  <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                     Profile Picture
                   </label>
                   <div 
@@ -251,7 +251,7 @@ const Profile: React.FC = () => {
 
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                  <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                     Full Name
                   </label>
                   <input 
@@ -263,7 +263,7 @@ const Profile: React.FC = () => {
 
                 {/* Email (Read-only) */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                  <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                     Email Address
                   </label>
                   <div className="w-full h-11 bg-white/5 border border-white/10 rounded-[12px] px-3.5 flex items-center text-[13px] text-[#B0B0B0] select-none truncate">
@@ -273,7 +273,7 @@ const Profile: React.FC = () => {
                 
                 {/* Account Type */}
                 <div className="space-y-1.5 col-span-full md:col-span-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B0B0B0] block">
+                  <label className="text-[11px] font-semibold text-[#B0B0B0] block">
                     Account Type
                   </label>
                   <div className="w-full h-11 bg-white/5 border border-white/10 rounded-[12px] px-3.5 text-[13px] text-white flex items-center gap-2">
