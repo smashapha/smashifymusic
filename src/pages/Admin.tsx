@@ -5,7 +5,8 @@ import {
   ShieldCheck, CircleCheck, Trash2, Music2, Plus, FileAudio, X, Flame, 
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
-  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send, RefreshCw
+  Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send, RefreshCw,
+  Ticket, CheckSquare, Sparkles
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { verifyPayment } from '../lib/paychangu';
@@ -13,16 +14,51 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
+import { AdminPeople } from '../components/admin/AdminPeople';
+import { AdminPipeline } from '../components/admin/AdminPipeline';
+import { AdminTickets } from '../components/admin/AdminTickets';
+import { AdminCampaigns } from '../components/admin/AdminCampaigns';
+import { AdminFinance } from '../components/admin/AdminFinance';
+import { AdminBilling } from '../components/admin/AdminBilling';
+import { AdminOperations } from '../components/admin/AdminOperations';
+
+type AdminTab = 
+  | 'overview' 
+  | 'people' 
+  | 'pipeline' 
+  | 'tickets' 
+  | 'campaigns' 
+  | 'finance' 
+  | 'billing' 
+  | 'operations' 
+  | 'listeners' 
+  | 'artists' 
+  | 'songs' 
+  | 'applications' 
+  | 'song-reviews' 
+  | 'snippet-reviews' 
+  | 'ads' 
+  | 'payouts' 
+  | 'agents' 
+  | 'maintenance' 
+  | 'notifications' 
+  | 'expiry-monitor';
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'listeners' | 'artists' | 'songs' | 'applications' | 'song-reviews' | 'snippet-reviews' | 'ads' | 'payouts' | 'agents' | 'maintenance' | 'notifications' | 'expiry-monitor'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab') as any;
-    if (tab && ['overview', 'listeners', 'artists', 'songs', 'applications', 'song-reviews', 'snippet-reviews', 'ads', 'payouts', 'agents', 'maintenance', 'notifications', 'expiry-monitor'].includes(tab)) {
+    const validTabs: AdminTab[] = [
+      'overview', 'people', 'pipeline', 'tickets', 'campaigns', 
+      'finance', 'billing', 'operations', 'listeners', 'artists', 
+      'songs', 'applications', 'song-reviews', 'snippet-reviews', 
+      'ads', 'payouts', 'agents', 'maintenance', 'notifications', 'expiry-monitor'
+    ];
+    if (tab && validTabs.includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -960,19 +996,28 @@ const Admin = () => {
          </div>
 
          <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto no-scrollbar">
-            <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
-            <div className="h-px bg-white/5 my-4 mx-3" />
-            <p className={`text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Governance</p>
+            {/* CRM Group */}
+            <p className={`text-[11px] font-semibold text-[#737373] uppercase tracking-wider mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>CRM</p>
+            <AdminSidebarItem id="people" label="People" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="pipeline" label="Pipeline" icon={TrendingUp} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="tickets" label="Tickets" icon={Ticket} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="campaigns" label="Campaigns" icon={Sparkles} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={agentApplications.length} />
             <AdminSidebarItem id="applications" label="Applicants" icon={CircleCheck} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={applications.length} />
+
+            <div className="h-px bg-white/5 my-4 mx-3" />
+
+            {/* ERP Group */}
+            <p className={`text-[11px] font-semibold text-[#737373] uppercase tracking-wider mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>ERP</p>
+            <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="finance" label="Finance" icon={DollarSign} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="billing" label="Billing" icon={CreditCard} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="operations" label="Operations" icon={CheckSquare} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSongs.length} />
             <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSnippets.length} />
             <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={payoutRequests.filter(p => p.status === 'pending').length} />
-            <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={agentApplications.length} />
-            
-            <div className="h-px bg-white/5 my-4 mx-3" />
-            <p className={`text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3 ${sidebarCollapsed ? 'sr-only' : ''}`}>Directory</p>
-            <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
-            <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
@@ -1081,19 +1126,28 @@ const Admin = () => {
                 </div>
                 
                 <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto no-scrollbar">
-                  <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
-                  <div className="h-px bg-white/5 my-4 mx-3" />
-                  <p className="text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3">Governance</p>
+                  {/* CRM Group */}
+                  <p className="text-[11px] font-semibold text-[#737373] uppercase tracking-wider mb-2 px-3">CRM</p>
+                  <AdminSidebarItem id="people" label="People" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="pipeline" label="Pipeline" icon={TrendingUp} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="tickets" label="Tickets" icon={Ticket} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="campaigns" label="Campaigns" icon={Sparkles} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={agentApplications.length} />
                   <AdminSidebarItem id="applications" label="Applicants" icon={CircleCheck} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={applications.length} />
+                  
+                  <div className="h-px bg-white/5 my-4 mx-3" />
+
+                  {/* ERP Group */}
+                  <p className="text-[11px] font-semibold text-[#737373] uppercase tracking-wider mb-2 px-3">ERP</p>
+                  <AdminSidebarItem id="overview" label="Review Overview" icon={LayoutDashboard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="finance" label="Finance" icon={DollarSign} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="billing" label="Billing" icon={CreditCard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="operations" label="Operations" icon={CheckSquare} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSongs.length} />
                   <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSnippets.length} />
                   <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={payoutRequests.filter(p => p.status === 'pending').length} />
-                  <AdminSidebarItem id="agents" label="Agents" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={agentApplications.length} />
-                  
-                  <div className="h-px bg-white/5 my-4 mx-3" />
-                  <p className="text-[13px] font-bold text-[#B0B0B0]   mb-2 px-3">Directory</p>
-                  <AdminSidebarItem id="artists" label="Verify Artists" icon={Mic2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
-                  <AdminSidebarItem id="listeners" label="Listener Base" icon={Users} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="songs" label="Main Catalog" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="ads" label="Commercials" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="maintenance" label="Maintenance" icon={Settings} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
@@ -1352,6 +1406,76 @@ const Admin = () => {
                     </div>
                   </div>
                </div>
+              )}
+
+              {activeTab === 'people' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminPeople
+                    artists={artists}
+                    listeners={listeners}
+                    agents={[...agentApplications, ...approvedAgents]}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'pipeline' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminPipeline
+                    artists={artists}
+                    applications={applications}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'tickets' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminTickets
+                    artists={artists}
+                    listeners={listeners}
+                    agents={[...agentApplications, ...approvedAgents]}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'campaigns' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminCampaigns
+                    artists={artists}
+                    listeners={listeners}
+                    agents={[...agentApplications, ...approvedAgents]}
+                    onNavigateToNotifications={() => setActiveTab('notifications')}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'finance' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminFinance
+                    onNavigateToPayouts={() => setActiveTab('payouts')}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'billing' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminBilling
+                    artists={artists}
+                    onRefresh={() => fetchAllData(false)}
+                  />
+                </motion.div>
+              )}
+
+              {activeTab === 'operations' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <AdminOperations
+                    pendingSongsCount={pendingSongs.length}
+                    applicationsCount={applications.length}
+                    pendingSnippetsCount={pendingSnippets.length}
+                    payoutsCount={payoutRequests.filter(p => p.status === 'pending').length}
+                    agentsCount={agentApplications.length}
+                    onNavigateTab={(tab) => setActiveTab(tab)}
+                  />
+                </motion.div>
               )}
 
               {activeTab === 'listeners' && (
