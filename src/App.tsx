@@ -34,6 +34,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const ArtistProfile = lazy(() => import('./pages/ArtistProfile'));
+const SongDetails = lazy(() => import('./pages/SongDetails'));
 const AlbumDetails = lazy(() => import('./pages/AlbumDetails'));
 const PlaylistDetails = lazy(() => import('./pages/PlaylistDetails'));
 const ArtistGuide = lazy(() => import('./pages/ArtistGuide'));
@@ -449,6 +450,7 @@ function AppContent() {
             } 
           />
           <Route path="artist/:id" element={<ArtistProfile />} />
+          <Route path="song/:id" element={<SongDetails />} />
           <Route path="album/:id" element={<AlbumDetails />} />
           <Route path="playlist/:id" element={<PlaylistDetails />} />
           <Route path="search" element={<Discover />} />

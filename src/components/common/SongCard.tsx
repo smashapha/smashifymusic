@@ -25,9 +25,10 @@ interface SongCardProps {
   queue: Song[];
   className?: string;
   layout?: 'grid' | 'list';
+  openOnClick?: boolean;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout = 'list' }) => {
+const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout = 'list', openOnClick = false }) => {
   const navigate = useNavigate();
   const { currentSong, isPlaying, playSong, addToQueue, playQueue, dataSaver, purchasedIds } = usePlayer();
   const { userProfile } = useAuth();
@@ -219,6 +220,14 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (openOnClick) {
+      navigate(`/song/${song.id}`);
+    } else {
+      handlePlay(e);
+    }
+  };
+
   const handleBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -234,7 +243,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
     return (
        <div
          className={`group relative flex flex-col gap-2 p-2 hover:bg-white/5 rounded-[12px] transition-all cursor-pointer ${className}`}
-         onClick={handlePlay}
+         onClick={handleCardClick}
        >
          {/* Cover art */}
          <div className="relative aspect-square w-full rounded-[8px] overflow-hidden shadow-sm">
@@ -244,7 +253,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
              alt={formatDisplayTitle(song.title) || 'Unknown Title'}
            />
            {/* Play overlay */}
-           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+           <div 
+             onClick={handlePlay}
+             className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+           >
              {isCurrent && isPlaying
                ? <Pause size={24} fill="white" className="text-white" />
                : <Play size={24} fill="white" className="text-white" />
@@ -352,7 +364,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
   }
 
   return (
-    <div className={`group flex items-center gap-3 sm:gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-[#00A3FF] shadow-sm border-[#00A3FF]/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handlePlay}>
+    <div className={`group flex items-center gap-3 sm:gap-4 bg-bg-surface border rounded-[14px] p-3 md:p-4 hover:bg-bg-elevated transition-all cursor-pointer ${isCurrent && isPlaying ? 'ring-[2px] ring-[#00A3FF] shadow-sm border-[#00A3FF]/50' : 'border-border-default shadow-sm'} ${className}`} onClick={handleCardClick}>
         <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-[10px] overflow-hidden flex-shrink-0 shadow-sm border border-border-default">
           {!dataSaver ? (
             <LazyImage src={optimizeImage(song.cover_url || null, 120, 120)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" loading="lazy" />
@@ -361,7 +373,10 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                <Music2 size={24} className="text-text-muted/30" />
             </div>
           )}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div 
+            onClick={handlePlay}
+            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          >
             {isCurrent && isPlaying ? <Pause size={20} fill="white" className="text-white" /> : <Play size={20} fill="white" className="ml-0.5 text-white" />}
           </div>
           {isCurrent && isPlaying && (
@@ -515,7 +530,7 @@ export const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, ar
           </button>
         )}
         <button 
-          onClick={(e) => { e.stopPropagation(); navigate(`/artist/${song.artist_id}`); onClose(); }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/song/${song.id}`); onClose(); }}
           className="w-full px-4 py-2.5 text-left text-[13px] font-sans font-medium flex items-center gap-3 hover:bg-bg-elevated transition-colors text-text-primary"
         >
           <Info size={16} /> Song Details
