@@ -950,7 +950,7 @@ const Library: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 {getOfflineLimit(userProfile) === 5 ? (
-                   <button onClick={() => navigate('/pricing')} className="text-[#00A3FF] hover:underline text-[13px] font-medium transition-all">
+                   <button onClick={() => navigate('/pricing?tab=listeners')} className="text-[#00A3FF] hover:underline text-[13px] font-medium transition-all">
                      Upgrade for 50
                    </button>
                 ) : <div />}
@@ -988,7 +988,7 @@ const Library: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate('/pricing')}
+                  onClick={() => navigate('/pricing?tab=listeners')}
                   className="h-10 px-5 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[10px] font-semibold text-[13px] shadow-md shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all shrink-0"
                 >
                   Upgrade
@@ -1129,7 +1129,7 @@ const Library: React.FC = () => {
           </div>
 
           <div
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/pricing?tab=listeners')}
             className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#00A3FF]/40 rounded-[12px] transition-all cursor-pointer flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">

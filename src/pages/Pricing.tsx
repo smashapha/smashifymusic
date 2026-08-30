@@ -101,6 +101,13 @@ const Pricing = () => {
       navigate(activeTab === 'artists' ? '/auth/artist' : '/auth/listener');
       return;
     }
+    
+    // Redirect listeners trying to buy artist plans to the artist auth/onboarding page
+    if (activeTab === 'artists' && role !== 'artist' && role !== 'pending' && role !== 'admin') {
+      navigate('/auth/artist');
+      return;
+    }
+
     if (!planId) {
       navigate(activeTab === 'artists' ? '/artist-hub' : '/');
       return;

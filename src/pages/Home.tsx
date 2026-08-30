@@ -1046,7 +1046,7 @@ const Home: React.FC = () => {
          </div>
          <div className="relative z-10">
             <button 
-              onClick={() => navigate('/pricing')} 
+              onClick={() => navigate('/pricing?tab=listeners')} 
               className="h-11 px-6 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] hover:brightness-110 text-white font-semibold text-[13px] rounded-[10px] transition-all shadow-[0_4px_16px_rgba(0,163,255,0.25)]"
             >
                Support Artists Directly

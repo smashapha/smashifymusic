@@ -378,7 +378,7 @@ const Profile: React.FC = () => {
               
               {/* Billing & Plans */}
               <div 
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/pricing?tab=listeners')}
                 className="py-3.5 px-3 flex items-center justify-between hover:bg-white/5 transition-all rounded-[10px] cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
@@ -484,7 +484,7 @@ const Profile: React.FC = () => {
 
               {tier === 'free' && (
                 <button
-                  onClick={() => navigate('/pricing')}
+                  onClick={() => navigate('/pricing?tab=listeners')}
                   className="h-8 px-3.5 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white rounded-[8px] text-[12px] font-semibold hover:brightness-110 transition-all shrink-0"
                 >
                   Upgrade
@@ -560,7 +560,7 @@ const Profile: React.FC = () => {
               <p className="text-white text-[13px] truncate">{user?.email || 'No email'}</p>
             </div>
             <div
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/pricing?tab=listeners')}
               className="flex items-center justify-between py-1.5 hover:text-[#00A3FF] text-[#B0B0B0] transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-3">

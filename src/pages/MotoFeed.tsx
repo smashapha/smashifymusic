@@ -822,7 +822,7 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
                 <p className="text-sm font-semibold text-white">Premium MK 2,000/month</p>
              </div>
              <button 
-               onClick={() => navigate('/pricing')} 
+               onClick={() => navigate('/pricing?tab=listeners')} 
                className="px-6 py-3 bg-white text-black rounded-[16px] font-semibold text-[10px] hover:bg-[#0084D6] hover:text-white transition-all shadow-xl"
              >
                 Upgrade

@@ -582,7 +582,7 @@ const ArtistLanding: React.FC = () => {
          <div className="max-w-4xl mx-auto text-center relative z-10">
             <h2 className="text-5xl md:text-8xl font-studio font-bold leading-none text-white mb-8">Ready to <span className="text-black">smash</span> the charts?</h2>
             <p className="text-white/80 text-xl font-medium mb-12 max-w-2xl mx-auto">
-              Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week. Interested in details? See our <Link to="/pricing" className="underline hover:text-black transition-colors font-bold">Pricing Plans</Link>.
+              Your fans are ready to pay you. Smashify gives them a direct way to do it — via Airtel Money and TNM. No streams needed. No middlemen. Start earning this week. Interested in details? See our <Link to="/pricing?tab=artists" className="underline hover:text-black transition-colors font-bold">Pricing Plans</Link>.
             </p>
             <button 
                onClick={() => navigate('/auth/artist?mode=signup')}

@@ -391,7 +391,7 @@ function AppContent() {
         <Route path="/auth" element={<Navigate to="/auth/listener" replace />} />
         
         {/* Public Landing or Dashboard Redirect */}
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={user ? (role === 'artist' || role === 'pending' ? <Navigate to="/artist-hub" replace /> : <Navigate to="/home" replace />) : <Landing />} />
         
         {/* Auth & Standalone Routes */}
         <Route path="/auth/listener" element={<AuthListener />} />

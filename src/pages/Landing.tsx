@@ -781,7 +781,7 @@ const Landing: React.FC = () => {
                   </ul>
                 </div>
                 <button 
-                  onClick={() => navigate('/pricing')}
+                  onClick={() => navigate('/pricing?tab=listeners')}
                   className="w-full h-11 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] hover:brightness-110 text-white rounded-[10px] text-[13px] font-semibold transition-all shadow-[0_4px_16px_rgba(0,163,255,0.25)]"
                 >
                   Upgrade to Premium
@@ -814,7 +814,7 @@ const Landing: React.FC = () => {
                   </ul>
                 </div>
                 <button 
-                  onClick={() => navigate('/pricing')}
+                  onClick={() => navigate('/pricing?tab=listeners')}
                   className="w-full h-11 bg-transparent border border-white/10 hover:border-white/30 text-white rounded-[10px] text-[13px] font-semibold transition-all"
                 >
                   Get Family Plan
