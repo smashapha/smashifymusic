@@ -2410,6 +2410,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
           ? (albumPricingMode === 'album' ? Math.floor(price / totalTracks) : track.price)
           : 0;
 
+        console.log("INSERTING SONG WITH STATUS:", track.uploadStatus, track);
         const { error: dbErr } = await supabase.from('songs').insert({
           title: track.title,
           artist_id: userProfile?.id,
