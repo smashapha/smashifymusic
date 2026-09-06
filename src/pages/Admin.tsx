@@ -2326,7 +2326,9 @@ const Admin = () => {
 
               {activeTab === 'ads' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                   <div className="relative group overflow-hidden p-10 bg-[#1A1A1A] border border-white/5 rounded-[16px] flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
+                   {!showAdForm ? (
+                     <>
+                       <div className="relative group overflow-hidden p-10 bg-[#1A1A1A] border border-white/5 rounded-[16px] flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-2xl">
                       <div className="relative z-10 space-y-2">
                         <div className="flex items-center gap-2 mb-2">
                            <span className="w-2 h-2 bg-[#0084D6] rounded-full animate-ping" />
@@ -2408,99 +2410,87 @@ const Admin = () => {
                      </div>
                    </motion.div>
 
-                   <AnimatePresence>
-                    {showAdForm && (
-                      <motion.div 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
-                      >
-                        <motion.div 
-                          initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                          className="w-full max-w-xl bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 space-y-6 relative max-h-[90vh] overflow-y-auto"
+                 </>
+               ) : (
+                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-2xl font-studio font-bold text-white">Upload New Commercial</h3>
+                        <button onClick={() => setShowAdForm(false)} className="px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[13px] font-bold text-white transition-colors">
+                          Cancel
+                        </button>
+                    </div>
+                    <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-6 md:p-8 max-w-2xl mx-auto shadow-2xl">
+                      <form onSubmit={handleAdUpload} className="space-y-5">
+                        <input
+                          name="advertiser_name"
+                          placeholder="Advertiser Name"
+                          value={adFormDraft.advertiser_name}
+                          onChange={(e) => handleAdFieldChange('advertiser_name', e.target.value)}
+                          required
+                          className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-12 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                        />
+                        <input
+                          name="title"
+                          placeholder="Ad Title / Description"
+                          value={adFormDraft.title}
+                          onChange={(e) => handleAdFieldChange('title', e.target.value)}
+                          required
+                          className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-12 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                        />
+                        <select
+                          name="type"
+                          value={adFormDraft.type}
+                          onChange={(e) => handleAdFieldChange('type', e.target.value)}
+                          className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-12 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors text-white"
                         >
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-bold text-xl  ">Upload New Ad</h3>
-                            <button onClick={() => setShowAdForm(false)} className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors">
-                              <X size={18} />
-                            </button>
+                          <option value="platform" className="bg-[#1A1A1A]">Platform Ad (Smashify promotes)</option>
+                          <option value="artist" className="bg-[#1A1A1A]">Artist Promotional Ad</option>
+                          <option value="external" className="bg-[#1A1A1A]">External Advertiser</option>
+                        </select>
+                        <div className="space-y-2">
+                          <label className="text-[13px] font-bold text-[#B0B0B0]">Audio File (MP3, max 30s)</label>
+                          <input
+                            name="audio"
+                            type="file"
+                            accept="audio/mpeg, audio/mp3, .mp3"
+                            required
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[12px] text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-[#0084D6] file:text-white hover:file:bg-[#00A3FF] file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[13px] font-bold text-[#B0B0B0]">Plays Purchased</label>
+                            <input
+                              name="plays_purchased"
+                              type="number"
+                              min={100}
+                              value={adFormDraft.plays_purchased}
+                              onChange={(e) => handleAdFieldChange('plays_purchased', parseInt(e.target.value) || '')}
+                              required
+                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-12 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                            />
                           </div>
-
-                          <form onSubmit={handleAdUpload} className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[13px] font-bold text-[#B0B0B0]">Revenue Charged (MK)</label>
                             <input
-                              name="advertiser_name"
-                              placeholder="Advertiser Name"
-                              value={adFormDraft.advertiser_name}
-                              onChange={(e) => handleAdFieldChange('advertiser_name', e.target.value)}
-                              required
-                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
+                              name="revenue"
+                              type="number"
+                              min={0}
+                              value={adFormDraft.revenue}
+                              onChange={(e) => handleAdFieldChange('revenue', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-12 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
                             />
-                            <input
-                              name="title"
-                              placeholder="Ad Title / Description"
-                              value={adFormDraft.title}
-                              onChange={(e) => handleAdFieldChange('title', e.target.value)}
-                              required
-                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
-                            />
-
-                            <select
-                              name="type"
-                              value={adFormDraft.type}
-                              onChange={(e) => handleAdFieldChange('type', e.target.value)}
-                              className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
-                            >
-                              <option value="platform">Platform Ad (Smashify promotes)</option>
-                              <option value="artist">Artist Promotional Ad</option>
-                              <option value="external">External Advertiser</option>
-                            </select>
-
-                            <div className="space-y-2">
-                              <label className="text-[13px] font-bold text-[#B0B0B0]">Audio File (MP3, max 30s)</label>
-                              <input
-                                name="audio"
-                                type="file"
-                                accept="audio/mpeg, audio/mp3, .mp3"
-                                required
-                                className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#B0B0B0]">Plays Purchased</label>
-                                <input
-                                  name="plays_purchased"
-                                  type="number"
-                                  min={100}
-                                  value={adFormDraft.plays_purchased}
-                                  onChange={(e) => handleAdFieldChange('plays_purchased', parseInt(e.target.value) || '')}
-                                  required
-                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#B0B0B0]">Revenue Charged (MK)</label>
-                                <input
-                                  name="revenue"
-                                  type="number"
-                                  min={0}
-                                  value={adFormDraft.revenue}
-                                  onChange={(e) => handleAdFieldChange('revenue', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                                  className="w-full px-4 bg-white/5 border border-white/10 rounded-[12px] h-10 text-[13px] focus:outline-none focus:border-[#00A3FF]/50 transition-colors"
-                                />
-                              </div>
-                            </div>
-
-                            <button type="submit" disabled={adUploading}
-                              className="w-full h-10 bg-[#0084D6] hover:bg-[#00A3FF] text-white rounded-[10px] font-semibold text-[13px] transition-colors disabled:opacity-50"
-                            >
-                              {adUploading ? 'Uploading...' : 'Activate Ad Campaign'}
-                            </button>
-                          </form>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                   </AnimatePresence>
+                          </div>
+                        </div>
+                        <button type="submit" disabled={adUploading}
+                          className="w-full h-12 mt-4 bg-[#0084D6] hover:bg-[#00A3FF] text-white rounded-[12px] font-semibold text-[14px] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {adUploading ? 'Uploading...' : 'Activate Ad Campaign'}
+                        </button>
+                      </form>
+                    </div>
+                 </motion.div>
+               )}
                 </motion.div>
               )}
 
@@ -2649,40 +2639,29 @@ const Admin = () => {
                             )}
 
                             <AnimatePresence>
-                              {showUserDropdown && userSearchText.trim() && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 5 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: 5 }}
-                                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
-                                >
-                                  {filteredNotificationUsers.length > 0 ? (
-                                    filteredNotificationUsers.map(u => (
-                                      <button
-                                        key={u.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setNotificationUserId(u.id);
-                                          setUserSearchText(`${u.name} (${u.type})`);
-                                          setShowUserDropdown(false);
-                                        }}
-                                        className="w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between"
-                                      >
-                                        <div>
-                                          <p className="text-[13px] font-bold text-white">{u.name}</p>
-                                          <p className="text-[13px] text-[#B0B0B0] font-mono">{u.id}</p>
-                                        </div>
-                                        <span className={`text-[13px]  font-bold px-2 py-1 rounded-md ${u.type === 'Artist' ? 'bg-[#0084D6]/20 text-[#FF453A]' : 'bg-[#0084D6]/20 text-[#00A3FF]'}`}>
-                                          {u.type}
-                                        </span>
-                                      </button>
-                                    ))
-                                  ) : (
-                                    <div className="px-4 py-3 text-[13px] text-[#B0B0B0]">No users found</div>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                    {showUserDropdown && filteredNotificationUsers.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                        className="absolute z-50 w-full mt-2 bg-[#262626] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto"
+                      >
+                        {filteredNotificationUsers.map(u => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              setNotificationUserId(u.id);
+                              setUserSearchText(u.name || u.id);
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-white/5 text-[13px] text-white flex items-center justify-between border-b border-white/5 last:border-0"
+                          >
+                            <span>{u.name || 'Unknown'}</span>
+                            <span className="text-[11px] text-[#737373] capitalize">{u.type}</span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                   </AnimatePresence>
                           </div>
                         )}
 
