@@ -208,7 +208,7 @@ export const AdminBilling = ({
         <div className="overflow-x-auto no-scrollbar pt-2">
           {filteredSubscriptions.length === 0 ? (
             <div className="p-8 text-center border border-dashed border-white/10 rounded-[12px]">
-              <p className="text-[13px] text-[#B0B0B0]">No subscriptions matching filter.</p>
+              <p className="text-[13px] text-white/50">No subscriptions matching filter.</p>
             </div>
           ) : (
             <table className="w-full text-left text-[13px]">
@@ -246,7 +246,7 @@ export const AdminBilling = ({
                         {sub.subscription_ends ? format(new Date(sub.subscription_ends), 'MMM dd, yyyy') : 'No expiry'}
                       </td>
                       <td className="py-3 text-right font-mono">
-                        <span className={isUrgent ? 'text-[#EF4444] font-bold' : isExpired ? 'text-[#B0B0B0]' : 'text-[#22C55E]'}>
+                        <span className={isUrgent ? 'text-[#EF4444] font-bold' : isExpired ? 'text-white/40' : 'text-[#22C55E]'}>
                           {isExpired ? `-${Math.abs(sub.daysLeft)}d` : `${sub.daysLeft}d`}
                         </span>
                       </td>
@@ -260,7 +260,7 @@ export const AdminBilling = ({
                             Expiring
                           </span>
                         ) : sub.status === 'expired' ? (
-                          <span className="px-2 py-0.5 rounded bg-white/10 text-[#B0B0B0] text-[11px] font-medium uppercase">
+                          <span className="px-2 py-0.5 rounded bg-white/10 text-white/50 text-[11px] font-medium uppercase">
                             Expired
                           </span>
                         ) : (

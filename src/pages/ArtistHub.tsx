@@ -2911,7 +2911,7 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
                                        <button
                                          type="button"
                                          onClick={() => removeFeaturedArtist(f.name)}
-                                         className="text-[#B0B0B0] hover:text-red-400 transition-colors ml-1"
+                                         className="text-white/40 hover:text-red-400 transition-colors ml-1"
                                        >
                                          <X size={12} />
                                        </button>

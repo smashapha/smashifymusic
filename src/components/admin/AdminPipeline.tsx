@@ -256,7 +256,7 @@ export const AdminPipeline = ({
 
                 {list.length === 0 ? (
                   <div className="p-6 text-center border border-dashed border-white/10 rounded-[16px] bg-white/[0.01]">
-                    <p className="text-[13px] text-[#B0B0B0]">No artists in {stageInfo.label} stage.</p>
+                    <p className="text-[13px] text-white/40">No artists in {stageInfo.label} stage.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

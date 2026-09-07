@@ -244,12 +244,12 @@ export const AdminTickets = ({
       <div className="space-y-3">
         {loading ? (
           <div className="p-12 text-center bg-[#1A1A1A] border border-white/10 rounded-[16px]">
-            <p className="text-[13px] text-[#B0B0B0]">Loading tickets queue...</p>
+            <p className="text-[13px] text-white/40">Loading tickets queue...</p>
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="p-12 text-center bg-[#1A1A1A] border border-white/10 rounded-[16px]">
             <Ticket size={32} className="mx-auto text-[#737373] mb-3 opacity-40" />
-            <p className="text-[14px] text-[#B0B0B0]">No tickets in this view.</p>
+            <p className="text-[14px] text-white/50">No tickets in this view.</p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="mt-3 text-[13px] text-[#00A3FF] hover:underline"
@@ -324,7 +324,7 @@ export const AdminTickets = ({
                       <button
                         onClick={() => handleUpdateStatus(ticket.id, 'open')}
                         disabled={actionLoading}
-                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-[#B0B0B0] rounded-[10px] text-[12px] transition-colors"
+                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 rounded-[10px] text-[12px] transition-colors"
                       >
                         Reopen
                       </button>

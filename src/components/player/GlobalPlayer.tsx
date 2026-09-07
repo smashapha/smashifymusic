@@ -227,7 +227,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
               />
             </div>
           </div>
-          <div className="flex justify-between text-xs font-mono font-medium text-[#B0B0B0] mt-2.5">
+          <div className="flex justify-between text-xs font-mono font-medium text-white/50 mt-2.5">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(displayDuration)}</span>
           </div>
@@ -339,10 +339,10 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                     <div className="bg-white/5 rounded-2xl p-3 border border-white/5 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Sparkles size={16} className={crossfadeEnabled ? "text-emerald-400" : "text-[#B0B0B0]"} />
+                          <Sparkles size={16} className={crossfadeEnabled ? "text-emerald-400" : "text-white/40"} />
                           <div>
                             <p className="text-xs font-bold text-white leading-tight">Crossfade Tracks</p>
-                            <p className="text-[10px] text-[#B0B0B0] leading-tight">Seamless song transitions</p>
+                            <p className="text-[10px] text-white/50 leading-tight">Seamless song transitions</p>
                           </div>
                         </div>
                         <button
@@ -353,7 +353,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                           className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all flex items-center gap-1.5 ${
                             crossfadeEnabled 
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm' 
-                              : 'bg-white/10 text-[#B0B0B0] border border-white/10 hover:text-white'
+                              : 'bg-white/10 text-white/50 border border-white/10 hover:text-white'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${crossfadeEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
@@ -576,7 +576,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                     <img src={optimizeImage(currentSong.cover_url, 120, 120)} className="w-10 h-10 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                     <div>
                       <h4 className="font-studio font-bold text-sm text-white">{formatDisplayTitle(currentSong.title)}</h4>
-                      <p className="text-xs text-[#B0B0B0]">{currentSong.artist_name}</p>
+                      <p className="text-xs text-white/50">{currentSong.artist_name}</p>
                     </div>
                   </div>
                   <button 
@@ -591,7 +591,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
               {/* Lyrics Content Container */}
               <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6 custom-scrollbar text-center">
                 {loadingLyrics ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-[#B0B0B0] gap-3">
+                  <div className="flex flex-col items-center justify-center py-20 text-white/50 gap-3">
                     <Loader2 size={32} className="animate-spin text-blue-400" />
                     <p className="text-sm font-medium">Fetching lyrics...</p>
                   </div>
@@ -647,7 +647,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                         <p className={`font-studio font-bold text-sm truncate ${currentSong.id === song.id ? 'text-blue-400' : 'text-white'}`}>
                           {formatDisplayTitle(song.title)}
                         </p>
-                        <p className="text-xs text-[#B0B0B0] truncate">{song.artist_name}</p>
+                        <p className="text-xs text-white/50 truncate">{song.artist_name}</p>
                       </div>
                       {currentSong.id === song.id && (
                         <span className="text-xs font-semibold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">
@@ -657,7 +657,7 @@ const ExpandedPlayer = ({ onClose, isLiked, handleLike }: { onClose: () => void,
                     </div>
                   ))
                 ) : (
-                  <div className="py-20 text-center text-[#B0B0B0] font-medium text-sm">Queue is empty</div>
+                  <div className="py-20 text-center text-white/40 font-medium text-sm">Queue is empty</div>
                 )}
               </div>
             </motion.div>

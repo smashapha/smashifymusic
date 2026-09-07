@@ -239,7 +239,7 @@ export const AdminCampaigns = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
           <div className="col-span-full p-12 text-center bg-[#1A1A1A] border border-white/10 rounded-[16px]">
-            <p className="text-[13px] text-[#B0B0B0]">Loading segments...</p>
+            <p className="text-[13px] text-white/40">Loading segments...</p>
           </div>
         ) : segments.length === 0 ? (
           <div className="col-span-full p-12 text-center bg-[#1A1A1A] border border-white/10 rounded-[16px] space-y-3">

@@ -604,7 +604,7 @@ const Library: React.FC = () => {
                 }}
                 className="aspect-square bg-[#1A1A1A] border-2 border-dashed border-white/15 hover:border-[#00A3FF]/60 rounded-[16px] flex flex-col items-center justify-center cursor-pointer transition-all group relative p-4"
               >
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#B0B0B0] group-hover:text-[#00A3FF] group-hover:bg-[#00A3FF]/15 transition-all">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-[#00A3FF] group-hover:bg-[#00A3FF]/15 transition-all">
                   <Plus size={24} />
                 </div>
                 <p className="text-[13px] font-semibold text-white mt-3">

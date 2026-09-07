@@ -310,8 +310,8 @@ const AuthListener: React.FC = () => {
                     <div className="flex-grow border-t border-white/10"></div>
                  </div>
 
-                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[12px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-[#B0B0B0] bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors">
-                    <Chrome size={18} className="text-[#B0B0B0]" /> Continue with Google (Coming Soon)
+                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[12px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-white/40 bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors">
+                    <Chrome size={18} className="text-white/30" /> Continue with Google (Coming Soon)
                  </button>
               </motion.form>
            ) : (
@@ -354,8 +354,8 @@ const AuthListener: React.FC = () => {
                     {loadingState ? 'Sending...' : 'REGISTER'}
                  </button>
 
-                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[12px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-[#B0B0B0] bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors mt-4">
-                    <Chrome size={18} className="text-[#B0B0B0]" /> Join with Google (Coming Soon)
+                 <button type="button" onClick={() => handleOAuth('google')} className="w-full h-[52px] border border-white/5 rounded-[12px] flex items-center justify-center gap-3 font-sans font-medium text-[14px] text-white/40 bg-white/[0.01] cursor-not-allowed hover:bg-white/[0.03] transition-colors mt-4">
+                    <Chrome size={18} className="text-white/30" /> Join with Google (Coming Soon)
                  </button>
               </motion.form>
            )}

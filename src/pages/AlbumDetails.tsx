@@ -224,11 +224,11 @@ const AlbumDetails: React.FC = () => {
                     <span className="font-semibold text-white">{artist.stage_name || artist.full_name}</span>
                   </div>
                 )}
-                <span className="text-[#B0B0B0]">•</span>
+                <span className="text-white/30">•</span>
                 <span className="text-white/80 font-bold">{album.release_year || '2026'}</span>
-                <span className="text-[#B0B0B0]">•</span>
+                <span className="text-white/30">•</span>
                 <span className="text-white/80 font-bold">{songs.length} songs, {durationText}</span>
-                <span className="text-[#B0B0B0]">•</span>
+                <span className="text-white/30">•</span>
                 <span className="text-text-muted">{totalPlays.toLocaleString()} total streams</span>
               </div>
             </div>
