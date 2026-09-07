@@ -345,6 +345,7 @@ const Home: React.FC = () => {
             .select('*')
             .in('artist_id', artistIds)
             .eq('approved', true)
+            .lte('release_date', today)
             .order('created_at', { ascending: false })
             .limit(10);
             

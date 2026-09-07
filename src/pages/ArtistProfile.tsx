@@ -217,11 +217,14 @@ const ArtistProfile: React.FC = () => {
 
          if (data && data.status === 'active' && new Date(data.next_billing_at) > new Date()) {
             // Fetch songs marked as exclusive
+            const today = new Date().toISOString().split('T')[0];
             const { data: exclusiveSongs } = await supabase
                .from('public_songs')
                .select('*')
                .eq('artist_id', id)
                .eq('is_exclusive', true)
+               .eq('approved', true)
+               .lte('release_date', today)
                .eq('is_active', true);
             setExclusiveContent(exclusiveSongs || []);
          }

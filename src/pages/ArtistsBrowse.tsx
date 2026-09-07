@@ -41,10 +41,12 @@ const ArtistsBrowse: React.FC = () => {
           console.error('Error fetching artists in directory:', artistsErr);
         }
 
+        const today = new Date().toISOString().split('T')[0];
         const { data: songsData, error: songsErr } = await supabase
           .from('public_songs')
           .select('artist_id')
-          .eq('approved', true);
+          .eq('approved', true)
+          .lte('release_date', today);
 
         if (songsErr) {
           console.error('Error fetching songs for artist counts:', songsErr);

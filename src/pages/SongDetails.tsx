@@ -177,11 +177,13 @@ const SongDetails: React.FC = () => {
 
       // 3. Fetch "More from {artist}"
       if (songData.artist_id) {
+        const today = new Date().toISOString().split('T')[0];
         const { data: moreData } = await supabase
           .from('public_songs')
           .select('*')
           .eq('artist_id', songData.artist_id)
           .eq('approved', true)
+          .lte('release_date', today)
           .neq('id', songId)
           .order('plays', { ascending: false })
           .limit(8);
