@@ -451,7 +451,7 @@ export const WithdrawTab = ({ setActiveTab, stats }: { setActiveTab: (tab: any) 
                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
                   <Landmark className="text-text-muted/40" size={20} />
                 </div>
-                <p className="text-xs font-semibold text-white/50 mb-1">No withdrawals filed yet</p>
+                <p className="text-xs font-semibold text-[#B0B0B0] mb-1">No withdrawals filed yet</p>
                 <p className="text-[10px] leading-relaxed text-text-muted">Once we dispatch money to your device, the ledger listings status will instantly log here.</p>
               </div>
             ) : (

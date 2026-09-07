@@ -426,11 +426,11 @@ export const AdminPeople = ({
             </div>
 
             {loadingDetails ? (
-              <div className="py-8 text-center text-white/40 text-[13px]">Loading timeline...</div>
+              <div className="py-8 text-center text-[#B0B0B0] text-[13px]">Loading timeline...</div>
             ) : activityLogs.length === 0 ? (
               <div className="py-8 text-center border border-dashed border-white/10 rounded-[12px]">
-                <p className="text-[13px] text-white/40">No activity logged yet.</p>
-                <p className="text-[11px] text-white/30 mt-1">Triggers automatically capture events.</p>
+                <p className="text-[13px] text-[#B0B0B0]">No activity logged yet.</p>
+                <p className="text-[11px] text-[#B0B0B0] mt-1">Triggers automatically capture events.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
@@ -484,7 +484,7 @@ export const AdminPeople = ({
 
             <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
               {notes.length === 0 ? (
-                <p className="text-[13px] text-white/40 text-center py-4">No notes recorded yet.</p>
+                <p className="text-[13px] text-[#B0B0B0] text-center py-4">No notes recorded yet.</p>
               ) : (
                 notes.map(n => (
                   <div key={n.id} className="p-3 bg-white/5 border border-white/5 rounded-[10px] space-y-1">
@@ -511,7 +511,7 @@ export const AdminPeople = ({
             <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 no-scrollbar">
               {tickets.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-white/10 rounded-[12px]">
-                  <p className="text-[13px] text-white/40">No tickets for this user.</p>
+                  <p className="text-[13px] text-[#B0B0B0]">No tickets for this user.</p>
                   <button
                     onClick={() => setShowNewTicketModal(true)}
                     className="mt-2 text-[12px] text-[#00A3FF] hover:underline"
@@ -664,7 +664,7 @@ export const AdminPeople = ({
       <div className="space-y-2">
         {filteredPeople.length === 0 ? (
           <div className="p-12 text-center bg-[#1A1A1A] border border-white/10 rounded-[16px]">
-            <p className="text-[14px] text-white/50">No contacts matching criteria.</p>
+            <p className="text-[14px] text-[#B0B0B0]">No contacts matching criteria.</p>
           </div>
         ) : (
           filteredPeople.slice(0, 100).map(p => (
@@ -703,7 +703,7 @@ export const AdminPeople = ({
                     {p.artist_tier}
                   </span>
                 )}
-                <ChevronRight size={16} className="text-white/30 group-hover:text-[#00A3FF] transition-colors" />
+                <ChevronRight size={16} className="text-[#B0B0B0] group-hover:text-[#00A3FF] transition-colors" />
               </div>
             </div>
           ))

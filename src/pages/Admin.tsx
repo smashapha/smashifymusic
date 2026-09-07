@@ -1195,7 +1195,7 @@ const Admin = () => {
                        <ShieldCheck size={20} />
                     </div>
                     <div className="leading-tight">
-                      <h1 className="font-studio font-bold text-[13px]  tracking-tighter">Admin <span className="text-white/40">HQ</span></h1>
+                      <h1 className="font-studio font-bold text-[13px]  tracking-tighter">Admin <span className="text-[#B0B0B0]">HQ</span></h1>
                     </div>
                   </div>
                   <button onClick={() => setMobileMenuOpen(false)} className="text-[#B0B0B0] hover:text-white">
@@ -1668,7 +1668,7 @@ const Admin = () => {
                              </td>
                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
                                 <div className="flex flex-col gap-2">
-                                   <p className="text-[13px] font-bold  text-white/50">{a.id_type || 'ID'}: {a.nrc_number || 'N/A'}</p>
+                                   <p className="text-[13px] font-bold  text-[#B0B0B0]">{a.id_type || 'ID'}: {a.nrc_number || 'N/A'}</p>
                                    <div className="flex gap-2">
                                      {a.id_document_url && (
                                        <a href={a.id_document_url} target="_blank" rel="noopener noreferrer" className="text-[13px] hover:underline text-[#00A3FF]">View ID</a>

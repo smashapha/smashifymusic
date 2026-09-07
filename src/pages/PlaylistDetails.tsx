@@ -421,7 +421,7 @@ const PlaylistDetails: React.FC = () => {
                   <div className="w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
                     <Headphones size={13} className="text-[#00A3FF] animate-pulse" />
                   </div>
-                  <div className="text-[9px] font-display font-semibold tracking-widest text-white/50 uppercase">
+                  <div className="text-[9px] font-display font-semibold tracking-widest text-[#B0B0B0] uppercase">
                     {chartInfo.type}
                   </div>
                 </div>
@@ -478,11 +478,11 @@ const PlaylistDetails: React.FC = () => {
               
               <div className="flex items-center gap-2 text-xs text-text-muted font-sans flex-wrap">
                 <span className="font-semibold text-white hover:underline cursor-pointer">Smashify</span>
-                <span className="text-white/30">•</span>
+                <span className="text-[#B0B0B0]">•</span>
                 <span className="text-white/80 font-bold">{savesCount.toLocaleString()} saves</span>
-                <span className="text-white/30">•</span>
+                <span className="text-[#B0B0B0]">•</span>
                 <span className="text-white/80 font-bold">{songs.length} songs, about {durationText}</span>
-                <span className="text-white/30">•</span>
+                <span className="text-[#B0B0B0]">•</span>
                 <span className="text-[#00A3FF] font-semibold">{songs.length > 10 ? '2 new entries' : 'Updated daily'}</span>
               </div>
             </div>
@@ -618,7 +618,7 @@ const PlaylistDetails: React.FC = () => {
               <div className="text-center py-20 bg-white/2 p-8 rounded-[16px] border border-white/5">
                 <Music size={40} className="mx-auto text-white/10 mb-4" />
                 <p className="text-sm font-semibold text-text-muted mb-1">This playlist is empty</p>
-                <p className="text-xs text-white/30">Add songs using the "Add to Playlist" option on any track.</p>
+                <p className="text-xs text-[#B0B0B0]">Add songs using the "Add to Playlist" option on any track.</p>
               </div>
             ) : (
               <div className="text-center py-20 bg-white/2 p-8 rounded-[16px] border border-white/5">

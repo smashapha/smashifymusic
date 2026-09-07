@@ -1301,7 +1301,7 @@ async function startServer() {
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
           } else if (filePath.match(/\.(js|css|webp|png|jpg|jpeg|gif|svg|woff2?)$/)) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           }
         }
       }));

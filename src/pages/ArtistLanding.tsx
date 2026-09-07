@@ -28,7 +28,7 @@ const Nav = () => {
       <div className="flex items-center gap-8">
         <Logo size="md" />
         <div className="hidden lg:flex items-center gap-8">
-          <Link to="/" className="font-display font-medium text-[13px] text-white/50 hover:text-white transition-colors">Listener App</Link>
+          <Link to="/" className="font-display font-medium text-[13px] text-[#B0B0B0] hover:text-white transition-colors">Listener App</Link>
           <div className="w-1 h-1 rounded-full bg-white/20" />
           <span className="font-display font-bold text-[13px] text-[#00A3FF] font-semibold">Artist Studio</span>
         </div>
@@ -123,7 +123,7 @@ const ArtistLanding: React.FC = () => {
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
                transition={{ duration: 0.6, delay: 0.3 }}
-               className="text-[18px] md:text-[20px] font-sans text-white/50 max-w-xl leading-relaxed mb-12 mx-auto lg:mx-0 font-medium"
+               className="text-[18px] md:text-[20px] font-sans text-[#B0B0B0] max-w-xl leading-relaxed mb-12 mx-auto lg:mx-0 font-medium"
              >
                Sell your music. Accept tips. Get paid today. Smashify gives your fans a direct way to support you — via Airtel Money and TNM Mpamba. No middleman. No waiting for stream counts.
              </motion.p>
@@ -159,7 +159,7 @@ const ArtistLanding: React.FC = () => {
                 ].map((stat, i) => (
                   <div key={i} className="flex flex-col items-center lg:items-start">
                      <span className="text-[24px] font-studio font-bold text-white mb-1">{stat.val}</span>
-                     <span className="text-[10px] font-display text-white/40 uppercase tracking-widest">{stat.label}</span>
+                     <span className="text-[10px] font-display text-[#B0B0B0] uppercase tracking-widest">{stat.label}</span>
                   </div>
                 ))}
              </div>
@@ -188,7 +188,7 @@ const ArtistLanding: React.FC = () => {
                    </div>
                 </div>
                 <div className="p-4 bg-white/5 rounded-[12px] border border-white/5 space-y-3">
-                   <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest block mb-2">This Month's Earnings</span>
+                   <span className="text-[10px] text-[#B0B0B0] uppercase font-bold tracking-widest block mb-2">This Month's Earnings</span>
                    
                    <div className="flex justify-between items-center text-[13px] font-sans">
                      <span className="text-white/60">💰 Track Sales</span>
@@ -204,11 +204,11 @@ const ArtistLanding: React.FC = () => {
                    </div>
                    
                    <div className="pt-2 border-t border-white/10 flex justify-between items-center">
-                     <span className="text-[11px] uppercase tracking-widest text-white/40 font-bold">Total</span>
+                     <span className="text-[11px] uppercase tracking-widest text-[#B0B0B0] font-bold">Total</span>
                      <span className="text-[16px] font-studio font-bold text-[#22C55E]">MK 75,500</span>
                    </div>
 
-                   <p className="text-[9px] text-center text-white/30 uppercase font-bold tracking-widest mt-2">Direct fan payments — no streams needed</p>
+                   <p className="text-[9px] text-center text-[#B0B0B0] uppercase font-bold tracking-widest mt-2">Direct fan payments — no streams needed</p>
                 </div>
              </motion.div>
           </div>
@@ -219,7 +219,7 @@ const ArtistLanding: React.FC = () => {
       <section className="py-20 px-6 md:px-12 bg-white/[0.02]">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
             <div>
-               <p className="text-[10px] font-display font-bold text-white/40 uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
+               <p className="text-[10px] font-display font-bold text-[#B0B0B0] uppercase tracking-[0.4em] mb-4">Studio Leaders</p>
                <h2 className="text-3xl font-studio font-bold tracking-tight">Earnings <span className="text-[#00A3FF] underline underline-offset-8">Report</span></h2>
             </div>
             <div className="flex -space-x-4">
@@ -242,7 +242,7 @@ const ArtistLanding: React.FC = () => {
                    ? `MK ${(platformStats.totalPaid/1000).toFixed(0)}K+`
                    : 'Growing Daily'}
                </p>
-               <p className="text-[10px] font-display text-white/40 uppercase tracking-widest">Total Paid to Artists</p>
+               <p className="text-[10px] font-display text-[#B0B0B0] uppercase tracking-widest">Total Paid to Artists</p>
             </div>
          </div>
       </section>
@@ -297,14 +297,14 @@ const ArtistLanding: React.FC = () => {
               <div key={i} className={`p-8 bg-white/[0.02] rounded-[16px] border ${item.color} transition-all group`}>
                 <div className="flex items-start justify-between mb-6">
                   <div className="w-12 h-12 rounded-[12px] bg-[#00A3FF]/10 flex items-center justify-center text-[#00A3FF]">{item.icon === 'Music2' ? <Music2 size={24}/> : item.icon === 'Wallet' ? <Wallet size={24}/> : item.icon === 'Heart' ? <Heart size={24}/> : <Lock size={24}/>}</div>
-                  <span className="text-[10px] font-bold px-3 py-1 bg-white/5 rounded-full text-white/40 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold px-3 py-1 bg-white/5 rounded-full text-[#B0B0B0] uppercase tracking-widest">
                     {item.tag}
                   </span>
                 </div>
                 <h3 className="text-xl font-studio font-bold text-white mb-3">
                   {item.title}
                 </h3>
-                <p className="text-[14px] text-white/50 leading-relaxed font-sans mb-6">
+                <p className="text-[14px] text-[#B0B0B0] leading-relaxed font-sans mb-6">
                   {item.desc}
                 </p>
                 <div className="p-3 bg-smash-green/5 rounded-xl border border-smash-green/10">
@@ -325,8 +325,8 @@ const ArtistLanding: React.FC = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
-                    <th className="text-left p-4 text-xs text-white/40 font-display uppercase tracking-widest"></th>
-                    <th className="p-4 text-center text-xs text-white/40 font-display uppercase tracking-widest">Spotify</th>
+                    <th className="text-left p-4 text-xs text-[#B0B0B0] font-display uppercase tracking-widest"></th>
+                    <th className="p-4 text-center text-xs text-[#B0B0B0] font-display uppercase tracking-widest">Spotify</th>
                     <th className="p-4 text-center text-xs text-[#00A3FF] font-bold font-display uppercase tracking-widest">Smashify</th>
                   </tr>
                 </thead>
@@ -340,7 +340,7 @@ const ArtistLanding: React.FC = () => {
                   ].map(([feature, spotify, smashify], i) => (
                     <tr key={i} className="border-b border-white/5 last:border-0 bg-white/[0.01]">
                       <td className="p-4 text-sm text-white/60 font-medium">{feature}</td>
-                      <td className="p-4 text-center text-xs text-white/30">{spotify}</td>
+                      <td className="p-4 text-center text-xs text-[#B0B0B0]">{spotify}</td>
                       <td className="p-4 text-center">
                         <span className="text-xs text-[#22C55E] font-bold">{smashify}</span>
                       </td>
@@ -371,7 +371,7 @@ const ArtistLanding: React.FC = () => {
                    <div className="flex-1 md:text-right">
                       <div className={`flex flex-col ${i % 2 === 1 ? 'md:items-start' : 'md:items-end'}`}>
                          <h4 className="text-[clamp(1.5rem,3vw,2rem)] font-studio font-bold text-white mb-4">{s.title}</h4>
-                         <p className="text-[15px] text-white/50 leading-relaxed font-sans max-w-sm">{s.desc}</p>
+                         <p className="text-[15px] text-[#B0B0B0] leading-relaxed font-sans max-w-sm">{s.desc}</p>
                       </div>
                    </div>
                    <div className="w-20 h-20 rounded-full bg-[#0084D6] text-white font-studio font-bold text-2xl flex items-center justify-center shrink-0 border-[8px] border-[#0A0A0D]">
@@ -389,7 +389,7 @@ const ArtistLanding: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
              <h3 className="text-5xl md:text-8xl font-studio font-bold tracking-tight leading-none mb-4">Studio plans</h3>
-             <p className="text-white/50 text-xl font-medium tracking-tight">Simple 6-month plans with zero hidden fees.</p>
+             <p className="text-[#B0B0B0] text-xl font-medium tracking-tight">Simple 6-month plans with zero hidden fees.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
@@ -397,7 +397,7 @@ const ArtistLanding: React.FC = () => {
                 <h3 className="text-2xl font-studio font-bold mb-2 text-white/60">Free Studio</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                   <span className="text-4xl font-studio font-bold text-white">0</span>
-                  <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">
+                  <span className="text-[11px] font-display font-medium text-[#B0B0B0] uppercase tracking-widest">
                     MWK / Forever
                   </span>
                 </div>
@@ -411,7 +411,7 @@ const ArtistLanding: React.FC = () => {
                     "Minimum withdrawal: MK 10,000",
                     "Must be verified to withdraw"
                   ].map((f, i) => (
-                    <li key={i} className="flex items-center gap-3 text-[14px] text-white/40 font-medium font-sans">
+                    <li key={i} className="flex items-center gap-3 text-[14px] text-[#B0B0B0] font-medium font-sans">
                       <CircleCheck size={16} className="text-white/20 shrink-0" />
                       {f}
                     </li>
@@ -429,7 +429,7 @@ const ArtistLanding: React.FC = () => {
                 <h3 className="text-2xl font-studio font-bold mb-2">Rising Star</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">8,000</span>
-                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
+                   <span className="text-[11px] font-display font-medium text-[#B0B0B0] uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
@@ -461,7 +461,7 @@ const ArtistLanding: React.FC = () => {
                 <h3 className="text-2xl font-studio font-bold mb-2 text-[#00A3FF]">Standard</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">16,000</span>
-                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
+                   <span className="text-[11px] font-display font-medium text-[#B0B0B0] uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
@@ -493,7 +493,7 @@ const ArtistLanding: React.FC = () => {
                 <h3 className="text-2xl font-studio font-bold mb-2">Elite</h3>
                 <div className="flex items-baseline gap-2 mb-8">
                    <span className="text-4xl font-studio font-bold text-white">27,000</span>
-                   <span className="text-[11px] font-display font-medium text-white/40 uppercase tracking-widest">MWK / 6 MO</span>
+                   <span className="text-[11px] font-display font-medium text-[#B0B0B0] uppercase tracking-widest">MWK / 6 MO</span>
                 </div>
                 <ul className="space-y-4 flex-1">
                    {[
@@ -535,7 +535,7 @@ const ArtistLanding: React.FC = () => {
           <h2 className="text-4xl md:text-6xl font-studio font-bold mb-4">
             Become a <span className="text-[#22C55E]">Smashify Agent</span>
           </h2>
-          <p className="text-white/50 text-base mb-10 max-w-2xl mx-auto">
+          <p className="text-[#B0B0B0] text-base mb-10 max-w-2xl mx-auto">
             Know artists? Refer them and earn 10% of their first subscription. Artists succeed, you get paid — directly to your mobile money.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
@@ -552,7 +552,7 @@ const ArtistLanding: React.FC = () => {
                 <h3 className="font-bold text-sm mb-2">
                   {item.t}
                 </h3>
-                <p className="text-white/40 text-xs leading-relaxed">{item.d}</p>
+                <p className="text-[#B0B0B0] text-xs leading-relaxed">{item.d}</p>
               </div>
             ))}
           </div>

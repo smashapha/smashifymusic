@@ -418,7 +418,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                <div className="bg-white text-black p-8 rounded-3xl w-full max-w-sm flex flex-col items-center shadow-xl" onClick={(e: any) => e.stopPropagation()}>
                   <Avatar src={song.profiles?.avatar_url} name={song.profiles?.stage_name || song.profiles?.full_name} className="w-20 h-20 mb-4" />
                   <h3 className="text-xl font-semibold mb-1">Send a tip</h3>
-                  <p className="text-sm font-bold text-gray-500 mb-6">to {song.artist_name}</p>
+                  <p className="text-sm font-bold text-[#B0B0B0] mb-6">to {song.artist_name}</p>
                   
                   <div className="grid grid-cols-2 gap-3 w-full mb-4">
                      {[500, 1000, 2000, 5000].map(amt => (
@@ -441,7 +441,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
 
                   <label className="flex items-center gap-2 mb-6 cursor-pointer self-start ml-2">
                      <input type="checkbox" checked={isAnonymous} onChange={e => setIsAnonymous(e.target.checked)} className="w-4 h-4 rounded" />
-                     <span className="text-sm font-bold text-gray-600">Send anonymously</span>
+                     <span className="text-sm font-bold text-[#B0B0B0]">Send anonymously</span>
                   </label>
 
                   <button 
@@ -473,7 +473,7 @@ const MotoCard = ({ song, active, onSkip }: { song: Song; active: boolean; onSki
                   <h3 className="text-xl font-semibold mb-2">
                      {isSubscribed ? 'Cancel Support?' : `Support ${song.artist_name}`}
                   </h3>
-                  <p className="text-sm font-bold text-gray-500 mb-8">
+                  <p className="text-sm font-bold text-[#B0B0B0] mb-8">
                      {isSubscribed 
                         ? `Cancel your MK 500/month support for ${song.artist_name}?` 
                         : "MK 500/month — cancel anytime"
@@ -807,7 +807,7 @@ const AudioAdCard = ({ ad, onFinish }: { ad: any, onFinish: () => void }) => {
              ))}
           </div>
           
-          <p className="text-xs font-semibold text-white/40 tracking-[0.3em] uppercase">
+          <p className="text-xs font-semibold text-[#B0B0B0] tracking-[0.3em] uppercase">
              Completing in {timeLeft}s
           </p>
        </div>

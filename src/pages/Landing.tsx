@@ -67,7 +67,7 @@ const Nav = () => {
                 {link}
               </Link>
             ))}
-            <div className="bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#8B5CF6] text-[10px] rounded-full px-2.5 py-0.5 font-semibold tracking-wider uppercase">
+            <div className="bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#A78BFA] text-[10px] rounded-full px-2.5 py-0.5 font-semibold tracking-wider uppercase">
               For Artists
             </div>
           </div>
@@ -167,33 +167,42 @@ const Landing: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: artistsData } = await supabase
-        .from('artist_catalog')
-        .select('id, full_name, stage_name, avatar_url, genre')
-        .eq('user_type', 'artist')
-        .not('stage_name', 'is', null)
-        .limit(12);
+      const today = new Date().toISOString().split('T')[0];
+      const [
+        { data: artistsData },
+        { data: topSongsData },
+        { data: trendingData }
+      ] = await Promise.all([
+        supabase
+          .from('artist_catalog')
+          .select('id, full_name, stage_name, avatar_url, genre')
+          .eq('user_type', 'artist')
+          .not('stage_name', 'is', null)
+          .limit(12),
+        supabase
+          .from('public_songs')
+          .select('id, title, plays, cover_url, artist_id, audio_url')
+          .eq('approved', true)
+          .lte('release_date', today)
+          .order('plays', { ascending: false })
+          .limit(10),
+        supabase
+          .from('public_songs')
+          .select('id, title, artist_id, cover_url, audio_url')
+          .eq('approved', true)
+          .lte('release_date', today)
+          .order('plays', { ascending: false })
+          .limit(10)
+      ]);
+
       setArtists(artistsData || []);
 
-      const today = new Date().toISOString().split('T')[0];
-      const { data: topSongsData } = await supabase
-        .from('public_songs')
-        .select('id, title, plays, cover_url, artist_id')
-        .eq('approved', true)
-        .lte('release_date', today)
-        .order('plays', { ascending: false })
-        .limit(10);
-      const topWithProfiles = await attachArtistProfilesToSongs(topSongsData || []);
-      setTopSongs(topWithProfiles);
+      const [topWithProfiles, trendingWithProfiles] = await Promise.all([
+        attachArtistProfilesToSongs(topSongsData || []),
+        attachArtistProfilesToSongs(trendingData || [])
+      ]);
 
-      const { data: trendingData } = await supabase
-        .from('public_songs')
-        .select('id, title, artist_id')
-        .eq('approved', true)
-        .lte('release_date', today)
-        .order('plays', { ascending: false })
-        .limit(10);
-      const trendingWithProfiles = await attachArtistProfilesToSongs(trendingData || []);
+      setTopSongs(topWithProfiles);
       setTrendingSongs(trendingWithProfiles);
     };
     fetchData();

@@ -460,17 +460,17 @@ const ArtistProfile: React.FC = () => {
             {artist.stage_name || artist.full_name}
           </h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="text-white/50 text-xs font-bold">
+            <span className="text-[#B0B0B0] text-xs font-bold">
               {(artist.followers_count || 0).toLocaleString()} followers
             </span>
             <span className="text-white/20">·</span>
-            <span className="text-white/50 text-xs font-bold">
+            <span className="text-[#B0B0B0] text-xs font-bold">
               {songs.length} tracks
             </span>
             {artist.genre && (
               <>
                 <span className="text-white/20">·</span>
-                <span className="text-white/50 text-xs font-bold">{artist.genre}</span>
+                <span className="text-[#B0B0B0] text-xs font-bold">{artist.genre}</span>
               </>
             )}
           </div>
@@ -512,7 +512,7 @@ const ArtistProfile: React.FC = () => {
       {/* Share */}
       <button
         onClick={handleShare}
-        className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 transition-all ml-auto"
+        className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-[#B0B0B0] hover:text-white hover:border-white/30 transition-all ml-auto"
       >
         <Share size={15} />
       </button>
@@ -547,7 +547,7 @@ const ArtistProfile: React.FC = () => {
           key={tab.key}
           onClick={() => setActiveTab(tab.key as any)}
           className={`relative py-4 px-4 text-xs font-semibold transition-colors ${
-            activeTab === tab.key ? 'text-white' : 'text-white/30 hover:text-white/60'
+            activeTab === tab.key ? 'text-white' : 'text-[#B0B0B0] hover:text-white/60'
           }`}
         >
           {tab.label}
@@ -652,7 +652,7 @@ const ArtistProfile: React.FC = () => {
                 <h2 className="text-xl md:text-2xl font-bold text-white">Discography</h2>
                 <button
                   onClick={() => setDiscoLimit(0)}
-                  className="text-xs text-white/50 font-bold hover:underline"
+                  className="text-xs text-[#B0B0B0] font-bold hover:underline"
                 >
                   Show all
                 </button>
@@ -696,7 +696,7 @@ const ArtistProfile: React.FC = () => {
                                </div>
                             </div>
                             <p className="text-white text-sm font-bold truncate">{item.data.title}</p>
-                            <p className="text-white/40 text-xs mt-0.5">{item.data.release_year} · Album</p>
+                            <p className="text-[#B0B0B0] text-xs mt-0.5">{item.data.release_year} · Album</p>
                          </div>
                        );
                     }
@@ -710,7 +710,7 @@ const ArtistProfile: React.FC = () => {
                <section className="mb-8 pt-4">
                  <div className="flex items-center justify-between mb-4">
                    <h2 className="text-xl md:text-2xl font-bold text-white">Appears On</h2>
-                   <button className="text-xs text-white/50 font-bold hover:underline">Show all</button>
+                   <button className="text-xs text-[#B0B0B0] font-bold hover:underline">Show all</button>
                  </div>
                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
                    {appearsOn.map(song => (
@@ -727,7 +727,7 @@ const ArtistProfile: React.FC = () => {
                <section className="mb-8 pt-4">
                  <div className="flex items-center justify-between mb-4">
                    <h2 className="text-xl md:text-2xl font-bold text-white">Fans also like</h2>
-                   <button className="text-xs text-white/50 font-bold hover:underline">Show all</button>
+                   <button className="text-xs text-[#B0B0B0] font-bold hover:underline">Show all</button>
                  </div>
                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-6 snap-x">
                    {fansAlsoLike.map(fanArtist => (
@@ -736,7 +736,7 @@ const ArtistProfile: React.FC = () => {
                           <img src={optimizeImage(fanArtist.avatar_url, 120, 120)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                        </div>
                        <p className="text-white text-sm font-bold truncate">{fanArtist.stage_name || fanArtist.full_name}</p>
-                       <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mt-1">Artist</p>
+                       <p className="text-[#B0B0B0] text-[11px] font-bold uppercase tracking-widest mt-1">Artist</p>
                      </div>
                    ))}
                  </div>
@@ -770,7 +770,7 @@ const ArtistProfile: React.FC = () => {
             {albums.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Disc size={40} className="text-white/10 mb-4" />
-                <p className="text-white/30 text-sm font-bold">No albums yet</p>
+                <p className="text-[#B0B0B0] text-sm font-bold">No albums yet</p>
               </div>
             ) : (
               <div className={GRID_ARTIST_CARDS}>
@@ -792,7 +792,7 @@ const ArtistProfile: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-white text-sm font-bold truncate">{al.title}</p>
-                    <p className="text-white/40 text-xs mt-0.5">{al.release_year} · Album</p>
+                    <p className="text-[#B0B0B0] text-xs mt-0.5">{al.release_year} · Album</p>
                   </div>
                 ))}
               </div>
@@ -808,7 +808,7 @@ const ArtistProfile: React.FC = () => {
             ) : (
               <>
                 <div>
-                  <h3 className="text-sm font-semibold text-white/50 mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-[#B0B0B0] mb-4 flex items-center gap-2">
                     <Trophy size={14} className="text-[#00A3FF]" /> Top Supporters
                   </h3>
                   {communityData.topSupporters.length === 0 ? (
@@ -827,7 +827,7 @@ const ArtistProfile: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white/50 mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-[#B0B0B0] mb-4 flex items-center gap-2">
                     <MessageCircle size={14} className="text-[#00A3FF]" /> Fan Comments
                   </h3>
                   {communityData.recentComments.length === 0 ? (
@@ -839,7 +839,7 @@ const ArtistProfile: React.FC = () => {
                           <div className="flex items-center gap-3 mb-2">
                             <Avatar src={c.user_profiles?.avatar_url} name={c.user_profiles?.full_name} className="w-8 h-8" />
                             <p className="text-white font-bold text-sm">{c.user_profiles?.full_name || 'Listener'}</p>
-                            <p className="text-white/30 text-xs ml-auto">
+                            <p className="text-[#B0B0B0] text-xs ml-auto">
                               {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                             </p>
                           </div>
@@ -870,7 +870,7 @@ const SocialLink = ({ href, icon, label }: { href: string; icon: React.ReactNode
     href={href}
     target="_blank"
     rel="noreferrer"
-    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-all"
+    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-semibold text-[#B0B0B0] hover:text-white transition-all"
   >
     {icon} {label}
   </a>
