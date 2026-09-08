@@ -26,8 +26,8 @@ export const getListenerTier = (user: any): ListenerTier => {
 
 export const getListenerLimits = (user: any) => {
   const tier = (getListenerTier(user) || 'free').toLowerCase();
-  const artistTier = (getArtistTier(user) || '').toLowerCase().replace('-', '_');
-  const hasPaidArtistTier = ['risingstar', 'rising_star', 'standard', 'elite', 'label'].includes(artistTier);
+  const artistTier = (getArtistTier(user) || '').toLowerCase().replace(/[\s-_]/g, '');
+  const hasPaidArtistTier = ['risingstar', 'standard', 'elite', 'label'].includes(artistTier);
   const effectiveTier = hasPaidArtistTier ? 'premium' : tier;
 
   switch (effectiveTier) {
@@ -132,18 +132,19 @@ export const getTrackLimit = (tierOrArtist: string | any): number => {
     ? Number(tierOrArtist?.extra_track_slots || 0)
     : 0;
 
+  const normalizedTier = (tier || 'free').toLowerCase().replace(/[\s-_]/g, '');
+  
   const baseLimits: Record<string, number> = {
-    free: 3, Free: 3,
-    RisingStar: 10, risingstar: 10, rising_star: 10,
-    Standard: 15, standard: 15,
-    Elite: 25, elite: 25,
-    Label: 150, label: 150,
+    free: 3, 
+    risingstar: 10, 
+    standard: 15, 
+    elite: 25, 
+    label: 150, 
   };
-  const base = baseLimits[tier] || 3;
+  const base = baseLimits[normalizedTier] || 3;
 
   // Booster packs only available for Elite and Label
-  const tierLower = tier.toLowerCase();
-  if ((tierLower === 'elite' || tierLower === 'label') && extraSlots > 0) {
+  if ((normalizedTier === 'elite' || normalizedTier === 'label') && extraSlots > 0) {
     return base + (extraSlots * 10);
   }
   return base;
@@ -151,7 +152,7 @@ export const getTrackLimit = (tierOrArtist: string | any): number => {
 
 export const getTierLimits = (artist: any) => {
   const tier = (getArtistTier(artist) || 'free');
-  const normalizedTier = tier.toLowerCase().replace('-', '_');
+  const normalizedTier = tier.toLowerCase().replace(/[\s-_]/g, '');
   const maxTracks = getTrackLimit(tier);
 
   switch (normalizedTier) {
@@ -230,7 +231,6 @@ export const getTierLimits = (artist: any) => {
       };
 
     case 'risingstar':
-    case 'rising_star':
       return {
         maxUploads: maxTracks,
         yearlyUploads: maxTracks,
@@ -317,31 +317,31 @@ export const canWithdrawalFunds = (artist: any): boolean => {
 
 export const canReceiveFanSubscriptions = (artist: any): boolean => {
   if (!artist) return false;
-  const tier = (getArtistTier(artist) || 'free').toLowerCase();
+  const tier = (getArtistTier(artist) || 'free').toLowerCase().replace(/[\s-_]/g, '');
   return tier !== 'free';
 };
 
 export const canAccessAdvancedAnalytics = (artist: any): boolean => {
   if (!artist) return false;
-  const tier = (getArtistTier(artist) || 'free').toLowerCase();
-  return tier === 'standard' || tier === 'elite';
+  const tier = (getArtistTier(artist) || 'free').toLowerCase().replace(/[\s-_]/g, '');
+  return tier === 'standard' || tier === 'elite' || tier === 'label';
 };
 
 export const canSetExclusiveContent = (artist: any): boolean => {
   if (!artist) return false;
-  const tier = (getArtistTier(artist) || 'free').toLowerCase();
+  const tier = (getArtistTier(artist) || 'free').toLowerCase().replace(/[\s-_]/g, '');
   return tier !== 'free';
 };
 
 export const getWithdrawalLimit = (artist: any): number => {
   if (!artist) return 50000;
-  const tier = (getArtistTier(artist) || 'free').toLowerCase();
+  const tier = (getArtistTier(artist) || 'free').toLowerCase().replace(/[\s-_]/g, '');
   switch (tier) {
     case 'free': return 50000;
-    case 'risingstar':
-    case 'rising_star': return 200000;
+    case 'risingstar': return 200000;
     case 'standard': return 500000;
-    case 'elite': return Infinity;
+    case 'elite': 
+    case 'label': return Infinity;
     default: return 50000;
   }
 };
@@ -358,15 +358,15 @@ export const getPlatformFee = (
 };
 
 export const isFeatureAvailable = (feature: string, tier: string | undefined): boolean => {
-  const currentTier = (tier || 'free').toLowerCase();
+  const currentTier = (tier || 'free').toLowerCase().replace(/[\s-_]/g, '');
   
   const featureRequirements: Record<string, string[]> = {
-    'advancedAnalytics': ['standard', 'elite'],
-    'exclusiveContent': ['risingstar', 'rising_star', 'standard', 'elite'],
-    'fanSubscriptions': ['risingstar', 'rising_star', 'standard', 'elite'],
-    'verifiedBadge': ['standard', 'elite'],
-    'customUrl': ['standard', 'elite'],
-    'fanMessaging': ['risingstar', 'rising_star', 'standard', 'elite'],
+    'advancedAnalytics': ['standard', 'elite', 'label'],
+    'exclusiveContent': ['risingstar', 'standard', 'elite', 'label'],
+    'fanSubscriptions': ['risingstar', 'standard', 'elite', 'label'],
+    'verifiedBadge': ['standard', 'elite', 'label'],
+    'customUrl': ['standard', 'elite', 'label'],
+    'fanMessaging': ['risingstar', 'standard', 'elite', 'label'],
   };
   
   const allowedTiers = featureRequirements[feature];
