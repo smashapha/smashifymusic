@@ -319,6 +319,29 @@ export const AdminPeople = ({
     );
   };
 
+  const handleManualUpgrade = async (tier: string) => {
+    if (!selectedPerson) return;
+    try {
+      const isFree = tier === 'Free';
+      const ends = new Date();
+      ends.setMonth(ends.getMonth() + 6);
+      
+      const { error } = await supabase.from('profiles').update({
+        artist_tier: tier,
+        subscription_tier: tier,
+        subscription_ends: isFree ? null : ends.toISOString()
+      }).eq('id', selectedPerson.id);
+      
+      if (error) throw error;
+      toast.success(isFree ? 'Successfully revoked to Free tier' : `Successfully upgraded to ${tier}`);
+      // Refresh local state to show immediately
+      selectedPerson.artist_tier = tier;
+      setSelectedPerson({ ...selectedPerson });
+    } catch (err: any) {
+      toast.error('Failed to update tier: ' + err.message);
+    }
+  };
+
   const renderTypeChip = (type: string) => {
     switch (type) {
       case 'artist':
@@ -386,9 +409,25 @@ export const AdminPeople = ({
               </div>
             </div>
 
-            <div className="text-right flex md:flex-col justify-between items-end">
+            <div className="text-right flex md:flex-col justify-between items-end gap-2">
               <p className="text-[11px] uppercase tracking-wider text-[#737373]">UUID</p>
               <p className="text-[12px] font-mono text-white/60 select-all">{selectedPerson.id}</p>
+              {selectedPerson.type === 'artist' && (
+                <div className="flex flex-wrap gap-2 mt-2 justify-end">
+                  <button onClick={() => handleManualUpgrade('RisingStar')} className="px-2 py-1 bg-[#00A3FF]/20 text-[#00A3FF] hover:bg-[#00A3FF]/30 text-[10px] font-bold rounded">
+                    + Rising Star
+                  </button>
+                  <button onClick={() => handleManualUpgrade('Standard')} className="px-2 py-1 bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 text-[10px] font-bold rounded">
+                    + Standard
+                  </button>
+                  <button onClick={() => handleManualUpgrade('Elite')} className="px-2 py-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 text-[10px] font-bold rounded">
+                    + Elite
+                  </button>
+                  <button onClick={() => handleManualUpgrade('Free')} className="px-2 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 text-[10px] font-bold rounded">
+                    Revoke (Free)
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
