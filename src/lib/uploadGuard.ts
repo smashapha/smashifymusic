@@ -30,7 +30,7 @@ export async function checkCanUpload(artistId: string, fileSize?: number): Promi
       return { allowed: false, message: "Could not retrieve artist profile." };
     }
 
-    const currentTier = (profile.artist_tier || 'Free').toLowerCase();
+    const currentTier = (profile.artist_tier || 'Free').toLowerCase().replace(/[\s-_]/g, '');
     const isFree = currentTier === 'free';
     
     if (fileSize && isFree && fileSize > 8 * 1024 * 1024) {

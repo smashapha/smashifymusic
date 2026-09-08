@@ -270,7 +270,7 @@ const Pricing = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             <PricingCard 
               isArtist={true}
-              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Free'}
+              isCurrentPlan={role === 'artist' && (userProfile?.artist_tier || 'Free').toLowerCase().replace(/[\s-_]/g, '') === 'free'}
               title="Free Studio" 
               price="0" 
               period="lifetime"
@@ -288,7 +288,7 @@ const Pricing = () => {
             />
             <PricingCard 
               isArtist={true}
-              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'RisingStar'}
+              isCurrentPlan={role === 'artist' && (userProfile?.artist_tier || 'Free').toLowerCase().replace(/[\s-_]/g, '') === 'risingstar'}
               title="Rising Star" 
               price="8,000" 
               period="6 mo"
@@ -307,7 +307,7 @@ const Pricing = () => {
             />
             <PricingCard 
               isArtist={true}
-              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Standard'}
+              isCurrentPlan={role === 'artist' && (userProfile?.artist_tier || 'Free').toLowerCase().replace(/[\s-_]/g, '') === 'standard'}
               title="Standard" 
               price="16,000" 
               period="6 mo"
@@ -328,7 +328,7 @@ const Pricing = () => {
             />
             <PricingCard 
               isArtist={true}
-              isCurrentPlan={role === 'artist' && userProfile?.artist_tier === 'Elite'}
+              isCurrentPlan={role === 'artist' && (userProfile?.artist_tier || 'Free').toLowerCase().replace(/[\s-_]/g, '') === 'elite'}
               title="Elite" 
               price="27,000" 
               period="6 mo"

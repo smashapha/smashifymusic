@@ -111,17 +111,17 @@ export const getListenerLimits = (user: any) => {
 
 export const getArtistTier = (artist: any): ArtistTier => {
   if (!artist) return 'free';
-  const tier = artist.subscription_tier || artist.artist_tier || 'free';
-  if (tier.toLowerCase() !== 'free') {
+  let tier = artist.subscription_tier || artist.artist_tier || 'free';
+  if (tier.toLowerCase().replace(/[\s-_]/g, '') !== 'free') {
     const expiresAt =
       artist.subscription_ends ||
       artist.subscription_expires_at ||
       artist.tier_expires_at;
     if (expiresAt && new Date(expiresAt) < new Date()) {
-      return 'free';
+      tier = 'free';
     }
   }
-  return tier as ArtistTier;
+  return tier.replace(/[\s-_]/g, '') as ArtistTier;
 };
 
 export const getTrackLimit = (tierOrArtist: string | any): number => {
