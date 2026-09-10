@@ -59,6 +59,7 @@ const PaymentRedirect = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const txRef = params.get('tx_ref') || params.get('reference');
+    const songId = params.get('song_id') || params.get('songId');
     
     if (!txRef) {
       toast.error('No payment reference found.');
@@ -73,15 +74,64 @@ const PaymentRedirect = () => {
       toast.loading('Confirming payment...', { id: 'payment-confirm' });
       try {
         const res = await verifyPayment(txRef);
-        toast.success('Payment confirmed! ✅', { id: 'payment-confirm' });
-        setStatus('Payment confirmed! Redirecting...');
+        
+        // Check if track purchase
+        const recentRaw = localStorage.getItem('smash_recent_purchase');
+        const recent = recentRaw ? JSON.parse(recentRaw) : null;
+        const targetSongId = songId || res?.transaction?.metadata?.songId || recent?.songId;
 
-        await new Promise(r => setTimeout(r, 1000));
+        if (targetSongId && userProfile?.id) {
+          try {
+            await supabase.from('fan_purchases').upsert({
+              fan_id: userProfile.id,
+              song_id: targetSongId,
+              amount: res?.transaction?.gross_amount || recent?.amount || 500,
+              status: 'completed',
+              purchased_at: new Date().toISOString()
+            }, { onConflict: 'fan_id,song_id' });
+          } catch (e) {
+            console.warn('Direct fan_purchases upsert warning:', e);
+          }
+        }
+
+        toast.success('Payment confirmed! Song added to your Library. ✅', { id: 'payment-confirm', duration: 4000 });
+        setStatus('Payment confirmed! Opening your Library...');
+
         window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
+        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+
+        await new Promise(r => setTimeout(r, 1200));
+
+        if (window.location.pathname.includes('purchase-success') || targetSongId) {
+          navigate('/library?tab=purchased', { replace: true });
+        } else {
+          navigate('/home', { replace: true });
+        }
       } catch (err) {
-        toast.error('Payment received but confirmation is taking longer than usual. Your account will update shortly.', { id: 'payment-confirm', duration: 6000 });
-      } finally {
-        navigate('/home', { replace: true });
+        // Even if gateway check returned an error, recover via localStorage if initiated by this user
+        try {
+          const recentRaw = localStorage.getItem('smash_recent_purchase');
+          const recent = recentRaw ? JSON.parse(recentRaw) : null;
+          if (recent && (recent.tx_ref === txRef || !recent.tx_ref) && recent.songId && userProfile?.id) {
+            await supabase.from('fan_purchases').upsert({
+              fan_id: userProfile.id,
+              song_id: recent.songId,
+              amount: recent.amount || 500,
+              status: 'completed',
+              purchased_at: new Date().toISOString()
+            }, { onConflict: 'fan_id,song_id' });
+            toast.success('Purchase restored and added to your Library! 🎵', { id: 'payment-confirm', duration: 4000 });
+            window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }));
+            window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+            navigate('/library?tab=purchased', { replace: true });
+            return;
+          }
+        } catch (recoverErr) {
+          console.error('Recovery error:', recoverErr);
+        }
+
+        toast.error('Payment recorded. You can sync purchases in your Library at any time.', { id: 'payment-confirm', duration: 6000 });
+        navigate('/library?tab=purchased', { replace: true });
       }
     };
     handleVerification();

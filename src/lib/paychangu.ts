@@ -109,6 +109,24 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       throw new Error('Failed to get checkout URL from response');
     }
 
+    const sanitizedTxRef = tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
+
+    // Save to localStorage so if the user completes checkout or gets interrupted,
+    // the system can automatically recover and fulfill the purchase
+    try {
+      localStorage.setItem('smash_recent_purchase', JSON.stringify({
+        tx_ref: sanitizedTxRef,
+        songId: params.meta?.songId,
+        songTitle: params.meta?.songTitle,
+        artistId: params.meta?.artistId,
+        amount: params.amount,
+        type: params.type,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.warn('Could not save recent purchase to localStorage:', e);
+    }
+
     toast.dismiss(toastId);
     toast.success('Opening secure payment checkout...', { duration: 3000 });
     
@@ -117,7 +135,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
       window.location.href = data.checkout_url;
     }, 500);
 
-    return { checkout_url: data.checkout_url, tx_ref: tx_ref.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '') };
+    return { checkout_url: data.checkout_url, tx_ref: sanitizedTxRef };
   } catch (err: any) {
     console.error('Payment error detail:', err?.message || String(err), err);
     toast.error(err?.message || 'Payment initialization failed', { id: toastId });
@@ -439,10 +457,62 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
     if (!response.ok) {
       throw new Error(resData?.error || resData?.message || `Failed to verify payment: ${response.status}`);
     }
+
+    if (resData && (resData.status === 'completed' || resData.granted)) {
+      try {
+        const recentRaw = localStorage.getItem('smash_recent_purchase');
+        const recent = recentRaw ? JSON.parse(recentRaw) : null;
+        const songId = resData.transaction?.metadata?.songId || (recent?.tx_ref === sanitizedRef ? recent.songId : null);
+        const userId = session?.user?.id || resData.transaction?.fan_id;
+        const amount = resData.transaction?.gross_amount || recent?.amount || 500;
+
+        if (songId && userId) {
+          await supabase.from('fan_purchases').upsert({
+            fan_id: userId,
+            song_id: songId,
+            amount,
+            status: 'completed',
+            purchased_at: new Date().toISOString()
+          }, { onConflict: 'fan_id,song_id' });
+        }
+      } catch (localFulfillErr) {
+        console.warn('Client-side fan_purchases backup write warning:', localFulfillErr);
+      }
+
+      window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef: sanitizedRef, data: resData } }));
+      window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+    }
     
     return resData;
   } catch (err: any) {
     console.error('Verify payment error:', err);
     throw err;
   }
+}
+
+/**
+ * Synchronize and restore purchases from transactions / backend
+ */
+export async function syncUserPurchases() {
+  try {
+    const session = (await supabase.auth.getSession()).data.session;
+    if (!session) return { success: false, error: 'No active session' };
+
+    const res = await fetch('/api/user/sync-purchases', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      window.dispatchEvent(new CustomEvent('smashify:purchases-synced', { detail: data }));
+      return data;
+    }
+  } catch (err: any) {
+    console.warn('syncUserPurchases error:', err);
+  }
+  return { success: false };
 }

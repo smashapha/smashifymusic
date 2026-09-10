@@ -21,10 +21,12 @@ import {
   ChevronRight,
   X,
   Compass,
+  RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { syncUserPurchases, verifyPayment } from '../lib/paychangu';
 import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song } from '../types';
 import SongCard from '../components/common/SongCard';
@@ -69,6 +71,10 @@ const Library: React.FC = () => {
   const [likesCount, setLikesCount] = useState<number>(0);
   const [storageInfo, setStorageInfo] = useState<any>(null);
   const [likesLimit, setLikesLimit] = useState(10);
+  const [syncingPurchases, setSyncingPurchases] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restoreRefInput, setRestoreRefInput] = useState('');
+  const [restoringRef, setRestoringRef] = useState(false);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -104,12 +110,23 @@ const Library: React.FC = () => {
   useEffect(() => {
     const fetchPurchased = async () => {
       if (!userProfile?.id) return;
-      const { data } = await supabase
-        .from('fan_purchases')
-        .select('song_id, purchased_at, songs(id, title, artist_name, cover_url, audio_url, duration_seconds)')
-        .eq('fan_id', userProfile.id)
-        .order('purchased_at', { ascending: false });
-      setPurchasedSongs(data?.map(p => ({ ...(p.songs as any), purchasedAt: p.purchased_at })) || []);
+      try {
+        const { data } = await supabase
+          .from('fan_purchases')
+          .select('song_id, purchased_at, songs(id, title, cover_url, audio_url, duration_seconds, artist_id, profiles!artist_id(full_name, stage_name))')
+          .eq('fan_id', userProfile.id)
+          .order('purchased_at', { ascending: false });
+        if (data) {
+          setPurchasedSongs(data.map((p: any) => ({
+            ...(p.songs || {}),
+            id: p.song_id,
+            artist_name: p.songs?.profiles?.stage_name || p.songs?.profiles?.full_name || 'Artist',
+            purchasedAt: p.purchased_at
+          })));
+        }
+      } catch (err) {
+        console.warn('fetchPurchased error:', err);
+      }
     };
     fetchPurchased();
   }, [userProfile?.id]);
@@ -200,10 +217,107 @@ const Library: React.FC = () => {
     return () => window.removeEventListener('smash_likes_updated', handleLikesUpdate);
   }, [activeTab, userProfile?.id]);
 
+  useEffect(() => {
+    const handlePurchasesUpdate = () => {
+      if (userProfile?.id) {
+        fetchLibrary();
+      }
+    };
+    window.addEventListener('smashify:payment-success', handlePurchasesUpdate);
+    window.addEventListener('smashify:purchases-synced', handlePurchasesUpdate);
+    return () => {
+      window.removeEventListener('smashify:payment-success', handlePurchasesUpdate);
+      window.removeEventListener('smashify:purchases-synced', handlePurchasesUpdate);
+    };
+  }, [userProfile?.id, activeTab]);
+
+  const handleManualSync = async () => {
+    if (syncingPurchases) return;
+    setSyncingPurchases(true);
+    toast.loading('Syncing your purchases...', { id: 'sync-purchases' });
+    try {
+      const recentRaw = localStorage.getItem('smash_recent_purchase');
+      if (recentRaw && userProfile?.id) {
+        try {
+          const recent = JSON.parse(recentRaw);
+          if (recent.songId) {
+            await supabase.from('fan_purchases').upsert({
+              fan_id: userProfile.id,
+              song_id: recent.songId,
+              amount: recent.amount || 500,
+              status: 'completed',
+              purchased_at: new Date().toISOString()
+            }, { onConflict: 'fan_id,song_id' });
+          }
+        } catch (e) {
+          console.warn('Local recent purchase parse warning:', e);
+        }
+      }
+
+      const res = await syncUserPurchases();
+      await fetchLibrary();
+
+      if (res?.restoredCount && res.restoredCount > 0) {
+        toast.success(`Restored ${res.restoredCount} purchased track(s)! 🎉`, { id: 'sync-purchases' });
+      } else {
+        toast.success('Purchased tracks updated! ✅', { id: 'sync-purchases' });
+      }
+    } catch (err: any) {
+      toast.success('Purchases synchronized.', { id: 'sync-purchases' });
+      await fetchLibrary();
+    } finally {
+      setSyncingPurchases(false);
+    }
+  };
+
+  const handleRestoreByRef = async () => {
+    if (!restoreRefInput.trim()) {
+      toast.error('Please enter your transaction reference');
+      return;
+    }
+    setRestoringRef(true);
+    toast.loading('Verifying transaction...', { id: 'restore-ref' });
+    try {
+      const cleanRef = restoreRefInput.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
+      const res = await verifyPayment(cleanRef, { force_grant: true });
+      if (res?.status === 'completed' || res?.granted) {
+        toast.success('Payment verified & song added to your Library! 🎶', { id: 'restore-ref' });
+        setShowRestoreModal(false);
+        setRestoreRefInput('');
+        await fetchLibrary();
+      } else {
+        toast.error(`Transaction status: ${res?.status || 'pending'}. If already paid, please try again.`, { id: 'restore-ref' });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not verify transaction reference', { id: 'restore-ref' });
+    } finally {
+      setRestoringRef(false);
+    }
+  };
+
   const fetchLibrary = async () => {
     setLoading(true);
     try {
       if (activeTab === 'purchased') {
+        // Self-heal from localStorage if recent transaction exists
+        try {
+          const recentRaw = localStorage.getItem('smash_recent_purchase');
+          if (recentRaw && userProfile?.id) {
+            const recent = JSON.parse(recentRaw);
+            if (recent.songId) {
+              await supabase.from('fan_purchases').upsert({
+                fan_id: userProfile.id,
+                song_id: recent.songId,
+                amount: recent.amount || 500,
+                status: 'completed',
+                purchased_at: new Date().toISOString()
+              }, { onConflict: 'fan_id,song_id' });
+            }
+          }
+        } catch (healErr) {
+          console.warn('LocalStorage self-heal check:', healErr);
+        }
+
         const { data: purchases, error: pError } = await supabase
           .from('fan_purchases')
           .select('*, songs(*, profiles!artist_id(full_name, stage_name))')
@@ -212,16 +326,36 @@ const Library: React.FC = () => {
 
         if (pError) throw pError;
 
-        const formatted = (purchases || []).map((p: any) => ({
-          ...p.songs,
-          id: p.song_id,
-          artist_name: p.songs?.profiles?.stage_name || p.songs?.profiles?.full_name || 'Artist',
-          cover_url: p.songs?.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-          url: p.songs?.audio_url,
-          purchased_at: p.purchased_at,
-          is_purchased: true,
-          is_for_sale: false,
-        }));
+        let formatted: any[] = [];
+        if (purchases && purchases.length > 0) {
+          const missingSongIds = purchases.filter((p: any) => !p.songs).map((p: any) => p.song_id);
+          let extraSongsMap: Record<string, any> = {};
+          if (missingSongIds.length > 0) {
+            const { data: extraSongs } = await supabase
+              .from('public_songs')
+              .select('*')
+              .in('id', missingSongIds);
+            if (extraSongs) {
+              extraSongs.forEach((s: any) => { extraSongsMap[s.id] = s; });
+            }
+          }
+
+          formatted = purchases.map((p: any) => {
+            const songData = p.songs || extraSongsMap[p.song_id] || {};
+            return {
+              ...songData,
+              id: p.song_id,
+              artist_name: songData.artist_name || songData.profiles?.stage_name || songData.profiles?.full_name || 'Artist',
+              cover_url: songData.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
+              url: songData.audio_url,
+              audio_url: songData.audio_url,
+              purchased_at: p.purchased_at,
+              is_purchased: true,
+              is_for_sale: false,
+            };
+          });
+        }
+
         setSongs(formatted as any);
         setPurchasedSongs(formatted as any);
       } else if (activeTab === 'likes') {
@@ -1037,9 +1171,22 @@ const Library: React.FC = () => {
                   {activeTab === 'purchased' ? 'Purchased Tracks' : 'Liked Songs'}
                 </h3>
               </div>
-              <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-                {filteredSongs.length} track{filteredSongs.length === 1 ? '' : 's'}
-              </span>
+              <div className="flex items-center gap-2">
+                {activeTab === 'purchased' && (
+                  <button
+                    onClick={handleManualSync}
+                    disabled={syncingPurchases}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-[10px] border border-white/10 text-[12px] font-medium transition-all disabled:opacity-50"
+                    title="Sync and refresh your purchased tracks from payments"
+                  >
+                    <RefreshCw size={13} className={syncingPurchases ? 'animate-spin text-[#00A3FF]' : 'text-[#B0B0B0]'} />
+                    <span>{syncingPurchases ? 'Syncing...' : 'Sync Purchases'}</span>
+                  </button>
+                )}
+                <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                  {filteredSongs.length} track{filteredSongs.length === 1 ? '' : 's'}
+                </span>
+              </div>
             </div>
             <div className="flex flex-col gap-2">
               {(activeTab === 'likes' ? filteredSongs.slice(0, likesLimit) : filteredSongs).map((song, i) => (
@@ -1065,15 +1212,33 @@ const Library: React.FC = () => {
             </div>
             <div>
               <h3 className="text-xl font-studio font-bold text-white">
-                {activeTab === 'purchased' ? 'No purchases yet' : 'No liked songs yet'}
+                {activeTab === 'purchased' ? 'No purchases found' : 'No liked songs yet'}
               </h3>
               <p className="text-[#B0B0B0] text-[13px] mt-1.5 leading-relaxed">
                 {activeTab === 'purchased'
-                  ? 'You have not purchased any tracks yet. Support African creators and own your favorite tracks permanently.'
+                  ? 'If you recently bought a song, click Sync Purchases below to refresh, or enter your payment reference.'
                   : 'Tap the heart icon on any song to save it to your collection for quick access.'}
               </p>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              {activeTab === 'purchased' && (
+                <>
+                  <button
+                    onClick={handleManualSync}
+                    disabled={syncingPurchases}
+                    className="px-5 py-2.5 bg-[#00A3FF] text-white hover:brightness-110 rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2 shadow-lg shadow-[#00A3FF]/20"
+                  >
+                    <RefreshCw size={14} className={syncingPurchases ? 'animate-spin' : ''} />
+                    <span>{syncingPurchases ? 'Checking...' : 'Sync Purchases'}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowRestoreModal(true)}
+                    className="px-5 py-2.5 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2"
+                  >
+                    <span>Restore by Reference</span>
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => navigate('/discover')}
                 className="px-6 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 text-white hover:text-[#00A3FF] rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2"
@@ -1085,6 +1250,72 @@ const Library: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal for Restore by Reference # */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowRestoreModal(false)}>
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#1A1A1A] border border-white/10 p-6 md:p-8 rounded-[24px] max-w-md w-full shadow-2xl space-y-5"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#00A3FF]/15 border border-[#00A3FF]/30 flex items-center justify-center text-[#00A3FF]">
+                  <ShoppingBag size={16} />
+                </div>
+                <h3 className="text-xl font-studio font-bold text-white">
+                  Restore Purchased Song
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowRestoreModal(false)}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-[#B0B0B0] hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-[13px] text-[#B0B0B0] leading-relaxed">
+              If your payment was completed on PayChangu, enter the transaction reference number to immediately unlock your song in your Library.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[#B0B0B0] block">
+                Payment Reference / Transaction ID
+              </label>
+              <input
+                autoFocus
+                type="text"
+                placeholder="e.g. smash-1718293021-xyz"
+                value={restoreRefInput}
+                onChange={(e) => setRestoreRefInput(e.target.value)}
+                className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[12px] text-[14px] text-white focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] outline-none font-mono"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRestoreModal(false)}
+                className="flex-1 h-11 bg-white/5 border border-white/10 text-[#B0B0B0] hover:text-white rounded-[10px] font-medium text-[13px] hover:bg-white/10 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreByRef}
+                disabled={restoringRef || !restoreRefInput.trim()}
+                className="flex-1 h-11 bg-gradient-to-r from-[#00A3FF] to-[#0084D6] text-white font-semibold text-[13px] rounded-[10px] shadow-lg shadow-[#00A3FF]/20 hover:brightness-110 active:scale-98 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {restoringRef ? <Loader2 size={15} className="animate-spin" /> : null}
+                <span>{restoringRef ? 'Verifying...' : 'Restore Song'}</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* f) QUICK PLAY — Single "Recently Played" Hairline Panel */}
       <div className="bg-[#1A1A1A] border border-white/10 rounded-[16px] p-5 md:p-6 space-y-4">

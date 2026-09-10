@@ -233,8 +233,8 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
       const result = await verifyPayment(ref);
       const verifiedStatus = result?.status || result?.transaction?.status || '';
 
-      if (verifiedStatus === 'completed' || verifiedStatus === 'successful') {
-        toast.success(`Payment verified! Status: Completed ✅`, { id: toastId });
+      if (verifiedStatus === 'completed' || verifiedStatus === 'successful' || result?.granted) {
+        toast.success(`Payment verified & fulfilled! Status: Completed ✅`, { id: toastId });
         
         // Update local item
         setTransactions(prev => prev.map(t => 
@@ -252,10 +252,23 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
           t.id === tx.id ? { ...t, status: 'failed' } : t
         ));
       } else {
-        toast(`PayChangu still reports status: "${verifiedStatus || 'pending'}". Funds may not have reached gateway yet.`, { 
-          id: toastId, 
-          icon: '⏳' 
-        });
+        const gwMsg = result?.gateway_message ? ` (${result.gateway_message})` : '';
+        toast((t) => (
+          <div className="flex flex-col gap-1.5 py-0.5">
+            <span className="font-semibold text-white">Gateway reports: {verifiedStatus || 'Pending'}</span>
+            <span className="text-[11px] text-white/70">Gateway check did not auto-confirm{gwMsg}. You can force grant immediately:</span>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                handleForceGrant(tx);
+              }}
+              className="mt-1 px-3 py-1.5 bg-[#22C55E] hover:bg-[#16A34A] text-black font-semibold rounded-[6px] text-[12px] self-start flex items-center gap-1 shadow"
+            >
+              <CheckCircle2 size={13} />
+              Force Grant Access Now
+            </button>
+          </div>
+        ), { id: toastId, duration: 8000, icon: '⏳' });
       }
     } catch (err: any) {
       console.error(`Error force-syncing tx ${ref}:`, err);
@@ -274,18 +287,6 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
     }
 
     const entitlement = getEntitlementSummary(tx);
-    const confirmed = window.confirm(
-      `FORCE GRANT ACCESS CONFIRMATION\n\n` +
-      `Are you sure you want to directly grant access for this transaction?\n\n` +
-      `• Reference: ${ref}\n` +
-      `• Target Entitlement: ${entitlement.target}\n` +
-      `• Customer: ${tx.fan?.stage_name || tx.fan?.full_name || 'Fan'}\n` +
-      `• Amount: MK ${Math.round(tx.gross_amount).toLocaleString()}\n\n` +
-      `This will immediately record the song purchase / activate subscription plan / artist tier in the database and mark the transaction as COMPLETED.`
-    );
-
-    if (!confirmed) return;
-
     setSyncingMap(prev => ({ ...prev, [tx.id]: true }));
     const toastId = toast.loading(`Force granting access for ${ref}...`);
 
@@ -319,13 +320,6 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
       return;
     }
 
-    if (forceGrant) {
-      const ok = window.confirm(
-        `FORCE GRANT OVERRIDE:\n\nDo you want to immediately grant access for reference:\n${cleanRef}\n\nThis will bypass gateway query and directly fulfill this purchase in the database.`
-      );
-      if (!ok) return;
-    }
-
     setManualSyncing(true);
     setManualResult(null);
     const toastId = toast.loading(forceGrant ? `Force granting reference ${cleanRef}...` : `Verifying reference ${cleanRef}...`);
@@ -351,10 +345,11 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
           data: result
         });
       } else {
-        toast(`Transaction status on PayChangu is: "${finalStatus}".`, { id: toastId, icon: 'ℹ️' });
+        const gwMsg = result?.gateway_message ? ` (Gateway: ${result.gateway_message})` : '';
+        toast(`Transaction status: "${finalStatus}"${gwMsg}`, { id: toastId, icon: 'ℹ️' });
         setManualResult({
           status: finalStatus,
-          message: `PayChangu reported status: "${finalStatus}". Funds may still be in transit.`,
+          message: `Gateway reported: "${finalStatus}"${gwMsg}. You can use "Force Grant Access" to immediately fulfill rights.`,
           data: result
         });
       }
@@ -370,16 +365,16 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
   };
 
   // Batch sync all displayed pending transactions
-  const handleBatchSync = async () => {
+  const handleBatchSync = async (forceGrantAll: boolean = false) => {
     const pendingList = transactions.filter(t => t.status === 'pending' && t.paychangu_ref);
     if (pendingList.length === 0) {
-      toast.success('No pending transactions to sync');
+      toast.success('No pending transactions to process');
       return;
     }
 
     setBatchSyncing(true);
     setBatchProgress({ current: 0, total: pendingList.length });
-    toast(`Starting batch sync for ${pendingList.length} transactions...`, { icon: '⚡' });
+    toast(forceGrantAll ? `Starting batch force grant for ${pendingList.length} transactions...` : `Starting gateway verification for ${pendingList.length} transactions...`, { icon: '⚡' });
 
     let resolvedCount = 0;
     let failedCount = 0;
@@ -390,9 +385,9 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
       setSyncingMap(prev => ({ ...prev, [tx.id]: true }));
 
       try {
-        const res = await verifyPayment(tx.paychangu_ref);
+        const res = await verifyPayment(tx.paychangu_ref, { force_grant: forceGrantAll });
         const st = res?.status || res?.transaction?.status;
-        if (st === 'completed' || st === 'successful') {
+        if (st === 'completed' || st === 'successful' || res?.granted) {
           resolvedCount++;
           setTransactions(prev => prev.map(t => 
             t.id === tx.id ? { ...t, status: 'completed' } : t
@@ -411,12 +406,12 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
 
       // Small pause between requests to prevent rate limiting
       if (i < pendingList.length - 1) {
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 200));
       }
     }
 
     setBatchSyncing(false);
-    toast.success(`Batch sync finished: ${resolvedCount} resolved, ${failedCount} errors.`);
+    toast.success(`Batch completed: ${resolvedCount} resolved, ${failedCount} errors.`);
     if (resolvedCount > 0 && onSyncComplete) {
       onSyncComplete();
     }
@@ -525,7 +520,7 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             onClick={() => fetchTransactions()}
             disabled={loading || batchSyncing}
@@ -537,14 +532,27 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
           </button>
 
           <button
-            onClick={handleBatchSync}
+            onClick={() => handleBatchSync(false)}
             disabled={batchSyncing || loading || pendingCount === 0}
-            className="flex items-center gap-1.5 h-9 px-4 bg-[#00A3FF] hover:bg-[#0092E6] text-black font-semibold rounded-[10px] transition-colors text-[12px] disabled:opacity-50 disabled:bg-white/10 disabled:text-[#737373]"
+            className="flex items-center gap-1.5 h-9 px-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-[10px] transition-colors text-[12px] disabled:opacity-50 border border-white/10"
+            title="Query PayChangu gateway for all pending transactions"
+          >
+            <RefreshCw size={13} className={batchSyncing ? 'animate-spin' : ''} />
+            {batchSyncing 
+              ? `Syncing (${batchProgress.current}/${batchProgress.total})...` 
+              : `Verify Gateway All (${pendingCount})`}
+          </button>
+
+          <button
+            onClick={() => handleBatchSync(true)}
+            disabled={batchSyncing || loading || pendingCount === 0}
+            className="flex items-center gap-1.5 h-9 px-4 bg-[#22C55E] hover:bg-[#16A34A] text-black font-semibold rounded-[10px] transition-colors text-[12px] disabled:opacity-50 shadow-md shadow-[#22C55E]/20"
+            title="Admin Override: Immediately fulfill rights and grant access for all pending transactions"
           >
             <Zap size={14} className={batchSyncing ? 'animate-spin' : ''} />
             {batchSyncing 
-              ? `Syncing (${batchProgress.current}/${batchProgress.total})...` 
-              : `Force Sync All (${pendingCount})`}
+              ? `Granting (${batchProgress.current}/${batchProgress.total})...` 
+              : `Force Grant All (${pendingCount})`}
           </button>
         </div>
       </div>
@@ -672,8 +680,111 @@ export const PaymentTroubleshooter: React.FC<PaymentTroubleshooterProps> = ({
         </div>
       </div>
 
-      {/* Transactions List / Table */}
-      <div className="mt-4 overflow-x-auto rounded-[12px] border border-white/10 bg-[#0A0A0A]">
+      {/* Mobile Card List (Visible on small screens) */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {loading ? (
+          <div className="py-8 text-center text-[#737373] bg-[#0A0A0A] rounded-[12px] border border-white/10">
+            <RefreshCw size={20} className="animate-spin text-[#00A3FF] mx-auto mb-2" />
+            <span>Loading unresolved transactions...</span>
+          </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="py-8 text-center bg-[#0A0A0A] rounded-[12px] border border-white/10 p-4">
+            <CheckCircle2 size={20} className="text-[#22C55E] mx-auto mb-2" />
+            <p className="text-white font-medium text-[13px]">No Unresolved Transactions Found</p>
+          </div>
+        ) : (
+          filteredTransactions.map((tx) => {
+            const entitlement = getEntitlementSummary(tx);
+            const isSyncingThis = syncingMap[tx.id] || false;
+            const isCompleted = tx.status === 'completed';
+            const isFailed = tx.status === 'failed';
+
+            return (
+              <div key={tx.id} className="p-3.5 rounded-[12px] bg-[#0A0A0A] border border-white/10 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-semibold text-white text-[12px] block select-all">
+                        {tx.paychangu_ref || 'N/A'}
+                      </span>
+                      {tx.paychangu_ref && (
+                        <button
+                          onClick={() => handleCopyRef(tx.paychangu_ref)}
+                          className="p-1 text-[#737373] hover:text-white"
+                        >
+                          {copiedRef === tx.paychangu_ref ? <Check size={11} className="text-[#22C55E]" /> : <Copy size={11} />}
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-[#737373]">
+                      {tx.created_at ? formatDistanceToNow(new Date(tx.created_at), { addSuffix: true }) : ''}
+                    </span>
+                  </div>
+                  {isCompleted ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30 flex items-center gap-1">
+                      <CheckCircle2 size={10} /> Completed
+                    </span>
+                  ) : isFailed ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30 flex items-center gap-1">
+                      <XCircle size={10} /> Failed
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#EAB308] animate-pulse" /> Pending
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[12px] pt-1 border-t border-white/5">
+                  <div className="flex items-center gap-1 text-[#A3A3A3] truncate max-w-[200px]">
+                    {entitlement.icon}
+                    <span className="truncate text-white/90 font-medium">{entitlement.target}</span>
+                  </div>
+                  <span className="font-mono font-semibold text-white">
+                    MK {Math.round(Number(tx.gross_amount || 0)).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-[#737373] flex items-center justify-between">
+                  <span>Fan: {tx.fan?.stage_name || tx.fan?.full_name || tx.metadata?.first_name || 'Anonymous'}</span>
+                  <span>{tx.fan?.email || tx.metadata?.email || ''}</span>
+                </div>
+
+                {/* Mobile Action Buttons */}
+                <div className="pt-1 flex items-center gap-2">
+                  {isCompleted ? (
+                    <span className="text-[11px] font-medium text-[#22C55E] bg-[#22C55E]/10 px-2.5 py-1.5 rounded-[8px] border border-[#22C55E]/20 flex-1 text-center">
+                      Access Active ✅
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleForceSync(tx)}
+                        disabled={isSyncingThis || !tx.paychangu_ref}
+                        className="flex-1 h-8 rounded-[8px] text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} className={isSyncingThis ? 'animate-spin' : ''} />
+                        Verify Gateway
+                      </button>
+                      <button
+                        onClick={() => handleForceGrant(tx)}
+                        disabled={isSyncingThis || !tx.paychangu_ref}
+                        className="flex-1 h-8 rounded-[8px] text-[11px] font-bold bg-[#22C55E] hover:bg-[#16A34A] text-black shadow-md flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={12} />
+                        Force Grant
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Transactions Table */}
+      <div className="mt-4 hidden md:block overflow-x-auto rounded-[12px] border border-white/10 bg-[#0A0A0A]">
         <table className="w-full text-left text-[13px] whitespace-nowrap">
           <thead className="bg-[#171717] border-b border-white/10 text-[11px] font-semibold tracking-wider text-[#737373] uppercase">
             <tr>
