@@ -298,7 +298,25 @@ async function reconcileStuckTransactions(supabase: any, PAYCHANGU_SECRET_KEY: s
   return { checked: stuckTxns.length, resolved };
 }
 
-import { getCorsHeaders } from "../_shared/cors.ts";
+
+const _ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://play-smashify.vercel.app",
+  "https://play.smashify.tv",
+  "https://smashify.tv"
+];
+
+function getCorsHeaders(origin) {
+  const allowedOrigin = origin && _ALLOWED_ORIGINS.includes(origin) ? origin : _ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
 
 const PAYCHANGU_SECRET_KEY = Deno.env.get("PAYCHANGU_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
