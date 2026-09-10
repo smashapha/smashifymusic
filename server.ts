@@ -448,6 +448,272 @@ async function startServer() {
   app.post('/api/functions/create-payment', handleCreatePayment);
   app.post('/api/pay/create-payment', handleCreatePayment);
 
+  // Shared robust fulfillment helper
+  const fulfillTransaction = async (dbTx: any, amount?: number) => {
+    const txAmount = amount || dbTx.gross_amount || 0;
+    const metadata = dbTx.metadata || {};
+    const userId = metadata.userId || dbTx.fan_id;
+    const artistId = metadata.artistId || dbTx.artist_id;
+    const songId = metadata.songId;
+    const anonymous = metadata.anonymous;
+    const plays = metadata.plays;
+
+    // Detect Type robustly
+    const rawType = (metadata.payment_type || dbTx.type || (dbTx.description || '')).toUpperCase();
+    let type = 'OTHER';
+
+    if (songId || rawType.includes('TRACK') || rawType.includes('PURCHASE') || rawType.includes('SONG') || rawType.includes('SALE')) {
+      type = 'TRACK_PURCHASE';
+    } else if (rawType.includes('TIP') || rawType.includes('DONATION')) {
+      type = 'TIP';
+    } else if (rawType.includes('FAN_SUB') || rawType.includes('FAN_SUBSCRIPTION')) {
+      type = 'FAN_SUBSCRIPTION';
+    } else if (rawType.includes('DAILY')) {
+      type = 'LISTENER_DAILY_PASS';
+    } else if (rawType.includes('WEEKLY')) {
+      type = 'LISTENER_WEEKLY_PASS';
+    } else if (rawType.includes('FAMILY')) {
+      type = 'LISTENER_FAMILY';
+    } else if (rawType.includes('LISTENER') || rawType.includes('PREMIUM')) {
+      type = 'LISTENER_PREMIUM';
+    } else if (rawType.includes('RISING')) {
+      type = 'ARTIST_RISING_STAR';
+    } else if (rawType.includes('STANDARD')) {
+      type = 'ARTIST_STANDARD';
+    } else if (rawType.includes('ELITE')) {
+      type = 'ARTIST_ELITE';
+    } else if (rawType.includes('AD') || rawType.includes('PROMO') || rawType.includes('FEATURED')) {
+      type = 'ARTIST_AD_CAMPAIGN';
+    } else if (metadata.tier) {
+      const t = metadata.tier.toLowerCase();
+      if (t.includes('rising')) type = 'ARTIST_RISING_STAR';
+      else if (t.includes('elite')) type = 'ARTIST_ELITE';
+      else type = 'ARTIST_STANDARD';
+    } else if (metadata.plan) {
+      const p = metadata.plan.toLowerCase();
+      if (p.includes('family')) type = 'LISTENER_FAMILY';
+      else if (p.includes('daily')) type = 'LISTENER_DAILY_PASS';
+      else if (p.includes('weekly')) type = 'LISTENER_WEEKLY_PASS';
+      else type = 'LISTENER_PREMIUM';
+    }
+
+    // Compute Fee & Net
+    let pFee = 0;
+    let artistNet = txAmount;
+
+    if (type.includes('LISTENER_') || type.includes('ARTIST_') || type === 'ARTIST_AD_CAMPAIGN') {
+      pFee = txAmount;
+      artistNet = 0;
+    } else if (type === 'TIP') {
+      pFee = Math.round(txAmount * 0.05);
+      artistNet = txAmount - pFee;
+    } else if (type === 'TRACK_PURCHASE') {
+      const SALE_FLAT_FEE = 50;
+      let platformFeeRate = 0.20;
+      if (artistId) {
+        const { data: artistProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('subscription_tier, artist_tier')
+          .eq('id', artistId)
+          .maybeSingle();
+        const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Standard').toLowerCase();
+        if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.10;
+        else if (currentTier.includes('label')) platformFeeRate = 0.05;
+      }
+      pFee = Math.round(txAmount * platformFeeRate) + SALE_FLAT_FEE;
+      artistNet = Math.max(txAmount - pFee, 0);
+    } else if (type === 'FAN_SUBSCRIPTION') {
+      pFee = Math.round(txAmount * 0.10);
+      artistNet = txAmount - pFee;
+    } else {
+      pFee = Math.round(txAmount * 0.15);
+      artistNet = txAmount - pFee;
+    }
+
+    // Update transactions table
+    await supabaseAdmin
+      .from('transactions')
+      .update({
+        status: 'completed',
+        gross_amount: txAmount,
+        platform_fee: pFee,
+        net_amount: artistNet,
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', dbTx.id);
+
+    // Update Admin Wallet
+    if (pFee > 0) {
+      try {
+        const { data: adminUser } = await supabaseAdmin
+          .from('profiles')
+          .select('id, wallet_balance')
+          .eq('is_admin', true)
+          .limit(1)
+          .maybeSingle();
+        if (adminUser) {
+          await supabaseAdmin.from('profiles').update({ wallet_balance: (adminUser.wallet_balance || 0) + pFee }).eq('id', adminUser.id);
+        }
+      } catch (adminErr) {
+        console.error('[FULFILL] Admin wallet update error:', adminErr);
+      }
+    }
+
+    console.log(`[FULFILL] Fulfilling ${type} for user: ${userId}, artist: ${artistId}, song: ${songId}`);
+
+    // Fulfill Specific Privileges
+    switch (type) {
+      case 'TRACK_PURCHASE':
+        if (userId && songId) {
+          const { error: fpError } = await supabaseAdmin.from('fan_purchases').upsert({ 
+            fan_id: userId, 
+            song_id: songId, 
+            transaction_id: dbTx.id,
+            amount: txAmount,
+            status: 'completed',
+            purchased_at: new Date().toISOString()
+          }, { onConflict: 'fan_id,song_id' });
+
+          if (fpError && fpError.code !== '23505') console.error('[FULFILL] fan_purchases upsert error:', fpError);
+
+          await supabaseAdmin.rpc('increment_song_sales', { s_id: songId }).catch(() => {});
+
+          if (artistId) {
+            await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
+              .catch(async () => {
+                const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).maybeSingle();
+                await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
+              });
+
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: artistId,
+              user_type: 'artist',
+              type: 'track_sold',
+              message: `You sold a track! MWK ${txAmount.toLocaleString()} earned. 💿`,
+              link: '/artist-hub#dashboard'
+            }).catch(() => {});
+          }
+        }
+        break;
+
+      case 'TIP':
+        if (artistId) {
+          await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
+            .catch(async () => {
+              const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).maybeSingle();
+              await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
+            });
+
+          if (!anonymous) {
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: artistId,
+              user_type: 'artist',
+              type: 'tip_received',
+              message: `You received a MWK ${txAmount.toLocaleString()} tip! (Net: MWK ${artistNet.toLocaleString()}) 💸`,
+              link: '/artist-hub#dashboard'
+            }).catch(() => {});
+          }
+        }
+        break;
+
+      case 'FAN_SUBSCRIPTION':
+        const fanSubRenewsAt = new Date();
+        fanSubRenewsAt.setDate(fanSubRenewsAt.getDate() + 30);
+        await supabaseAdmin.from('fan_subscriptions').upsert({
+          fan_id: userId,
+          artist_id: artistId,
+          status: 'active',
+          next_billing_at: fanSubRenewsAt.toISOString()
+        }, { onConflict: 'fan_id,artist_id' });
+
+        if (artistId) {
+          await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
+            .catch(async () => {
+              const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).maybeSingle();
+              await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
+            });
+
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: artistId,
+            user_type: 'artist',
+            type: 'fan_subscribed',
+            message: `A fan has subscribed to you! MWK ${txAmount.toLocaleString()} earned. 💖`,
+            link: '/artist-hub#fans'
+          }).catch(() => {});
+        }
+        break;
+
+      case 'LISTENER_DAILY_PASS':
+      case 'LISTENER_WEEKLY_PASS':
+      case 'LISTENER_PREMIUM':
+      case 'LISTENER_FAMILY': {
+        const subEnds = new Date();
+        if (type === 'LISTENER_DAILY_PASS') {
+          subEnds.setDate(subEnds.getDate() + 1);
+        } else if (type === 'LISTENER_WEEKLY_PASS') {
+          subEnds.setDate(subEnds.getDate() + 7);
+        } else {
+          subEnds.setDate(subEnds.getDate() + 30);
+        }
+        const subTierName = type === 'LISTENER_FAMILY' ? 'Family' : 'Premium';
+        if (userId) {
+          await supabaseAdmin.from('user_profiles').update({
+            subscription_tier: subTierName,
+            subscription_ends: subEnds.toISOString()
+          }).eq('id', userId);
+          await supabaseAdmin.from('profiles').update({
+            subscription_tier: subTierName,
+            subscription_ends: subEnds.toISOString()
+          }).eq('id', userId);
+        }
+        break;
+      }
+
+      case 'ARTIST_RISING_STAR':
+      case 'ARTIST_STANDARD':
+      case 'ARTIST_ELITE': {
+        const artistTierEnds = new Date();
+        artistTierEnds.setDate(artistTierEnds.getDate() + 180); // 6 months
+        const tierMap: Record<string, string> = {
+          'ARTIST_RISING_STAR': 'RisingStar',
+          'ARTIST_STANDARD': 'Standard',
+          'ARTIST_ELITE': 'Elite'
+        };
+        const artistTierName = tierMap[type] || 'Standard';
+
+        const targetArtistId = artistId || userId;
+        if (targetArtistId) {
+          await supabaseAdmin.from('profiles').update({
+            subscription_tier: artistTierName,
+            artist_tier: artistTierName,
+            subscription_ends: artistTierEnds.toISOString()
+          }).eq('id', targetArtistId);
+
+          // Give them Listener Premium too!
+          await supabaseAdmin.from('user_profiles').upsert({
+            id: targetArtistId,
+            subscription_tier: 'Premium',
+            subscription_ends: artistTierEnds.toISOString()
+          }, { onConflict: 'id' });
+        }
+        break;
+      }
+
+      case 'ARTIST_AD_CAMPAIGN':
+        if (userId) {
+          await supabaseAdmin.from('audio_ads').insert({
+            artist_id: userId,
+            type: 'promo',
+            plays_purchased: plays || 1000,
+            active: false
+          });
+        }
+        break;
+    }
+
+    return { type, pFee, artistNet, txAmount };
+  };
+
   // 3. Verify Payment
   const handleVerifyPayment = async (req: express.Request, res: express.Response) => {
     console.log('[API] verify-payment received');
@@ -483,19 +749,41 @@ async function startServer() {
         return res.status(404).json({ error: 'Transaction not found in our database' });
       }
 
-      // Check access permission: Only fan, artist, or admin can trigger verification
-      if (dbTx.fan_id !== user.id && dbTx.artist_id !== user.id) {
-        const { data: pAdmin } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
-        const { data: upAdmin } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
-        const isAdmin = pAdmin?.is_admin === true || upAdmin?.is_admin === true;
+      // Check admin status
+      const { data: pAdmin } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: upAdmin } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isAdmin = pAdmin?.is_admin === true || upAdmin?.is_admin === true;
 
-        if (!isAdmin) {
-          return res.status(403).json({ error: 'Unauthorized access to verify this transaction' });
-        }
+      // Check access permission: Only fan, artist, or admin can trigger verification
+      if (dbTx.fan_id !== user.id && dbTx.artist_id !== user.id && !isAdmin) {
+        return res.status(403).json({ error: 'Unauthorized access to verify this transaction' });
       }
 
-      // If already completed or failed, return status as-is
+      const isForceGrant = (req.body.force_grant === true || req.query.force_grant === 'true') && isAdmin;
+
+      // Admin Force Grant bypass: immediately fulfills rights without querying PayChangu
+      if (isForceGrant) {
+        console.log(`[API] Admin ${user.id} requested FORCE_GRANT for ref ${tx_ref}`);
+        const fulfillment = await fulfillTransaction(dbTx, dbTx.gross_amount);
+        const { data: updated } = await supabaseAdmin.from('transactions').select('*').eq('id', dbTx.id).single();
+        return res.json({ status: 'completed', granted: true, fulfillment, transaction: updated || dbTx });
+      }
+
+      // If already completed and NOT a force_grant, verify if rights are granted, then return
       if (dbTx.status === 'completed') {
+        // If it's a song purchase, ensure fan_purchases actually exists
+        if (dbTx.metadata?.songId && (dbTx.metadata?.userId || dbTx.fan_id)) {
+          const { data: fpCheck } = await supabaseAdmin
+            .from('fan_purchases')
+            .select('id')
+            .eq('fan_id', dbTx.metadata?.userId || dbTx.fan_id)
+            .eq('song_id', dbTx.metadata.songId)
+            .maybeSingle();
+          if (!fpCheck) {
+            console.log(`[API] Completed tx ${tx_ref} was missing fan_purchase record. Backfilling now...`);
+            await fulfillTransaction(dbTx, dbTx.gross_amount);
+          }
+        }
         return res.json({ status: dbTx.status, transaction: dbTx });
       }
 
@@ -519,216 +807,9 @@ async function startServer() {
       if (pcResponse.ok && payload.status === 'success' && payload.data) {
         const pcStatus = payload.data.status;
         if (pcStatus === 'successful' || pcStatus === 'success') {
-          // Process fulfillment logic
-          const type = (dbTx.metadata?.payment_type || tx_ref.split('-')[1]).toUpperCase();
-          const metadata = dbTx.metadata || {};
-          const userId = metadata.userId || dbTx.fan_id;
-          const artistId = metadata.artistId || dbTx.artist_id;
-          const { songId, anonymous, plays } = metadata;
-
-          // Compute Fee & Net
-          let pFee = 0;
-          let artistNet = dbTx.gross_amount;
-
-          if (type.includes('LISTENER_') || type.includes('ARTIST_') || type === 'ARTIST_AD_CAMPAIGN' || type === 'FEATURED_PLACEMENT') {
-            pFee = dbTx.gross_amount;
-            artistNet = 0;
-          } else if (type === 'TIP') {
-            pFee = Math.round(dbTx.gross_amount * 0.05);
-            artistNet = dbTx.gross_amount - pFee;
-          } else if (type === 'TRACK_PURCHASE') {
-            const SALE_FLAT_FEE = 50;
-            let platformFeeRate = 0.20;
-            if (artistId) {
-              const { data: artistProfile } = await supabaseAdmin
-                .from('profiles')
-                .select('subscription_tier, artist_tier')
-                .eq('id', artistId)
-                .single();
-              const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Standard').toLowerCase();
-              if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.10;
-              else if (currentTier.includes('label')) platformFeeRate = 0.05;
-            }
-            pFee = Math.round(dbTx.gross_amount * platformFeeRate) + SALE_FLAT_FEE;
-            artistNet = Math.max(dbTx.gross_amount - pFee, 0);
-          } else if (type === 'FAN_SUBSCRIPTION') {
-            pFee = Math.round(dbTx.gross_amount * 0.10);
-            artistNet = dbTx.gross_amount - pFee;
-          } else {
-            pFee = Math.round(dbTx.gross_amount * 0.15);
-            artistNet = dbTx.gross_amount - pFee;
-          }
-
-          // Check and update transaction in DB safely
-          const { data: updatedTxs, error: updateError } = await supabaseAdmin
-            .from('transactions')
-            .update({
-              status: 'completed',
-              platform_fee: pFee,
-              net_amount: artistNet,
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', dbTx.id)
-            .neq('status', 'completed')
-            .select();
-
-          if (!updateError && updatedTxs && updatedTxs.length > 0) {
-            console.log(`[API] Handled verification success for type ${type}, completing db transactions...`);
-            
-            // Increment Admin Wallet if platform fee exists
-            if (pFee > 0) {
-              try {
-                const { data: adminUser } = await supabaseAdmin
-                  .from('profiles')
-                  .select('id, wallet_balance')
-                  .eq('is_admin', true)
-                  .limit(1)
-                  .maybeSingle();
-                if (adminUser) {
-                  await supabaseAdmin.from('profiles').update({ wallet_balance: (adminUser.wallet_balance || 0) + pFee }).eq('id', adminUser.id);
-                }
-              } catch (adminErr) {
-                console.error('[API VERIFY] Admin wallet update error:', adminErr);
-              }
-            }
-
-            // Fulfillment Switch
-            switch (type) {
-              case 'TRACK_PURCHASE':
-                if (userId && songId) {
-                  const { error: fpError } = await supabaseAdmin.from('fan_purchases').upsert({ 
-                    fan_id: userId, 
-                    song_id: songId, 
-                    transaction_id: dbTx.id,
-                    amount: dbTx.gross_amount,
-                    status: 'completed',
-                    purchased_at: new Date().toISOString()
-                  }, { onConflict: 'fan_id,song_id' });
-
-                  if (fpError && fpError.code !== '23505') console.error('[API VERIFY] fan_purchases upsert error:', fpError);
-
-                  await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
-
-                  if (artistId) {
-                    await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
-                      .catch(async () => {
-                        const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-                        await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-                      });
-
-                    await supabaseAdmin.from('notifications').insert({
-                      profile_id: artistId,
-                      user_type: 'artist',
-                      type: 'track_sold',
-                      message: `You sold a track! MWK ${dbTx.gross_amount.toLocaleString()} earned. 💿`,
-                      link: '/artist-hub#dashboard'
-                    });
-                  }
-                }
-                break;
-
-              case 'TIP':
-                if (artistId) {
-                  await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
-                    .catch(async () => {
-                      const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-                      await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-                    });
-
-                  if (!anonymous) {
-                    await supabaseAdmin.from('notifications').insert({
-                      profile_id: artistId,
-                      user_type: 'artist',
-                      type: 'tip_received',
-                      message: `You received a MWK ${dbTx.gross_amount.toLocaleString()} tip! (Net: MWK ${artistNet.toLocaleString()}) 💸`,
-                      link: '/artist-hub#dashboard'
-                    });
-                  }
-                }
-                break;
-
-              case 'FAN_SUBSCRIPTION':
-                const fanSubRenewsAt = new Date();
-                fanSubRenewsAt.setDate(fanSubRenewsAt.getDate() + 30);
-                await supabaseAdmin.from('fan_subscriptions').upsert({
-                  fan_id: userId,
-                  artist_id: artistId,
-                  status: 'active',
-                  next_billing_at: fanSubRenewsAt.toISOString()
-                });
-
-                if (artistId) {
-                  await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
-                    .catch(async () => {
-                      const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-                      await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-                    });
-
-                  await supabaseAdmin.from('notifications').insert({
-                    profile_id: artistId,
-                    user_type: 'artist',
-                    type: 'fan_subscribed',
-                    message: `A fan has subscribed to you! MWK ${dbTx.gross_amount.toLocaleString()} earned. 💖`,
-                    link: '/artist-hub#fans'
-                  });
-                }
-                break;
-
-              case 'LISTENER_PREMIUM':
-              case 'LISTENER_FAMILY': {
-                const subEnds = new Date();
-                subEnds.setDate(subEnds.getDate() + 30);
-                const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family';
-                await supabaseAdmin.from('user_profiles').update({
-                  subscription_tier: subTierName,
-                  subscription_ends: subEnds.toISOString()
-                }).eq('id', userId);
-                await supabaseAdmin.from('profiles').update({
-                  subscription_tier: subTierName,
-                  subscription_ends: subEnds.toISOString()
-                }).eq('id', userId);
-                break;
-              }
-
-              case 'ARTIST_RISING_STAR':
-              case 'ARTIST_STANDARD':
-              case 'ARTIST_ELITE': {
-                const artistTierEnds = new Date();
-                artistTierEnds.setDate(artistTierEnds.getDate() + 180); // 6 months pricing display
-                const tierMap: Record<string, string> = {
-                  'ARTIST_RISING_STAR': 'RisingStar',
-                  'ARTIST_STANDARD': 'Standard',
-                  'ARTIST_ELITE': 'Elite'
-                };
-                const artistTierName = tierMap[type] || 'Free';
-
-                await supabaseAdmin.from('profiles').update({
-                  subscription_tier: artistTierName,
-                  artist_tier: artistTierName,
-                  subscription_ends: artistTierEnds.toISOString()
-                }).eq('id', userId);
-
-                // Give them Listener Premium too!
-                await supabaseAdmin.from('user_profiles').upsert({
-                  id: userId,
-                  subscription_tier: 'Premium',
-                  subscription_ends: artistTierEnds.toISOString()
-                }, { onConflict: 'id' });
-                break;
-              }
-              
-              case 'ARTIST_AD_CAMPAIGN':
-                await supabaseAdmin.from('audio_ads').insert({
-                  artist_id: userId,
-                  type: 'promo',
-                  plays_purchased: plays || 1000,
-                  active: false
-                });
-                break;
-            }
-          }
-
-          dbTx.status = 'completed';
+          const fulfillment = await fulfillTransaction(dbTx, payload.data.amount || dbTx.gross_amount);
+          const { data: updated } = await supabaseAdmin.from('transactions').select('*').eq('id', dbTx.id).single();
+          return res.json({ status: 'completed', granted: true, fulfillment, transaction: updated || dbTx });
         } else if (pcStatus === 'failed') {
           await supabaseAdmin.from('transactions').update({ status: 'failed' }).eq('id', dbTx.id);
           dbTx.status = 'failed';
@@ -1069,215 +1150,16 @@ async function startServer() {
         return res.sendStatus(200);
       }
 
-      const type = (transaction.metadata?.payment_type || tx_ref.split('-')[1]).toUpperCase();
-      const metadata = transaction.metadata || {};
-      const userId = metadata.userId || transaction.fan_id;
-      const { artistId, songId, anonymous } = metadata;
-
       console.log(`[WEBHOOK] Payload received:`, JSON.stringify(payload));
-      console.log(`[WEBHOOK] Processing type: ${type} for ref: ${tx_ref}, userId: ${userId}, artistId: ${artistId}`);
-
-      // Calculate dynamic platform fee based on artist tier
-      let pFee = 0;
-      let artistNet = amount;
-
-      if (type.includes('LISTENER_') || type.includes('ARTIST_') || type === 'ARTIST_AD_CAMPAIGN' || type === 'FEATURED_PLACEMENT') {
-        pFee = amount;
-        artistNet = 0;
-      } else if (type === 'TIP') {
-        pFee = Math.round(amount * 0.05);
-        artistNet = amount - pFee;
-      } else if (type === 'TRACK_PURCHASE') {
-        const SALE_FLAT_FEE = 50;
-        let platformFeeRate = 0.20;
-        if (artistId) {
-          const { data: artistProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('subscription_tier, artist_tier')
-            .eq('id', artistId)
-            .single();
-          const currentTier = (artistProfile?.subscription_tier || artistProfile?.artist_tier || 'Standard').toLowerCase();
-          if (currentTier.includes('elite') || currentTier.includes('platinum')) platformFeeRate = 0.10;
-          else if (currentTier.includes('label')) platformFeeRate = 0.05;
-        }
-        pFee = Math.round(amount * platformFeeRate) + SALE_FLAT_FEE;
-        artistNet = Math.max(amount - pFee, 0);
-      } else if (type === 'FAN_SUBSCRIPTION') {
-        pFee = Math.round(amount * 0.10);
-        artistNet = amount - pFee;
-      } else {
-        pFee = Math.round(amount * 0.15);
-        artistNet = amount - pFee;
-      }
-
-      await supabaseAdmin.from('transactions').update({ 
-        status: 'completed',
-        gross_amount: amount,
-        platform_fee: pFee,
-        net_amount: artistNet,
-        completed_at: new Date().toISOString()
-      }).eq('id', transaction.id).neq('status', 'completed');
-
-      // Increment Admin Wallet if platform fee exists
-      if (pFee > 0) {
-        try {
-          const { data: adminUser } = await supabaseAdmin
-            .from('profiles')
-            .select('id, wallet_balance')
-            .eq('is_admin', true)
-            .limit(1)
-            .maybeSingle();
-            
-          if (adminUser) {
-             await supabaseAdmin.from('profiles').update({ wallet_balance: (adminUser.wallet_balance || 0) + pFee }).eq('id', adminUser.id);
-          }
-        } catch (adminErr) {
-          console.error('[WEBHOOK] Admin wallet update error:', adminErr);
-        }
-      }
+      console.log(`[WEBHOOK] Fulfilling ref: ${tx_ref}, amount: ${amount}`);
 
       await supabaseAdmin.from('webhook_logs').insert({
         tx_ref,
-        type: type,
         status: 'processed',
         payload: JSON.stringify(payload)
-      });
+      }).catch(() => {});
 
-      switch (type) {
-        case 'TRACK_PURCHASE':
-          if (!userId || !songId) {
-            console.error('[WEBHOOK] Missing metadata for TRACK_PURCHASE:', metadata);
-            break;
-          }
-          // EXPLICIT LOCK RELIEF
-          const { error: fanError } = await supabaseAdmin.from('fan_purchases').upsert({ 
-            fan_id: userId, 
-            song_id: songId, 
-            transaction_id: transaction.id,
-            amount: amount,
-            status: 'completed',
-            purchased_at: new Date().toISOString()
-          }, { onConflict: 'fan_id,song_id' });
-          
-          if (fanError && fanError.code !== '23505') console.error('[WEBHOOK] fan_purchases insert error:', fanError);
-
-          await supabaseAdmin.rpc('increment_song_sales', { s_id: songId });
-          
-          if (artistId) {
-            try {
-              const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet });
-              if (rpcErr) {
-                 console.warn('[WEBHOOK] RPC increment failed, trying manual fallback...', rpcErr.message);
-                 const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-                 await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-              }
-            } catch(e) {
-               console.error('[WEBHOOK] Wallet update error:', e);
-            }
-            
-            await supabaseAdmin.from('notifications').insert({
-               profile_id: artistId,
-               user_type: 'artist',
-               type: 'track_sold',
-               message: `You sold a track! MWK ${amount.toLocaleString()} earned. 💿`,
-               link: '/artist-hub#dashboard'
-            });
-          }
-          break;
-
-        case 'TIP':
-          if (artistId) {
-            console.log(`[WEBHOOK] Incrementing wallet for artist ${artistId} by ${artistNet}`);
-            const { error: tipRpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet });
-            if (tipRpcErr) {
-              console.warn('[WEBHOOK] TIP RPC failed, trying manual fallback...', tipRpcErr.message);
-              const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-              const { error: manualErr } = await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-              if (manualErr) console.error('[WEBHOOK] Manual wallet update failed:', manualErr);
-            }
-
-            if (!anonymous) {
-              await supabaseAdmin.from('notifications').insert({
-                profile_id: artistId,
-                user_type: 'artist',
-                type: 'tip_received',
-                message: `You received a MWK ${amount.toLocaleString()} tip! (Net: MWK ${artistNet.toLocaleString()}) 💸`,
-                link: '/artist-hub#dashboard'
-              });
-            }
-          } else {
-            console.error('[WEBHOOK] No artistId found for TIP payment');
-          }
-          break;
-
-        case 'FAN_SUBSCRIPTION':
-          const renewsAt = new Date();
-          renewsAt.setDate(renewsAt.getDate() + 30);
-          await supabaseAdmin.from('fan_subscriptions').upsert({
-            fan_id: userId,
-            artist_id: artistId,
-            status: 'active',
-            next_billing_at: renewsAt.toISOString()
-          });
-
-          if (artistId) {
-            try {
-              const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet });
-              if (rpcErr) {
-                 const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).single();
-                 await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
-              }
-            } catch(e) {
-               console.error('[WEBHOOK] Fan sub wallet update error:', e);
-            }
-          }
-
-          await supabaseAdmin.from('notifications').insert({
-            profile_id: artistId,
-            user_type: 'artist',
-            type: 'fan_subscribed',
-            message: `A fan has subscribed to you! MWK ${amount.toLocaleString()} earned. 💖`,
-            link: '/artist-hub#fans'
-          });
-          break;
-
-        case 'LISTENER_PREMIUM':
-        case 'LISTENER_FAMILY':
-          const subEnds = new Date();
-          subEnds.setDate(subEnds.getDate() + 30);
-          const subTierName = type === 'LISTENER_PREMIUM' ? 'Premium' : 'Family';
-          await supabaseAdmin.from('user_profiles').update({
-            subscription_tier: subTierName,
-            subscription_ends: subEnds.toISOString()
-          }).eq('id', userId);
-          await supabaseAdmin.from('profiles').update({
-            subscription_tier: subTierName,
-            subscription_ends: subEnds.toISOString()
-          }).eq('id', userId);
-          console.log(`[WEBHOOK] Updated listener subscription for ${userId} to ${type}`);
-          break;
-
-        case 'ARTIST_RISING_STAR':
-        case 'ARTIST_STANDARD':
-        case 'ARTIST_ELITE':
-          const artistTierEnds = new Date();
-          artistTierEnds.setDate(artistTierEnds.getDate() + 365);
-          
-          const tierMap: Record<string,string> = {
-            'ARTIST_RISING_STAR': 'RisingStar',
-            'ARTIST_STANDARD': 'Standard', 
-            'ARTIST_ELITE': 'Elite'
-          }
-          const artistTierName = tierMap[type] || 'Free';
-          
-          await supabaseAdmin.from('profiles').update({
-            subscription_tier: artistTierName,
-            artist_tier: artistTierName,
-            subscription_ends: artistTierEnds.toISOString()
-          }).eq('id', userId);
-          console.log(`[WEBHOOK] Updated artist subscription for ${userId} to ${artistTierName}`);
-          break;
-      }
+      await fulfillTransaction(transaction, amount || transaction.gross_amount);
 
       res.sendStatus(200);
     } catch (error) {

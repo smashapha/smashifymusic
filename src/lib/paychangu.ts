@@ -375,7 +375,7 @@ export async function requestPayout({
 /**
  * Verify a payment by its transaction reference
  */
-export async function verifyPayment(tx_ref: string) {
+export async function verifyPayment(tx_ref: string, options?: { force_grant?: boolean }) {
   try {
     const sanitizedRef = (tx_ref || '').trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
     
@@ -393,7 +393,10 @@ export async function verifyPayment(tx_ref: string) {
       'Authorization': `Bearer ${session?.access_token || ''}`,
       'apikey': SUPABASE_ANON_KEY || ''
     };
-    const body = JSON.stringify({ tx_ref: sanitizedRef });
+    const body = JSON.stringify({ 
+      tx_ref: sanitizedRef,
+      force_grant: !!options?.force_grant 
+    });
 
     const endpoints = [
       '/api/functions/v1/verify-payment',

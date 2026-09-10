@@ -6,7 +6,7 @@ import {
   Volume2, VolumeX, Edit3, LayoutDashboard, Clock, Radio, Wallet, DollarSign,
   Mic2, Users, ShoppingCart, Heart, CreditCard, Search, ArrowLeft, TrendingUp,
   Pause, Play, Activity, ArrowUpRight, ArrowDownRight, MoreHorizontal, ChevronDown, Menu, Settings, Bell, Send, RefreshCw,
-  Ticket, CheckSquare, Sparkles, CheckCircle2, AlertTriangle, Smartphone, Film, Check, XCircle
+  Ticket, CheckSquare, Sparkles, CheckCircle2, AlertTriangle, Smartphone, Film, Check, XCircle, ShieldAlert
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { verifyPayment } from '../lib/paychangu';
@@ -21,6 +21,7 @@ import { AdminCampaigns } from '../components/admin/AdminCampaigns';
 import { AdminFinance } from '../components/admin/AdminFinance';
 import { AdminBilling } from '../components/admin/AdminBilling';
 import { AdminOperations } from '../components/admin/AdminOperations';
+import { PaymentTroubleshooter } from '../components/admin/PaymentTroubleshooter';
 
 type AdminTab = 
   | 'overview' 
@@ -31,6 +32,7 @@ type AdminTab =
   | 'finance' 
   | 'billing' 
   | 'operations' 
+  | 'troubleshooter'
   | 'listeners' 
   | 'artists' 
   | 'songs' 
@@ -54,7 +56,7 @@ const Admin = () => {
     const tab = params.get('tab') as any;
     const validTabs: AdminTab[] = [
       'overview', 'people', 'pipeline', 'tickets', 'campaigns', 
-      'finance', 'billing', 'operations', 'listeners', 'artists', 
+      'finance', 'billing', 'operations', 'troubleshooter', 'listeners', 'artists', 
       'songs', 'applications', 'song-reviews', 'snippet-reviews', 
       'ads', 'payouts', 'agents', 'maintenance', 'notifications', 'expiry-monitor'
     ];
@@ -1093,6 +1095,7 @@ const Admin = () => {
             <AdminSidebarItem id="finance" label="Finance" icon={DollarSign} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="billing" label="Billing" icon={CreditCard} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="operations" label="Operations" icon={CheckSquare} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
+            <AdminSidebarItem id="troubleshooter" label="Troubleshooter" icon={ShieldAlert} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} />
             <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSongs.length} />
             <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={pendingSnippets.length} />
             <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={setActiveTab} collapsed={sidebarCollapsed} count={payoutRequests.filter(p => p.status === 'pending').length} />
@@ -1223,6 +1226,7 @@ const Admin = () => {
                   <AdminSidebarItem id="finance" label="Finance" icon={DollarSign} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="billing" label="Billing" icon={CreditCard} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="operations" label="Operations" icon={CheckSquare} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
+                  <AdminSidebarItem id="troubleshooter" label="Troubleshooter" icon={ShieldAlert} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} />
                   <AdminSidebarItem id="song-reviews" label="Song Reviews" icon={Music2} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSongs.length} />
                   <AdminSidebarItem id="snippet-reviews" label="Moto Feed" icon={Radio} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={pendingSnippets.length} />
                   <AdminSidebarItem id="payouts" label="Payout Registry" icon={Wallet} activeTab={activeTab} setActiveTab={(id: any) => {setActiveTab(id); setMobileMenuOpen(false);}} collapsed={false} count={payoutRequests.filter(p => p.status === 'pending').length} />
@@ -1487,6 +1491,9 @@ const Admin = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Payment Troubleshooter Component */}
+                  <PaymentTroubleshooter onSyncComplete={fetchPlatformStats} compact={true} />
                </div>
               )}
 
@@ -1557,6 +1564,12 @@ const Admin = () => {
                     agentsCount={agentApplications.length}
                     onNavigateTab={(tab) => setActiveTab(tab)}
                   />
+                </motion.div>
+              )}
+
+              {activeTab === 'troubleshooter' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <PaymentTroubleshooter onSyncComplete={fetchPlatformStats} />
                 </motion.div>
               )}
 

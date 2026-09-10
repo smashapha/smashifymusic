@@ -299,18 +299,9 @@ async function reconcileStuckTransactions(supabase: any, PAYCHANGU_SECRET_KEY: s
 }
 
 
-const _ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://play-smashify.vercel.app",
-  "https://play.smashify.tv",
-  "https://smashify.tv"
-];
-
 function getCorsHeaders(origin) {
-  const allowedOrigin = origin && _ALLOWED_ORIGINS.includes(origin) ? origin : _ALLOWED_ORIGINS[0];
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Origin": origin || "*",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Max-Age": "86400",
@@ -454,8 +445,9 @@ serve(async (req) => {
     if (response.ok && payload.status === "success" && payload.data) {
       const pcStatus = payload.data.status;
       if (pcStatus === "successful" || pcStatus === "success") {
-        try {
+                try {
           await processSuccessfulPayment(supabase, dbTx);
+          await supabase.from("transactions").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", dbTx.id);
           dbTx.status = "completed";
         } catch (e) {
           console.error("Inline processing error", e);
