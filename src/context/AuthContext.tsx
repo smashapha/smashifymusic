@@ -63,12 +63,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    const handlePaymentSuccess = async () => {
-      await new Promise(r => setTimeout(r, 3000))
-      if (user) await fetchProfile(user.id)
+    const recordSongPurchase = async (data: any) => {
+      try {
+        const { userId, songId, amount } = data;
+        
+        const { data: existing } = await supabase
+          .from('fan_purchases')
+          .select('id')
+          .eq('fan_id', userId)
+          .eq('song_id', songId)
+          .maybeSingle();
+        
+        if(existing) return;
+        
+        await supabase
+          .from('fan_purchases')
+          .insert({
+            fan_id: userId,
+            song_id: songId,
+            amount: amount || 500,
+            status: 'completed',
+            purchased_at: new Date().toISOString()
+          });
+        
+        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+      } catch(err) {
+        console.error('Error recording purchase:', err);
+      }
+    };
+
+    const updateUserTier = async (data: any) => {
+      try {
+        const { userId, tier, isArtist } = data;
+        
+        const table = isArtist ? 'profiles' : 'user_profiles';
+        const tierColumn = isArtist ? 'artist_tier' : 'subscription_tier';
+        const endsColumn = isArtist ? 'subscription_ends' : 'subscription_expires_at';
+        
+        const expiration = new Date();
+        if(isArtist) {
+          expiration.setMonth(expiration.getMonth() + 6);
+        } else {
+          expiration.setMonth(expiration.getMonth() + 1);
+        }
+        
+        await supabase
+          .from(table)
+          .update({
+            [tierColumn]: tier,
+            [endsColumn]: expiration.toISOString()
+          })
+          .eq('id', userId);
+        
+      } catch(err) {
+        console.error('Error updating tier:', err);
+      }
+    };
+
+    const handlePaymentSuccess = async (e: Event) => {
+      await new Promise(r => setTimeout(r, 3000));
+      const customEvent = e as CustomEvent;
+      const paymentData = customEvent?.detail;
+
+      if (!paymentData || (!paymentData.type && !paymentData.data)) {
+        if (user) await fetchProfile(user.id);
+        return;
+      }
+
+      if (paymentData.type === 'song_purchase') {
+        await recordSongPurchase(paymentData);
+      } else if (paymentData.type === 'tier_upgrade') {
+        await updateUserTier(paymentData);
+      } else if (paymentData.data) {
+         // Process paychangu success directly 
+         const resData = paymentData.data;
+         const recentRaw = localStorage.getItem('smash_recent_purchase');
+         const recent = recentRaw ? JSON.parse(recentRaw) : null;
+         const txType = resData?.transaction?.metadata?.payment_type || resData?.transaction?.metadata?.type || recent?.type;
+         const userId = user?.id || resData.transaction?.fan_id;
+
+         if (userId && (txType === 'track_purchase' || txType === 'song_purchase')) {
+           const songId = resData.transaction?.metadata?.songId || recent?.songId;
+           if (songId) await recordSongPurchase({ userId, songId, amount: resData.transaction?.gross_amount || recent?.amount });
+         } else if (userId && (txType?.startsWith('listener_') || txType?.startsWith('artist_'))) {
+            const isArtist = txType.startsWith('artist_');
+            const tier = resData.transaction?.metadata?.tier || resData.transaction?.metadata?.plan || recent?.tier || recent?.plan;
+            if (tier) await updateUserTier({ userId, tier, isArtist, amount: resData.transaction?.gross_amount || recent?.amount });
+         }
+      }
+
+      if (user) await fetchProfile(user.id);
     }
-    window.addEventListener('smashify:payment-success', handlePaymentSuccess)
-    return () => window.removeEventListener('smashify:payment-success', handlePaymentSuccess)
+    
+    window.addEventListener('smashify:payment-success', handlePaymentSuccess as EventListener)
+    return () => window.removeEventListener('smashify:payment-success', handlePaymentSuccess as EventListener)
   }, [user])
 
   useEffect(() => {

@@ -227,12 +227,38 @@ const SongDetails: React.FC = () => {
 
   const handleBuy = () => {
     if (!song) return;
+    if (!userProfile) {
+      requireAuth(() => {}, 'Sign in to buy this track');
+      return;
+    }
+    
+    // Open payment modal/dialog (existing purchaseTrack function)
     requireAuth(() => {
       purchaseTrack({
         song,
         user: userProfile
       });
     }, 'Sign in to buy this track');
+    
+    // After payment completes, fire event with purchase data
+    const paymentData = {
+      type: 'song_purchase',
+      userId: userProfile.id,
+      songId: song.id,
+      amount: getEffectivePrice(song) || 500,
+      timestamp: new Date().toISOString()
+    };
+    
+    const handlePaymentSuccess = (e: any) => {
+      if(e.detail?.songId === song.id || e.detail?.txRef) {
+        window.dispatchEvent(new CustomEvent('smashify:payment-success', {
+          detail: paymentData
+        }));
+        window.removeEventListener('payment_complete', handlePaymentSuccess);
+      }
+    };
+    
+    window.addEventListener('payment_complete', handlePaymentSuccess);
   };
 
   const handleSupport = () => {
