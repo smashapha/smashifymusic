@@ -27,21 +27,30 @@ async function processSuccessfulPayment(supabase: any, dbTx: any) {
 
   switch (type) {
     case "TRACK_PURCHASE":
-      const { error: fpError } = await supabase
+      const { data: existingPurchase } = await supabase
         .from("fan_purchases")
-        .upsert(
-          {
+        .select("id")
+        .eq("fan_id", userId)
+        .eq("song_id", songId)
+        .maybeSingle();
+
+      let fpError;
+      if (!existingPurchase) {
+        const { error } = await supabase
+          .from("fan_purchases")
+          .insert({
             fan_id: userId,
             song_id: songId,
             transaction_id: dbTx.id,
             amount: grossAmount,
             status: "completed",
-          },
-          { onConflict: "fan_id,song_id" },
-        );
-      if (fpError && fpError.code !== '23505')
+          });
+        fpError = error;
+      }
+
+      if (fpError)
         console.error(
-          "fan_purchases upsert failed:",
+          "fan_purchases insert failed:",
           fpError.message,
           fpError.details,
         );
@@ -96,12 +105,27 @@ async function processSuccessfulPayment(supabase: any, dbTx: any) {
     case "FAN_SUBSCRIPTION": {
       const renewsAt = new Date();
       renewsAt.setDate(renewsAt.getDate() + 30);
-      await supabase.from("fan_subscriptions").upsert({
-        fan_id: userId,
-        artist_id: artistId,
-        status: "active",
-        next_billing_at: renewsAt.toISOString(),
-      });
+      
+      const { data: existingSub } = await supabase
+        .from("fan_subscriptions")
+        .select("id")
+        .eq("fan_id", userId)
+        .eq("artist_id", artistId)
+        .maybeSingle();
+
+      if (existingSub) {
+        await supabase.from("fan_subscriptions").update({
+          status: "active",
+          next_billing_at: renewsAt.toISOString(),
+        }).eq("id", existingSub.id);
+      } else {
+        await supabase.from("fan_subscriptions").insert({
+          fan_id: userId,
+          artist_id: artistId,
+          status: "active",
+          next_billing_at: renewsAt.toISOString(),
+        });
+      }
 
       await supabase.rpc("increment_wallet", {
         artist_id: artistId,

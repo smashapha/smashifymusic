@@ -608,17 +608,25 @@ async function startServer() {
           let fpSaved = false;
           // 1. Try with user-scoped client (satisfies RLS auth.uid() = fan_id)
           if (customClient) {
-            const { error: cErr } = await customClient.from('fan_purchases').upsert(purchaseRecord, { onConflict: 'fan_id,song_id' });
-            if (!cErr || cErr.code === '23505') {
-              fpSaved = true;
+            const { data: existing } = await customClient.from('fan_purchases').select('id').eq('fan_id', userId).eq('song_id', songId).maybeSingle();
+            if (!existing) {
+              const { error: cErr } = await customClient.from('fan_purchases').insert(purchaseRecord);
+              if (!cErr) {
+                fpSaved = true;
+              } else {
+                console.warn('[FULFILL] scopedClient fan_purchases insert warning:', cErr.message);
+              }
             } else {
-              console.warn('[FULFILL] scopedClient fan_purchases upsert warning:', cErr.message);
+              fpSaved = true;
             }
           }
           // 2. Also try with supabaseAdmin if not saved
           if (!fpSaved && supabaseAdmin) {
-            const { error: fpError } = await supabaseAdmin.from('fan_purchases').upsert(purchaseRecord, { onConflict: 'fan_id,song_id' });
-            if (fpError && fpError.code !== '23505') console.error('[FULFILL] fan_purchases upsert error:', fpError);
+            const { data: existing } = await supabaseAdmin.from('fan_purchases').select('id').eq('fan_id', userId).eq('song_id', songId).maybeSingle();
+            if (!existing) {
+              const { error: fpError } = await supabaseAdmin.from('fan_purchases').insert(purchaseRecord);
+              if (fpError) console.error('[FULFILL] fan_purchases insert error:', fpError);
+            }
           }
 
           await supabaseAdmin.rpc('increment_song_sales', { s_id: songId }).catch(() => {});
@@ -664,12 +672,20 @@ async function startServer() {
       case 'FAN_SUBSCRIPTION':
         const fanSubRenewsAt = new Date();
         fanSubRenewsAt.setDate(fanSubRenewsAt.getDate() + 30);
-        await supabaseAdmin.from('fan_subscriptions').upsert({
-          fan_id: userId,
-          artist_id: artistId,
-          status: 'active',
-          next_billing_at: fanSubRenewsAt.toISOString()
-        }, { onConflict: 'fan_id,artist_id' });
+        const { data: existingFanSub } = await supabaseAdmin.from('fan_subscriptions').select('id').eq('fan_id', userId).eq('artist_id', artistId).maybeSingle();
+        if (existingFanSub) {
+          await supabaseAdmin.from('fan_subscriptions').update({
+            status: 'active',
+            next_billing_at: fanSubRenewsAt.toISOString()
+          }).eq('id', existingFanSub.id);
+        } else {
+          await supabaseAdmin.from('fan_subscriptions').insert({
+            fan_id: userId,
+            artist_id: artistId,
+            status: 'active',
+            next_billing_at: fanSubRenewsAt.toISOString()
+          });
+        }
 
         if (artistId) {
           await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
