@@ -467,13 +467,22 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
         const amount = resData.transaction?.gross_amount || recent?.amount || 500;
 
         if (songId && userId) {
-          await supabase.from('fan_purchases').upsert({
-            fan_id: userId,
-            song_id: songId,
-            amount,
-            status: 'completed',
-            purchased_at: new Date().toISOString()
-          }, { onConflict: 'fan_id,song_id' });
+          const { data: existing } = await supabase
+            .from('fan_purchases')
+            .select('id')
+            .eq('fan_id', userId)
+            .eq('song_id', songId)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase.from('fan_purchases').insert({
+              fan_id: userId,
+              song_id: songId,
+              amount,
+              status: 'completed',
+              purchased_at: new Date().toISOString()
+            });
+          }
         }
       } catch (localFulfillErr) {
         console.warn('Client-side fan_purchases backup write warning:', localFulfillErr);

@@ -52,11 +52,13 @@ const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 
 const PaymentRedirect = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, user, loading } = useAuth();
   const [status, setStatus] = useState('Verifying your payment...');
   const hasKickedOff = useRef(false);
 
   useEffect(() => {
+    if (loading) return; // Wait for auth to initialize
+    
     const params = new URLSearchParams(window.location.search);
     const txRef = params.get('tx_ref') || params.get('reference');
     const songId = params.get('song_id') || params.get('songId');
@@ -83,18 +85,28 @@ const PaymentRedirect = () => {
         const recentRaw = localStorage.getItem('smash_recent_purchase');
         const recent = recentRaw ? JSON.parse(recentRaw) : null;
         const targetSongId = songId || res?.transaction?.metadata?.songId || recent?.songId;
+        const activeUserId = userProfile?.id || user?.id;
 
-        if (targetSongId && userProfile?.id) {
+        if (targetSongId && activeUserId) {
           try {
-            await supabase.from('fan_purchases').upsert({
-              fan_id: userProfile.id,
-              song_id: targetSongId,
-              amount: res?.transaction?.gross_amount || recent?.amount || 500,
-              status: 'completed',
-              purchased_at: new Date().toISOString()
-            }, { onConflict: 'fan_id,song_id' });
+            const { data: existing } = await supabase
+              .from('fan_purchases')
+              .select('id')
+              .eq('fan_id', activeUserId)
+              .eq('song_id', targetSongId)
+              .maybeSingle();
+
+            if (!existing) {
+              await supabase.from('fan_purchases').insert({
+                fan_id: activeUserId,
+                song_id: targetSongId,
+                amount: res?.transaction?.gross_amount || recent?.amount || 500,
+                status: 'completed',
+                purchased_at: new Date().toISOString()
+              });
+            }
           } catch (e) {
-            console.warn('Direct fan_purchases upsert warning:', e);
+            console.warn('Direct fan_purchases insert warning:', e);
           }
         }
 
@@ -129,17 +141,29 @@ const PaymentRedirect = () => {
         }
       } catch (err) {
         // Even if gateway check returned an error, recover via localStorage if initiated by this user
+        const activeUserId = userProfile?.id || user?.id;
         try {
           const recentRaw = localStorage.getItem('smash_recent_purchase');
           const recent = recentRaw ? JSON.parse(recentRaw) : null;
-          if (recent && (recent.tx_ref === txRef || !recent.tx_ref) && recent.songId && userProfile?.id) {
-            await supabase.from('fan_purchases').upsert({
-              fan_id: userProfile.id,
-              song_id: recent.songId,
-              amount: recent.amount || 500,
-              status: 'completed',
-              purchased_at: new Date().toISOString()
-            }, { onConflict: 'fan_id,song_id' });
+          if (recent && (recent.tx_ref === txRef || !recent.tx_ref) && recent.songId && activeUserId) {
+            
+            const { data: existing } = await supabase
+              .from('fan_purchases')
+              .select('id')
+              .eq('fan_id', activeUserId)
+              .eq('song_id', recent.songId)
+              .maybeSingle();
+              
+            if (!existing) {
+              await supabase.from('fan_purchases').insert({
+                fan_id: activeUserId,
+                song_id: recent.songId,
+                amount: recent.amount || 500,
+                status: 'completed',
+                purchased_at: new Date().toISOString()
+              });
+            }
+            
             toast.success('Purchase restored and added to your Library! 🎵', { id: 'payment-confirm', duration: 4000 });
             
             window.dispatchEvent(new CustomEvent('smashify:payment-success', { 
@@ -159,7 +183,7 @@ const PaymentRedirect = () => {
       }
     };
     handleVerification();
-  }, [navigate, userProfile]);
+  }, [navigate, userProfile, user, loading]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white">

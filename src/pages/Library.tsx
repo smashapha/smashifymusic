@@ -241,13 +241,22 @@ const Library: React.FC = () => {
         try {
           const recent = JSON.parse(recentRaw);
           if (recent.songId) {
-            await supabase.from('fan_purchases').upsert({
-              fan_id: userProfile.id,
-              song_id: recent.songId,
-              amount: recent.amount || 500,
-              status: 'completed',
-              purchased_at: new Date().toISOString()
-            }, { onConflict: 'fan_id,song_id' });
+            const { data: existing } = await supabase
+              .from('fan_purchases')
+              .select('id')
+              .eq('fan_id', userProfile.id)
+              .eq('song_id', recent.songId)
+              .maybeSingle();
+              
+            if (!existing) {
+              await supabase.from('fan_purchases').insert({
+                fan_id: userProfile.id,
+                song_id: recent.songId,
+                amount: recent.amount || 500,
+                status: 'completed',
+                purchased_at: new Date().toISOString()
+              });
+            }
           }
         } catch (e) {
           console.warn('Local recent purchase parse warning:', e);
@@ -305,13 +314,22 @@ const Library: React.FC = () => {
           if (recentRaw && userProfile?.id) {
             const recent = JSON.parse(recentRaw);
             if (recent.songId) {
-              await supabase.from('fan_purchases').upsert({
-                fan_id: userProfile.id,
-                song_id: recent.songId,
-                amount: recent.amount || 500,
-                status: 'completed',
-                purchased_at: new Date().toISOString()
-              }, { onConflict: 'fan_id,song_id' });
+              const { data: existing } = await supabase
+                .from('fan_purchases')
+                .select('id')
+                .eq('fan_id', userProfile.id)
+                .eq('song_id', recent.songId)
+                .maybeSingle();
+
+              if (!existing) {
+                await supabase.from('fan_purchases').insert({
+                  fan_id: userProfile.id,
+                  song_id: recent.songId,
+                  amount: recent.amount || 500,
+                  status: 'completed',
+                  purchased_at: new Date().toISOString()
+                });
+              }
             }
           }
         } catch (healErr) {
