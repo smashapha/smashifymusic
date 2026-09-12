@@ -155,7 +155,7 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
     first_name: user.full_name?.split(' ')[0] || 'Fan',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'track_purchase',
-    return_url: `${APP_URL}/purchase-success`,
+    return_url: `${APP_URL}/purchase-success?songId=${song.id}&type=track_purchase`,
     meta: {
       userId: user.id,
       songId: song.id,
@@ -179,7 +179,7 @@ export async function sendTip({ artist, fan, amount, anonymous = false }: { arti
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'tip',
-    return_url: `${APP_URL}/purchase-success`,
+    return_url: `${APP_URL}/purchase-success?artistId=${artist.id}&type=tip`,
     meta: {
       userId: fan.id,
       artistId: artist.id,
@@ -200,7 +200,7 @@ export async function startFanSubscription({ artist, fan }: { artist: UserProfil
     first_name: fan.full_name?.split(' ')[0] || 'Fan',
     last_name: fan.full_name?.split(' ').slice(1).join(' ') || '',
     type: 'fan_subscription',
-    return_url: `${APP_URL}/purchase-success`,
+    return_url: `${APP_URL}/purchase-success?artistId=${artist.id}&type=fan_subscription`,
     meta: {
       userId: fan.id,
       artistId: artist.id
@@ -237,11 +237,11 @@ export async function upgradeListenerPlan({ user, plan }: { user: any; plan: str
     first_name: user.full_name?.split(' ')[0] || 'Listener',
     last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/purchase-success`,
+    return_url: `${APP_URL}/purchase-success?plan=${normalizedPlan}&type=${type}`,
     meta: {
       userId: user.id,
       plan: normalizedPlan,
-      payment_type: type // Explicitly add payment_type to prevent fallback string parsing issues
+      payment_type: type
     }
   });
 }
@@ -270,11 +270,11 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     first_name: artist.full_name?.split(' ')[0] || 'Artist',
     last_name: artist.full_name?.split(' ').slice(1).join(' ') || '',
     type,
-    return_url: `${APP_URL}/purchase-success`,
+    return_url: `${APP_URL}/purchase-success?tier=${tier}&type=${type}`,
     meta: {
       userId: artist.id,
       tier,
-      payment_type: type // Explicitly add payment_type for consistency and robust tier decoding
+      payment_type: type
     }
   });
 }

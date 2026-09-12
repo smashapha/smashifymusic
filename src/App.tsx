@@ -60,6 +60,10 @@ const PaymentRedirect = () => {
     const params = new URLSearchParams(window.location.search);
     const txRef = params.get('tx_ref') || params.get('reference');
     const songId = params.get('song_id') || params.get('songId');
+    const paymentType = params.get('type');
+    const plan = params.get('plan');
+    const tier = params.get('tier');
+    const artistId = params.get('artistId');
     
     if (!txRef) {
       toast.error('No payment reference found.');
@@ -94,17 +98,33 @@ const PaymentRedirect = () => {
           }
         }
 
-        toast.success('Payment confirmed! Song added to your Library. ✅', { id: 'payment-confirm', duration: 4000 });
-        setStatus('Payment confirmed! Opening your Library...');
+        toast.success('Payment confirmed! ✅', { id: 'payment-confirm', duration: 4000 });
+        setStatus('Payment confirmed! Updating your account...');
 
-        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
+        window.dispatchEvent(new CustomEvent('smashify:payment-success', { 
+          detail: { 
+            txRef, 
+            data: res,
+            fallback: {
+              songId: targetSongId,
+              type: paymentType,
+              plan,
+              tier,
+              artistId
+            }
+          } 
+        }));
         window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
 
         await new Promise(r => setTimeout(r, 1200));
 
-        if (window.location.pathname.includes('purchase-success') || targetSongId) {
+        if (targetSongId) {
           navigate('/library?tab=purchased', { replace: true });
-        } else {
+        } else if (tier) {
+          navigate('/artist-hub', { replace: true });
+        } else if (plan) {
+          navigate('/profile', { replace: true });
+        } else if (window.location.pathname.includes('purchase-success')) {
           navigate('/home', { replace: true });
         }
       } catch (err) {
@@ -121,7 +141,11 @@ const PaymentRedirect = () => {
               purchased_at: new Date().toISOString()
             }, { onConflict: 'fan_id,song_id' });
             toast.success('Purchase restored and added to your Library! 🎵', { id: 'payment-confirm', duration: 4000 });
-            window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef } }));
+            
+            window.dispatchEvent(new CustomEvent('smashify:payment-success', { 
+              detail: { txRef, fallback: { songId: recent.songId, type: 'track_purchase' } } 
+            }));
+            
             window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
             navigate('/library?tab=purchased', { replace: true });
             return;

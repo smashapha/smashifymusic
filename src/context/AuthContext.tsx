@@ -125,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const customEvent = e as CustomEvent;
       const paymentData = customEvent?.detail;
 
-      if (!paymentData || (!paymentData.type && !paymentData.data)) {
+      if (!paymentData || (!paymentData.type && !paymentData.data && !paymentData.fallback)) {
         if (user) await fetchProfile(user.id);
         return;
       }
@@ -134,21 +134,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await recordSongPurchase(paymentData);
       } else if (paymentData.type === 'tier_upgrade') {
         await updateUserTier(paymentData);
-      } else if (paymentData.data) {
+      } else if (paymentData.data || paymentData.fallback) {
          // Process paychangu success directly 
          const resData = paymentData.data;
+         const fallback = paymentData.fallback || {};
          const recentRaw = localStorage.getItem('smash_recent_purchase');
          const recent = recentRaw ? JSON.parse(recentRaw) : null;
-         const txType = resData?.transaction?.metadata?.payment_type || resData?.transaction?.metadata?.type || recent?.type;
-         const userId = user?.id || resData.transaction?.fan_id;
+         
+         const txType = fallback.type || resData?.transaction?.metadata?.payment_type || resData?.transaction?.metadata?.type || recent?.type;
+         const userId = user?.id || resData?.transaction?.fan_id;
 
          if (userId && (txType === 'track_purchase' || txType === 'song_purchase')) {
-           const songId = resData.transaction?.metadata?.songId || recent?.songId;
-           if (songId) await recordSongPurchase({ userId, songId, amount: resData.transaction?.gross_amount || recent?.amount });
+           const songId = fallback.songId || resData?.transaction?.metadata?.songId || recent?.songId;
+           if (songId) await recordSongPurchase({ userId, songId, amount: resData?.transaction?.gross_amount || recent?.amount });
          } else if (userId && (txType?.startsWith('listener_') || txType?.startsWith('artist_'))) {
             const isArtist = txType.startsWith('artist_');
-            const tier = resData.transaction?.metadata?.tier || resData.transaction?.metadata?.plan || recent?.tier || recent?.plan;
-            if (tier) await updateUserTier({ userId, tier, isArtist, amount: resData.transaction?.gross_amount || recent?.amount });
+            const tier = fallback.tier || fallback.plan || resData?.transaction?.metadata?.tier || resData?.transaction?.metadata?.plan || recent?.tier || recent?.plan;
+            if (tier) await updateUserTier({ userId, tier, isArtist, amount: resData?.transaction?.gross_amount || recent?.amount });
          }
       }
 
