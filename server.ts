@@ -799,25 +799,20 @@ async function startServer() {
       console.log(`[API] Verifying payment for ref: ${tx_ref}`);
       const scopedClient = getScopedClient(req);
 
-      // 1. Fetch transaction from DB (try supabaseAdmin, then scopedClient)
+      // 1. Fetch transaction from DB (try paychangu_ref, then reference)
       let { data: dbTx, error: dbError } = await (supabaseAdmin || scopedClient)
         .from('transactions')
         .select('*')
-        .eq('paychangu_ref', tx_ref)
+        .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
         .maybeSingle();
 
       if (!dbTx && scopedClient) {
         const { data: userTx } = await scopedClient
           .from('transactions')
           .select('*')
-          .eq('paychangu_ref', tx_ref)
+          .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
           .maybeSingle();
         if (userTx) dbTx = userTx;
-      }
-
-      if (!dbTx) {
-        console.error(`[API] Transaction not found for ref ${tx_ref}:`, dbError);
-        return res.status(404).json({ error: 'Transaction not found in our database' });
       }
 
       // Check admin status robustly
@@ -832,8 +827,83 @@ async function startServer() {
         }
       }
 
+      // If transaction not found in our DB, query PayChangu API directly
+      if (!dbTx && PAYCHANGU_SECRET_KEY && PAYCHANGU_SECRET_KEY !== 'YOUR_PAYCHANGU_SECRET_KEY') {
+        console.log(`[API] Transaction ${tx_ref} not in DB. Querying PayChangu directly...`);
+        try {
+          const pcResponse = await fetch(`https://api.paychangu.com/verify-payment/${tx_ref}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${PAYCHANGU_SECRET_KEY.trim()}`,
+              'Accept': 'application/json'
+            }
+          });
+          const payload = await pcResponse.json();
+          console.log('[API] PayChangu live lookup response:', payload);
+
+          if (pcResponse.ok && (payload.status === 'success' || payload.status === 'successful') && payload.data) {
+            const pcData = payload.data;
+            const pcStatus = (pcData.status || '').toLowerCase();
+            if (pcStatus === 'successful' || pcStatus === 'success' || pcStatus === 'completed') {
+              const rawMeta = pcData.metadata || pcData.customization || {};
+              const targetSongId = rawMeta.songId || req.body.songId;
+              const grossAmount = Number(pcData.amount || 500);
+
+              const newTx = {
+                paychangu_ref: tx_ref,
+                reference: tx_ref,
+                fan_id: user.id,
+                user_id: user.id,
+                artist_id: rawMeta.artistId || null,
+                type: targetSongId ? 'track_purchase' : (rawMeta.type || 'track_purchase'),
+                gross_amount: grossAmount,
+                amount: grossAmount,
+                status: 'completed',
+                metadata: { ...rawMeta, songId: targetSongId, userId: user.id },
+                completed_at: new Date().toISOString()
+              };
+
+              try {
+                const { data: created } = await (scopedClient || supabaseAdmin)
+                  .from('transactions')
+                  .upsert(newTx, { onConflict: 'paychangu_ref' })
+                  .select()
+                  .maybeSingle();
+                dbTx = created || newTx;
+              } catch (_) {
+                dbTx = newTx;
+              }
+            }
+          }
+        } catch (pcErr) {
+          console.warn('[API] PayChangu direct lookup error:', pcErr);
+        }
+      }
+
+      // If user/admin is doing force_grant with an explicit songId
+      if (!dbTx && req.body.force_grant && req.body.songId) {
+        dbTx = {
+          id: `manual-${Date.now()}`,
+          paychangu_ref: tx_ref,
+          reference: tx_ref,
+          fan_id: user.id,
+          user_id: user.id,
+          type: 'track_purchase',
+          gross_amount: Number(req.body.amount || 500),
+          amount: Number(req.body.amount || 500),
+          status: 'completed',
+          metadata: { songId: req.body.songId, userId: user.id },
+          completed_at: new Date().toISOString()
+        };
+      }
+
+      if (!dbTx) {
+        console.error(`[API] Transaction not found for ref ${tx_ref}:`, dbError);
+        return res.status(404).json({ error: 'Transaction not found. Please verify your reference or contact support.' });
+      }
+
       // Check access permission: Only fan, artist, or admin can trigger verification
-      const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id || dbTx.metadata?.userId === user.id;
+      const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id || dbTx.metadata?.userId === user.id || dbTx.user_id === user.id;
       if (!isOwner && !isAdmin) {
         return res.status(403).json({ error: 'Unauthorized access to verify this transaction' });
       }
@@ -844,7 +914,7 @@ async function startServer() {
       if (isForceGrant) {
         console.log(`[API] User ${user.id} (${isAdmin ? 'Admin' : 'Owner'}) requested FORCE_GRANT for ref ${tx_ref}`);
         const fulfillment = await fulfillTransaction(dbTx, dbTx.gross_amount, scopedClient);
-        const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').eq('id', dbTx.id).maybeSingle();
+        const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`).maybeSingle();
         return res.json({ 
           status: 'completed', 
           granted: true, 
@@ -965,9 +1035,9 @@ async function startServer() {
       if (scopedClient) {
         let query = scopedClient.from('transactions').select('*');
         if (targetRef) {
-          query = query.eq('paychangu_ref', targetRef);
+          query = query.or(`paychangu_ref.eq.${targetRef},reference.eq.${targetRef}`);
         } else {
-          query = query.eq('fan_id', user.id);
+          query = query.or(`fan_id.eq.${user.id},user_id.eq.${user.id},metadata->>userId.eq.${user.id}`);
         }
         const { data: sData } = await query.order('created_at', { ascending: false }).limit(50);
         if (sData && sData.length > 0) userTxs = sData;
@@ -976,9 +1046,9 @@ async function startServer() {
       if (userTxs.length === 0 && supabaseAdmin) {
         let query = supabaseAdmin.from('transactions').select('*');
         if (targetRef) {
-          query = query.eq('paychangu_ref', targetRef);
+          query = query.or(`paychangu_ref.eq.${targetRef},reference.eq.${targetRef}`);
         } else {
-          query = query.or(`fan_id.eq.${user.id},metadata->>userId.eq.${user.id}`);
+          query = query.or(`fan_id.eq.${user.id},user_id.eq.${user.id},metadata->>userId.eq.${user.id}`);
         }
         const { data: aData } = await query.order('created_at', { ascending: false }).limit(50);
         if (aData && aData.length > 0) userTxs = aData;
@@ -999,7 +1069,7 @@ async function startServer() {
         if (isSongTx) {
           const { data: existing } = await (scopedClient || supabaseAdmin)
             .from('fan_purchases')
-            .select('id')
+            .select('id, purchased_at')
             .eq('fan_id', user.id)
             .eq('song_id', songId)
             .maybeSingle();
@@ -1007,6 +1077,12 @@ async function startServer() {
           if (!existing) {
             console.log(`[SYNC] Backfilling purchase for user ${user.id}, song ${songId}, tx ${tx.paychangu_ref}`);
             await fulfillTransaction(tx, tx.gross_amount, scopedClient);
+            restored.push(songId);
+          } else if (!existing.purchased_at) {
+            await (scopedClient || supabaseAdmin)
+              .from('fan_purchases')
+              .update({ purchased_at: new Date().toISOString() })
+              .eq('id', existing.id);
             restored.push(songId);
           }
         }

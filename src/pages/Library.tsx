@@ -39,7 +39,8 @@ import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS } from '../lib/lay
 import { Skeleton, PlaylistCardSkeleton } from '../components/common/Skeleton';
 
 const Library: React.FC = () => {
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
+  const effectiveUserId = userProfile?.id || user?.id;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as 'purchased' | 'likes' | 'downloads' | 'playlists';
@@ -75,6 +76,16 @@ const Library: React.FC = () => {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restoreRefInput, setRestoreRefInput] = useState('');
   const [restoringRef, setRestoringRef] = useState(false);
+  const [allStoreSongs, setAllStoreSongs] = useState<any[]>([]);
+  const [selectedRestoreSongId, setSelectedRestoreSongId] = useState<string>('');
+
+  useEffect(() => {
+    if (showRestoreModal && allStoreSongs.length === 0) {
+      supabase.from('songs').select('id, title, artist_name, price').order('title').then(({ data }) => {
+        if (data) setAllStoreSongs(data);
+      });
+    }
+  }, [showRestoreModal]);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -237,20 +248,20 @@ const Library: React.FC = () => {
     toast.loading('Syncing your purchases...', { id: 'sync-purchases' });
     try {
       const recentRaw = localStorage.getItem('smash_recent_purchase');
-      if (recentRaw && userProfile?.id) {
+      if (recentRaw && effectiveUserId) {
         try {
           const recent = JSON.parse(recentRaw);
           if (recent.songId) {
             const { data: existing } = await supabase
               .from('fan_purchases')
               .select('id')
-              .eq('fan_id', userProfile.id)
+              .eq('fan_id', effectiveUserId)
               .eq('song_id', recent.songId)
               .maybeSingle();
               
             if (!existing) {
               await supabase.from('fan_purchases').insert({
-                fan_id: userProfile.id,
+                fan_id: effectiveUserId,
                 song_id: recent.songId,
                 amount: recent.amount || 500,
                 status: 'completed',
@@ -268,8 +279,14 @@ const Library: React.FC = () => {
 
       if (res?.restoredCount && res.restoredCount > 0) {
         toast.success(`Restored ${res.restoredCount} purchased track(s)! 🎉`, { id: 'sync-purchases' });
+      } else if (purchasedSongs.length > 0 || (res?.purchases && res.purchases.length > 0)) {
+        toast.success('Purchased tracks refreshed! ✅', { id: 'sync-purchases' });
       } else {
-        toast.success('Purchased tracks updated! ✅', { id: 'sync-purchases' });
+        toast('No past transactions found in database. Click "Restore by Reference" to enter your payment reference.', { 
+          id: 'sync-purchases',
+          icon: 'ℹ️',
+          duration: 6000
+        });
       }
     } catch (err: any) {
       toast.success('Purchases synchronized.', { id: 'sync-purchases' });
@@ -285,14 +302,18 @@ const Library: React.FC = () => {
       return;
     }
     setRestoringRef(true);
-    toast.loading('Verifying transaction...', { id: 'restore-ref' });
+    toast.loading('Verifying transaction with PayChangu...', { id: 'restore-ref' });
     try {
       const cleanRef = restoreRefInput.trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
-      const res = await verifyPayment(cleanRef, { force_grant: true });
+      const res = await verifyPayment(cleanRef, { 
+        force_grant: true,
+        songId: selectedRestoreSongId || undefined 
+      });
       if (res?.status === 'completed' || res?.granted) {
         toast.success('Payment verified & song added to your Library! 🎶', { id: 'restore-ref' });
         setShowRestoreModal(false);
         setRestoreRefInput('');
+        setSelectedRestoreSongId('');
         await fetchLibrary();
       } else {
         toast.error(`Transaction status: ${res?.status || 'pending'}. If already paid, please try again.`, { id: 'restore-ref' });
@@ -311,19 +332,19 @@ const Library: React.FC = () => {
         // Self-heal from localStorage if recent transaction exists
         try {
           const recentRaw = localStorage.getItem('smash_recent_purchase');
-          if (recentRaw && userProfile?.id) {
+          if (recentRaw && effectiveUserId) {
             const recent = JSON.parse(recentRaw);
             if (recent.songId) {
               const { data: existing } = await supabase
                 .from('fan_purchases')
                 .select('id')
-                .eq('fan_id', userProfile.id)
+                .eq('fan_id', effectiveUserId)
                 .eq('song_id', recent.songId)
                 .maybeSingle();
 
               if (!existing) {
                 await supabase.from('fan_purchases').insert({
-                  fan_id: userProfile.id,
+                  fan_id: effectiveUserId,
                   song_id: recent.songId,
                   amount: recent.amount || 500,
                   status: 'completed',
@@ -336,13 +357,21 @@ const Library: React.FC = () => {
           console.warn('LocalStorage self-heal check:', healErr);
         }
 
-        const { data: purchases, error: pError } = await supabase
+        let { data: purchases, error: pError } = await supabase
           .from('fan_purchases')
           .select('*, songs(*, profiles!artist_id(full_name, stage_name))')
-          .eq('fan_id', userProfile?.id)
+          .eq('fan_id', effectiveUserId)
           .order('purchased_at', { ascending: false });
 
-        if (pError) throw pError;
+        if ((!purchases || purchases.length === 0) && !pError) {
+          // Backup check from server sync endpoint
+          try {
+            const syncRes = await syncUserPurchases();
+            if (syncRes?.purchases && syncRes.purchases.length > 0) {
+              purchases = syncRes.purchases;
+            }
+          } catch (_) {}
+        }
 
         let formatted: any[] = [];
         if (purchases && purchases.length > 0) {
@@ -1296,7 +1325,7 @@ const Library: React.FC = () => {
             </div>
 
             <p className="text-[13px] text-[#B0B0B0] leading-relaxed">
-              If your payment was completed on PayChangu, enter the transaction reference number to immediately unlock your song in your Library.
+              If you completed payment on PayChangu, enter the transaction reference (e.g. from your Airtel Money / TNM Mpamba SMS, receipt email, or smash-... code).
             </p>
 
             <div className="space-y-1.5">
@@ -1306,11 +1335,29 @@ const Library: React.FC = () => {
               <input
                 autoFocus
                 type="text"
-                placeholder="e.g. smash-1718293021-xyz"
+                placeholder="e.g. smash-1718293021-xyz or PayChangu Ref"
                 value={restoreRefInput}
                 onChange={(e) => setRestoreRefInput(e.target.value)}
                 className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-4 rounded-[12px] text-[14px] text-white focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] outline-none font-mono"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[#B0B0B0] block">
+                Song (Optional - select if known)
+              </label>
+              <select
+                value={selectedRestoreSongId}
+                onChange={(e) => setSelectedRestoreSongId(e.target.value)}
+                className="w-full h-11 bg-[#0A0A0A] border border-white/10 px-3 rounded-[12px] text-[13px] text-white focus:border-[#00A3FF] focus:ring-1 focus:ring-[#00A3FF] outline-none"
+              >
+                <option value="">Auto-detect song from payment record</option>
+                {allStoreSongs.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} {s.artist_name ? `— ${s.artist_name}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex gap-2.5 pt-2">

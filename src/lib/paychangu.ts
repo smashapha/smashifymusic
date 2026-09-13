@@ -397,7 +397,7 @@ export async function requestPayout({
 /**
  * Verify a payment by its transaction reference
  */
-export async function verifyPayment(tx_ref: string, options?: { force_grant?: boolean }) {
+export async function verifyPayment(tx_ref: string, options?: { force_grant?: boolean; songId?: string; amount?: number }) {
   try {
     const sanitizedRef = (tx_ref || '').trim().replace(/\/$/, '').replace(/^["']|["']$/g, '');
     
@@ -417,12 +417,14 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
     };
     const body = JSON.stringify({ 
       tx_ref: sanitizedRef,
-      force_grant: !!options?.force_grant 
+      force_grant: !!options?.force_grant,
+      songId: options?.songId,
+      amount: options?.amount
     });
 
     const endpoints = [
-      '/api/functions/v1/verify-payment',
       '/api/pay/verify-payment',
+      '/api/functions/v1/verify-payment',
       SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/verify-payment` : null
     ].filter(Boolean) as string[];
 
@@ -436,9 +438,9 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
           headers,
           body
         });
-        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403) {
+        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404) {
           response = res;
-          break;
+          if (res.ok) break;
         }
       } catch (e: any) {
         lastError = e;
