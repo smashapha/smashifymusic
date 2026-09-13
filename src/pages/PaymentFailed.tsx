@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from "motion/react";
 import { XCircle, RefreshCw, MessageCircle, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -11,8 +11,50 @@ const PaymentFailed = () => {
   const [searchParams] = useSearchParams();
   const tx_ref = searchParams.get('app_ref') || searchParams.get('tx_ref') || searchParams.get('reference');
 
-  const type = searchParams.get('type') || ''
+  const type = searchParams.get('type') || '';
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Mark transaction as failed in database when user lands on PaymentFailed page
+  useEffect(() => {
+    if (!tx_ref) return;
+
+    const markAsFailed = async () => {
+      try {
+        // Check current status first so we don't overwrite completed payments
+        const { data: currentTx } = await supabase
+          .from("transactions")
+          .select("id, status")
+          .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
+          .maybeSingle();
+
+        if (currentTx && currentTx.status === 'completed') {
+          return;
+        }
+
+        // Try updating with full columns
+        const { error } = await supabase
+          .from("transactions")
+          .update({
+            status: "failed",
+            failed_at: new Date().toISOString(),
+            error: "Payment was cancelled or failed with provider"
+          })
+          .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+
+        // Fallback to basic status if column error occurs
+        if (error) {
+          await supabase
+            .from("transactions")
+            .update({ status: "failed" })
+            .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+        }
+      } catch (e) {
+        console.warn("Could not mark transaction as failed:", e);
+      }
+    };
+
+    markAsFailed();
+  }, [tx_ref]);
 
   const handleReVerify = async () => {
     if (!tx_ref) return;
@@ -23,39 +65,66 @@ const PaymentFailed = () => {
       if (res && res.status === 'completed') {
         // Payment succeeded - update to completed in transactions table
         try {
-          await supabase.from("transactions").update({
+          const { error } = await supabase.from("transactions").update({
             status: "completed",
             completed_at: new Date().toISOString()
           }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+
+          if (error) {
+            await supabase.from("transactions").update({
+              status: "completed"
+            }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+          }
 
           const { data: txn } = await supabase.from("transactions")
             .select("*")
             .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
             .maybeSingle();
 
-          if (txn && (txn.type === "track_purchase" || txn.type === "song_purchase") && txn.metadata?.songId) {
+          const songId = txn?.metadata?.songId || res?.transaction?.metadata?.songId;
+          const fanId = txn?.fan_id || txn?.user_id || res?.transaction?.fan_id;
+
+          if (txn && (txn.type === "track_purchase" || txn.type === "song_purchase") && songId && fanId) {
             await supabase.from("fan_purchases").upsert({
-              fan_id: txn.fan_id || txn.user_id,
-              song_id: txn.metadata.songId,
+              fan_id: fanId,
+              song_id: songId,
               amount: txn.gross_amount || txn.amount || 500,
               status: "completed",
               purchased_at: new Date().toISOString()
             }, { onConflict: 'fan_id,song_id' });
+
+            // Notify application so song can be played immediately
+            window.dispatchEvent(new CustomEvent('smashify:payment-success', {
+              detail: {
+                type: 'song_purchase',
+                userId: fanId,
+                songId: songId,
+                amount: txn.gross_amount || txn.amount || 500,
+                reference: tx_ref
+              }
+            }));
+            window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
           }
         } catch (dbErr) {
           console.error("Error updating transaction records:", dbErr);
         }
 
-        toast.success('Payment was actually successful! Redirecting...', { id: 'verify-toast' });
-        setTimeout(() => navigate('/home'), 2000);
+        toast.success('Payment was actually successful! Song unlocked 🎉', { id: 'verify-toast' });
+        setTimeout(() => navigate('/library?tab=purchased'), 1500);
       } else {
         // Payment failed - record failure
         try {
-          await supabase.from("transactions").update({
+          const { error } = await supabase.from("transactions").update({
             status: "failed",
             failed_at: new Date().toISOString(),
             error: "Payment failed or incomplete with PayChangu"
           }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+
+          if (error) {
+            await supabase.from("transactions").update({
+              status: "failed"
+            }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+          }
         } catch (_) {}
 
         toast.error('Payment is still marked as failed or incomplete.', { id: 'verify-toast' });
@@ -63,9 +132,7 @@ const PaymentFailed = () => {
     } catch (err: any) {
       try {
         await supabase.from("transactions").update({
-          status: "failed",
-          failed_at: new Date().toISOString(),
-          error: err.message || "Payment verification failed"
+          status: "failed"
         }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
       } catch (_) {}
 

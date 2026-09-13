@@ -49,7 +49,7 @@ const SongDetails: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const requireAuth = useRequireAuth();
-  const { currentSong, isPlaying, playSong, playQueue, purchasedIds } = usePlayer();
+  const { currentSong, isPlaying, playSong, playQueue, purchasedIds, addPurchasedId } = usePlayer();
 
   const [song, setSong] = useState<Song | null>(null);
   const [artistProfile, setArtistProfile] = useState<UserProfile | null>(null);
@@ -222,11 +222,26 @@ const SongDetails: React.FC = () => {
     (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
   ));
 
-  const isPurchased = song ? (
-    song.is_purchased || 
-    purchasedIds?.has(song.id) ||
-    hasActiveSubscription
+  const isPurchased = song ? Boolean(
+    (purchasedIds && purchasedIds.has(song.id)) ||
+    hasActiveSubscription ||
+    song.is_purchased
   ) : false;
+
+  useEffect(() => {
+    const handlePurchasedUpdate = (e: any) => {
+      const sId = e?.detail?.songId || e?.detail?.fallback?.songId;
+      if (sId && song && sId === song.id) {
+        setSong(prev => prev ? { ...prev, is_purchased: true } : prev);
+      }
+    };
+    window.addEventListener('smashify:payment-success', handlePurchasedUpdate as EventListener);
+    window.addEventListener('smashify:purchases-synced', handlePurchasedUpdate as EventListener);
+    return () => {
+      window.removeEventListener('smashify:payment-success', handlePurchasedUpdate as EventListener);
+      window.removeEventListener('smashify:purchases-synced', handlePurchasedUpdate as EventListener);
+    };
+  }, [song?.id]);
 
   const handlePlayToggle = () => {
     if (!song) return;
@@ -302,6 +317,8 @@ const SongDetails: React.FC = () => {
     
     const handlePaymentSuccess = (e: any) => {
       if(e.detail?.songId === song.id || e.detail?.txRef || e.detail?.reference) {
+        addPurchasedId(song.id);
+        setSong(prev => prev ? { ...prev, is_purchased: true } : prev);
         window.dispatchEvent(new CustomEvent('smashify:payment-success', {
           detail: paymentData
         }));

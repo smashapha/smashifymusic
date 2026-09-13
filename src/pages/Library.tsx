@@ -120,12 +120,12 @@ const Library: React.FC = () => {
 
   useEffect(() => {
     const fetchPurchased = async () => {
-      if (!userProfile?.id) return;
+      if (!effectiveUserId) return;
       try {
         const { data } = await supabase
           .from('fan_purchases')
           .select('song_id, purchased_at, songs(id, title, cover_url, audio_url, duration_seconds, artist_id, profiles!artist_id(full_name, stage_name))')
-          .eq('fan_id', userProfile.id)
+          .eq('fan_id', effectiveUserId)
           .order('purchased_at', { ascending: false });
         if (data) {
           setPurchasedSongs(data.map((p: any) => ({
@@ -140,7 +140,7 @@ const Library: React.FC = () => {
       }
     };
     fetchPurchased();
-  }, [userProfile?.id]);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     const fetchUserPlaylists = async () => {
@@ -230,7 +230,7 @@ const Library: React.FC = () => {
 
   useEffect(() => {
     const handlePurchasesUpdate = () => {
-      if (userProfile?.id) {
+      if (effectiveUserId) {
         fetchLibrary();
       }
     };
@@ -240,7 +240,7 @@ const Library: React.FC = () => {
       window.removeEventListener('smashify:payment-success', handlePurchasesUpdate);
       window.removeEventListener('smashify:purchases-synced', handlePurchasesUpdate);
     };
-  }, [userProfile?.id, activeTab]);
+  }, [effectiveUserId, activeTab]);
 
   const handleManualSync = async () => {
     if (syncingPurchases) return;

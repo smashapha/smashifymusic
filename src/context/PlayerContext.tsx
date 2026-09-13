@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Song, EQPreset } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -49,7 +49,8 @@ interface PlayerContextType {
   addToQueue: (song: Song) => void;
   removeFromQueue: (songId: string) => void;
   purchasedIds: Set<string>;
-  refreshPurchasedIds: (userId: string) => Promise<void>;
+  refreshPurchasedIds: (userId?: string) => Promise<void>;
+  addPurchasedId: (songId: string) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -129,31 +130,113 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
   const [shuffledQueue, setShuffledQueue] = useState<Song[]>([]);
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
+  const effectiveUserId = userProfile?.id || user?.id;
   const lastIncrementedSongId = useRef<string | null>(null);
 
-  const refreshPurchasedIds = async (userId: string) => {
+  const addPurchasedId = useCallback((songId: string) => {
+    if (!songId) return;
+    setPurchasedIds(prev => {
+      const next = new Set(prev);
+      next.add(songId);
+      return next;
+    });
+  }, []);
+
+  const refreshPurchasedIds = useCallback(async (userId?: string) => {
+    const targetUid = userId || effectiveUserId;
+    if (!targetUid) return;
     try {
-      const { data: userPurchases } = await supabase
+      const { data: userPurchases, error } = await supabase
         .from('fan_purchases')
         .select('song_id')
-        .eq('fan_id', userId);
+        .eq('fan_id', targetUid);
+      if (error) {
+        console.warn('Could not refresh purchased IDs:', error);
+        return;
+      }
       const ids = new Set((userPurchases || []).map(p => p.song_id as string));
       setPurchasedIds(ids);
     } catch (err) {
       console.warn('Could not refresh purchased IDs:', err);
     }
-  };
+  }, [effectiveUserId]);
+
+  // Initial and reactive load whenever user changes
+  useEffect(() => {
+    if (effectiveUserId) {
+      refreshPurchasedIds(effectiveUserId);
+    } else {
+      setPurchasedIds(new Set());
+    }
+  }, [effectiveUserId, refreshPurchasedIds]);
+
+  // Realtime subscription for cross-device sync on fan_purchases table
+  useEffect(() => {
+    if (!effectiveUserId) return;
+
+    const channel = supabase
+      .channel(`player_fan_purchases_${effectiveUserId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'fan_purchases',
+        filter: `fan_id=eq.${effectiveUserId}`
+      }, async (payload) => {
+        console.log('[Realtime] fan_purchases changed for user:', effectiveUserId, payload);
+        if (payload.new && (payload.new as any).song_id) {
+          addPurchasedId((payload.new as any).song_id);
+        }
+        await refreshPurchasedIds(effectiveUserId);
+        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [effectiveUserId, refreshPurchasedIds, addPurchasedId]);
+
+  // Listen to in-app payment events for immediate synchronous UI update
+  useEffect(() => {
+    const handlePaymentSuccess = (e: any) => {
+      const detail = e?.detail;
+      const songId = detail?.songId || 
+                     detail?.fallback?.songId || 
+                     detail?.data?.songId || 
+                     detail?.data?.transaction?.metadata?.songId;
+      if (songId) {
+        addPurchasedId(songId);
+      }
+      if (effectiveUserId) {
+        refreshPurchasedIds(effectiveUserId);
+      }
+    };
+
+    const handlePurchasesSynced = () => {
+      if (effectiveUserId) {
+        refreshPurchasedIds(effectiveUserId);
+      }
+    };
+
+    window.addEventListener('smashify:payment-success', handlePaymentSuccess as EventListener);
+    window.addEventListener('smashify:purchases-synced', handlePurchasesSynced as EventListener);
+
+    return () => {
+      window.removeEventListener('smashify:payment-success', handlePaymentSuccess as EventListener);
+      window.removeEventListener('smashify:purchases-synced', handlePurchasesSynced as EventListener);
+    };
+  }, [effectiveUserId, refreshPurchasedIds, addPurchasedId]);
 
   useEffect(() => {
     const handleFocus = () => {
-      if (userProfile?.id) {
-        refreshPurchasedIds(userProfile.id);
+      if (effectiveUserId) {
+        refreshPurchasedIds(effectiveUserId);
       }
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [userProfile?.id]);
+  }, [effectiveUserId, refreshPurchasedIds]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -161,11 +244,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       params.has('tx_ref') ||
       window.location.pathname.includes('success')
     ) {
-      if (userProfile?.id) {
-        refreshPurchasedIds(userProfile.id);
+      if (effectiveUserId) {
+        refreshPurchasedIds(effectiveUserId);
       }
     }
-  }, [window.location.pathname, userProfile?.id]);
+  }, [window.location.pathname, effectiveUserId, refreshPurchasedIds]);
 
   const skipAd = async () => {
     if (adPlaying) {
@@ -1084,11 +1167,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addToQueue,
     removeFromQueue,
     purchasedIds,
-    refreshPurchasedIds
+    refreshPurchasedIds,
+    addPurchasedId
   }), [
     currentSong, isPlaying, currentTime, duration, volume, queue, dataSaver,
     eqPreset, playbackRate, crossfadeEnabled, crossfadeDuration, sleepTimerRemaining, isExpanded, radioMode,
-    adPlaying, adSkipAvailable, isShuffle, repeatMode, purchasedIds
+    adPlaying, adSkipAvailable, isShuffle, repeatMode, purchasedIds, refreshPurchasedIds, addPurchasedId
   ]);
 
   controlsRef.current = { nextTrack, previousTrack, seek, setIsPlaying, audioRef };

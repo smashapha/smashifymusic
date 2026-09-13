@@ -66,8 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const recordSongPurchase = async (data: any) => {
       try {
         const { userId, songId, amount, status = 'completed' } = data;
+        if (!userId || !songId) return;
         
-        const { data: existing, error } = await supabase
+        await supabase
           .from('fan_purchases')
           .upsert({
             fan_id: userId,
@@ -81,9 +82,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           })
           .select();
         
-        if (!existing || existing.length === 0) {
-          window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
-        }
+        // Notify immediately across the application
+        window.dispatchEvent(new CustomEvent('smashify:purchases-synced', {
+          detail: { userId, songId }
+        }));
       } catch(err) {
         console.error('Error recording purchase:', err);
       }
@@ -128,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handlePaymentSuccess = async (e: Event) => {
-      await new Promise(r => setTimeout(r, 3000));
       const customEvent = e as CustomEvent;
       const paymentData = customEvent?.detail;
 
@@ -252,10 +253,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Real-time profile updates
     let profilesChannel: any = null;
     let userProfilesChannel: any = null;
+    let fanPurchasesChannel: any = null;
 
     const setupProfileSubscription = (userId: string) => {
       if (profilesChannel) profilesChannel.unsubscribe();
       if (userProfilesChannel) userProfilesChannel.unsubscribe();
+      if (fanPurchasesChannel) fanPurchasesChannel.unsubscribe();
 
       profilesChannel = supabase
         .channel(`profiles-realtime-${userId}`)
@@ -282,6 +285,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           filter: `id=eq.${userId}` 
         }, () => fetchProfile(userId))
         .subscribe();
+
+      fanPurchasesChannel = supabase
+        .channel(`fan-purchases-realtime-${userId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'fan_purchases',
+          filter: `fan_id=eq.${userId}`
+        }, () => {
+          window.dispatchEvent(new CustomEvent('smashify:purchases-synced', {
+            detail: { userId }
+          }));
+        })
+        .subscribe();
     };
 
     if (session?.user) {
@@ -292,6 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
       if (profilesChannel) profilesChannel.unsubscribe();
       if (userProfilesChannel) userProfilesChannel.unsubscribe();
+      if (fanPurchasesChannel) fanPurchasesChannel.unsubscribe();
     };
   }, [session?.user?.id]);
 
