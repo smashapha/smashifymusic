@@ -230,20 +230,25 @@ serve(async (req) => {
     // HANDLERS
     switch (type) {
       case "TRACK_PURCHASE": {
-        // Record purchase - Using upsert to be idempotent on (fan_id, song_id)
-        const { error: fanError } = await supabase.from("fan_purchases").upsert(
-          {
+        // Record purchase - Using select then insert to bypass constraint error
+        const { data: existingFanPurchase } = await supabase
+          .from("fan_purchases")
+          .select("id")
+          .eq("fan_id", userId)
+          .eq("song_id", songId)
+          .maybeSingle();
+
+        if (!existingFanPurchase) {
+          const { error: fanError } = await supabase.from("fan_purchases").insert({
             fan_id: userId,
             song_id: songId,
             transaction_id: transaction.id,
             amount: grossAmount,
             status: "completed",
             purchased_at: new Date().toISOString(),
-          },
-          { onConflict: "fan_id,song_id" },
-        );
-
-        if (fanError && fanError.code !== "23505") console.error("fan_purchases insert error:", fanError);
+          });
+          if (fanError) console.error("fan_purchases insert error:", fanError);
+        }
         // Increment sales count safely
         const { data: songData } = await supabase
           .from("songs")
@@ -314,22 +319,36 @@ serve(async (req) => {
       case "FAN_SUBSCRIPTION": {
         const renewsAt = new Date();
         renewsAt.setDate(renewsAt.getDate() + 30);
-        const { error: subError } = await supabase
+        
+        const { data: existingSub } = await supabase
           .from("fan_subscriptions")
-          .upsert(
-            {
-              fan_id: userId,
-              artist_id: artistId,
-              status: "active",
-              amount: grossAmount,
-              started_at: new Date().toISOString(),
-              next_billing_at: renewsAt.toISOString(),
-            },
-            { onConflict: "fan_id,artist_id" },
-          );
+          .select("id")
+          .eq("fan_id", userId)
+          .eq("artist_id", artistId)
+          .maybeSingle();
+
+        let subError;
+        if (existingSub) {
+          const { error } = await supabase.from("fan_subscriptions").update({
+            status: "active",
+            amount: grossAmount,
+            next_billing_at: renewsAt.toISOString(),
+          }).eq("id", existingSub.id);
+          subError = error;
+        } else {
+          const { error } = await supabase.from("fan_subscriptions").insert({
+            fan_id: userId,
+            artist_id: artistId,
+            status: "active",
+            amount: grossAmount,
+            started_at: new Date().toISOString(),
+            next_billing_at: renewsAt.toISOString(),
+          });
+          subError = error;
+        }
 
         if (subError) {
-          console.error("fan_subscriptions upsert error:", subError);
+          console.error("fan_subscriptions insert error:", subError);
         } else {
           console.log("Fan subscription activated for artist:", artistId);
         }

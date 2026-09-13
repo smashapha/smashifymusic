@@ -1,6 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const ALLOWED_ORIGINS = [
+  "https://play-smashify.vercel.app",
+  "https://smashifymusic.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+
+function getCorsHeaders(requestOrigin: string | null) {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+    headers["Access-Control-Allow-Origin"] = requestOrigin;
+  } else {
+    headers["Access-Control-Allow-Origin"] = "*";
+  }
+  return headers;
+}
+
 async function processSuccessfulPayment(supabase: any, dbTx: any) {
   const type = (dbTx.metadata?.payment_type || "").toUpperCase();
   const { artistId, songId, plan, tier, plays, anonymous } = dbTx.metadata || {};
@@ -44,6 +64,7 @@ async function processSuccessfulPayment(supabase: any, dbTx: any) {
             transaction_id: dbTx.id,
             amount: grossAmount,
             status: "completed",
+            purchased_at: new Date().toISOString()
           });
         fpError = error;
       }
@@ -321,8 +342,6 @@ async function reconcileStuckTransactions(supabase: any, PAYCHANGU_SECRET_KEY: s
   }
   return { checked: stuckTxns.length, resolved };
 }
-
-import { getCorsHeaders } from "../_shared/cors.ts";
 
 const PAYCHANGU_SECRET_KEY = Deno.env.get("PAYCHANGU_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
