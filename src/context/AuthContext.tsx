@@ -65,28 +65,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const recordSongPurchase = async (data: any) => {
       try {
-        const { userId, songId, amount } = data;
+        const { userId, songId, amount, status = 'completed' } = data;
         
-        const { data: existing } = await supabase
+        const { data: existing, error } = await supabase
           .from('fan_purchases')
-          .select('id')
-          .eq('fan_id', userId)
-          .eq('song_id', songId)
-          .maybeSingle();
-        
-        if(existing) return;
-        
-        await supabase
-          .from('fan_purchases')
-          .insert({
+          .upsert({
             fan_id: userId,
             song_id: songId,
             amount: amount || 500,
-            status: 'completed',
+            status: status,
             purchased_at: new Date().toISOString()
-          });
+          }, {
+            onConflict: 'fan_id,song_id',
+            ignoreDuplicates: false
+          })
+          .select();
         
-        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+        if (!existing || existing.length === 0) {
+          window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+        }
       } catch(err) {
         console.error('Error recording purchase:', err);
       }
@@ -94,27 +91,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updateUserTier = async (data: any) => {
       try {
-        const { userId, tier, isArtist } = data;
+        const { userId, tier, isArtist, status = 'completed' } = data;
         
         const table = isArtist ? 'profiles' : 'user_profiles';
         const tierColumn = isArtist ? 'artist_tier' : 'subscription_tier';
         const endsColumn = isArtist ? 'subscription_ends' : 'subscription_expires_at';
         
         const expiration = new Date();
-        if(isArtist) {
-          expiration.setMonth(expiration.getMonth() + 6);
-        } else {
-          expiration.setMonth(expiration.getMonth() + 1);
+        
+        if (status === 'completed') {
+          if(isArtist) {
+            expiration.setMonth(expiration.getMonth() + 6);
+          } else {
+            expiration.setMonth(expiration.getMonth() + 1);
+          }
+          
+          await supabase
+            .from(table)
+            .update({
+              [tierColumn]: tier,
+              [endsColumn]: expiration.toISOString()
+            })
+            .eq('id', userId);
+        } else if (status === 'failed' || status === 'cancelled') {
+          await supabase
+            .from(table)
+            .update({
+              [tierColumn]: 'Free',
+              [endsColumn]: null
+            })
+            .eq('id', userId);
         }
-        
-        await supabase
-          .from(table)
-          .update({
-            [tierColumn]: tier,
-            [endsColumn]: expiration.toISOString()
-          })
-          .eq('id', userId);
-        
       } catch(err) {
         console.error('Error updating tier:', err);
       }
@@ -125,9 +132,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const customEvent = e as CustomEvent;
       const paymentData = customEvent?.detail;
 
+      // Extract reference from detail or localStorage
+      const recentRaw = localStorage.getItem('smash_recent_purchase');
+      const recent = recentRaw ? JSON.parse(recentRaw) : null;
+      const reference = paymentData?.reference || paymentData?.txRef || paymentData?.data?.reference || paymentData?.data?.tx_ref || recent?.reference || recent?.tx_ref;
+
       if (!paymentData || (!paymentData.type && !paymentData.data && !paymentData.fallback)) {
         if (user) await fetchProfile(user.id);
         return;
+      }
+
+      // Record / update transaction in transactions table
+      if (reference) {
+        try {
+          const transactionType = paymentData.type || paymentData.data?.type || 
+                                  paymentData.data?.transaction?.metadata?.payment_type ||
+                                  paymentData.data?.transaction?.metadata?.type ||
+                                  recent?.type || 'unknown';
+          
+          const amount = paymentData.amount || paymentData.data?.amount || 
+                         paymentData.data?.transaction?.gross_amount || recent?.amount || 0;
+          
+          const activeUserId = paymentData.userId || (user ? user.id : null) || paymentData.data?.transaction?.fan_id;
+
+          await supabase.from("transactions").upsert({
+            paychangu_ref: reference,
+            reference: reference,
+            user_id: activeUserId,
+            fan_id: activeUserId,
+            type: transactionType,
+            gross_amount: amount,
+            amount: amount,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+            metadata: {
+              songId: paymentData.songId || recent?.songId,
+              tier: paymentData.tier || recent?.tier,
+              isArtist: paymentData.isArtist,
+              ...paymentData.data
+            }
+          }, {
+            onConflict: 'paychangu_ref'
+          });
+        } catch(e) {
+          console.error("Failed to record transaction on payment success:", e);
+        }
       }
 
       if (paymentData.type === 'song_purchase') {
@@ -138,8 +187,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
          // Process paychangu success directly 
          const resData = paymentData.data;
          const fallback = paymentData.fallback || {};
-         const recentRaw = localStorage.getItem('smash_recent_purchase');
-         const recent = recentRaw ? JSON.parse(recentRaw) : null;
          
          const txType = fallback.type || resData?.transaction?.metadata?.payment_type || resData?.transaction?.metadata?.type || recent?.type;
          const userId = user?.id || resData?.transaction?.fan_id;
@@ -153,6 +200,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (tier) await updateUserTier({ userId, tier, isArtist, amount: resData?.transaction?.gross_amount || recent?.amount });
          }
       }
+
+      // Clear recent purchase from localStorage on success
+      try {
+        localStorage.removeItem('smash_recent_purchase');
+      } catch (_) {}
 
       if (user) await fetchProfile(user.id);
     }

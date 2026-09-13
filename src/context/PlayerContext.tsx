@@ -547,8 +547,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       // 30-second preview logic - ONLY for songs on sale and NOT purchased
       const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
+      const hasActiveSub = Boolean(userProfile && (
+        (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+        (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
+        (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
+        (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+      ));
       
-      const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id));
+      const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id)) || hasActiveSub;
       if (!adPlaying && currentSong && currentSong.is_for_sale && !isPurchasedGlobally && audio.currentTime >= 30) {
         // Force pause the audio
         audio.pause();
@@ -918,8 +924,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       // Respect preview limit
       const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
+      const hasActiveSub = Boolean(userProfile && (
+        (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+        (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
+        (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
+        (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+      ));
       
-      const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id));
+      const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id)) || hasActiveSub;
       if (currentSong && currentSong.is_for_sale && !isPurchasedGlobally && time >= 30) {
         audioRef.current.currentTime = 29.9;
       } else {

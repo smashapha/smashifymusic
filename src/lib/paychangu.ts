@@ -116,9 +116,13 @@ export async function initiatePayment(params: InitiatePaymentParams) {
     try {
       localStorage.setItem('smash_recent_purchase', JSON.stringify({
         tx_ref: sanitizedTxRef,
+        reference: sanitizedTxRef,
         songId: params.meta?.songId,
         songTitle: params.meta?.songTitle,
         artistId: params.meta?.artistId,
+        userId: params.meta?.userId,
+        tier: params.meta?.tier,
+        plan: params.meta?.plan,
         amount: params.amount,
         type: params.type,
         timestamp: Date.now()

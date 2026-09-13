@@ -213,7 +213,20 @@ const SongDetails: React.FC = () => {
   const isCurrent = song ? currentSong?.id === song.id : false;
   const isTrackPlaying = isCurrent && isPlaying;
   const artistCanSell = ['Elite', 'elite', 'Label', 'label'].includes(artistTier || '');
-  const isPurchased = song ? (song.is_purchased || purchasedIds?.has(song.id)) : false;
+
+  // Check if user has active subscription or has purchased this song
+  const hasActiveSubscription = Boolean(userProfile && (
+    (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+    (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
+    (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
+    (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+  ));
+
+  const isPurchased = song ? (
+    song.is_purchased || 
+    purchasedIds?.has(song.id) ||
+    hasActiveSubscription
+  ) : false;
 
   const handlePlayToggle = () => {
     if (!song) return;
@@ -232,6 +245,43 @@ const SongDetails: React.FC = () => {
       return;
     }
     
+    // Create pending transaction record
+    const ref = `SMASH-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const amount = getEffectivePrice(song) || 500;
+    
+    try {
+      supabase.from("transactions").insert({
+        paychangu_ref: ref,
+        reference: ref,
+        user_id: userProfile.id,
+        fan_id: userProfile.id,
+        type: "track_purchase",
+        gross_amount: amount,
+        amount: amount,
+        status: "pending",
+        metadata: {
+          songId: song.id,
+          songTitle: song.title,
+          artistId: song.artist_id,
+          price: song.price
+        }
+      }).then(() => {});
+    } catch(e) {
+      console.error("Failed to create transaction:", e);
+    }
+    
+    // Store reference for retrieval
+    try {
+      localStorage.setItem("smash_recent_purchase", JSON.stringify({
+        reference: ref,
+        tx_ref: ref,
+        type: "track_purchase",
+        songId: song.id,
+        userId: userProfile.id,
+        amount: amount
+      }));
+    } catch (_) {}
+
     // Open payment modal/dialog (existing purchaseTrack function)
     requireAuth(() => {
       purchaseTrack({
@@ -245,12 +295,13 @@ const SongDetails: React.FC = () => {
       type: 'song_purchase',
       userId: userProfile.id,
       songId: song.id,
-      amount: getEffectivePrice(song) || 500,
-      timestamp: new Date().toISOString()
+      amount: amount,
+      timestamp: new Date().toISOString(),
+      reference: ref
     };
     
     const handlePaymentSuccess = (e: any) => {
-      if(e.detail?.songId === song.id || e.detail?.txRef) {
+      if(e.detail?.songId === song.id || e.detail?.txRef || e.detail?.reference) {
         window.dispatchEvent(new CustomEvent('smashify:payment-success', {
           detail: paymentData
         }));

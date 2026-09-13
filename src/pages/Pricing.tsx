@@ -4,6 +4,7 @@ import { Check, ChevronRight, Calculator, Wallet, Coins, ArrowRight, MessageCirc
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { upgradeListenerPlan, upgradeArtistTier } from '../lib/paychangu';
+import { supabase } from '../lib/supabase';
 import SEO from '../components/common/SEO';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING } from '../lib/layout';
 
@@ -119,6 +120,52 @@ const Pricing = () => {
       full_name: userProfile?.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'User',
       ...userProfile,
     };
+
+    // Create pending transaction record
+    const ref = `SMASH-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const amountMap: Record<string, number> = {
+      Free: 0,
+      DailyPass: 150,
+      WeeklyPass: 700,
+      Premium: 2000,
+      Family: 5000,
+      RisingStar: 8000,
+      Standard: 16000,
+      Elite: 27000
+    };
+    const amount = amountMap[planId] || 0;
+    const type = activeTab === "artists" ? `artist_${planId}` : `listener_${planId}`;
+
+    // Store reference for retrieval on success/fail pages
+    try {
+      localStorage.setItem("smash_recent_purchase", JSON.stringify({
+        reference: ref,
+        tx_ref: ref,
+        type: type,
+        tier: planId,
+        plan: planId,
+        userId: user.id,
+        amount: amount
+      }));
+    } catch (_) {}
+
+    // Create pending transaction in database
+    try {
+      supabase.from("transactions").insert({
+        paychangu_ref: ref,
+        reference: ref,
+        user_id: user.id,
+        fan_id: activeTab === "artists" ? safeUser.id : user.id,
+        artist_id: activeTab === "artists" ? safeUser.id : null,
+        type: type,
+        gross_amount: amount,
+        amount: amount,
+        status: "pending",
+        metadata: { tier: planId, plan: planId, user: safeUser }
+      }).then(() => {});
+    } catch (e) {
+      console.error("Failed to create transaction:", e);
+    }
 
     if (activeTab === 'artists') {
       upgradeArtistTier({ tier: planId as any, artist: safeUser });

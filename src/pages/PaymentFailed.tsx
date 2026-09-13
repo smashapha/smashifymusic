@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from "motion/react";
 import { XCircle, RefreshCw, MessageCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 import { verifyPayment } from '../lib/paychangu';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 const PaymentFailed = () => {
@@ -20,12 +21,54 @@ const PaymentFailed = () => {
     try {
       const res = await verifyPayment(tx_ref);
       if (res && res.status === 'completed') {
+        // Payment succeeded - update to completed in transactions table
+        try {
+          await supabase.from("transactions").update({
+            status: "completed",
+            completed_at: new Date().toISOString()
+          }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+
+          const { data: txn } = await supabase.from("transactions")
+            .select("*")
+            .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
+            .maybeSingle();
+
+          if (txn && (txn.type === "track_purchase" || txn.type === "song_purchase") && txn.metadata?.songId) {
+            await supabase.from("fan_purchases").upsert({
+              fan_id: txn.fan_id || txn.user_id,
+              song_id: txn.metadata.songId,
+              amount: txn.gross_amount || txn.amount || 500,
+              status: "completed",
+              purchased_at: new Date().toISOString()
+            }, { onConflict: 'fan_id,song_id' });
+          }
+        } catch (dbErr) {
+          console.error("Error updating transaction records:", dbErr);
+        }
+
         toast.success('Payment was actually successful! Redirecting...', { id: 'verify-toast' });
         setTimeout(() => navigate('/home'), 2000);
       } else {
+        // Payment failed - record failure
+        try {
+          await supabase.from("transactions").update({
+            status: "failed",
+            failed_at: new Date().toISOString(),
+            error: "Payment failed or incomplete with PayChangu"
+          }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+        } catch (_) {}
+
         toast.error('Payment is still marked as failed or incomplete.', { id: 'verify-toast' });
       }
     } catch (err: any) {
+      try {
+        await supabase.from("transactions").update({
+          status: "failed",
+          failed_at: new Date().toISOString(),
+          error: err.message || "Payment verification failed"
+        }).or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`);
+      } catch (_) {}
+
       toast.error(err.message || 'Failed to verify payment', { id: 'verify-toast' });
     } finally {
       setIsVerifying(false);
