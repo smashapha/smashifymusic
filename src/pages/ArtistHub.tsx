@@ -879,6 +879,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [useFreePlacement, setUseFreePlacement] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -930,17 +931,17 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
     const toastId = toast.loading('Preparing your campaign...');
 
     try {
-      // 1. Upload Audio to audio-ads bucket
+      // 1. Upload Audio to ads-audio bucket
       const fileExt = audioFile.name.split('.').pop();
       const fileName = `${userProfile.id}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
-        .from('audio-ads')
+        .from('ads-audio')
         .upload(fileName, audioFile);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('audio-ads')
+        .from('ads-audio')
         .getPublicUrl(fileName);
 
       // 2. Clear toast before redirecting or saving
@@ -966,6 +967,7 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
 
         toast.success('Campaign launched using your free placement slot! Pending admin review.');
         setShowForm(false);
+        setCurrentStep(1);
         setAudioFile(null);
         setTitle('');
         setUseFreePlacement(false);
@@ -1019,179 +1021,224 @@ const PromotionTab = ({ userProfile }: { userProfile: any }) => {
       </div>
 
       {showForm ? (
-        <form onSubmit={handleCreateAds} className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-sm">
-           <div className="flex items-center justify-between mb-2">
-             <h3 className="text-[22px] font-semibold text-white text-text-primary">Create Ad Campaign</h3>
-             <button type="button" onClick={() => setShowForm(false)} className="text-text-muted hover:text-text-primary transition-colors">
+        <div className="bg-bg-surface border border-border-default rounded-[14px] p-6 md:p-10 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="flex items-center justify-between mb-8">
+             <div>
+               <h3 className="text-[22px] font-semibold text-white text-text-primary">Create Ad Campaign</h3>
+               <p className="text-[13px] text-text-muted mt-1">Step {currentStep} of 3</p>
+             </div>
+             <button type="button" onClick={() => { setShowForm(false); setCurrentStep(1); }} className="text-text-muted hover:text-text-primary transition-colors">
                <X size={24} />
              </button>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-             <div className="space-y-6">
-                <div className="space-y-2">
-                   <label className="text-[11px] font-display font-medium text-[#00A3FF] flex items-center gap-2">
-                      <Music2 size={12} /> Campaign Name
-                   </label>
-                   <input 
-                      required
-                      value={title}
-                      onChange={e => setTitle(e.target.value)}
-                      placeholder="e.g. New Single Promo - Summer 2024"
-                      className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 transition-all text-text-primary placeholder:text-text-muted"
-                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-display font-medium text-[#00A3FF]">Target City (Optional)</label>
-                      <select 
-                        value={targetCity}
-                        onChange={e => setTargetCity(e.target.value)}
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 text-text-primary"
-                      >
-                        <option value="">All Malaŵi</option>
-                        <option value="Lilongwe">Lilongwe</option>
-                        <option value="Blantyre">Blantyre</option>
-                        <option value="Mzuzu">Mzuzu</option>
-                        <option value="Zomba">Zomba</option>
-                      </select>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-display font-medium text-[#00A3FF]">Target Genre</label>
-                      <select 
-                        value={targetGenre}
-                        onChange={e => setTargetGenre(e.target.value)}
-                        className="w-full h-[44px] bg-bg-elevated border border-border-default rounded-[10px] px-4 font-display text-[14px] outline-none focus:border-[#00A3FF] focus:ring-[3px] focus:ring-[#00A3FF]/15 text-text-primary"
-                      >
-                        <option value="">All Genres</option>
-                        <option value="Afrobeat">Afrobeat</option>
-                        <option value="Hip Hop">Hip Hop</option>
-                        <option value="Gospel">Gospel</option>
-                        <option value="Reggae">Reggae</option>
-                      </select>
-                   </div>
-                </div>
-
-                <div className="space-y-2">
-                   <label className="text-[11px] font-display font-medium text-[#00A3FF]">Ad Audio (Max 30s)</label>
-                   <div 
-                     onClick={() => document.getElementById('ad-audio-input')?.click()}
-                     className="w-full h-32 border border-dashed border-border-default rounded-[10px] flex flex-col items-center justify-center cursor-pointer hover:border-[#00A3FF]/50 transition-all bg-bg-elevated group"
-                   >
-                      <input 
-                        id="ad-audio-input"
-                        type="file" 
-                        accept="audio/mpeg, audio/mp3, .mp3" 
-                        className="hidden" 
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file && !file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
-                             toast.error('Only MP3 files are allowed.');
-                             return;
-                          }
-                          setAudioFile(file || null);
-                        }}
-                      />
-                      {audioFile ? (
-                        <>
-                          <CircleCheck className="text-[#22C55E] mb-2" size={24} />
-                          <p className="text-[14px] font-display font-medium text-text-primary truncate max-w-[200px]">{audioFile.name}</p>
-                        </>
-                      ) : (
-                        <>
-                          <FileAudio className="text-text-muted group-hover:text-[#00A3FF] transition-colors mb-2" size={24} />
-                          <p className="text-[13px] font-display font-medium text-text-secondary">Click to upload ad audio</p>
-                        </>
-                      )}
-                   </div>
-                </div>
-             </div>
-
-             <div className="space-y-6">
-                <div className="bg-bg-elevated border border-[#00A3FF]/20 rounded-[14px] p-6 shadow-sm">
-                   <h4 className="text-[11px] font-display font-medium text-[#00A3FF] mb-4">Campaign Budget</h4>
-                    
-                    {remainingFreePlacements > 0 && (
-                      <div className="mt-4 mb-6 flex items-center gap-3 p-3 bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-[10px]">
-                        <input
-                          type="checkbox"
-                          id="use-free-placement"
-                          checked={useFreePlacement}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setUseFreePlacement(checked);
-                            if (checked) {
-                              setPlaysPurchased(1000);
-                            }
-                          }}
-                          className="w-4 h-4 accent-#00A3FF rounded cursor-pointer"
-                        />
-                        <label htmlFor="use-free-placement" className="text-[12px] font-display font-semibold text-white cursor-pointer select-none">
-                          🎁 Use Free Monthly Slot ({remainingFreePlacements} remaining)
-                        </label>
-                      </div>
-                    )}
-                   
-                   <div className="space-y-6">
-                      <div className="flex justify-between items-end">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-[28px] font-studio font-bold text-text-primary">
-                            {playsPurchased.toLocaleString()}
-                          </p>
-                          <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">Guaranteed Plays</p>
-                        </div>
-                        <div className="text-right flex flex-col gap-1">
-                          <p className="text-[28px] font-studio font-bold text-[#22C55E]">
-                            {totalCost === 0 ? "FREE" : `MK ${totalCost.toLocaleString()}`}
-                          </p>
-                          <p className="text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">Total Cost</p>
-                        </div>
-                      </div>
-
-                      <input 
-                        type="range"
-                        min="500"
-                        max="50000"
-                        step="500"
-                        value={playsPurchased}
-                        onChange={e => setPlaysPurchased(Number(e.target.value))}
-                        disabled={useFreePlacement}
-                        className="w-full accent-#00A3FF bg-border-default h-2 rounded-full appearance-none slider-custom-thumb disabled:opacity-50"
-                      />
-                      
-                      <div className="flex justify-between text-[10px] font-display font-medium text-text-muted uppercase tracking-wider">
-                        <span>500 plays</span>
-                        <span>50,000 plays</span>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="bg-bg-elevated border border-border-default rounded-[10px] p-5">
-                   <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-[#00A3FF]/10 rounded-full flex items-center justify-center text-[#00A3FF] flex-shrink-0">
-                         <Info size={18} />
-                      </div>
-                      <p className="text-[13px] text-text-secondary font-sans leading-relaxed">
-                         Audio ads should be professional, short (max 30s), and engaging. Use voiceovers and background music to capture attention. Campaigns run until purchased plays are exhausted.
-                      </p>
-                   </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={uploading}
-                  className="w-full h-[48px] bg-[#00A3FF] text-white font-semibold text-[12px] rounded-[10px] hover:bg-[#00A3FF]/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <>Processing...</>
-                  ) : (
-                    <>Launch Campaign • MK {totalCost.toLocaleString()}</>
-                  )}
-                </button>
-             </div>
+           <div className="flex gap-2 mb-8">
+             {[1, 2, 3].map(step => (
+               <div key={step} className={`flex-1 h-2 rounded-full ${step <= currentStep ? 'bg-[#00A3FF]' : 'bg-bg-elevated'}`} />
+             ))}
            </div>
-        </form>
+
+           <form onSubmit={(e) => {
+             e.preventDefault();
+             if (currentStep < 3) {
+               setCurrentStep(currentStep + 1);
+             } else {
+               handleCreateAds(e);
+             }
+           }} className="space-y-8">
+             
+             {currentStep === 1 && (
+               <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
+                  <div className="space-y-2">
+                     <label className="text-[11px] font-display font-medium text-[#00A3FF] flex items-center gap-2">
+                        <Music2 size={12} /> Campaign Name
+                     </label>
+                     <input 
+                        required
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                        placeholder="e.g. New Single Promo - Summer 2024"
+                        className="w-full h-[52px] bg-bg-elevated border border-border-default rounded-[12px] px-4 font-display text-[15px] outline-none focus:border-[#00A3FF] transition-all text-text-primary placeholder:text-text-muted"
+                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <label className="text-[11px] font-display font-medium text-[#00A3FF]">Target City (Optional)</label>
+                        <select 
+                          value={targetCity}
+                          onChange={e => setTargetCity(e.target.value)}
+                          className="w-full h-[52px] bg-bg-elevated border border-border-default rounded-[12px] px-4 font-display text-[15px] outline-none focus:border-[#00A3FF] text-text-primary"
+                        >
+                          <option value="">All Malaŵi</option>
+                          <option value="Lilongwe">Lilongwe</option>
+                          <option value="Blantyre">Blantyre</option>
+                          <option value="Mzuzu">Mzuzu</option>
+                          <option value="Zomba">Zomba</option>
+                        </select>
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-[11px] font-display font-medium text-[#00A3FF]">Target Genre (Optional)</label>
+                        <select 
+                          value={targetGenre}
+                          onChange={e => setTargetGenre(e.target.value)}
+                          className="w-full h-[52px] bg-bg-elevated border border-border-default rounded-[12px] px-4 font-display text-[15px] outline-none focus:border-[#00A3FF] text-text-primary"
+                        >
+                          <option value="">All Genres</option>
+                          <option value="Afrobeat">Afrobeat</option>
+                          <option value="Hip Hop">Hip Hop</option>
+                          <option value="Gospel">Gospel</option>
+                          <option value="Reggae">Reggae</option>
+                        </select>
+                     </div>
+                  </div>
+               </div>
+             )}
+
+             {currentStep === 2 && (
+               <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
+                  <div className="space-y-2">
+                     <label className="text-[11px] font-display font-medium text-[#00A3FF]">Ad Audio (Max 30s)</label>
+                     <div 
+                       onClick={() => document.getElementById('ad-audio-input')?.click()}
+                       className="w-full h-48 border-2 border-dashed border-border-default rounded-[16px] flex flex-col items-center justify-center cursor-pointer hover:border-[#00A3FF] transition-all bg-bg-elevated group"
+                     >
+                        <input 
+                          id="ad-audio-input"
+                          type="file" 
+                          accept="audio/mpeg, audio/mp3, .mp3" 
+                          className="hidden" 
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file && !file.name.toLowerCase().endsWith('.mp3') && file.type !== 'audio/mpeg') {
+                               toast.error('Only MP3 files are allowed.');
+                               return;
+                            }
+                            setAudioFile(file || null);
+                          }}
+                        />
+                        {audioFile ? (
+                          <>
+                            <CircleCheck className="text-[#22C55E] mb-3" size={32} />
+                            <p className="text-[16px] font-display font-medium text-text-primary truncate max-w-[300px]">{audioFile.name}</p>
+                            <p className="text-[12px] text-text-muted mt-2">Click to replace audio</p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-16 h-16 rounded-full bg-[#00A3FF]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                              <FileAudio className="text-[#00A3FF]" size={28} />
+                            </div>
+                            <p className="text-[15px] font-display font-medium text-text-primary mb-1">Upload your ad audio</p>
+                            <p className="text-[13px] text-text-muted">High-quality MP3 format only</p>
+                          </>
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="bg-[#00A3FF]/10 border border-[#00A3FF]/20 rounded-[12px] p-5">
+                     <div className="flex items-start gap-4">
+                        <Info size={20} className="text-[#00A3FF] flex-shrink-0 mt-0.5" />
+                        <p className="text-[13px] text-text-primary font-sans leading-relaxed">
+                           Audio ads should be professional, short (max 30s), and engaging. Use voiceovers and background music to capture attention. Let your fans know what to stream!
+                        </p>
+                     </div>
+                  </div>
+               </div>
+             )}
+
+             {currentStep === 3 && (
+               <div className="space-y-8 animate-in fade-in duration-300 max-w-2xl mx-auto">
+                  <div className="bg-bg-elevated border border-[#00A3FF]/20 rounded-[16px] p-8 shadow-sm">
+                     <h4 className="text-[13px] font-display font-semibold text-[#00A3FF] mb-6 uppercase tracking-wider">Campaign Budget</h4>
+                      
+                      {remainingFreePlacements > 0 && (
+                        <div className="mb-8 p-4 bg-gradient-to-r from-[#00A3FF]/10 to-transparent border border-[#00A3FF]/20 rounded-[12px]">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={useFreePlacement}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setUseFreePlacement(checked);
+                                if (checked) setPlaysPurchased(1000);
+                              }}
+                              className="w-5 h-5 accent-#00A3FF rounded cursor-pointer"
+                            />
+                            <span className="text-[14px] font-display font-bold text-white group-hover:text-[#00A3FF] transition-colors">
+                              🎁 Apply Free Monthly Slot ({remainingFreePlacements} remaining)
+                            </span>
+                          </label>
+                        </div>
+                      )}
+                     
+                     <div className="space-y-8">
+                        <div className="flex justify-between items-end">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[36px] font-studio font-bold text-text-primary">
+                              {playsPurchased.toLocaleString()}
+                            </p>
+                            <p className="text-[12px] font-display font-medium text-text-muted uppercase tracking-wider">Guaranteed Plays</p>
+                          </div>
+                          <div className="text-right flex flex-col gap-1">
+                            <p className="text-[36px] font-studio font-bold text-[#22C55E]">
+                              {totalCost === 0 ? "FREE" : `MK ${totalCost.toLocaleString()}`}
+                            </p>
+                            <p className="text-[12px] font-display font-medium text-text-muted uppercase tracking-wider">Total Cost</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <input 
+                            type="range"
+                            min="500"
+                            max="50000"
+                            step="500"
+                            value={playsPurchased}
+                            onChange={e => setPlaysPurchased(Number(e.target.value))}
+                            disabled={useFreePlacement}
+                            className="w-full accent-#00A3FF bg-border-default h-2 rounded-full appearance-none slider-custom-thumb disabled:opacity-50"
+                          />
+                          <div className="flex justify-between text-[11px] font-display font-medium text-text-muted uppercase tracking-wider">
+                            <span>500 plays</span>
+                            <span>50,000 plays</span>
+                          </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+             )}
+
+             <div className="flex gap-4 pt-4 max-w-2xl mx-auto border-t border-border-default">
+               {currentStep > 1 && (
+                 <button 
+                   type="button"
+                   onClick={() => setCurrentStep(prev => prev - 1)}
+                   className="h-[48px] px-6 bg-bg-elevated text-text-primary font-semibold text-[13px] rounded-[10px] hover:bg-border-default transition-all border border-border-default"
+                 >
+                   Back
+                 </button>
+               )}
+               
+               {currentStep < 3 ? (
+                 <button 
+                   type="submit"
+                   disabled={currentStep === 1 ? !title : currentStep === 2 ? !audioFile : false}
+                   className="flex-1 h-[48px] bg-[#00A3FF] text-white font-semibold text-[13px] rounded-[10px] hover:bg-[#00A3FF]/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                 >
+                   Continue <ChevronRight size={16} />
+                 </button>
+               ) : (
+                 <button 
+                   type="submit"
+                   disabled={uploading}
+                   className="flex-1 h-[48px] bg-[#00A3FF] text-white font-semibold text-[13px] rounded-[10px] hover:bg-[#00A3FF]/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                 >
+                   {uploading ? 'Processing...' : `Launch Campaign • ${totalCost === 0 ? 'FREE' : `MK ${totalCost.toLocaleString()}`}`}
+                 </button>
+               )}
+             </div>
+           </form>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
