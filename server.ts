@@ -716,11 +716,14 @@ async function startServer() {
         } else {
           subEnds.setDate(subEnds.getDate() + 30);
         }
-        const subTierName = type === 'LISTENER_FAMILY' ? 'Family' : 'Premium';
+        let subTierName = 'Premium';
+        if (type === 'LISTENER_FAMILY') subTierName = 'Family';
+        else if (type === 'LISTENER_DAILY_PASS') subTierName = 'DailyPass';
+        else if (type === 'LISTENER_WEEKLY_PASS') subTierName = 'WeeklyPass';
         if (userId) {
           await supabaseAdmin.from('user_profiles').update({
             subscription_tier: subTierName,
-            subscription_ends: subEnds.toISOString()
+            subscription_expires_at: subEnds.toISOString()
           }).eq('id', userId);
           await supabaseAdmin.from('profiles').update({
             subscription_tier: subTierName,
@@ -754,7 +757,7 @@ async function startServer() {
           await supabaseAdmin.from('user_profiles').upsert({
             id: targetArtistId,
             subscription_tier: 'Premium',
-            subscription_ends: artistTierEnds.toISOString()
+            subscription_expires_at: artistTierEnds.toISOString()
           }, { onConflict: 'id' });
         }
         break;

@@ -87,6 +87,7 @@ export interface UserProfile {
   total_plays?: number;
   subscription_tier?: string;
   subscription_ends?: string;
+  subscription_expires_at?: string;
   subscription_price?: number;
   wallet_balance?: number;
   phone?: string;

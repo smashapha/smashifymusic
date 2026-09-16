@@ -105,23 +105,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if(isArtist) {
             expiration.setMonth(expiration.getMonth() + 6);
           } else {
-            expiration.setMonth(expiration.getMonth() + 1);
+            if (tier.toLowerCase().includes('daily')) {
+              expiration.setDate(expiration.getDate() + 1);
+            } else if (tier.toLowerCase().includes('weekly')) {
+              expiration.setDate(expiration.getDate() + 7);
+            } else {
+              expiration.setMonth(expiration.getMonth() + 1);
+            }
+          }
+          
+          const updateData: any = {
+            [tierColumn]: tier,
+            [endsColumn]: expiration.toISOString()
+          };
+          
+          if (isArtist) {
+            updateData.subscription_tier = tier;
           }
           
           await supabase
             .from(table)
-            .update({
-              [tierColumn]: tier,
-              [endsColumn]: expiration.toISOString()
-            })
+            .update(updateData)
             .eq('id', userId);
         } else if (status === 'failed' || status === 'cancelled') {
+          const revertData: any = {
+            [tierColumn]: 'Free',
+            [endsColumn]: null
+          };
+          
+          if (isArtist) {
+            revertData.subscription_tier = 'Free';
+          }
+          
           await supabase
             .from(table)
-            .update({
-              [tierColumn]: 'Free',
-              [endsColumn]: null
-            })
+            .update(revertData)
             .eq('id', userId);
         }
       } catch(err) {
@@ -368,14 +386,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (artistData) {
           let currentArtistData = artistData;
-          const tier = (artistData.subscription_tier || 'free').toLowerCase();
-          console.log('Fetched artist tier:', artistData?.artist_tier)
-          console.log('Fetched artist subscription_tier:', artistData?.subscription_tier)
+          const subTier = (artistData.subscription_tier || 'free').toLowerCase();
+          const artTier = (artistData.artist_tier || 'free').toLowerCase();
           
-          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && tier !== 'free') {
+          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && (subTier !== 'free' || artTier !== 'free')) {
              const { data: updatedArtist } = await supabase
                .from('profiles')
-               .update({ subscription_tier: 'free' })
+               .update({ subscription_tier: 'free', artist_tier: 'Free' })
                .eq('id', userId)
                .select()
                .single();
