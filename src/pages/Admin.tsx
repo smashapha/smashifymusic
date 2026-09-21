@@ -22,6 +22,7 @@ import { AdminFinance } from '../components/admin/AdminFinance';
 import { AdminBilling } from '../components/admin/AdminBilling';
 import { AdminOperations } from '../components/admin/AdminOperations';
 import { PaymentTroubleshooter } from '../components/admin/PaymentTroubleshooter';
+import { SongReviewModal } from '../components/admin/SongReviewModal';
 
 type AdminTab = 
   | 'overview' 
@@ -722,7 +723,7 @@ const Admin = () => {
   const fetchPendingSongs = async () => {
     const { data, error } = await supabase
       .from('songs')
-      .select('*, profiles!artist_id(stage_name, full_name, email)')
+      .select('*, profiles!artist_id(stage_name, full_name, email, avatar_url, verified)')
       .eq('approved', false)
       .order('created_at', { ascending: true });
     
@@ -953,13 +954,43 @@ const Admin = () => {
     }
   };
 
-  const rejectSong = async (songId: string) => {
-    if (!confirm('Reject and delete this song permanently?')) return;
+  const rejectSong = async (songId: string, reason?: string) => {
+    if (!reason && !confirm('Reject and delete this song permanently?')) return;
+    const song = pendingSongs.find(s => s.id === songId) || allSongs.find(s => s.id === songId);
+    
+    if (song?.artist_id) {
+      try {
+        await supabase.from('notifications').insert({
+          profile_id: song.artist_id,
+          user_type: 'artist',
+          type: 'system_alert',
+          message: `Your release "${song.title}" was not approved: ${reason || 'Does not meet Smashify content compliance standards.'}`,
+          link: '/artist-hub'
+        });
+      } catch (e) {
+        console.warn('Could not send notification:', e);
+      }
+    }
+
     const { error } = await supabase.from('songs').delete().eq('id', songId);
     if (error) toast.error(error.message);
     else {
       toast.success('Song rejected and removed');
       fetchPendingSongs();
+    }
+  };
+
+  const requestSongRevision = async (songId: string, note: string) => {
+    const song = pendingSongs.find(s => s.id === songId) || allSongs.find(s => s.id === songId);
+    if (song?.artist_id) {
+      await supabase.from('notifications').insert({
+        profile_id: song.artist_id,
+        user_type: 'artist',
+        type: 'system_alert',
+        message: `Action Required for "${song.title}": ${note}`,
+        link: '/artist-hub'
+      });
+      toast.success('Revision request sent to artist');
     }
   };
 
@@ -2203,6 +2234,7 @@ const Admin = () => {
                             <th className="px-4 py-3">Production Payload</th>
                             <th className="px-4 py-3">Artist Signature</th>
                             <th className="text-center px-4 py-3">Audio Preview</th>
+                            <th className="px-4 py-3">Specs & Distribution</th>
                             <th className="text-right px-4 py-3">Moderation Logic</th>
                           </tr>
                         </thead>
@@ -2210,53 +2242,112 @@ const Admin = () => {
                           {pendingSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
                             <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
                               <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3.5">
                                    <input
                                       type="checkbox"
                                       checked={selectedSongs.includes(song.id)}
                                       onChange={(e) => setSelectedSongs(prev =>
                                         e.target.checked ? [...prev, song.id] : prev.filter(id => id !== song.id)
                                       )}
-                                      className="w-4 h-4 text-[#00A3FF] bg-white/5 border-white/10 rounded cursor-pointer"
+                                      className="w-4 h-4 text-[#00A3FF] bg-white/5 border-white/10 rounded cursor-pointer shrink-0"
                                     />
-                                   <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[#00A3FF] group-hover:scale-105 transition-transform">
-                                      <Music2 size={18} />
-                                   </div>
-                                   <div>
-                                      <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#00A3FF] transition-colors">{song.title}</p>
-                                      <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60">{song.genre}</p>
-                                   </div>
-                                </div>
-                              </td>
-                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                                <p className="font-bold text-white/80">{song.profiles?.stage_name || 'Unknown'}</p>
-                                <p className="text-[13px] text-[#B0B0B0] font-bold tracking-tight lowercase underline opacity-60">{song.profiles?.email}</p>
-                              </td>
-                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                                <div className="flex items-center gap-3">
-                                   <button 
-                                      onClick={() => togglePlay(song.audio_url, song.id)}
-                                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                        playingSongId === song.id 
-                                        ? 'bg-[#ff6b35] text-white shadow-[0_0_20px_rgba(255,107,53,0.4)]' 
-                                        : 'bg-[#ff6b35]/15 text-[#ff6b35] hover:bg-[#ff6b35] hover:text-white'
-                                      }`}
+                                   <div 
+                                      onClick={() => setSelectedSong(song)}
+                                      className="w-11 h-11 bg-white/5 border border-white/10 rounded-xl overflow-hidden shrink-0 cursor-pointer group-hover:border-[#00A3FF]/50 transition-all relative shadow-sm"
                                    >
-                                      {playingSongId === song.id ? <Pause size={16} /> : <Play size={16} />}
-                                   </button>
-                                   <div className="flex-1 flex flex-col justify-center">
-                                      <div className="flex items-center gap-[2px] h-6 opacity-60">
-                                         {Array.from({length:15}).map((_, i) => (
-                                            <div key={i} className={`w-[3px] rounded-full bg-[#ff6b35] transition-all duration-150 ${playingSongId === song.id ? 'animate-pulse' : ''}`} style={{height: playingSongId === song.id ? `${8 + Math.random() * 16}px` : '4px'}} />
-                                         ))}
+                                      {song.cover_url ? (
+                                        <img src={song.cover_url} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[#00A3FF]">
+                                          <Music2 size={18} />
+                                        </div>
+                                      )}
+                                   </div>
+                                   <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p 
+                                          onClick={() => setSelectedSong(song)}
+                                          className="font-bold text-[13px] text-white leading-none truncate hover:text-[#00A3FF] cursor-pointer transition-colors"
+                                        >
+                                          {song.title}
+                                        </p>
+                                        {song.is_explicit && (
+                                          <span className="text-[9px] font-bold px-1 rounded bg-white/20 text-white uppercase tracking-wider">
+                                            E
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[11px] font-medium text-[#00A3FF]">{song.genre || 'Afrobeats'}</span>
+                                        {song.album_id && (
+                                          <span className="text-[10px] text-white/40 font-mono">• Album Track</span>
+                                        )}
                                       </div>
                                    </div>
                                 </div>
                               </td>
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-bold text-white/90">{song.profiles?.stage_name || song.profiles?.full_name || 'Unknown'}</p>
+                                  {song.profiles?.verified && <ShieldCheck size={14} className="text-[#00d68f]" />}
+                                </div>
+                                <p className="text-[12px] text-[#B0B0B0] font-mono tracking-tight lowercase underline opacity-60 truncate max-w-[180px]">{song.profiles?.email || 'N/A'}</p>
+                              </td>
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                                <div className="flex items-center justify-center gap-3">
+                                   <button 
+                                      onClick={() => togglePlay(song.audio_url, song.id)}
+                                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                                        playingSongId === song.id 
+                                        ? 'bg-[#00A3FF] text-white shadow-[0_0_15px_rgba(0,163,255,0.4)]' 
+                                        : 'bg-white/5 text-white hover:bg-[#00A3FF] hover:text-white'
+                                      }`}
+                                   >
+                                      {playingSongId === song.id ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
+                                   </button>
+                                   <div className="w-24 flex items-center gap-[2px] h-5 opacity-60">
+                                      {Array.from({length:12}).map((_, i) => (
+                                         <div key={i} className={`w-[2.5px] rounded-full bg-[#00A3FF] transition-all duration-150 ${playingSongId === song.id ? 'animate-pulse' : ''}`} style={{height: playingSongId === song.id ? `${6 + ((i * 7) % 12)}px` : '4px'}} />
+                                      ))}
+                                   </div>
+                                </div>
+                              </td>
+                              <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium text-[11px]">
+                                      {song.is_for_sale ? `MK ${Number(song.price || 0).toLocaleString()}` : 'Free Stream'}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-white/50 bg-white/5 px-1.5 py-0.5 rounded">
+                                      320kbps
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-white/40 font-mono">
+                                    {song.created_at ? new Date(song.created_at).toLocaleDateString() : 'Pending'}
+                                  </p>
+                                </div>
+                              </td>
                               <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
-                                <div className="flex items-center justify-end gap-3">
-                                   <button onClick={() => approveSong(song.id)} className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">Authorize</button>
-                                   <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all active:scale-95"><Trash2 size={14} /></button>
+                                <div className="flex items-center justify-end gap-2">
+                                   <button 
+                                      onClick={() => setSelectedSong(song)} 
+                                      className="border border-white/10 hover:border-[#00A3FF] text-white hover:text-[#00A3FF] bg-white/5 hover:bg-[#00A3FF]/10 h-8 px-3 rounded-[10px] text-[12px] font-semibold transition-all flex items-center justify-center gap-1.5"
+                                   >
+                                      <ShieldCheck size={14} className="text-[#00A3FF]" /> Review Details
+                                   </button>
+                                   <button 
+                                      onClick={() => approveSong(song.id)} 
+                                      className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-3.5 rounded-[10px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                   >
+                                      Authorize
+                                   </button>
+                                   <button 
+                                      onClick={() => rejectSong(song.id)} 
+                                      className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all active:scale-95"
+                                      title="Reject and remove"
+                                   >
+                                      <Trash2 size={13} />
+                                   </button>
                                 </div>
                               </td>
                             </tr>
@@ -2931,6 +3022,24 @@ const Admin = () => {
                     </div>
                   </motion.div>
                 </motion.div>
+              )}
+              {selectedSong && (
+                <SongReviewModal
+                  song={selectedSong}
+                  onClose={() => setSelectedSong(null)}
+                  onApprove={async (id) => {
+                    await approveSong(id);
+                    setSelectedSong(null);
+                  }}
+                  onReject={async (id, reason) => {
+                    await rejectSong(id, reason);
+                    setSelectedSong(null);
+                  }}
+                  onRequestRevision={async (id, note) => {
+                    await requestSongRevision(id, note);
+                    setSelectedSong(null);
+                  }}
+                />
               )}
             </AnimatePresence>
 
