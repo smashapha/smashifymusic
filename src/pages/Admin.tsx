@@ -1534,6 +1534,7 @@ const Admin = () => {
                     artists={artists}
                     listeners={listeners}
                     agents={[...agentApplications, ...approvedAgents]}
+                    onRefresh={() => { fetchArtists(); fetchListeners(); fetchPlatformStats(); }}
                   />
                 </motion.div>
               )}

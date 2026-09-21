@@ -277,6 +277,7 @@ export async function upgradeArtistTier({ artist, tier }: { artist: UserProfile;
     return_url: `${APP_URL}/purchase-success?tier=${tier}&type=${type}`,
     meta: {
       userId: artist.id,
+      artistId: artist.id,
       tier,
       payment_type: type
     }

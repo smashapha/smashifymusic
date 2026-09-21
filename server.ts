@@ -750,7 +750,8 @@ async function startServer() {
           await supabaseAdmin.from('profiles').update({
             subscription_tier: artistTierName,
             artist_tier: artistTierName,
-            subscription_ends: artistTierEnds.toISOString()
+            subscription_ends: artistTierEnds.toISOString(),
+            tier_expires_at: artistTierEnds.toISOString()
           }).eq('id', targetArtistId);
 
           // Give them Listener Premium too!
@@ -759,6 +760,23 @@ async function startServer() {
             subscription_tier: 'Premium',
             subscription_expires_at: artistTierEnds.toISOString()
           }, { onConflict: 'id' });
+
+          // Send confirmation alert to the artist
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: targetArtistId,
+            user_type: 'artist',
+            type: 'system_alert',
+            message: `🌟 Your artist subscription has been upgraded to ${artistTierName}! 6 months of studio benefits and Listener Premium are active.`,
+            link: '/artist-hub'
+          }).catch(() => {});
+
+          // Activity log entry
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: targetArtistId,
+            event: 'subscription_upgraded',
+            amount: txAmount,
+            description: `Upgraded to ${artistTierName} tier`
+          }).catch(() => {});
         }
         break;
       }
@@ -1282,6 +1300,396 @@ async function startServer() {
     } catch (error: any) {
       console.error('[API] Admin payout update error:', error);
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Admin User 360 Deep Details
+  app.get('/api/admin/users/:id/details', async (req, res) => {
+    try {
+      const user = await verifyUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: userProfile } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isSystemAdmin = profile?.is_admin === true || userProfile?.is_admin === true;
+      if (!isSystemAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+      const { id } = req.params;
+
+      // 1. Fetch profiles & user_profiles
+      const [pRes, upRes] = await Promise.all([
+        supabaseAdmin.from('profiles').select('*').eq('id', id).maybeSingle(),
+        supabaseAdmin.from('user_profiles').select('*').eq('id', id).maybeSingle()
+      ]);
+
+      const mergedProfile = {
+        ...(upRes.data || {}),
+        ...(pRes.data || {}),
+        id
+      };
+
+      // 2. Fetch parallel deep data
+      const [
+        songsRes,
+        albumsRes,
+        purchasesRes,
+        playlistsRes,
+        txsRes,
+        payoutsRes,
+        activityRes,
+        notesRes,
+        ticketsRes,
+        agentAppRes
+      ] = await Promise.all([
+        supabaseAdmin.from('songs').select('*').eq('artist_id', id).order('created_at', { ascending: false }).limit(100),
+        supabaseAdmin.from('albums').select('*').eq('artist_id', id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('fan_purchases').select('*, songs(id, title, cover_url, price, duration, artist_id)').eq('fan_id', id).order('purchased_at', { ascending: false }).limit(100),
+        supabaseAdmin.from('playlists').select('*').eq('user_id', id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('transactions').select('*').or(`artist_id.eq.${id},user_id.eq.${id},fan_id.eq.${id}`).order('created_at', { ascending: false }).limit(100),
+        supabaseAdmin.from('payout_requests').select('*').eq('artist_id', id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('activity_log').select('*').eq('profile_id', id).order('created_at', { ascending: false }).limit(100),
+        supabaseAdmin.from('people_notes').select('*').eq('profile_id', id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('tickets').select('*').eq('profile_id', id).order('created_at', { ascending: false }),
+        supabaseAdmin.from('agent_applications').select('*').eq('user_id', id).maybeSingle()
+      ]);
+
+      // Calculate totals
+      const transactions = txsRes.data || [];
+      const totalPaid = transactions
+        .filter((t: any) => (t.user_id === id || t.fan_id === id) && t.status === 'completed')
+        .reduce((sum: number, t: any) => sum + Number(t.gross_amount || 0), 0);
+      
+      const totalEarned = transactions
+        .filter((t: any) => t.artist_id === id && t.type !== 'withdrawal' && t.status === 'completed')
+        .reduce((sum: number, t: any) => sum + Number(t.net_amount || t.gross_amount || 0), 0);
+
+      res.json({
+        profile: mergedProfile,
+        songs: songsRes.data || [],
+        albums: albumsRes.data || [],
+        purchases: purchasesRes.data || [],
+        playlists: playlistsRes.data || [],
+        transactions,
+        payouts: payoutsRes.data || [],
+        activity: activityRes.data || [],
+        notes: notesRes.data || [],
+        tickets: ticketsRes.data || [],
+        agentApplication: agentAppRes.data || null,
+        stats: {
+          totalPaid,
+          totalEarned,
+          txCount: transactions.length,
+          songsCount: (songsRes.data || []).length,
+          purchasesCount: (purchasesRes.data || []).length,
+          payoutsCount: (payoutsRes.data || []).length
+        }
+      });
+    } catch (err: any) {
+      console.error('[API] Admin user details error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin User Control & Action Center
+  app.post('/api/admin/users/:id/control', async (req, res) => {
+    try {
+      const user = await verifyUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: userProfile } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isSystemAdmin = profile?.is_admin === true || userProfile?.is_admin === true;
+      if (!isSystemAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+      const { id } = req.params;
+      const { action, payload } = req.body;
+
+      if (!action) return res.status(400).json({ error: 'Action parameter is required' });
+
+      console.log(`[ADMIN CONTROL] Admin ${user.id} executing '${action}' on target user ${id}`);
+
+      switch (action) {
+        case 'adjust_wallet': {
+          const { amount, reason, notify = true } = payload || {};
+          const numAmount = Number(amount);
+          if (isNaN(numAmount) || numAmount === 0) {
+            return res.status(400).json({ error: 'Valid non-zero amount required' });
+          }
+
+          // Get current balance
+          const { data: current } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', id).maybeSingle();
+          const currentBal = Number(current?.wallet_balance || 0);
+          const newBal = Math.max(0, currentBal + numAmount);
+
+          // Update profiles
+          await supabaseAdmin.from('profiles').update({ wallet_balance: newBal }).eq('id', id);
+
+          // Log transaction
+          const txRef = `ADJ-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+          await supabaseAdmin.from('transactions').insert({
+            artist_id: id,
+            type: numAmount > 0 ? 'admin_credit' : 'admin_debit',
+            gross_amount: Math.abs(numAmount),
+            net_amount: Math.abs(numAmount),
+            platform_fee: 0,
+            status: 'completed',
+            paychangu_ref: txRef,
+            created_at: new Date().toISOString()
+          }).catch((err: any) => console.warn('Could not insert adjustment tx:', err));
+
+          // Log in activity
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: numAmount > 0 ? 'wallet_credited' : 'wallet_debited',
+            amount: Math.abs(numAmount),
+            meta: { reason: reason || 'Administrative adjustment', previous: currentBal, new: newBal }
+          }).catch(() => {});
+
+          // Optional notification
+          if (notify) {
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'artist',
+              type: 'system_alert',
+              message: numAmount > 0
+                ? `💰 Your studio wallet was credited with MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`
+                : `⚠️ Your studio wallet was adjusted by -MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`,
+              link: '/artist-hub#wallet'
+            }).catch(() => {});
+          }
+
+          return res.json({ success: true, newBalance: newBal });
+        }
+
+        case 'update_profile': {
+          const updates = payload?.updates || {};
+          const allowedFields = [
+            'full_name', 'stage_name', 'phone', 'email', 'city', 'location', 
+            'bio', 'genre', 'instagram', 'twitter', 'facebook', 'youtube', 'tiktok',
+            'website', 'payout_network', 'payout_phone', 'bank_name', 'bank_account',
+            'nrc_number', 'id_type', 'is_suspended'
+          ];
+
+          const sanitized: any = {};
+          for (const key of allowedFields) {
+            if (updates[key] !== undefined) sanitized[key] = updates[key];
+          }
+
+          if (Object.keys(sanitized).length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+          }
+
+          // Update both tables if present
+          await Promise.all([
+            supabaseAdmin.from('profiles').update(sanitized).eq('id', id),
+            supabaseAdmin.from('user_profiles').update(sanitized).eq('id', id)
+          ]);
+
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: 'profile_updated_by_admin',
+            meta: { updated_fields: Object.keys(sanitized) }
+          }).catch(() => {});
+
+          return res.json({ success: true });
+        }
+
+        case 'toggle_verification': {
+          const { verified } = payload || {};
+          const isVerified = !!verified;
+
+          await Promise.all([
+            supabaseAdmin.from('profiles').update({ verified: isVerified, is_verified: isVerified }).eq('id', id),
+            supabaseAdmin.from('user_profiles').update({ verified: isVerified, is_verified: isVerified }).eq('id', id)
+          ]);
+
+          if (isVerified) {
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'artist',
+              type: 'system_alert',
+              message: '🎉 Congratulations! Your Smashify profile has been officially verified with the verified badge.',
+              link: '/artist-hub'
+            }).catch(() => {});
+          }
+
+          return res.json({ success: true, verified: isVerified });
+        }
+
+        case 'toggle_admin': {
+          const { is_admin } = payload || {};
+          const newAdminStatus = !!is_admin;
+
+          await Promise.all([
+            supabaseAdmin.from('profiles').update({ is_admin: newAdminStatus }).eq('id', id),
+            supabaseAdmin.from('user_profiles').update({ is_admin: newAdminStatus }).eq('id', id)
+          ]);
+
+          return res.json({ success: true, is_admin: newAdminStatus });
+        }
+
+        case 'toggle_suspension': {
+          const { is_suspended, reason } = payload || {};
+          const suspended = !!is_suspended;
+
+          await Promise.all([
+            supabaseAdmin.from('profiles').update({ is_suspended: suspended }).eq('id', id),
+            supabaseAdmin.from('user_profiles').update({ is_suspended: suspended }).eq('id', id)
+          ]);
+
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: suspended ? 'account_suspended' : 'account_reactivated',
+            meta: { reason: reason || 'Administrative action' }
+          }).catch(() => {});
+
+          return res.json({ success: true, is_suspended: suspended });
+        }
+
+        case 'set_artist_tier': {
+          const { tier, months = 6 } = payload || {};
+          const validTiers = ['Free', 'RisingStar', 'Standard', 'Elite'];
+          if (!validTiers.includes(tier)) {
+            return res.status(400).json({ error: 'Invalid artist tier' });
+          }
+
+          let endsDate: string | null = null;
+          if (tier !== 'Free') {
+            const ends = new Date();
+            if (months === -1) {
+              ends.setFullYear(ends.getFullYear() + 10); // Lifetime
+            } else {
+              ends.setMonth(ends.getMonth() + (Number(months) || 6));
+            }
+            endsDate = ends.toISOString();
+          }
+
+          await supabaseAdmin.from('profiles').update({
+            artist_tier: tier,
+            subscription_tier: tier,
+            subscription_ends: endsDate
+          }).eq('id', id);
+
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: id,
+            user_type: 'artist',
+            type: 'system_alert',
+            message: tier === 'Free'
+              ? 'Your artist subscription tier has been reset to Free.'
+              : `🌟 You have been upgraded to the ${tier} Tier! Enjoy exclusive distribution features and studio perks.`,
+            link: '/artist-hub'
+          }).catch(() => {});
+
+          return res.json({ success: true, artist_tier: tier, subscription_ends: endsDate });
+        }
+
+        case 'manage_daily_pass': {
+          const { hours = 24 } = payload || {};
+          const numHours = Number(hours);
+
+          let expiresAt: string | null = null;
+          let tierName = 'Free';
+
+          if (numHours > 0) {
+            const exp = new Date(Date.now() + numHours * 60 * 60 * 1000);
+            expiresAt = exp.toISOString();
+            tierName = 'Premium';
+          }
+
+          await Promise.all([
+            supabaseAdmin.from('user_profiles').update({
+              daily_pass_expires_at: expiresAt,
+              subscription_ends: expiresAt,
+              subscription_tier: tierName
+            }).eq('id', id),
+            supabaseAdmin.from('profiles').update({
+              daily_pass_expires_at: expiresAt,
+              subscription_ends: expiresAt,
+              subscription_tier: tierName
+            }).eq('id', id)
+          ]);
+
+          if (numHours > 0) {
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'listener',
+              type: 'system_alert',
+              message: `🎧 You have been granted ${numHours >= 24 ? Math.round(numHours/24) + ' day(s)' : numHours + ' hours'} of Unlimited Listener Pass! Enjoy ad-free lossless streaming.`,
+              link: '/discover'
+            }).catch(() => {});
+          }
+
+          return res.json({ success: true, daily_pass_expires_at: expiresAt, subscription_tier: tierName });
+        }
+
+        case 'moderate_song': {
+          const { song_id, sub_action } = payload || {};
+          if (!song_id) return res.status(400).json({ error: 'song_id required' });
+
+          if (sub_action === 'approve') {
+            await supabaseAdmin.from('songs').update({ approved: true, status: 'approved' }).eq('id', song_id);
+            return res.json({ success: true, status: 'approved' });
+          } else if (sub_action === 'reject') {
+            await supabaseAdmin.from('songs').update({ approved: false, status: 'rejected' }).eq('id', song_id);
+            return res.json({ success: true, status: 'rejected' });
+          } else if (sub_action === 'toggle_featured') {
+            const { data: s } = await supabaseAdmin.from('songs').select('trending').eq('id', song_id).single();
+            const newTrending = !s?.trending;
+            await supabaseAdmin.from('songs').update({ trending: newTrending }).eq('id', song_id);
+            return res.json({ success: true, trending: newTrending });
+          } else if (sub_action === 'delete') {
+            await supabaseAdmin.from('songs').delete().eq('id', song_id);
+            return res.json({ success: true, deleted: true });
+          }
+          return res.status(400).json({ error: 'Unknown song sub_action' });
+        }
+
+        case 'send_notification': {
+          const { message, title, type = 'system_alert', link = '/' } = payload || {};
+          if (!message?.trim()) return res.status(400).json({ error: 'Message cannot be empty' });
+
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: id,
+            title: title || 'Admin Alert',
+            message: message.trim(),
+            type,
+            link,
+            read: false,
+            created_at: new Date().toISOString()
+          });
+
+          return res.json({ success: true });
+        }
+
+        case 'delete_user': {
+          const { confirm_name } = payload || {};
+          // Check user identity
+          const { data: p } = await supabaseAdmin.from('profiles').select('stage_name, full_name').eq('id', id).maybeSingle();
+          const targetName = p?.stage_name || p?.full_name || 'User';
+
+          // Clean related content
+          await supabaseAdmin.from('songs').delete().eq('artist_id', id).catch(() => {});
+          await supabaseAdmin.from('albums').delete().eq('artist_id', id).catch(() => {});
+          await supabaseAdmin.from('tickets').delete().eq('profile_id', id).catch(() => {});
+          await supabaseAdmin.from('people_notes').delete().eq('profile_id', id).catch(() => {});
+          
+          await Promise.all([
+            supabaseAdmin.from('profiles').delete().eq('id', id),
+            supabaseAdmin.from('user_profiles').delete().eq('id', id)
+          ]);
+
+          return res.json({ success: true, deleted: true, name: targetName });
+        }
+
+        default:
+          return res.status(400).json({ error: `Unsupported action: ${action}` });
+      }
+    } catch (err: any) {
+      console.error('[API] Admin control error:', err);
+      res.status(500).json({ error: err.message });
     }
   });
 

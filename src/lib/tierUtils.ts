@@ -153,7 +153,7 @@ export const getTrackLimit = (tierOrArtist: string | any): number => {
 export const getTierLimits = (artist: any) => {
   const tier = (getArtistTier(artist) || 'free');
   const normalizedTier = tier.toLowerCase().replace(/[\s-_]/g, '');
-  const maxTracks = getTrackLimit(tier);
+  const maxTracks = getTrackLimit(artist || tier);
 
   switch (normalizedTier) {
     case 'label':
