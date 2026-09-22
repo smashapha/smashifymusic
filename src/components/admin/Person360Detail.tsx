@@ -10,6 +10,8 @@ import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { HealthStatus } from './types';
+import { KycRejectModal } from './KycRejectModal';
+import { CopyrightTakedownModal } from './CopyrightTakedownModal';
 
 interface PersonItem {
   id: string;
@@ -114,6 +116,10 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
   // Audio preview state
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Rejection & Takedown modal states
+  const [showKycReject, setShowKycReject] = useState(false);
+  const [takedownSong, setTakedownSong] = useState<any | null>(null);
 
   // Fetch full details
   const fetchDeepDetails = async () => {
@@ -947,6 +953,37 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
               </div>
             </div>
 
+            {/* KYC Review & Rejection Controls */}
+            <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[12px] font-medium text-white/80">KYC Verification Gate</p>
+                <p className="text-[11px] text-white/40">
+                  {profile.id_document_url ? 'Document submitted for review' : 'No ID document on record'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.from('profiles').update({ id_verified: true, is_verified: true, verified: true }).eq('id', person.id);
+                    toast.success('KYC verified successfully');
+                    fetchDeepDetails();
+                  }}
+                  className="px-3 py-1.5 rounded-[10px] text-[12px] font-bold bg-[#22C55E]/15 hover:bg-[#22C55E]/25 text-[#22C55E] border border-[#22C55E]/30 transition-colors flex items-center gap-1.5"
+                >
+                  <ShieldCheck size={14} /> Approve KYC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowKycReject(true)}
+                  className="px-3 py-1.5 rounded-[10px] text-[12px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 transition-colors flex items-center gap-1.5"
+                  title="Reject KYC Submission (e.g. personal photo/selfie instead of official government ID)"
+                >
+                  <AlertCircle size={14} /> Reject KYC (Photo/Invalid)
+                </button>
+              </div>
+            </div>
+
             {/* Quick Security Toggles */}
             <div className="pt-3 border-t border-white/5 flex items-center justify-between">
               <div className="space-y-0.5">
@@ -1100,6 +1137,14 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
                                 title="Toggle Featured"
                               >
                                 {song.trending ? '★ Featured' : 'Feature'}
+                              </button>
+
+                              <button
+                                onClick={() => setTakedownSong(song)}
+                                className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-[8px] text-[11px] font-semibold transition-colors flex items-center gap-1"
+                                title="Take Down under Copyright Infringement"
+                              >
+                                <ShieldAlert size={12} /> Takedown
                               </button>
 
                               <button
@@ -1893,6 +1938,37 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
             </div>
           </div>
         </div>
+      )}
+
+      {/* KYC Reject Modal */}
+      {showKycReject && (
+        <KycRejectModal
+          artistOrApplicant={{
+            id: person.id,
+            stage_name: profile.stage_name || person.name,
+            full_name: profile.full_name || person.name,
+            email: profile.email || person.email,
+            phone: profile.phone,
+            id_document_url: profile.id_document_url,
+            selfie_url: profile.selfie_url,
+            nrc_number: profile.nrc_number
+          }}
+          onClose={() => setShowKycReject(false)}
+          onSuccess={() => {
+            fetchDeepDetails();
+          }}
+        />
+      )}
+
+      {/* Copyright Infringement Takedown Modal */}
+      {takedownSong && (
+        <CopyrightTakedownModal
+          song={takedownSong}
+          onClose={() => setTakedownSong(null)}
+          onSuccess={() => {
+            fetchDeepDetails();
+          }}
+        />
       )}
     </div>
   );

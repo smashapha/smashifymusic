@@ -23,6 +23,8 @@ import { AdminBilling } from '../components/admin/AdminBilling';
 import { AdminOperations } from '../components/admin/AdminOperations';
 import { PaymentTroubleshooter } from '../components/admin/PaymentTroubleshooter';
 import { SongReviewModal } from '../components/admin/SongReviewModal';
+import { AdminCatalog } from '../components/admin/AdminCatalog';
+import { KycRejectModal } from '../components/admin/KycRejectModal';
 
 type AdminTab = 
   | 'overview' 
@@ -79,6 +81,8 @@ const Admin = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [expiringArtists, setExpiringArtists] = useState<any[]>([]);
   const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
+  const [kycRejectTarget, setKycRejectTarget] = useState<any | null>(null);
+  const [isKycApplicationTarget, setIsKycApplicationTarget] = useState<boolean>(false);
   const [ads, setAds] = useState<any[]>([]);
   const [maintenance, setMaintenance] = useState({ active: false, message: '', estimatedTime: '' });
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
@@ -1749,6 +1753,15 @@ const Admin = () => {
                                   {(a.verified || a.is_verified) ? 'Verified' : 'Verify'}
                                 </button>
                                 
+                                <button 
+                                  onClick={() => { setKycRejectTarget(a); setIsKycApplicationTarget(false); }}
+                                  className="px-3 py-1.5 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1"
+                                  title="Reject KYC Submission (e.g. personal photo submitted instead of official ID)"
+                                >
+                                  <AlertTriangle size={13} />
+                                  <span>Reject KYC</span>
+                                </button>
+
                                 <button onClick={() => deleteArtist(a.id, a.stage_name)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all">
                                   <Trash2 size={14} />
                                 </button>
@@ -1964,67 +1977,18 @@ const Admin = () => {
   )}
 
               {activeTab === 'songs' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-[#0A0A0A] rounded-[16px] border border-white/10 overflow-hidden">
-                  <div className="p-5 border-b border-white/10 flex items-center justify-between">
-                     <div>
-                        <h3 className="font-studio font-bold   text-[15px]">Asset Master List</h3>
-                        <p className="text-[13px] font-bold   text-[#B0B0B0] mt-1">Full Song Database Governance</p>
-                     </div>
-                     <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                        <p className="text-[13px] font-bold  text-[#B0B0B0] ">Global Assets: {allSongs.length}</p>
-                     </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-[13px]">
-                      <thead className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 z-10">
-                        <tr>
-                          <th className="px-4 py-3">Production</th>
-                          <th className="px-4 py-3">Artist Signature</th>
-                          <th className="px-4 py-3">Network Status</th>
-                          <th className="text-right px-4 py-3">Moderation Logic</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {allSongs.filter(s => (s.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.stage_name || '').toLowerCase().includes(searchQuery.toLowerCase())).map((song) => (
-                          <tr key={song.id} className="hover:bg-white/[0.02] transition-colors group">
-                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                               <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[#00A3FF] group-hover:scale-105 transition-transform">
-                                     <Music2 size={18} />
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-[13px] text-white leading-none mb-1 group-hover:text-[#00A3FF] transition-colors truncate max-w-[200px]">{song.title}</p>
-                                    <p className="text-[13px] font-bold   text-[#B0B0B0] opacity-60">{song.genre}</p>
-                                  </div>
-                               </div>
-                            </td>
-                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                               <p className="font-bold text-white/80">{song.profiles?.stage_name || 'Unknown Entity'}</p>
-                            </td>
-                            <td className="md:px-5 px-4 py-3 md:px-5 text-[13px]">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${song.approved ? 'bg-[#22C55E]' : 'bg-[#0084D6]'} animate-pulse`} />
-                                  <span className={`text-[13px] font-bold   ${song.approved ? 'text-[#22C55E]' : 'text-[#FF453A]'}`}>
-                                     {song.approved ? 'Broadcasting' : 'Hold / Review'}
-                                  </span>
-                                </div>
-                            </td>
-                            <td className="md:px-5 text-right px-4 py-3 md:px-5 text-[13px]">
-                               <div className="flex items-center justify-end gap-3">
-                                  {!song.approved && (
-                                    <button onClick={() => approveSong(song.id)} className="bg-[#0084D6] hover:bg-[#00A3FF] text-white h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2">Release</button>
-                                  )}
-                                  <button onClick={() => rejectSong(song.id)} className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-[#FF453A] text-[#B0B0B0] hover:text-white rounded-lg transition-all">
-                                    <Trash2 size={14} />
-                                  </button>
-                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </motion.div>
+                <AdminCatalog
+                  allSongs={allSongs}
+                  onRefresh={() => {
+                    fetchAllSongs();
+                    fetchPendingSongs();
+                  }}
+                  onOpenPerson360={(profileId) => {
+                    const artist = artists.find(a => a.id === profileId);
+                    if (artist) setSelectedArtist(artist);
+                    else setActiveTab('people');
+                  }}
+                />
               )}
 
               {activeTab === 'agents' && (
@@ -2180,6 +2144,13 @@ const Admin = () => {
                                    </button>
                                    <button onClick={() => approveArtist(app)} className="h-9 w-9 bg-white text-black rounded-xl flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-all shadow-lg active:scale-95 group/app tooltip" title="Approve">
                                       <CircleCheck size={16} />
+                                   </button>
+                                   <button 
+                                      onClick={() => { setKycRejectTarget(app); setIsKycApplicationTarget(true); }} 
+                                      className="border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 h-8 px-2.5 rounded-[10px] text-[12px] font-bold transition-colors flex items-center justify-center gap-1" 
+                                      title="Reject KYC Submission (e.g. submitted photo instead of official ID)"
+                                   >
+                                      <AlertTriangle size={13} /> Reject KYC
                                    </button>
                                    <button onClick={() => rejectArtist(app)} className="border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/10 h-8 px-4 rounded-[10px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-2" title="Reject">
                                       <X size={16} />
@@ -2933,6 +2904,12 @@ const Admin = () => {
                          <button onClick={() => { approveArtist(selectedApp); setSelectedApp(null); }} className="flex-1 h-10 bg-[#0084D6] hover:bg-[#00A3FF] text-white font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <CircleCheck size={16} /> Approve Application
                          </button>
+                         <button 
+                            onClick={() => { setKycRejectTarget(selectedApp); setIsKycApplicationTarget(true); setSelectedApp(null); }} 
+                            className="flex-1 h-10 bg-amber-500/15 border border-amber-500/40 text-amber-400 hover:bg-amber-500/25 font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors"
+                         >
+                            <AlertTriangle size={16} /> Reject KYC (Photo / Invalid)
+                         </button>
                          <button onClick={() => { rejectArtist(selectedApp); setSelectedApp(null); }} className="flex-1 h-10 bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/20 font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <X size={16} /> Reject
                          </button>
@@ -3016,6 +2993,12 @@ const Admin = () => {
                          >
                             <ShieldCheck size={16} /> {(selectedArtist.verified || selectedArtist.is_verified) ? 'Revoke Verification' : 'Verify Artist'}
                          </button>
+                         <button 
+                            onClick={() => { setKycRejectTarget(selectedArtist); setIsKycApplicationTarget(false); setSelectedArtist(null); }} 
+                            className="flex-1 py-3 font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 transition-all"
+                         >
+                            <AlertTriangle size={16} /> Reject KYC (Photo / Invalid)
+                         </button>
                          <button onClick={() => { deleteArtist(selectedArtist.id, selectedArtist.stage_name); setSelectedArtist(null); }} className="flex-1 h-10 bg-[#FF453A]/10 border border-[#FF453A]/30 text-[#FF453A] hover:bg-[#FF453A]/20 font-semibold text-[13px] rounded-[10px] flex items-center justify-center gap-2 transition-colors">
                             <Trash2 size={16} /> Remove from Platform
                          </button>
@@ -3039,6 +3022,17 @@ const Admin = () => {
                   onRequestRevision={async (id, note) => {
                     await requestSongRevision(id, note);
                     setSelectedSong(null);
+                  }}
+                />
+              )}
+              {kycRejectTarget && (
+                <KycRejectModal
+                  artistOrApplicant={kycRejectTarget}
+                  isApplication={isKycApplicationTarget}
+                  onClose={() => setKycRejectTarget(null)}
+                  onSuccess={() => {
+                    fetchArtists();
+                    fetchApplications();
                   }}
                 />
               )}
