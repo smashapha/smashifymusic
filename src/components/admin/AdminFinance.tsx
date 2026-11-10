@@ -61,10 +61,14 @@ export const AdminFinance = ({
 
       setPayables(payablesData);
 
-      // 2. Fetch ledger_view / transactions
+      // 2. Fetch ledger_view / transactions (strictly completed & successful payments only)
       let transactionsData: any[] = [];
       try {
-        const { data, error } = await supabase.from('ledger_view').select('*').limit(200);
+        const { data, error } = await supabase
+          .from('ledger_view')
+          .select('*')
+          .in('status', ['completed', 'successful', 'paid'])
+          .limit(200);
         if (!error && data) transactionsData = data;
       } catch {
         // Fallback: transactions
@@ -74,7 +78,7 @@ export const AdminFinance = ({
         const { data } = await supabase
           .from('transactions')
           .select('*')
-          .eq('status', 'completed')
+          .in('status', ['completed', 'successful', 'paid'])
           .order('created_at', { ascending: false })
           .limit(200);
         transactionsData = data || [];
@@ -91,24 +95,37 @@ export const AdminFinance = ({
           });
         }
       } catch {
-        // Fallback: estimate MRR from profiles with paid tier
+        // Fallback: estimate MRR only from profiles with an active paid tier and unexpired subscription
+        const nowIso = new Date().toISOString();
         const { data: paidArtists } = await supabase
           .from('profiles')
-          .select('artist_tier')
-          .neq('artist_tier', 'Free')
-          .not('subscription_ends', 'is', null);
+          .select('artist_tier, subscription_ends')
+          .not('artist_tier', 'is', null)
+          .not('subscription_ends', 'is', null)
+          .gt('subscription_ends', nowIso);
 
         const tierPricing: Record<string, number> = {
-          'Rising Star': 8000,
-          'Standard': 15000,
-          'Elite': 30000,
-          'Label': 60000
+          'risingstar': 8000,
+          'rising_star': 8000,
+          'rising star': 8000,
+          'standard': 15000,
+          'elite': 30000,
+          'label': 60000
         };
 
-        const totalMRR = (paidArtists || []).reduce((acc: number, a: any) => acc + (tierPricing[a.artist_tier] || 8000), 0);
+        const activeSubscribers = (paidArtists || []).filter((a: any) => {
+          const norm = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+          return norm !== 'free' && norm !== '';
+        });
+
+        const totalMRR = activeSubscribers.reduce((acc: number, a: any) => {
+          const norm = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+          return acc + (tierPricing[norm] || 8000);
+        }, 0);
+
         setMrrData({
           mrr: totalMRR,
-          subscribers: paidArtists?.length || 0
+          subscribers: activeSubscribers.length
         });
       }
 
@@ -119,7 +136,7 @@ export const AdminFinance = ({
     }
   };
 
-  // Compute Revenue breakdown from ledgerRows
+  // Compute Revenue breakdown strictly from verified completed/successful rows
   const revenueBreakdown = useMemo(() => {
     const breakdown = {
       tips: 0,
@@ -134,6 +151,12 @@ export const AdminFinance = ({
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
     for (const row of ledgerRows) {
+      // CRITICAL: Filter out pending, created, failed, and cancelled transactions!
+      // Revenue must ONLY be calculated from completed or successful payments.
+      const status = (row.status || '').toLowerCase();
+      const isSuccess = ['completed', 'successful', 'paid', 'success'].includes(status);
+      if (!isSuccess) continue;
+
       const gross = Number(row.gross_amount || row.gross || row.amount || 0);
       const fee = Number(row.platform_fee || (gross * 0.05));
       const type = (row.transaction_type || row.type || '').toLowerCase();

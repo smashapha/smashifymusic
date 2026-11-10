@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   CreditCard, Clock, Bell, AlertTriangle, CheckCircle2, 
-  Send, RefreshCw, ShieldCheck, Flame, Search, ChevronRight
+  Send, RefreshCw, ShieldCheck, Flame, Search, ChevronRight, XCircle, Trash2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -15,40 +15,74 @@ export const AdminBilling = ({
   onRefresh?: () => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterState, setFilterState] = useState<'all' | 'expiring_soon' | 'active' | 'expired'>('all');
+  const [filterState, setFilterState] = useState<'all' | 'active_paid' | 'expiring_soon' | 'expired' | 'unpaid_attempts'>('all');
   const [notifyingId, setNotifyingId] = useState<string | null>(null);
+  const [cleaningId, setCleaningId] = useState<string | null>(null);
 
-  // Filter artists that have a subscription or paid tier
+  // Filter artists that have a subscription, paid tier, or unverified subscription date
   const subscriptionList = useMemo(() => {
     const now = Date.now();
 
     return artists
-      .filter(a => (a.artist_tier && a.artist_tier !== 'Free') || a.subscription_ends)
+      .filter(a => {
+        const tier = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const isPaid = tier !== 'free' && tier !== '';
+        return isPaid || Boolean(a.subscription_ends);
+      })
       .map(a => {
+        const rawTier = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const isPaidTier = rawTier !== 'free' && rawTier !== '';
         const subDate = a.subscription_ends ? new Date(a.subscription_ends).getTime() : null;
         const daysLeft = subDate ? Math.ceil((subDate - now) / (1000 * 60 * 60 * 24)) : 0;
         
-        let status: 'active' | 'expiring' | 'expired' = 'active';
-        if (daysLeft < 0) status = 'expired';
-        else if (daysLeft <= 7) status = 'expiring';
+        // Exact access calculation matching tierUtils / uploadGuard / player checks
+        // Access is ONLY granted if artist has a genuine paid tier AND an unexpired subscription_ends date
+        const hasDashboardAccess = Boolean(isPaidTier && subDate && subDate > now);
 
-        const isChurned = daysLeft < -7;
+        let accessStatus: 'granted' | 'expired' | 'not_granted_unpaid' = 'not_granted_unpaid';
+        if (hasDashboardAccess) {
+          accessStatus = 'granted';
+        } else if (isPaidTier && subDate && subDate <= now) {
+          accessStatus = 'expired';
+        } else {
+          accessStatus = 'not_granted_unpaid';
+        }
+
+        let billingStatus: 'active' | 'expiring' | 'expired' | 'unpaid' = 'active';
+        if (!isPaidTier) {
+          billingStatus = 'unpaid';
+        } else if (daysLeft < 0) {
+          billingStatus = 'expired';
+        } else if (daysLeft <= 7) {
+          billingStatus = 'expiring';
+        }
+
+        const isChurned = isPaidTier && daysLeft < -7;
 
         return {
           ...a,
+          isPaidTier,
           daysLeft,
-          status,
+          hasDashboardAccess,
+          accessStatus,
+          status: billingStatus,
           isChurned
         };
       })
-      .sort((a, b) => a.daysLeft - b.daysLeft);
+      .sort((a, b) => {
+        // Prioritize paid active tiers, then expiring, then unpaid
+        if (a.hasDashboardAccess && !b.hasDashboardAccess) return -1;
+        if (!a.hasDashboardAccess && b.hasDashboardAccess) return 1;
+        return a.daysLeft - b.daysLeft;
+      });
   }, [artists]);
 
   const filteredSubscriptions = useMemo(() => {
     return subscriptionList.filter(s => {
-      if (filterState === 'expiring_soon' && (s.daysLeft > 7 || s.daysLeft < 0)) return false;
-      if (filterState === 'active' && s.status !== 'active') return false;
+      if (filterState === 'active_paid' && !s.hasDashboardAccess) return false;
+      if (filterState === 'expiring_soon' && (s.daysLeft > 7 || s.daysLeft < 0 || !s.isPaidTier)) return false;
       if (filterState === 'expired' && s.status !== 'expired') return false;
+      if (filterState === 'unpaid_attempts' && s.accessStatus !== 'not_granted_unpaid') return false;
 
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -60,12 +94,16 @@ export const AdminBilling = ({
     });
   }, [subscriptionList, filterState, searchQuery]);
 
-  // Urgent renewal queue (expiring in <= 3 days or expired < 7 days)
+  // Urgent renewal queue (only genuine paid tier artists expiring in <= 3 days or expired < 7 days)
   const renewalQueue = useMemo(() => {
-    return subscriptionList.filter(s => s.daysLeft <= 3 && s.daysLeft >= -7);
+    return subscriptionList.filter(s => s.isPaidTier && s.daysLeft <= 3 && s.daysLeft >= -7);
   }, [subscriptionList]);
 
   const handleSendRenewalNotification = async (artist: any) => {
+    if (!artist.isPaidTier) {
+      toast.error('Cannot send renewal reminder to unpaid / Free tier artist.');
+      return;
+    }
     setNotifyingId(artist.id);
     try {
       const days = artist.daysLeft;
@@ -87,6 +125,25 @@ export const AdminBilling = ({
       toast.error('Failed to dispatch notification: ' + err.message);
     } finally {
       setNotifyingId(null);
+    }
+  };
+
+  const handleClearStaleExpiry = async (artist: any) => {
+    if (!confirm(`Clear stale subscription expiry date for ${artist.stage_name || artist.full_name}? This ensures their profile cleanly reflects Free tier.`)) {
+      return;
+    }
+    setCleaningId(artist.id);
+    try {
+      await Promise.all([
+        supabase.from('profiles').update({ subscription_ends: null }).eq('id', artist.id),
+        supabase.from('user_profiles').update({ subscription_ends: null }).eq('id', artist.id)
+      ]);
+      toast.success(`Cleared stale expiry for ${artist.stage_name || artist.full_name}`);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      toast.error('Failed to clear expiry: ' + err.message);
+    } finally {
+      setCleaningId(null);
     }
   };
 
@@ -131,7 +188,7 @@ export const AdminBilling = ({
               <div>
                 <h3 className="text-[15px] font-semibold text-white">Renewal Action Queue</h3>
                 <p className="text-[11px] text-[#737373]">
-                  {renewalQueue.length} artist(s) expiring within 3 days or recently expired.
+                  {renewalQueue.length} paid artist(s) expiring within 3 days or recently expired.
                 </p>
               </div>
             </div>
@@ -185,9 +242,10 @@ export const AdminBilling = ({
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
             {[
               { key: 'all', label: 'All' },
+              { key: 'active_paid', label: 'Active Paid' },
               { key: 'expiring_soon', label: 'Expiring (<7d)' },
-              { key: 'active', label: 'Active' },
               { key: 'expired', label: 'Expired' },
+              { key: 'unpaid_attempts', label: 'Unpaid / Failed Attempts' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -208,7 +266,7 @@ export const AdminBilling = ({
         <div className="overflow-x-auto no-scrollbar pt-2">
           {filteredSubscriptions.length === 0 ? (
             <div className="p-8 text-center border border-dashed border-white/10 rounded-[12px]">
-              <p className="text-[13px] text-white/50">No subscriptions matching filter.</p>
+              <p className="text-[13px] text-white/50">No artists matching filter.</p>
             </div>
           ) : (
             <table className="w-full text-left text-[13px]">
@@ -216,6 +274,7 @@ export const AdminBilling = ({
                 <tr className="border-b border-white/5 text-[11px] uppercase tracking-wider text-[#737373]">
                   <th className="pb-3 font-medium">Artist</th>
                   <th className="pb-3 font-medium">Tier</th>
+                  <th className="pb-3 font-medium">Dashboard Access</th>
                   <th className="pb-3 font-medium">Expiry Date</th>
                   <th className="pb-3 font-medium text-right">Days Left</th>
                   <th className="pb-3 font-medium text-right">Status</th>
@@ -224,8 +283,8 @@ export const AdminBilling = ({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredSubscriptions.map(sub => {
-                  const isUrgent = sub.daysLeft <= 3 && sub.daysLeft >= 0;
-                  const isExpired = sub.daysLeft < 0;
+                  const isUrgent = sub.isPaidTier && sub.daysLeft <= 3 && sub.daysLeft >= 0;
+                  const isExpired = sub.isPaidTier && sub.daysLeft < 0;
 
                   return (
                     <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors">
@@ -234,24 +293,55 @@ export const AdminBilling = ({
                           <div className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center font-bold text-white text-[11px] overflow-hidden">
                             {sub.avatar_url ? <img src={sub.avatar_url} alt="" className="w-full h-full object-cover" /> : (sub.stage_name || sub.full_name || 'A')[0]}
                           </div>
-                          <span>{sub.stage_name || sub.full_name}</span>
+                          <div>
+                            <span className="block text-white">{sub.stage_name || sub.full_name}</span>
+                            {sub.email && <span className="block text-[11px] text-[#737373]">{sub.email}</span>}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3">
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-white/80 text-[11px] font-medium">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                          sub.isPaidTier ? 'bg-[#A855F7]/15 text-[#A855F7] border border-[#A855F7]/30' : 'bg-white/5 text-white/60'
+                        }`}>
                           {sub.artist_tier || 'Free'}
                         </span>
+                      </td>
+                      <td className="py-3">
+                        {sub.hasDashboardAccess ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] text-[11px] font-medium">
+                            <CheckCircle2 size={11} />
+                            Granted (Active)
+                          </span>
+                        ) : sub.accessStatus === 'expired' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 text-white/50 text-[11px] font-medium">
+                            <Clock size={11} />
+                            Expired
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EF4444]/10 border border-[#EF4444]/25 text-[#EF4444] text-[11px] font-medium">
+                            <XCircle size={11} />
+                            Not Granted (Free / Unpaid)
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-[#737373] text-[12px]">
                         {sub.subscription_ends ? format(new Date(sub.subscription_ends), 'MMM dd, yyyy') : 'No expiry'}
                       </td>
                       <td className="py-3 text-right font-mono">
-                        <span className={isUrgent ? 'text-[#EF4444] font-bold' : isExpired ? 'text-white/40' : 'text-[#22C55E]'}>
-                          {isExpired ? `-${Math.abs(sub.daysLeft)}d` : `${sub.daysLeft}d`}
-                        </span>
+                        {!sub.isPaidTier ? (
+                          <span className="text-[#737373]">—</span>
+                        ) : (
+                          <span className={isUrgent ? 'text-[#EF4444] font-bold' : isExpired ? 'text-white/40' : 'text-[#22C55E]'}>
+                            {isExpired ? `-${Math.abs(sub.daysLeft)}d` : `${sub.daysLeft}d`}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-right">
-                        {sub.isChurned ? (
+                        {sub.accessStatus === 'not_granted_unpaid' ? (
+                          <span className="px-2 py-0.5 rounded bg-white/5 text-[#737373] text-[11px] font-medium uppercase">
+                            Unpaid
+                          </span>
+                        ) : sub.isChurned ? (
                           <span className="px-2 py-0.5 rounded bg-[#EF4444]/15 text-[#EF4444] text-[11px] font-medium uppercase">
                             Churned
                           </span>
@@ -270,13 +360,25 @@ export const AdminBilling = ({
                         )}
                       </td>
                       <td className="py-3 text-right">
-                        <button
-                          onClick={() => handleSendRenewalNotification(sub)}
-                          disabled={notifyingId === sub.id}
-                          className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white/80 rounded-[8px] text-[11px] font-medium transition-colors"
-                        >
-                          {notifyingId === sub.id ? '...' : 'Remind'}
-                        </button>
+                        {sub.isPaidTier ? (
+                          <button
+                            onClick={() => handleSendRenewalNotification(sub)}
+                            disabled={notifyingId === sub.id}
+                            className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white/80 rounded-[8px] text-[11px] font-medium transition-colors"
+                          >
+                            {notifyingId === sub.id ? '...' : 'Remind'}
+                          </button>
+                        ) : sub.subscription_ends ? (
+                          <button
+                            onClick={() => handleClearStaleExpiry(sub)}
+                            disabled={cleaningId === sub.id}
+                            title="Clear leftover expiry date from failed payment attempt"
+                            className="px-2 py-1 bg-[#EF4444]/10 hover:bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 rounded-[8px] text-[11px] font-medium transition-colors inline-flex items-center gap-1"
+                          >
+                            <Trash2 size={11} />
+                            {cleaningId === sub.id ? 'Clearing...' : 'Clear Date'}
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   );

@@ -629,12 +629,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       
       // 30-second preview logic - ONLY for songs on sale and NOT purchased
-      const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
       const hasActiveSub = Boolean(userProfile && (
-        (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
-        (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
-        (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
-        (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+        (userProfile.subscription_tier && userProfile.subscription_tier.toLowerCase() !== "free" && userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+        (userProfile.artist_tier && userProfile.artist_tier.toLowerCase() !== "free" && userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date())
       ));
       
       const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id)) || hasActiveSub;
@@ -1006,12 +1003,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (adPlaying) return;
       
       // Respect preview limit
-      const tier = (userProfile?.subscription_tier || 'free').toLowerCase();
       const hasActiveSub = Boolean(userProfile && (
-        (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
-        (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
-        (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
-        (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+        (userProfile.subscription_tier && userProfile.subscription_tier.toLowerCase() !== "free" && userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+        (userProfile.artist_tier && userProfile.artist_tier.toLowerCase() !== "free" && userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date())
       ));
       
       const isPurchasedGlobally = currentSong?.is_purchased || (currentSong && purchasedIds.has(currentSong.id)) || hasActiveSub;

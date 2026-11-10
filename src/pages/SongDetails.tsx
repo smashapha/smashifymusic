@@ -216,10 +216,8 @@ const SongDetails: React.FC = () => {
 
   // Check if user has active subscription or has purchased this song
   const hasActiveSubscription = Boolean(userProfile && (
-    (userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
-    (userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date()) ||
-    (userProfile.artist_tier && userProfile.artist_tier !== "Free" && (!userProfile.subscription_ends || new Date(userProfile.subscription_ends) > new Date())) ||
-    (userProfile.subscription_tier && userProfile.subscription_tier !== "Free" && (!userProfile.subscription_expires_at || new Date(userProfile.subscription_expires_at) > new Date()))
+    (userProfile.subscription_tier && userProfile.subscription_tier.toLowerCase() !== "free" && userProfile.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date()) ||
+    (userProfile.artist_tier && userProfile.artist_tier.toLowerCase() !== "free" && userProfile.subscription_ends && new Date(userProfile.subscription_ends) > new Date())
   ));
 
   const isPurchased = song ? Boolean(

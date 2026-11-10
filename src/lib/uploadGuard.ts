@@ -41,12 +41,16 @@ export async function checkCanUpload(artistId: string, fileSize?: number): Promi
     let daysRemaining: number | null = null;
     let isExpired = false;
     
-    if (!isFree && profile.subscription_ends) {
-      const endsDate = new Date(profile.subscription_ends);
-      const now = new Date();
-      daysRemaining = Math.max(0, Math.ceil((endsDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-      if (endsDate < now) {
+    if (!isFree) {
+      if (!profile.subscription_ends) {
         isExpired = true;
+      } else {
+        const endsDate = new Date(profile.subscription_ends);
+        const now = new Date();
+        daysRemaining = Math.max(0, Math.ceil((endsDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+        if (endsDate < now) {
+          isExpired = true;
+        }
       }
     }
 

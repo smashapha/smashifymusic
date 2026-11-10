@@ -135,7 +135,8 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
         setProfile(data.profile || {});
         setSongs(data.songs || []);
         setAlbums(data.albums || []);
@@ -235,8 +236,21 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
         body: JSON.stringify({ action, payload })
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Action failed');
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Fallback if non-JSON body returned
+      }
+
+      if (!res.ok) {
+        let msg = data.error;
+        if (!msg && text) {
+          msg = text.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+        }
+        throw new Error(msg || `Server error (${res.status})`);
+      }
       return data;
     } catch (err: any) {
       console.error('Action error:', err);

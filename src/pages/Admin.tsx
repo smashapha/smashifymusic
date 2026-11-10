@@ -411,8 +411,8 @@ const Admin = () => {
         supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', true),
         supabase.from('songs').select('*', { count: 'exact', head: true }).eq('approved', false),
-        supabase.from('transactions').select('platform_fee, type, created_at, net_amount').eq('status', 'completed'),
-        supabase.from('transactions').select('id, type, platform_fee, created_at, net_amount, profiles:artist_id(full_name, stage_name)').eq('status', 'completed').order('created_at', { ascending: false }).limit(6),
+        supabase.from('transactions').select('platform_fee, type, created_at, net_amount, status').in('status', ['completed', 'successful', 'paid']),
+        supabase.from('transactions').select('id, type, platform_fee, created_at, net_amount, status, profiles:artist_id(full_name, stage_name)').in('status', ['completed', 'successful', 'paid']).order('created_at', { ascending: false }).limit(6),
       ]);
       const totalRev = (revenueData || []).reduce((a, t) => a + (t.platform_fee || 0), 0) || 0;
       
