@@ -1435,7 +1435,13 @@ async function startServer() {
   });
 
   // Admin User Control & Action Center
-  app.post('/api/admin/users/:id/control', async (req, res) => {
+  app.all('/api/admin/users/:id/control', async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    if (req.method !== 'POST') {
+      return res.status(200).json({ success: true });
+    }
     try {
       const user = await verifyUser(req);
       if (!user) return res.status(401).json({ error: 'Unauthorized' });

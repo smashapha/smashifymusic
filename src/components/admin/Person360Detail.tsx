@@ -4,7 +4,7 @@ import {
   Send, DollarSign, Activity, FileText, Ticket, Play, Pause, 
   Trash2, Edit3, UserCheck, UserX, Music, Disc, Wallet, 
   CreditCard, ExternalLink, Phone, MapPin, Sparkles, RefreshCw,
-  Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic
+  Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic, Loader2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
@@ -93,6 +93,7 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
     artistMonths: 6,
     listenerPassHours: 24
   });
+  const [submittingTier, setSubmittingTier] = useState(false);
 
   // Notification form
   const [notifForm, setNotifForm] = useState({
@@ -346,6 +347,8 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
   // Manage Artist Tier / Listener Pass
   const handleManageTier = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingTier) return;
+    setSubmittingTier(true);
     try {
       const isArtist = person.type === 'artist' || profile.user_type === 'artist' || !!(profile.stage_name) || tierForm.artistTier !== 'Free';
       if (isArtist) {
@@ -381,6 +384,8 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       if (onRefresh) onRefresh();
     } catch (err: any) {
       toast.error('Tier update failed: ' + err.message);
+    } finally {
+      setSubmittingTier(false);
     }
   };
 
@@ -1774,9 +1779,11 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-[10px] text-[13px]"
+                  disabled={submittingTier}
+                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white font-semibold rounded-[10px] text-[13px] flex items-center gap-2"
                 >
-                  Apply Tier
+                  {submittingTier && <Loader2 size={14} className="animate-spin" />}
+                  {submittingTier ? 'Applying...' : 'Apply Tier'}
                 </button>
               </div>
             </form>
