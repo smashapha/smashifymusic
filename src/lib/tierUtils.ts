@@ -111,20 +111,7 @@ export const getListenerLimits = (user: any) => {
 
 export const getArtistTier = (artist: any): ArtistTier => {
   if (!artist) return 'free';
-
-  const rawArtist = (artist.artist_tier || '').trim();
-  const rawSub = (artist.subscription_tier || '').trim();
-
-  const cleanArtist = rawArtist.toLowerCase().replace(/[\s-_]/g, '');
-  const cleanSub = rawSub.toLowerCase().replace(/[\s-_]/g, '');
-
-  let tier = 'free';
-  if (cleanArtist && cleanArtist !== 'free') {
-    tier = rawArtist;
-  } else if (cleanSub && cleanSub !== 'free') {
-    tier = rawSub;
-  }
-
+  let tier = artist.subscription_tier || artist.artist_tier || 'free';
   if (tier.toLowerCase().replace(/[\s-_]/g, '') !== 'free') {
     const expiresAt =
       artist.subscription_ends ||
@@ -140,7 +127,7 @@ export const getArtistTier = (artist: any): ArtistTier => {
 export const getTrackLimit = (tierOrArtist: string | any): number => {
   const tier = typeof tierOrArtist === 'string'
     ? tierOrArtist
-    : getArtistTier(tierOrArtist);
+    : (tierOrArtist?.artist_tier || tierOrArtist?.subscription_tier || 'Free');
   const extraSlots = typeof tierOrArtist === 'object'
     ? Number(tierOrArtist?.extra_track_slots || 0)
     : 0;

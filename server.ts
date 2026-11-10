@@ -23,8 +23,9 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 
-export const app = express();
-app.set("trust proxy", 1);
+async function startServer() {
+  const app = express();
+  app.set("trust proxy", 1);
   const PORT = 3000;
 
   console.log(`NODE_ENV is: ${process.env.NODE_ENV}`);
@@ -86,16 +87,6 @@ app.set("trust proxy", 1);
     message: { error: 'Too many login attempts. Please try again later.' }
   });
   app.use('/api/auth/', authLimiter);
-
-  // Normalize URL path if serverless proxy stripped /api prefix
-  app.use((req, res, next) => {
-    if (!req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.startsWith('/downloads')) {
-      if (req.url.startsWith('/admin') || req.url.startsWith('/check-email') || req.url.startsWith('/health') || req.url.startsWith('/pay') || req.url.startsWith('/functions') || req.url.startsWith('/user')) {
-        req.url = '/api' + req.url;
-      }
-    }
-    next();
-  });
 
   // Log all API requests
   app.use('/api', (req, res, next) => {
@@ -1559,239 +1550,79 @@ app.set("trust proxy", 1);
         }
 
         case 'set_artist_tier': {
-          const { tier, months = 6, extend = false, reason = '' } = payload || {};
-          
-          if (!tier) {
-            return res.status(400).json({ error: 'Tier parameter is required' });
-          }
-
-          // Normalize tier name
-          const rawTier = String(tier).trim();
-          const cleanTier = rawTier.toLowerCase().replace(/[\s-_]/g, '');
-          let normTier = 'Free';
-
-          if (cleanTier === 'risingstar') normTier = 'RisingStar';
-          else if (cleanTier === 'standard') normTier = 'Standard';
-          else if (cleanTier === 'elite') normTier = 'Elite';
-          else if (cleanTier === 'label') normTier = 'Label';
-          else if (cleanTier === 'free') normTier = 'Free';
-          else {
-            return res.status(400).json({ error: `Invalid artist tier: ${tier}` });
-          }
-
-          // Verify target user exists
-          const { data: targetProfile } = await supabaseAdmin.from('profiles').select('*').eq('id', id).maybeSingle();
-          const { data: targetUserProfile } = await supabaseAdmin.from('user_profiles').select('*').eq('id', id).maybeSingle();
-
-          if (!targetProfile && !targetUserProfile) {
-            return res.status(404).json({ error: 'Target user profile not found in database' });
+          const { tier, months = 6 } = payload || {};
+          const validTiers = ['Free', 'RisingStar', 'Standard', 'Elite'];
+          if (!validTiers.includes(tier)) {
+            return res.status(400).json({ error: 'Invalid artist tier' });
           }
 
           let endsDate: string | null = null;
-          const numMonths = Number(months);
-
-          if (normTier !== 'Free' && numMonths !== 0) {
-            let baseDate = new Date();
-            const existingExpiry = targetProfile?.subscription_ends || targetProfile?.tier_expires_at || targetProfile?.subscription_expires_at;
-            
-            if (extend && existingExpiry && new Date(existingExpiry) > new Date()) {
-              baseDate = new Date(existingExpiry);
-            }
-
-            if (numMonths === -1) {
-              baseDate.setFullYear(baseDate.getFullYear() + 10); // 10 years / Lifetime
+          if (tier !== 'Free') {
+            const ends = new Date();
+            if (months === -1) {
+              ends.setFullYear(ends.getFullYear() + 10); // Lifetime
             } else {
-              baseDate.setMonth(baseDate.getMonth() + (numMonths || 6));
+              ends.setMonth(ends.getMonth() + (Number(months) || 6));
             }
-            endsDate = baseDate.toISOString();
+            endsDate = ends.toISOString();
           }
 
-          // Synchronize profile database fields
-          const profileUpdates = {
-            artist_tier: normTier,
-            subscription_tier: normTier,
-            subscription_ends: endsDate,
-            tier_expires_at: endsDate,
-            subscription_expires_at: endsDate,
-            updated_at: new Date().toISOString()
-          };
+          await supabaseAdmin.from('profiles').update({
+            artist_tier: tier,
+            subscription_tier: tier,
+            subscription_ends: endsDate
+          }).eq('id', id);
 
-          const { error: pErr } = await supabaseAdmin.from('profiles').upsert({
-            id,
-            ...profileUpdates,
-            full_name: targetProfile?.full_name || targetUserProfile?.full_name || 'Artist',
-            stage_name: targetProfile?.stage_name || targetUserProfile?.stage_name || 'Artist'
-          }, { onConflict: 'id' });
-
-          if (pErr) {
-            console.error('[ADMIN TIER] Error updating profiles table:', pErr);
-            return res.status(500).json({ error: 'Failed to update artist profile record: ' + pErr.message });
-          }
-
-          if (targetUserProfile || targetProfile) {
-            await supabaseAdmin.from('user_profiles').update({
-              subscription_tier: normTier,
-              subscription_ends: endsDate,
-              subscription_expires_at: endsDate,
-              updated_at: new Date().toISOString()
-            }).eq('id', id).catch(() => {});
-          }
-
-          // Insert Audit Log
-          await supabaseAdmin.from('activity_log').insert({
-            profile_id: id,
-            actor_type: 'admin',
-            event: 'artist_tier_manually_updated',
-            meta: {
-              admin_id: user.id,
-              target_user_id: id,
-              action: 'set_artist_tier',
-              previous_tier: targetProfile?.artist_tier || 'Free',
-              previous_expiry: targetProfile?.subscription_ends || null,
-              new_tier: normTier,
-              new_expiry: endsDate,
-              months: numMonths,
-              extend: !!extend,
-              reason: reason || 'Admin manual tier modification'
-            }
-          }).catch((err: any) => console.warn('[ADMIN TIER] Activity log failed:', err));
-
-          // Notification to user
           await supabaseAdmin.from('notifications').insert({
             profile_id: id,
             user_type: 'artist',
             type: 'system_alert',
-            message: normTier === 'Free'
+            message: tier === 'Free'
               ? 'Your artist subscription tier has been reset to Free.'
-              : `🌟 You have been granted the ${normTier} Tier until ${endsDate ? new Date(endsDate).toLocaleDateString() : 'Lifetime'}! Enjoy full distribution perks.`,
+              : `🌟 You have been upgraded to the ${tier} Tier! Enjoy exclusive distribution features and studio perks.`,
             link: '/artist-hub'
           }).catch(() => {});
 
-          return res.json({
-            success: true,
-            artist_tier: normTier,
-            subscription_tier: normTier,
-            subscription_ends: endsDate,
-            tier_expires_at: endsDate,
-            subscription_expires_at: endsDate
-          });
+          return res.json({ success: true, artist_tier: tier, subscription_ends: endsDate });
         }
 
-        case 'set_listener_tier':
         case 'manage_daily_pass': {
-          const { tier, hours, months, extend = false, reason = '' } = payload || {};
-          
-          // Verify target user exists
-          const { data: targetProfile } = await supabaseAdmin.from('profiles').select('*').eq('id', id).maybeSingle();
-          const { data: targetUserProfile } = await supabaseAdmin.from('user_profiles').select('*').eq('id', id).maybeSingle();
-
-          if (!targetProfile && !targetUserProfile) {
-            return res.status(404).json({ error: 'Target user profile not found in database' });
-          }
-
-          let numHours = Number(hours);
-          let numMonths = Number(months);
-
-          // Handle legacy manage_daily_pass where payload has hours
-          if (isNaN(numHours) && isNaN(numMonths) && !tier) {
-            numHours = 24;
-          }
-
-          let normTier = 'Premium';
-          if (tier) {
-            const raw = String(tier).trim().toLowerCase();
-            if (raw === 'free') normTier = 'Free';
-            else if (raw.includes('daily')) normTier = 'Daily Pass';
-            else if (raw.includes('weekly')) normTier = 'Weekly Pass';
-            else if (raw.includes('monthly')) normTier = 'Monthly Pass';
-            else if (raw.includes('unlimited') || raw.includes('vip')) normTier = 'Unlimited Premium';
-            else normTier = String(tier).trim();
-          } else {
-            if (numHours <= 0 || numMonths === 0) normTier = 'Free';
-            else if (numHours >= 720 || numMonths >= 1) normTier = 'Monthly Pass';
-            else if (numHours >= 168) normTier = 'Weekly Pass';
-            else normTier = 'Daily Pass';
-          }
+          const { hours = 24 } = payload || {};
+          const numHours = Number(hours);
 
           let expiresAt: string | null = null;
+          let tierName = 'Free';
 
-          if (normTier !== 'Free' && numHours !== 0 && numMonths !== 0) {
-            let baseDate = new Date();
-            const existingExpiry = targetUserProfile?.subscription_expires_at || targetUserProfile?.daily_pass_expires_at || targetProfile?.subscription_expires_at;
-
-            if (extend && existingExpiry && new Date(existingExpiry) > new Date()) {
-              baseDate = new Date(existingExpiry);
-            }
-
-            if (numHours === -1 || numMonths === -1) {
-              baseDate.setFullYear(baseDate.getFullYear() + 10); // Permanent
-            } else if (!isNaN(numMonths) && numMonths > 0) {
-              baseDate.setMonth(baseDate.getMonth() + numMonths);
-            } else {
-              const addHours = !isNaN(numHours) && numHours > 0 ? numHours : 24;
-              baseDate.setTime(baseDate.getTime() + addHours * 60 * 60 * 1000);
-            }
-            expiresAt = baseDate.toISOString();
+          if (numHours > 0) {
+            const exp = new Date(Date.now() + numHours * 60 * 60 * 1000);
+            expiresAt = exp.toISOString();
+            tierName = 'Premium';
           }
 
-          const listenerUpdates = {
-            subscription_tier: normTier,
-            daily_pass_expires_at: expiresAt,
-            subscription_expires_at: expiresAt,
-            subscription_ends: expiresAt,
-            updated_at: new Date().toISOString()
-          };
+          await Promise.all([
+            supabaseAdmin.from('user_profiles').update({
+              daily_pass_expires_at: expiresAt,
+              subscription_ends: expiresAt,
+              subscription_tier: tierName
+            }).eq('id', id),
+            supabaseAdmin.from('profiles').update({
+              daily_pass_expires_at: expiresAt,
+              subscription_ends: expiresAt,
+              subscription_tier: tierName
+            }).eq('id', id)
+          ]);
 
-          if (targetUserProfile) {
-            await supabaseAdmin.from('user_profiles').update(listenerUpdates).eq('id', id);
-          } else {
-            await supabaseAdmin.from('user_profiles').upsert({
-              id,
-              ...listenerUpdates,
-              full_name: targetProfile?.full_name || 'Listener'
-            }, { onConflict: 'id' });
-          }
-
-          if (targetProfile) {
-            await supabaseAdmin.from('profiles').update(listenerUpdates).eq('id', id).catch(() => {});
-          }
-
-          // Audit Log
-          await supabaseAdmin.from('activity_log').insert({
-            profile_id: id,
-            actor_type: 'admin',
-            event: 'listener_tier_manually_updated',
-            meta: {
-              admin_id: user.id,
-              target_user_id: id,
-              action: action || 'set_listener_tier',
-              previous_tier: targetUserProfile?.subscription_tier || 'Free',
-              previous_expiry: targetUserProfile?.subscription_expires_at || null,
-              new_tier: normTier,
-              new_expiry: expiresAt,
-              extend: !!extend,
-              reason: reason || 'Admin manual listener tier modification'
-            }
-          }).catch((err: any) => console.warn('[ADMIN TIER] Activity log failed:', err));
-
-          // Notification to listener
-          if (normTier !== 'Free') {
+          if (numHours > 0) {
             await supabaseAdmin.from('notifications').insert({
               profile_id: id,
               user_type: 'listener',
               type: 'system_alert',
-              message: `🎧 You have been granted ${normTier} access valid until ${expiresAt ? new Date(expiresAt).toLocaleDateString() : 'Permanent'}! Enjoy ad-free lossless streaming.`,
+              message: `🎧 You have been granted ${numHours >= 24 ? Math.round(numHours/24) + ' day(s)' : numHours + ' hours'} of Unlimited Listener Pass! Enjoy ad-free lossless streaming.`,
               link: '/discover'
             }).catch(() => {});
           }
 
-          return res.json({
-            success: true,
-            subscription_tier: normTier,
-            daily_pass_expires_at: expiresAt,
-            subscription_expires_at: expiresAt,
-            subscription_ends: expiresAt
-          });
+          return res.json({ success: true, daily_pass_expires_at: expiresAt, subscription_tier: tierName });
         }
 
         case 'moderate_song': {
@@ -2024,9 +1855,7 @@ app.set("trust proxy", 1);
   });
 
   // --- VITE MIDDLEWARE OR STATIC SERVING ---
-  async function startServer() {
-    const PORT = Number(process.env.PORT) || 3000;
-    const distPath = path.resolve(process.cwd(), 'dist');
+  const distPath = path.resolve(process.cwd(), 'dist');
   const indexHtmlExists = fs.existsSync(path.join(distPath, 'index.html'));
 
   if (process.env.NODE_ENV === 'production') {
@@ -2098,8 +1927,4 @@ app.set("trust proxy", 1);
   });
 }
 
-if (process.env.VERCEL !== '1') {
-  startServer();
-}
-
-export default app;
+startServer();
