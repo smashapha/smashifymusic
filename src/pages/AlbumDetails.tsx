@@ -1,14 +1,15 @@
 import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, HelpCircle } from 'lucide-react';
+import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, HelpCircle, ShoppingCart, CheckCircle, Tag, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
 import { musicService } from '../services/musicService';
 import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song, Album, Artist } from '../types';
-import { getEffectivePrice, isOnSale } from '../lib/pricing';
+import { getEffectivePrice, isOnSale, getEffectiveAlbumPrice, isAlbumOnSale, getAlbumSaleTimeRemaining } from '../lib/pricing';
+import { purchaseAlbum } from '../lib/paychangu';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
 import { copyToClipboard } from '../lib/shareUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
@@ -28,6 +29,7 @@ const AlbumDetails: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [buyingAlbum, setBuyingAlbum] = useState(false);
 
   useEffect(() => {
     if (id) fetchAlbum();
@@ -68,12 +70,10 @@ const AlbumDetails: React.FC = () => {
           url: s.audio_url
         }));
 
-        // Enrich with purchase statuses
         const enrichedSongs = await musicService.enrichSongsWithPurchases(formatted as any, userProfile?.id);
         setSongs(enrichedSongs);
       }
 
-      // Check if user has saved this album in their playlists
       if (userProfile?.id && albumData) {
         const { data: userSaves, error: saveError } = await supabase
           .from('playlists')
@@ -94,6 +94,28 @@ const AlbumDetails: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleBuyAlbum = async () => {
+    if (!album) return;
+    if (!userProfile) {
+      toast.error('Please log in or sign up to purchase this album');
+      navigate('/auth/listener');
+      return;
+    }
+    setBuyingAlbum(true);
+    try {
+      await purchaseAlbum({ album, user: userProfile });
+    } catch (err: any) {
+      console.error('Album purchase failed:', err);
+    } finally {
+      setBuyingAlbum(false);
+    }
+  };
+
+  const allTracksPurchased = songs.length > 0 && songs.every(s => s.is_purchased || (purchasedIds && purchasedIds.has(s.id)));
+  const albumPrice = album ? getEffectiveAlbumPrice(album) : 0;
+  const onSale = album ? isAlbumOnSale(album) : false;
+  const saleTime = album ? getAlbumSaleTimeRemaining(album) : null;
 
   const formatDuration = (val: any) => {
     if (!val) return "3:15";
@@ -203,9 +225,23 @@ const AlbumDetails: React.FC = () => {
 
             {/* Title / Meta */}
             <div className="flex-1">
-              <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#00A3FF] bg-[#0084D6]/10 px-2.5 py-1 rounded-full border border-[#00A3FF]/20">
-                Album
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-display font-extrabold uppercase tracking-[0.2em] text-[11px] text-[#00A3FF] bg-[#0084D6]/10 px-2.5 py-1 rounded-full border border-[#00A3FF]/20">
+                  Album
+                </span>
+                {onSale && (
+                  <span className="bg-[#EF4444] text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow flex items-center gap-1 animate-pulse">
+                    <Tag size={12} />
+                    -{album.discount_percent}% PROMOTION
+                  </span>
+                )}
+                {allTracksPurchased && (
+                  <span className="bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30 text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1">
+                    <CheckCircle size={12} />
+                    ALBUM OWNED
+                  </span>
+                )}
+              </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mt-4 mb-3 leading-tight line-clamp-2">
                 {album.title}
               </h1>
@@ -230,6 +266,12 @@ const AlbumDetails: React.FC = () => {
                 <span className="text-white/80 font-bold">{songs.length} songs, {durationText}</span>
                 <span className="text-white/30">•</span>
                 <span className="text-text-muted">{totalPlays.toLocaleString()} total streams</span>
+                {saleTime && (
+                  <>
+                    <span className="text-white/30">•</span>
+                    <span className="text-[#EAB308] font-bold">⏰ Promo ends in {saleTime}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -238,7 +280,7 @@ const AlbumDetails: React.FC = () => {
 
       {/* Album Actions Row */}
       <div className={`${PAGE_CONTAINER} ${PAGE_BOTTOM_PADDING} py-8`}>
-        <div className={`flex items-center gap-6 ${SECTION_SPACING}`}>
+        <div className={`flex flex-wrap items-center gap-4 ${SECTION_SPACING}`}>
           <button 
             onClick={handlePlayAll} 
             className="h-11 px-6 bg-[#0084D6] hover:bg-[#0084D6]/90 text-white rounded-[10px] flex items-center justify-center gap-2 font-semibold text-sm shadow-md transition-all"
@@ -246,6 +288,27 @@ const AlbumDetails: React.FC = () => {
           >
             <Play fill="white" size={18} /> Play Album
           </button>
+
+          {!allTracksPurchased && album.is_for_sale !== false && (
+            <button
+              onClick={handleBuyAlbum}
+              disabled={buyingAlbum}
+              className="h-11 px-6 bg-[#22C55E] hover:bg-[#16A34A] active:scale-95 text-black font-extrabold text-sm rounded-[10px] flex items-center justify-center gap-2 shadow-lg shadow-[#22C55E]/20 transition-all disabled:opacity-50"
+              id="buy_full_album"
+              title={`Buy full album for MK ${albumPrice.toLocaleString()}`}
+            >
+              <ShoppingCart size={18} />
+              <span>
+                Buy Full Album {onSale && album.price ? `(Was MK ${album.price} -> MK ${albumPrice.toLocaleString()})` : `(MK ${albumPrice.toLocaleString()})`}
+              </span>
+            </button>
+          )}
+
+          {allTracksPurchased && (
+            <div className="h-11 px-5 bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] rounded-[10px] flex items-center gap-2 font-bold text-sm">
+              <CheckCircle size={18} /> Purchased & Unlocked
+            </div>
+          )}
           
           <button 
             onClick={async () => {

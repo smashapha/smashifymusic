@@ -4,6 +4,20 @@ export interface Album {
   title: string;
   cover_url: string;
   release_year: number;
+  price?: number;
+  is_for_sale?: boolean;
+  discount_percent?: number;
+  sale_ends_at?: string;
+  description?: string;
+  genre?: string;
+  sales?: number;
+  created_at?: string;
+  profiles?: { 
+    full_name: string; 
+    stage_name?: string;
+    avatar_url: string; 
+    verified: boolean; 
+  };
 }
 
 export interface Song {

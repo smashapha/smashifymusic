@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Song, UserProfile } from '../types';
+import { Song, Album, UserProfile } from '../types';
 import toast from 'react-hot-toast';
 
 export type PaymentType = 
@@ -10,7 +10,8 @@ export type PaymentType =
   | 'artist_rising_star' 
   | 'artist_standard' 
   | 'artist_elite' 
-  | 'track_purchase' 
+  | 'track_purchase'
+  | 'album_purchase' 
   | 'tip' 
   | 'fan_subscription' 
   | 'artist_ad_campaign' 
@@ -147,7 +148,7 @@ export async function initiatePayment(params: InitiatePaymentParams) {
   }
 }
 
-import { getEffectivePrice } from './pricing';
+import { getEffectivePrice, getEffectiveAlbumPrice } from './pricing';
 
 /**
  * Buy a specific track
@@ -164,6 +165,26 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
       userId: user.id,
       songId: song.id,
       artistId: song.artist_id
+    }
+  });
+}
+
+/**
+ * Buy a full album at once
+ */
+export async function purchaseAlbum({ album, user }: { album: Album; user: UserProfile }) {
+  const price = getEffectiveAlbumPrice(album) || 1500;
+  return initiatePayment({
+    amount: price,
+    email: user.email,
+    first_name: user.full_name?.split(' ')[0] || 'Fan',
+    last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
+    type: 'album_purchase',
+    return_url: `${APP_URL}/purchase-success?albumId=${album.id}&type=album_purchase`,
+    meta: {
+      userId: user.id,
+      albumId: album.id,
+      artistId: album.artist_id
     }
   });
 }

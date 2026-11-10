@@ -326,6 +326,32 @@ async function startServer() {
         if (meta.artistId && meta.artistId !== songRow.artist_id) {
           meta.artistId = songRow.artist_id;
         }
+      } else if (paymentType === 'album_purchase') {
+        if (!meta?.albumId) {
+          return res.status(400).json({ error: 'Missing albumId for album purchase' });
+        }
+        const { data: albumRow, error: albumErr } = await supabaseAdmin
+          .from('albums')
+          .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+          .eq('id', meta.albumId)
+          .maybeSingle();
+
+        if (albumErr || !albumRow || !albumRow.is_for_sale) {
+          return res.status(400).json({ error: 'This album is not available for purchase' });
+        }
+
+        const pct = albumRow.discount_percent || 0;
+        const saleExpired = albumRow.sale_ends_at && new Date(albumRow.sale_ends_at).getTime() < Date.now();
+        validatedAmount = (pct > 0 && !saleExpired)
+          ? Math.max(Math.round(albumRow.price * (1 - pct / 100)), 1)
+          : albumRow.price;
+
+        if (meta.artistId && meta.artistId !== albumRow.artist_id) {
+          meta.artistId = albumRow.artist_id;
+        }
+        if (!meta.artistId && albumRow.artist_id) {
+          meta.artistId = albumRow.artist_id;
+        }
       } else if (paymentType === 'fan_subscription') {
         if (!meta?.artistId) {
           return res.status(400).json({ error: 'Missing artistId for fan subscription' });
@@ -349,6 +375,7 @@ async function startServer() {
 
       const descriptions: Record<string, string> = {
         'track_purchase': `Purchase of music track on Smashify`,
+        'album_purchase': `Purchase of full music album on Smashify`,
         'tip': `Tip to artist on Smashify`,
         'fan_subscription': `Monthly fan subscription on Smashify`,
         'listener_daily_pass': `Smashify Premium Daily Pass`,
@@ -371,7 +398,7 @@ async function startServer() {
          }
       } else if (paymentType === 'tip') {
          dbType = 'donation';
-      } else if (paymentType === 'track_purchase') {
+      } else if (paymentType === 'track_purchase' || paymentType === 'album_purchase') {
          dbType = 'sale';
       }
 
@@ -406,7 +433,7 @@ async function startServer() {
       } else if (paymentType === 'tip') {
         platformFee = Math.round(validatedAmount * 0.05);
         netAmount = validatedAmount - platformFee;
-      } else if (paymentType === 'track_purchase') {
+      } else if (paymentType === 'track_purchase' || paymentType === 'album_purchase') {
         platformFee = Math.round(validatedAmount * 0.20) + 50;
         netAmount = Math.max(validatedAmount - platformFee, 0);
       } else if (paymentType === 'fan_subscription') {
@@ -521,6 +548,7 @@ async function startServer() {
     const userId = metadata.userId || dbTx.fan_id;
     const artistId = metadata.artistId || dbTx.artist_id;
     const songId = metadata.songId;
+    const albumId = metadata.albumId;
     const anonymous = metadata.anonymous;
     const plays = metadata.plays;
 
@@ -528,7 +556,9 @@ async function startServer() {
     const rawType = (metadata.payment_type || dbTx.type || (dbTx.description || '')).toUpperCase();
     let type = 'OTHER';
 
-    if (songId || rawType.includes('TRACK') || rawType.includes('PURCHASE') || rawType.includes('SONG') || rawType.includes('SALE')) {
+    if (rawType.includes('ALBUM') || albumId) {
+      type = 'ALBUM_PURCHASE';
+    } else if (songId || rawType.includes('TRACK') || rawType.includes('PURCHASE') || rawType.includes('SONG') || rawType.includes('SALE')) {
       type = 'TRACK_PURCHASE';
     } else if (rawType.includes('TIP') || rawType.includes('DONATION')) {
       type = 'TIP';
@@ -573,7 +603,7 @@ async function startServer() {
     } else if (type === 'TIP') {
       pFee = Math.round(txAmount * 0.05);
       artistNet = txAmount - pFee;
-    } else if (type === 'TRACK_PURCHASE') {
+    } else if (type === 'TRACK_PURCHASE' || type === 'ALBUM_PURCHASE') {
       const SALE_FLAT_FEE = 50;
       let platformFeeRate = 0.20;
       if (artistId) {
@@ -641,10 +671,71 @@ async function startServer() {
       }
     }
 
-    console.log(`[FULFILL] Fulfilling ${type} for user: ${userId}, artist: ${artistId}, song: ${songId}`);
+    console.log(`[FULFILL] Fulfilling ${type} for user: ${userId}, artist: ${artistId}, song: ${songId}, album: ${albumId}`);
 
     // Fulfill Specific Privileges
     switch (type) {
+      case 'ALBUM_PURCHASE':
+        if (userId && albumId) {
+          const { data: albumSongs } = await supabaseAdmin
+            .from('songs')
+            .select('id')
+            .eq('album_id', albumId);
+
+          const songIds = (albumSongs || []).map((s: any) => s.id);
+
+          for (const sId of songIds) {
+            const purchaseRecord = {
+              fan_id: userId,
+              song_id: sId,
+              transaction_id: dbTx.id,
+              amount: Math.round(txAmount / (songIds.length || 1)),
+              status: 'completed',
+              purchased_at: new Date().toISOString()
+            };
+
+            let fpSaved = false;
+            if (customClient) {
+              const { data: existing } = await customClient.from('fan_purchases').select('id').eq('fan_id', userId).eq('song_id', sId).maybeSingle();
+              if (!existing) {
+                const { error: cErr } = await customClient.from('fan_purchases').insert(purchaseRecord);
+                if (!cErr) fpSaved = true;
+              } else {
+                fpSaved = true;
+              }
+            }
+            if (!fpSaved && supabaseAdmin) {
+              const { data: existing } = await supabaseAdmin.from('fan_purchases').select('id').eq('fan_id', userId).eq('song_id', sId).maybeSingle();
+              if (!existing) {
+                await supabaseAdmin.from('fan_purchases').insert(purchaseRecord).catch(() => {});
+              }
+            }
+
+            await supabaseAdmin.rpc('increment_song_sales', { s_id: sId }).catch(() => {});
+          }
+
+          // Increment album sales
+          const { data: currentAlb } = await supabaseAdmin.from('albums').select('sales').eq('id', albumId).maybeSingle();
+          await supabaseAdmin.from('albums').update({ sales: ((currentAlb?.sales || 0) + 1) }).eq('id', albumId).catch(() => {});
+
+          if (artistId) {
+            await supabaseAdmin.rpc('increment_wallet_balance', { p_id: artistId, amount: artistNet })
+              .catch(async () => {
+                const { data: p } = await supabaseAdmin.from('profiles').select('wallet_balance').eq('id', artistId).maybeSingle();
+                await supabaseAdmin.from('profiles').update({ wallet_balance: (p?.wallet_balance || 0) + artistNet }).eq('id', artistId);
+              });
+
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: artistId,
+              user_type: 'artist',
+              type: 'album_sold',
+              message: `You sold a full album! MWK ${txAmount.toLocaleString()} earned. 💿🔥`,
+              link: '/artist-hub#dashboard'
+            }).catch(() => {});
+          }
+        }
+        break;
+
       case 'TRACK_PURCHASE':
         if (userId && songId) {
           const purchaseRecord = { 

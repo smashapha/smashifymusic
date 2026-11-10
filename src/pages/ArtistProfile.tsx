@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../context/AuthGateContext';
 import { Song, UserProfile, Album } from '../types';
 import SongCard from '../components/common/SongCard';
+import AlbumCard from '../components/common/AlbumCard';
 import UpcomingSongCard from '../components/common/UpcomingSongCard';
 import Avatar from '../components/common/Avatar';
 import SupportArtistModal from '../components/common/SupportArtistModal';
@@ -775,25 +776,7 @@ const ArtistProfile: React.FC = () => {
             ) : (
               <div className={GRID_ARTIST_CARDS}>
                 {albums.map(al => (
-                  <div
-                    key={al.id}
-                    className="group cursor-pointer"
-                    onClick={() => navigate(`/album/${al.id}`)}
-                  >
-                    <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg">
-                      <img
-                        src={optimizeImage(al.cover_url, 300, 300)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy" decoding="async" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#0084D6] rounded-full flex items-center justify-center shadow-lg">
-                          <Play size={18} fill="white" className="text-white ml-0.5" />
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-white text-sm font-bold truncate">{al.title}</p>
-                    <p className="text-white/40 text-xs mt-0.5">{al.release_year} · Album</p>
-                  </div>
+                  <AlbumCard key={al.id} album={al} />
                 ))}
               </div>
             )}

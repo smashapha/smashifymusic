@@ -7,6 +7,7 @@ import { Song, Artist, Album } from '../types';
 import SongCard from '../components/common/SongCard';
 import UpcomingSongCard from '../components/common/UpcomingSongCard';
 import FollowedArtistCard from '../components/common/FollowedArtistCard';
+import AlbumCard from '../components/common/AlbumCard';
 import Avatar from '../components/common/Avatar';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -883,17 +884,7 @@ const Home: React.FC = () => {
       >
          <div className="flex overflow-x-auto gap-4 pb-6 snap-x no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             {albums.length > 0 ? albums.map((al: any) => (
-               <div key={al.id} className="min-w-[140px] md:min-w-[170px] snap-start group cursor-pointer flex flex-col" onClick={() => navigate(`/album/${al.id}`)}>
-                  <div className="aspect-square rounded-[12px] overflow-hidden mb-3 relative shadow-sm border border-white/8 bg-[#1A1A1A]">
-                     <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
-                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <h4 className="font-semibold text-white text-[14px] truncate group-hover:text-[#00A3FF] transition-colors mb-0.5">{al.title}</h4>
-                  <div className="flex items-center gap-1.5">
-                     <span className="text-[11px] text-[#B0B0B0]">{al.release_year ? `${al.release_year} • ` : ''}Album</span>
-                  </div>
-                  <p className="text-[12px] text-[#B0B0B0] truncate mt-0.5">{al.profiles?.stage_name || al.profiles?.full_name}</p>
-               </div>
+               <AlbumCard key={al.id} album={al} />
             )) : (
               <div className="w-full py-8 text-center text-[13px] text-[#B0B0B0] bg-[#1A1A1A] border border-white/8 rounded-[16px]">No albums yet</div>
             )}

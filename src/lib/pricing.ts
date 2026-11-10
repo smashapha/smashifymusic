@@ -35,3 +35,31 @@ export function getSaleTimeRemaining(song: Pick<Song, 'discount_percent' | 'sale
   const mins = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
   return `${hours}h ${mins}m left`;
 }
+
+/**
+ * Returns effective price for an album considering active promotions.
+ */
+export function getEffectiveAlbumPrice(album: { price?: number; discount_percent?: number; sale_ends_at?: string }): number {
+  if (!album || !album.price) return album?.price || 0;
+
+  const pct = album.discount_percent || 0;
+  if (pct <= 0) return album.price;
+
+  if (album.sale_ends_at && new Date(album.sale_ends_at).getTime() < Date.now()) {
+    return album.price;
+  }
+
+  const discounted = Math.round(album.price * (1 - pct / 100));
+  return Math.max(discounted, 1);
+}
+
+/** True if the album currently has an active, non-expired discount. */
+export function isAlbumOnSale(album: { price?: number; discount_percent?: number; sale_ends_at?: string }): boolean {
+  return getEffectiveAlbumPrice(album) < (album?.price || 0);
+}
+
+/** Time remaining for album promotion. */
+export function getAlbumSaleTimeRemaining(album: { discount_percent?: number; sale_ends_at?: string }): string | null {
+  return getSaleTimeRemaining(album as any);
+}
+

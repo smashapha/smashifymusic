@@ -1856,10 +1856,164 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
     userProfile?.extra_track_slots,
   ]);
 
+  const [promoModalAlbum, setPromoModalAlbum] = useState<any>(null);
+  const [promoPercent, setPromoPercent] = useState(20);
+  const [promoEndsAt, setPromoEndsAt] = useState("");
+
+  const [editPriceAlbum, setEditPriceAlbum] = useState<any>(null);
+  const [editPrice, setEditPrice] = useState(2500);
+  const [editForSale, setEditForSale] = useState(true);
+
+  const openAlbumPromo = (al: any) => {
+    setPromoModalAlbum(al);
+    setPromoPercent(al.discount_percent || 20);
+    setPromoEndsAt(al.sale_ends_at ? al.sale_ends_at.slice(0, 16) : '');
+  };
+
+  const saveAlbumPromo = async () => {
+    if (!promoModalAlbum) return;
+    if (!promoEndsAt) {
+      toast.error('Please set an end date/time for the album promotion');
+      return;
+    }
+    const endsAtIso = new Date(promoEndsAt).toISOString();
+    if (new Date(endsAtIso) <= new Date()) {
+      toast.error('End time must be in the future');
+      return;
+    }
+    const { error } = await supabase
+      .from('albums')
+      .update({ discount_percent: promoPercent, sale_ends_at: endsAtIso })
+      .eq('id', promoModalAlbum.id)
+      .eq('artist_id', userProfile?.id);
+
+    if (error) {
+      toast.error('Could not save album promotion');
+      return;
+    }
+    toast.success(`${promoPercent}% off promotion applied to album!`);
+    setPromoModalAlbum(null);
+    onRefresh();
+  };
+
+  const cancelAlbumPromo = async () => {
+    if (!promoModalAlbum) return;
+    const { error } = await supabase
+      .from('albums')
+      .update({ discount_percent: 0, sale_ends_at: null })
+      .eq('id', promoModalAlbum.id)
+      .eq('artist_id', userProfile?.id);
+
+    if (error) {
+      toast.error('Could not remove album promotion');
+      return;
+    }
+    toast.success('Album promotion removed');
+    setPromoModalAlbum(null);
+    onRefresh();
+  };
+
+  const openPriceEdit = (al: any) => {
+    setEditPriceAlbum(al);
+    setEditPrice(al.price || 2500);
+    setEditForSale(al.is_for_sale ?? true);
+  };
+
+  const saveAlbumPrice = async () => {
+    if (!editPriceAlbum) return;
+    const { error } = await supabase
+      .from('albums')
+      .update({
+        price: editForSale ? Number(editPrice) : 0,
+        is_for_sale: editForSale
+      })
+      .eq('id', editPriceAlbum.id)
+      .eq('artist_id', userProfile?.id);
+
+    if (error) {
+      toast.error('Could not update album price');
+    } else {
+      toast.success('Album pricing updated!');
+      setEditPriceAlbum(null);
+      onRefresh();
+    }
+  };
+
   return (
     <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 text-text-primary"><Disc className="text-[#00A3FF] shrink-0" /> Albums</h2>
+      {/* Album Promo Modal */}
+      {promoModalAlbum && (
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setPromoModalAlbum(null); }}>
+          <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[16px] p-6">
+            <h3 className="text-base font-semibold text-white tracking-wider mb-1">Run Album Promotion</h3>
+            <p className="text-[11px] text-[#737373] mb-6">{promoModalAlbum.title} — currently MK {(promoModalAlbum.price || 0).toLocaleString()}</p>
+
+            <label className="text-[11px] text-text-muted font-semibold block mb-2">Discount Percentage</label>
+            <input type="range" min={5} max={90} step={5} value={promoPercent} onChange={e => setPromoPercent(Number(e.target.value))} className="w-full mb-1" />
+            <p className="text-[13px] font-display font-bold text-white mb-4">
+              {promoPercent}% off → MK {Math.max(Math.round((promoModalAlbum.price || 0) * (1 - promoPercent / 100)), 1).toLocaleString()}
+            </p>
+
+            <label className="text-[11px] text-text-muted font-semibold block mb-2">Ends at</label>
+            <input type="datetime-local" value={promoEndsAt} onChange={e => setPromoEndsAt(e.target.value)} className="w-full h-12 bg-bg-elevated border border-white/5 rounded-xl px-4 text-[14px] font-display font-bold text-white outline-none mb-6" />
+
+            <div className="flex gap-2">
+              {promoModalAlbum.discount_percent > 0 && (
+                <button onClick={cancelAlbumPromo} className="flex-1 h-12 rounded-xl text-[11px] font-semibold bg-white/5 text-text-secondary hover:text-white transition-all">Remove Promo</button>
+              )}
+              <button onClick={saveAlbumPromo} className="flex-1 h-12 rounded-xl text-[11px] font-semibold bg-[#00A3FF] text-white transition-all">Save Promo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Price Modal */}
+      {editPriceAlbum && (
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setEditPriceAlbum(null); }}>
+          <div className="w-full max-w-md bg-bg-surface border border-border-default rounded-[16px] p-6">
+            <h3 className="text-base font-semibold text-white tracking-wider mb-2">Edit Album Pricing</h3>
+            <p className="text-[11px] text-text-muted mb-6">{editPriceAlbum.title}</p>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 bg-bg-elevated p-3 rounded-xl border border-white/5">
+                <input
+                  type="checkbox"
+                  id="editForSaleCheck"
+                  checked={editForSale}
+                  onChange={e => setEditForSale(e.target.checked)}
+                  className="w-4 h-4 text-[#00A3FF] rounded focus:ring-0"
+                />
+                <label htmlFor="editForSaleCheck" className="text-xs font-bold text-white cursor-pointer">
+                  Available for Direct Album Purchase
+                </label>
+              </div>
+
+              {editForSale && (
+                <div>
+                  <label className="text-[11px] text-text-muted font-semibold block mb-2">Album Price (MWK)</label>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={e => setEditPrice(Number(e.target.value))}
+                    min={100}
+                    step={100}
+                    className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-2.5 text-sm font-sans text-white focus:outline-none focus:border-[#00A3FF] transition-all"
+                    placeholder="e.g. 2500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-8">
+              <button onClick={() => setEditPriceAlbum(null)} className="flex-1 px-4 py-3 bg-bg-elevated text-text-primary rounded-xl text-xs font-bold hover:bg-white/10 transition-colors">Cancel</button>
+              <button onClick={saveAlbumPrice} className="flex-1 px-4 py-3 bg-[#00A3FF] text-white rounded-xl text-xs font-bold hover:bg-[#00A3FF]/90 transition-colors">Save Price</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-[24px] md:text-[32px] font-studio font-bold flex items-center gap-3 text-text-primary"><Disc className="text-[#00A3FF] shrink-0" /> Albums</h2>
         {limits.canCreateAlbums ? (
           <button onClick={() => setActiveTab('upload')} className="h-[44px] px-6 bg-[#00A3FF] text-white font-display font-semibold text-[11px] rounded-[10px] flex items-center justify-center gap-2 hover:bg-[#00A3FF]/90 transition-all shadow-sm">
             <Plus size={16} /> New Album
@@ -1872,18 +2026,71 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
       </div>
 
       <div className="flex flex-col gap-4 md:gap-6">
-        {albums.map((al:any) => (
-          <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-4 hover:border-[#00A3FF]/50 transition-all group shadow-sm flex flex-col">
-            <div className="aspect-square rounded-[10px] overflow-hidden relative mb-4">
-              <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                <button className="px-4 py-2 bg-[#00A3FF] text-white text-[11px] font-semibold rounded-[8px] hover:bg-[#00A3FF]/90 transition-all">View Songs</button>
+        {albums.map((al: any) => {
+          const albumTrackCount = songs.filter((s: any) => s.album_id === al.id).length;
+          const isSaleActive = al.discount_percent > 0 && al.sale_ends_at && new Date(al.sale_ends_at).getTime() > Date.now();
+          const effectivePrice = isSaleActive
+            ? Math.max(Math.round((al.price || 0) * (1 - al.discount_percent / 100)), 1)
+            : (al.price || 0);
+
+          return (
+            <div key={al.id} className="bg-bg-surface border border-border-default rounded-[14px] p-5 hover:border-[#00A3FF]/50 transition-all group shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="w-20 h-20 rounded-[12px] overflow-hidden relative shrink-0">
+                  <img src={optimizeImage(al.cover_url, 300, 300)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+                  {isSaleActive && (
+                    <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded">
+                      -{al.discount_percent}%
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-display font-bold text-[16px] text-text-primary mb-1 truncate">{al.title}</h4>
+                  <div className="flex flex-wrap items-center gap-2 text-[12px] text-text-muted">
+                    <span>{al.release_year || new Date().getFullYear()}</span>
+                    <span>•</span>
+                    <span>{albumTrackCount} {albumTrackCount === 1 ? 'Track' : 'Tracks'}</span>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-semibold">{al.sales || 0} Sold</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    {al.is_for_sale ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-bold text-[#00A3FF]">
+                          MK {effectivePrice.toLocaleString()}
+                        </span>
+                        {isSaleActive && (
+                          <span className="text-[11px] text-text-muted line-through">
+                            MK {al.price?.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[12px] font-semibold text-text-muted">Free Stream</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto">
+                <button
+                  onClick={() => openPriceEdit(al)}
+                  className="h-9 px-3 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all"
+                >
+                  <Tag size={14} className="text-[#00A3FF]" />
+                  Edit Price
+                </button>
+                <button
+                  onClick={() => openAlbumPromo(al)}
+                  className="h-9 px-3 bg-[#00A3FF]/10 border border-[#00A3FF]/30 hover:bg-[#00A3FF]/20 text-[#00A3FF] rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all"
+                >
+                  <Flame size={14} />
+                  {isSaleActive ? `Promo (${al.discount_percent}%)` : 'Run Album Promo'}
+                </button>
               </div>
             </div>
-            <h4 className="font-display font-semibold text-[14px] text-text-primary mb-1 truncate">{al.title}</h4>
-            <p className="text-[12px] font-sans text-text-muted">{al.release_year || '—'}</p>
-          </div>
-        ))}
+          );
+        })}
         {albums.length === 0 && (
           <div className="col-span-full p-12 text-center bg-bg-surface border border-border-default border-dashed rounded-[14px]">
              <Disc className="mx-auto mb-3 text-text-muted/50" size={32} />
@@ -2443,11 +2650,16 @@ const UploadTab = ({ onComplete, albums, songs, setActiveTab, role }: any) => {
       setUploadProgress(20);
 
       // 2. Create Album Record
+      const albumPrice = isForSale ? price : 0;
       const { data: newAlbum, error: albumErr } = await supabase.from('albums').insert({
         artist_id: userProfile?.id,
         title,
         cover_url: coverUrl,
-        release_year: new Date(releaseDate).getFullYear()
+        release_year: new Date(releaseDate).getFullYear(),
+        price: albumPrice,
+        is_for_sale: isForSale,
+        genre: genre || 'Afrobeat',
+        description: ''
       }).select().single();
 
       if (albumErr) throw albumErr;
