@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!assets/|sw.js|sw-custom.js|manifest.webmanifest|manifest.json|offline.html|favicon.ico|hero.jpg|og-image.png|pwa-192x192.png|pwa-512x512.png|apple-touch-icon.png|mask-icon.svg|smashify-icon.svg|screenshot-1.png|screenshot-2.png|downloads/).*)", "destination": "/index.html" }
   ],
   "headers": [

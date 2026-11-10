@@ -228,8 +228,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) await fetchProfile(user.id);
     }
     
-    window.addEventListener('smashify:payment-success', handlePaymentSuccess as EventListener)
-    return () => window.removeEventListener('smashify:payment-success', handlePaymentSuccess as EventListener)
+    const handleTierUpdated = async (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (user && (!detail?.userId || detail.userId === user.id)) {
+        await fetchProfile(user.id);
+      }
+    };
+
+    window.addEventListener('smashify:payment-success', handlePaymentSuccess as EventListener);
+    window.addEventListener('smashify:user-tier-updated', handleTierUpdated as EventListener);
+    return () => {
+      window.removeEventListener('smashify:payment-success', handlePaymentSuccess as EventListener);
+      window.removeEventListener('smashify:user-tier-updated', handleTierUpdated as EventListener);
+    };
   }, [user])
 
   useEffect(() => {

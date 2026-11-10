@@ -25,18 +25,22 @@ export const AdminBilling = ({
 
     return artists
       .filter(a => {
-        const tier = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
-        const isPaid = tier !== 'free' && tier !== '';
-        return isPaid || Boolean(a.subscription_ends);
+        const rawArtist = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const rawSub = (a.subscription_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const isPaid = (rawArtist !== 'free' && rawArtist !== '') || (rawSub !== 'free' && rawSub !== '');
+        return isPaid || Boolean(a.subscription_ends || a.subscription_expires_at || a.tier_expires_at);
       })
       .map(a => {
-        const rawTier = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const rawArtist = (a.artist_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const rawSub = (a.subscription_tier || '').toLowerCase().replace(/[\s-_]/g, '');
+        const activeTierRaw = (rawArtist && rawArtist !== 'free') ? a.artist_tier : ((rawSub && rawSub !== 'free') ? a.subscription_tier : 'Free');
+        const rawTier = (activeTierRaw || '').toLowerCase().replace(/[\s-_]/g, '');
         const isPaidTier = rawTier !== 'free' && rawTier !== '';
-        const subDate = a.subscription_ends ? new Date(a.subscription_ends).getTime() : null;
+        const rawExpDate = a.subscription_ends || a.subscription_expires_at || a.tier_expires_at;
+        const subDate = rawExpDate ? new Date(rawExpDate).getTime() : null;
         const daysLeft = subDate ? Math.ceil((subDate - now) / (1000 * 60 * 60 * 24)) : 0;
         
         // Exact access calculation matching tierUtils / uploadGuard / player checks
-        // Access is ONLY granted if artist has a genuine paid tier AND an unexpired subscription_ends date
         const hasDashboardAccess = Boolean(isPaidTier && subDate && subDate > now);
 
         let accessStatus: 'granted' | 'expired' | 'not_granted_unpaid' = 'not_granted_unpaid';
@@ -134,12 +138,10 @@ export const AdminBilling = ({
     }
     setCleaningId(artist.id);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ subscription_ends: null })
-        .eq('id', artist.id);
-
-      if (error) throw error;
+      await Promise.all([
+        supabase.from('profiles').update({ subscription_ends: null }).eq('id', artist.id),
+        supabase.from('user_profiles').update({ subscription_ends: null }).eq('id', artist.id)
+      ]);
       toast.success(`Cleared stale expiry for ${artist.stage_name || artist.full_name}`);
       if (onRefresh) onRefresh();
     } catch (err: any) {
