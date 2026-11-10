@@ -24,9 +24,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 
 export const app = express();
-
-async function startServer() {
-  app.set("trust proxy", 1);
+app.set("trust proxy", 1);
   const PORT = 3000;
 
   console.log(`NODE_ENV is: ${process.env.NODE_ENV}`);
@@ -88,6 +86,16 @@ async function startServer() {
     message: { error: 'Too many login attempts. Please try again later.' }
   });
   app.use('/api/auth/', authLimiter);
+
+  // Normalize URL path if serverless proxy stripped /api prefix
+  app.use((req, res, next) => {
+    if (!req.url.startsWith('/api') && !req.url.startsWith('/assets') && !req.url.startsWith('/downloads')) {
+      if (req.url.startsWith('/admin') || req.url.startsWith('/check-email') || req.url.startsWith('/health') || req.url.startsWith('/pay') || req.url.startsWith('/functions') || req.url.startsWith('/user')) {
+        req.url = '/api' + req.url;
+      }
+    }
+    next();
+  });
 
   // Log all API requests
   app.use('/api', (req, res, next) => {
@@ -2016,7 +2024,9 @@ async function startServer() {
   });
 
   // --- VITE MIDDLEWARE OR STATIC SERVING ---
-  const distPath = path.resolve(process.cwd(), 'dist');
+  async function startServer() {
+    const PORT = Number(process.env.PORT) || 3000;
+    const distPath = path.resolve(process.cwd(), 'dist');
   const indexHtmlExists = fs.existsSync(path.join(distPath, 'index.html'));
 
   if (process.env.NODE_ENV === 'production') {

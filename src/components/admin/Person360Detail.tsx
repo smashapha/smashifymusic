@@ -7,6 +7,7 @@ import {
   Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getApiUrl } from '../../lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { HealthStatus } from './types';
@@ -230,7 +231,10 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
 
-      const res = await fetch(`/api/admin/users/${person.id}/control`, {
+      const targetUrl = getApiUrl(`/api/admin/users/${person.id}/control`);
+      console.log(`[ADMIN CONTROL] Dispatching POST '${action}' to resolved URL: ${targetUrl}`);
+
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,16 +244,19 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       });
 
       const contentType = res.headers.get('content-type') || '';
+      console.log(`[ADMIN CONTROL] Response status: ${res.status}, Content-Type: ${contentType}`);
+
       let data: any = {};
       if (contentType.includes('application/json')) {
         data = await res.json();
       } else {
         const rawText = await res.text();
-        console.error('[API] Non-JSON server response:', rawText);
-        throw new Error(`Server returned non-JSON response (${res.status}). Ensure API backend is reachable.`);
+        const excerpt = rawText.slice(0, 150).replace(/\s+/g, ' ');
+        console.error(`[ADMIN CONTROL] Non-JSON response (${res.status}, ${contentType}): "${excerpt}"`);
+        throw new Error(`Server returned non-JSON response (${res.status}). Content-Type: ${contentType || 'none'}. ${excerpt ? `Excerpt: "${excerpt.slice(0, 80)}"` : ''}`);
       }
 
-      if (!res.ok) throw new Error(data.error || 'Action failed');
+      if (!res.ok) throw new Error(data.error || `Action failed with status ${res.status}`);
       return data;
     } catch (err: any) {
       console.error('Action error:', err);
