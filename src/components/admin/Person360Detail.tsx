@@ -347,19 +347,24 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
   const handleManageTier = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (person.type === 'artist') {
+      const isArtist = person.type === 'artist' || profile.user_type === 'artist' || !!(profile.stage_name) || tierForm.artistTier !== 'Free';
+      if (isArtist) {
         const res = await executeControl('set_artist_tier', {
           tier: tierForm.artistTier,
           months: tierForm.artistMonths
         });
         setProfile((prev: any) => ({ 
-          ...prev, 
+          ...prev,
+          user_type: res.artist_tier !== 'Free' ? 'artist' : prev.user_type,
           artist_tier: res.artist_tier, 
           subscription_tier: res.artist_tier,
-          subscription_ends: res.subscription_ends 
+          subscription_ends: res.subscription_ends,
+          subscription_expires_at: res.subscription_ends,
+          tier_expires_at: res.subscription_ends
         }));
         person.artist_tier = res.artist_tier;
         toast.success(`Artist updated to ${res.artist_tier} tier`);
+        fetchDeepDetails();
       } else {
         const res = await executeControl('manage_daily_pass', {
           hours: tierForm.listenerPassHours
@@ -370,6 +375,7 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
           subscription_tier: res.subscription_tier 
         }));
         toast.success(tierForm.listenerPassHours > 0 ? 'Listener Pass granted!' : 'Listener Pass revoked');
+        fetchDeepDetails();
       }
       setTierModalOpen(false);
       if (onRefresh) onRefresh();

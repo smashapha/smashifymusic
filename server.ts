@@ -1636,19 +1636,22 @@ async function startServer() {
           }
 
           // Update both profiles and user_profiles in parallel
+          const updatePayload: any = {
+            artist_tier: normalizedTier,
+            subscription_tier: normalizedTier,
+            subscription_ends: endsDate,
+            subscription_expires_at: endsDate,
+            tier_expires_at: endsDate
+          };
+          if (normalizedTier !== 'Free') {
+            updatePayload.user_type = 'artist';
+          }
+
           const db = supabaseAdmin || getScopedClient(req);
           if (db) {
             await Promise.all([
-              db.from('profiles').update({
-                artist_tier: normalizedTier,
-                subscription_tier: normalizedTier,
-                subscription_ends: endsDate
-              }).eq('id', id),
-              db.from('user_profiles').update({
-                artist_tier: normalizedTier,
-                subscription_tier: normalizedTier,
-                subscription_ends: endsDate
-              }).eq('id', id)
+              db.from('profiles').update(updatePayload).eq('id', id),
+              db.from('user_profiles').update(updatePayload).eq('id', id)
             ]);
 
             // Activity log
