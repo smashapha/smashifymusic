@@ -1,8 +1,18 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!assets/|sw.js|sw-custom.js|manifest.webmanifest|manifest.json|offline.html|favicon.ico|hero.jpg|og-image.png|pwa-192x192.png|pwa-512x512.png|apple-touch-icon.png|mask-icon.svg|smashify-icon.svg|screenshot-1.png|screenshot-2.png|downloads/).*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

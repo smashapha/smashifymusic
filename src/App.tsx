@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 const MainLayout = lazy(() => import('./components/common/MainLayout'));
 import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
-import { verifyPayment } from './lib/paychangu';
+import { verifyPayment, syncUserPurchases } from './lib/paychangu';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { handleTrackDownload } from './lib/downloads';
 
@@ -77,109 +77,41 @@ const PaymentRedirect = () => {
     hasKickedOff.current = true;
 
     const handleVerification = async () => {
-      toast.loading('Confirming payment...', { id: 'payment-confirm' });
+      toast.loading('Confirming payment with gateway...', { id: 'payment-confirm' });
       try {
         const res = await verifyPayment(txRef);
-        
-        // Check if track purchase
-        const recentRaw = localStorage.getItem('smash_recent_purchase');
-        const recent = recentRaw ? JSON.parse(recentRaw) : null;
-        const targetSongId = songId || res?.transaction?.metadata?.songId || recent?.songId;
-        const activeUserId = userProfile?.id || user?.id;
+        const verifiedStatus = res?.status || res?.transaction?.status || '';
 
-        if (targetSongId && activeUserId) {
-          try {
-            const { data: existing } = await supabase
-              .from('fan_purchases')
-              .select('id')
-              .eq('fan_id', activeUserId)
-              .eq('song_id', targetSongId)
-              .maybeSingle();
+        if (verifiedStatus === 'completed' || res?.granted) {
+          toast.success('Payment verified & completed! ✅', { id: 'payment-confirm', duration: 4000 });
+          setStatus('Payment confirmed! Updating your account...');
 
-            if (!existing) {
-              await supabase.from('fan_purchases').insert({
-                fan_id: activeUserId,
-                song_id: targetSongId,
-                amount: res?.transaction?.gross_amount || recent?.amount || 500,
-                status: 'completed',
-                purchased_at: new Date().toISOString()
-              });
-            }
-          } catch (e) {
-            console.warn('Direct fan_purchases insert warning:', e);
-          }
-        }
+          window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
+          window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
 
-        toast.success('Payment confirmed! ✅', { id: 'payment-confirm', duration: 4000 });
-        setStatus('Payment confirmed! Updating your account...');
+          await syncUserPurchases();
+          await new Promise(r => setTimeout(r, 1000));
 
-        window.dispatchEvent(new CustomEvent('smashify:payment-success', { 
-          detail: { 
-            txRef, 
-            data: res,
-            fallback: {
-              songId: targetSongId,
-              type: paymentType,
-              plan,
-              tier,
-              artistId
-            }
-          } 
-        }));
-        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
-
-        await new Promise(r => setTimeout(r, 1200));
-
-        if (targetSongId) {
-          navigate('/library?tab=purchased', { replace: true });
-        } else if (tier) {
-          navigate('/artist-hub', { replace: true });
-        } else if (plan) {
-          navigate('/profile', { replace: true });
-        } else if (window.location.pathname.includes('purchase-success')) {
-          navigate('/home', { replace: true });
-        }
-      } catch (err) {
-        // Even if gateway check returned an error, recover via localStorage if initiated by this user
-        const activeUserId = userProfile?.id || user?.id;
-        try {
-          const recentRaw = localStorage.getItem('smash_recent_purchase');
-          const recent = recentRaw ? JSON.parse(recentRaw) : null;
-          if (recent && (recent.tx_ref === txRef || !recent.tx_ref) && recent.songId && activeUserId) {
-            
-            const { data: existing } = await supabase
-              .from('fan_purchases')
-              .select('id')
-              .eq('fan_id', activeUserId)
-              .eq('song_id', recent.songId)
-              .maybeSingle();
-              
-            if (!existing) {
-              await supabase.from('fan_purchases').insert({
-                fan_id: activeUserId,
-                song_id: recent.songId,
-                amount: recent.amount || 500,
-                status: 'completed',
-                purchased_at: new Date().toISOString()
-              });
-            }
-            
-            toast.success('Purchase restored and added to your Library! 🎵', { id: 'payment-confirm', duration: 4000 });
-            
-            window.dispatchEvent(new CustomEvent('smashify:payment-success', { 
-              detail: { txRef, fallback: { songId: recent.songId, type: 'track_purchase' } } 
-            }));
-            
-            window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+          const targetSongId = songId || res?.transaction?.metadata?.songId;
+          if (targetSongId) {
             navigate('/library?tab=purchased', { replace: true });
-            return;
+          } else if (tier) {
+            navigate('/artist-hub', { replace: true });
+          } else if (plan) {
+            navigate('/profile', { replace: true });
+          } else {
+            navigate('/home', { replace: true });
           }
-        } catch (recoverErr) {
-          console.error('Recovery error:', recoverErr);
+        } else if (verifiedStatus === 'pending') {
+          toast('Payment is still processing by gateway. Please check back shortly.', { id: 'payment-confirm', icon: '⏳', duration: 5000 });
+          setStatus('Payment processing in background...');
+        } else {
+          toast.error(`Payment status: ${verifiedStatus || 'Failed'}.`, { id: 'payment-confirm', duration: 5000 });
+          setStatus(`Payment ${verifiedStatus || 'failed'}`);
         }
-
-        toast.error('Payment recorded. You can sync purchases in your Library at any time.', { id: 'payment-confirm', duration: 6000 });
-        navigate('/library?tab=purchased', { replace: true });
+      } catch (err: any) {
+        toast.error(`Payment verification failed: ${err?.message || 'Gateway error'}`, { id: 'payment-confirm', duration: 5000 });
+        setStatus('Payment verification error');
       }
     };
     handleVerification();

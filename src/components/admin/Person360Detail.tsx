@@ -7,6 +7,7 @@ import {
   Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getApiUrl } from '../../lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { HealthStatus } from './types';
@@ -87,11 +88,15 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
     notify: true
   });
 
-  // Tier form
+  // Tier form & saving state
+  const [submittingTier, setSubmittingTier] = useState(false);
   const [tierForm, setTierForm] = useState({
     artistTier: 'Standard',
     artistMonths: 6,
-    listenerPassHours: 24
+    listenerTier: 'Daily Pass',
+    listenerPassHours: 24,
+    extendDuration: true,
+    reason: ''
   });
 
   // Notification form
@@ -226,7 +231,10 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
 
-      const res = await fetch(`/api/admin/users/${person.id}/control`, {
+      const targetUrl = getApiUrl(`/api/admin/users/${person.id}/control`);
+      console.log(`[ADMIN CONTROL] Dispatching POST '${action}' to resolved URL: ${targetUrl}`);
+
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,8 +243,20 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
         body: JSON.stringify({ action, payload })
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Action failed');
+      const contentType = res.headers.get('content-type') || '';
+      console.log(`[ADMIN CONTROL] Response status: ${res.status}, Content-Type: ${contentType}`);
+
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const rawText = await res.text();
+        const excerpt = rawText.slice(0, 150).replace(/\s+/g, ' ');
+        console.error(`[ADMIN CONTROL] Non-JSON response (${res.status}, ${contentType}): "${excerpt}"`);
+        throw new Error(`Server returned non-JSON response (${res.status}). Content-Type: ${contentType || 'none'}. ${excerpt ? `Excerpt: "${excerpt.slice(0, 80)}"` : ''}`);
+      }
+
+      if (!res.ok) throw new Error(data.error || `Action failed with status ${res.status}`);
       return data;
     } catch (err: any) {
       console.error('Action error:', err);
@@ -332,35 +352,64 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
   // Manage Artist Tier / Listener Pass
   const handleManageTier = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmittingTier(true);
     try {
       if (person.type === 'artist') {
         const res = await executeControl('set_artist_tier', {
           tier: tierForm.artistTier,
-          months: tierForm.artistMonths
+          months: tierForm.artistMonths,
+          extend: tierForm.extendDuration,
+          reason: tierForm.reason
         });
+
         setProfile((prev: any) => ({ 
           ...prev, 
           artist_tier: res.artist_tier, 
-          subscription_tier: res.artist_tier,
-          subscription_ends: res.subscription_ends 
+          subscription_tier: res.subscription_tier || res.artist_tier,
+          subscription_ends: res.subscription_ends,
+          tier_expires_at: res.tier_expires_at,
+          subscription_expires_at: res.subscription_expires_at
         }));
+
         person.artist_tier = res.artist_tier;
-        toast.success(`Artist updated to ${res.artist_tier} tier`);
+        person.subscription_ends = res.subscription_ends;
+
+        toast.success(`Artist updated to ${res.artist_tier} tier ${res.subscription_ends ? `(Expires: ${new Date(res.subscription_ends).toLocaleDateString()})` : '(Free)'}`);
       } else {
-        const res = await executeControl('manage_daily_pass', {
-          hours: tierForm.listenerPassHours
+        const res = await executeControl('set_listener_tier', {
+          tier: tierForm.listenerTier,
+          hours: tierForm.listenerPassHours,
+          extend: tierForm.extendDuration,
+          reason: tierForm.reason
         });
+
         setProfile((prev: any) => ({ 
           ...prev, 
           daily_pass_expires_at: res.daily_pass_expires_at, 
+          subscription_expires_at: res.subscription_expires_at,
+          subscription_ends: res.subscription_ends,
           subscription_tier: res.subscription_tier 
         }));
-        toast.success(tierForm.listenerPassHours > 0 ? 'Listener Pass granted!' : 'Listener Pass revoked');
+
+        person.subscription_tier = res.subscription_tier;
+        person.daily_pass_expires_at = res.daily_pass_expires_at;
+
+        toast.success(res.subscription_tier !== 'Free' 
+          ? `Granted ${res.subscription_tier} access!` 
+          : 'Listener tier reset to Free');
       }
+
       setTierModalOpen(false);
+      fetchDeepDetails();
       if (onRefresh) onRefresh();
+
+      window.dispatchEvent(new CustomEvent('smashify:user-tier-updated', { 
+        detail: { userId: person.id, type: person.type } 
+      }));
     } catch (err: any) {
       toast.error('Tier update failed: ' + err.message);
+    } finally {
+      setSubmittingTier(false);
     }
   };
 
@@ -1682,13 +1731,18 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       {/* MODAL 3: Manage Tier / Listener Pass */}
       {tierModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#141414] border border-white/10 rounded-[20px] max-w-md w-full p-6 space-y-4">
+          <div className="bg-[#141414] border border-white/10 rounded-[20px] max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Sparkles size={18} className="text-purple-400" />
-                {person.type === 'artist' ? 'Manage Artist Distribution Tier' : 'Grant Listener Daily Pass'}
+                {person.type === 'artist' ? 'Manage Artist Distribution Tier' : 'Grant / Modify Listener Subscription'}
               </h3>
-              <button onClick={() => setTierModalOpen(false)} className="text-white/50 hover:text-white">
+              <button 
+                type="button"
+                onClick={() => setTierModalOpen(false)} 
+                disabled={submittingTier}
+                className="text-white/50 hover:text-white disabled:opacity-50"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -1697,16 +1751,18 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
               {person.type === 'artist' ? (
                 <>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">Select Tier</label>
+                    <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">Select Artist Tier</label>
                     <select
                       value={tierForm.artistTier}
                       onChange={e => setTierForm({ ...tierForm, artistTier: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white"
+                      disabled={submittingTier}
+                      className="w-full px-3.5 py-2.5 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white focus:outline-none focus:border-purple-500"
                     >
-                      <option value="Free">Free Tier (Standard Uploads)</option>
+                      <option value="Free">Free Tier (Reset to Free)</option>
                       <option value="RisingStar">Rising Star Tier</option>
                       <option value="Standard">Standard Tier</option>
                       <option value="Elite">Elite Tier (Priority & Unlimited)</option>
+                      <option value="Label">Label / Pro Tier</option>
                     </select>
                   </div>
 
@@ -1715,48 +1771,103 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
                     <select
                       value={tierForm.artistMonths}
                       onChange={e => setTierForm({ ...tierForm, artistMonths: Number(e.target.value) })}
-                      className="w-full px-3 py-2 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white"
+                      disabled={submittingTier || tierForm.artistTier === 'Free'}
+                      className="w-full px-3.5 py-2.5 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
                     >
                       <option value="1">1 Month</option>
                       <option value="3">3 Months</option>
                       <option value="6">6 Months</option>
                       <option value="12">12 Months (1 Year)</option>
-                      <option value="-1">Lifetime / Permanent</option>
+                      <option value="-1">Lifetime / Permanent (10 Years)</option>
                     </select>
                   </div>
                 </>
               ) : (
-                <div>
-                  <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">
-                    Pass Access Duration
-                  </label>
-                  <select
-                    value={tierForm.listenerPassHours}
-                    onChange={e => setTierForm({ ...tierForm, listenerPassHours: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white"
-                  >
-                    <option value="24">+24 Hours (Daily Pass)</option>
-                    <option value="72">+3 Days</option>
-                    <option value="168">+7 Days (Weekly Pass)</option>
-                    <option value="720">+30 Days (Monthly Premium)</option>
-                    <option value="0">Revoke Pass (Set to Free)</option>
-                  </select>
-                </div>
+                <>
+                  <div>
+                    <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">Select Listener Tier</label>
+                    <select
+                      value={tierForm.listenerTier}
+                      onChange={e => setTierForm({ ...tierForm, listenerTier: e.target.value })}
+                      disabled={submittingTier}
+                      className="w-full px-3.5 py-2.5 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="Free">Free Tier (Reset to Free)</option>
+                      <option value="Daily Pass">Daily Pass (24 Hours)</option>
+                      <option value="Weekly Pass">Weekly Pass (7 Days)</option>
+                      <option value="Monthly Pass">Monthly Pass (30 Days)</option>
+                      <option value="Unlimited Premium">Unlimited Premium / VIP</option>
+                    </select>
+                  </div>
+
+                  {tierForm.listenerTier !== 'Free' && (
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">Pass Duration Options</label>
+                      <select
+                        value={tierForm.listenerPassHours}
+                        onChange={e => setTierForm({ ...tierForm, listenerPassHours: Number(e.target.value) })}
+                        disabled={submittingTier}
+                        className="w-full px-3.5 py-2.5 bg-[#202020] border border-white/10 rounded-[10px] text-[13px] text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="24">+24 Hours (1 Day)</option>
+                        <option value="72">+72 Hours (3 Days)</option>
+                        <option value="168">+168 Hours (7 Days / 1 Week)</option>
+                        <option value="720">+720 Hours (30 Days / 1 Month)</option>
+                        <option value="-1">Lifetime / Permanent</option>
+                      </select>
+                    </div>
+                  )}
+                </>
               )}
+
+              {/* Extension & Reason controls */}
+              <div className="space-y-3 pt-1 border-t border-white/5">
+                <label className="flex items-center gap-2 text-[12px] text-white/80 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={tierForm.extendDuration}
+                    onChange={e => setTierForm({ ...tierForm, extendDuration: e.target.checked })}
+                    disabled={submittingTier}
+                    className="rounded bg-white/10 border-white/20 text-purple-500 focus:ring-purple-500"
+                  />
+                  <span>Extend from existing expiration date if currently active</span>
+                </label>
+
+                <div>
+                  <label className="text-[11px] uppercase tracking-wider text-white/40 block mb-1">Administrative Reason (Optional)</label>
+                  <input
+                    type="text"
+                    value={tierForm.reason}
+                    onChange={e => setTierForm({ ...tierForm, reason: e.target.value })}
+                    placeholder="e.g. Complimentary grant, promo code, support resolution"
+                    disabled={submittingTier}
+                    className="w-full px-3.5 py-2 bg-white/5 border border-white/10 rounded-[10px] text-[12px] text-white placeholder-white/30 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setTierModalOpen(false)}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/70 rounded-[10px] text-[13px]"
+                  disabled={submittingTier}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/70 rounded-[10px] text-[13px] disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-[10px] text-[13px]"
+                  disabled={submittingTier}
+                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-[10px] text-[13px] transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  Apply Tier
+                  {submittingTier ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Saving Tier...
+                    </>
+                  ) : (
+                    'Apply Tier Changes'
+                  )}
                 </button>
               </div>
             </form>

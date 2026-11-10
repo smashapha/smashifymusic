@@ -133,15 +133,16 @@ import { OnboardingChecklist } from "../components/artist/ArtistOnboarding";
 export default function ArtistHub() {
   const { userProfile, role, signOut } = useAuth();
   
-  const canSellTracks = ['Elite', 'elite', 'Label', 'label'].includes(
-    userProfile?.artist_tier || ''
-  );
-
   const artistTier = useMemo(() => getArtistTier(userProfile), [
     userProfile?.artist_tier,
     userProfile?.subscription_tier,
     userProfile?.subscription_ends,
+    userProfile?.subscription_expires_at,
+    userProfile?.tier_expires_at,
   ]);
+
+  const canSellTracks = ['elite', 'label'].includes(artistTier.toLowerCase());
+
   const artistLimits = useMemo(() => getTierLimits(userProfile), [
     userProfile?.artist_tier,
     userProfile?.subscription_tier,
@@ -374,7 +375,7 @@ export default function ArtistHub() {
               loading="lazy" decoding="async" />
               <div className="overflow-hidden">
                 <p className="text-sm font-bold truncate">{userProfile?.stage_name || userProfile?.full_name || 'Artist'}</p>
-                <p className="text-[10px] text-[#00A3FF] uppercase tracking-widest font-bold">{getTierLabel(userProfile?.subscription_tier)}</p>
+                <p className="text-[10px] text-[#00A3FF] uppercase tracking-widest font-bold">{getTierLabel(artistTier)}</p>
                 {artistTier !== 'elite' && (
                   <button
                     onClick={() => { setActiveTab('subscription'); setSidebarOpen(false); }}
@@ -3932,7 +3933,7 @@ const ProfileTab = ({ userProfile }: any) => {
 
 
 const SubscriptionTab = ({ userProfile, role }: any) => {
-  const currentTierRaw = (userProfile?.subscription_tier || userProfile?.artist_tier || 'free').toLowerCase();
+  const currentTierRaw = getArtistTier(userProfile).toLowerCase();
   // Normalize the string
   const currentTier = currentTierRaw.includes('rising') ? 'rising_star' : 
                       currentTierRaw.includes('elite') ? 'elite' : 

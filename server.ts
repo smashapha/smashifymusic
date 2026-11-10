@@ -287,14 +287,72 @@ async function startServer() {
         return res.status(401).json({ error: 'Unauthorized route access' });
       }
 
-      const { amount, email, first_name, last_name, type, tx_ref, meta, return_url, currency, callback_url } = req.body;
-      console.log(`[API] Processing ${type} for ${email}, amount: ${amount}, ref: ${tx_ref}`);
-      console.log('[API] Meta received:', JSON.stringify(meta));
+      const { amount: requestedAmount, email, first_name, last_name, type, tx_ref, meta, return_url, callback_url } = req.body;
+      const paymentType = (type || '').toLowerCase();
+
+      // Canonical server-side pricing quotes
+      const CANONICAL_PRICES: Record<string, number> = {
+        'listener_daily_pass': 150,
+        'listener_weekly_pass': 700,
+        'listener_premium': 2000,
+        'listener_family': 5000,
+        'artist_rising_star': 8000,
+        'artist_standard': 16000,
+        'artist_elite': 27000,
+      };
+
+      let validatedAmount = Number(requestedAmount);
+
+      if (paymentType === 'track_purchase') {
+        if (!meta?.songId) {
+          return res.status(400).json({ error: 'Missing songId for track purchase' });
+        }
+        const { data: songRow, error: songErr } = await supabaseAdmin
+          .from('songs')
+          .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+          .eq('id', meta.songId)
+          .maybeSingle();
+
+        if (songErr || !songRow || !songRow.is_for_sale) {
+          return res.status(400).json({ error: 'This track is not available for purchase' });
+        }
+
+        const pct = songRow.discount_percent || 0;
+        const saleExpired = songRow.sale_ends_at && new Date(songRow.sale_ends_at).getTime() < Date.now();
+        validatedAmount = (pct > 0 && !saleExpired)
+          ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
+          : songRow.price;
+
+        if (meta.artistId && meta.artistId !== songRow.artist_id) {
+          meta.artistId = songRow.artist_id;
+        }
+      } else if (paymentType === 'fan_subscription') {
+        if (!meta?.artistId) {
+          return res.status(400).json({ error: 'Missing artistId for fan subscription' });
+        }
+        const { data: artistProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('subscription_price')
+          .eq('id', meta.artistId)
+          .maybeSingle();
+
+        validatedAmount = artistProfile?.subscription_price || 1500;
+      } else if (CANONICAL_PRICES[paymentType]) {
+        validatedAmount = CANONICAL_PRICES[paymentType];
+      }
+
+      if (isNaN(validatedAmount) || validatedAmount <= 0) {
+        return res.status(400).json({ error: 'Invalid payment amount calculated by server' });
+      }
+
+      console.log(`[API] Processing ${paymentType} for user ${user.id}, validated MWK amount: ${validatedAmount}, ref: ${tx_ref}`);
 
       const descriptions: Record<string, string> = {
         'track_purchase': `Purchase of music track on Smashify`,
         'tip': `Tip to artist on Smashify`,
         'fan_subscription': `Monthly fan subscription on Smashify`,
+        'listener_daily_pass': `Smashify Premium Daily Pass`,
+        'listener_weekly_pass': `Smashify Premium Weekly Pass`,
         'listener_premium': `Smashify Premium Subscription`,
         'listener_family': `Smashify Family Subscription`,
         'artist_rising_star': `Smashify Rising Star Studio Tier`,
@@ -305,25 +363,24 @@ async function startServer() {
       };
 
       let dbType = 'other';
-      if (type.includes('listener_') || type.includes('artist_') || type.includes('subscription')) {
-         if (type === 'artist_ad_campaign' || type === 'featured_placement') {
+      if (paymentType.includes('listener_') || paymentType.includes('artist_') || paymentType.includes('subscription')) {
+         if (paymentType === 'artist_ad_campaign' || paymentType === 'featured_placement') {
             dbType = 'promotion';
          } else {
             dbType = 'subscription';
          }
-      } else if (type === 'tip') {
+      } else if (paymentType === 'tip') {
          dbType = 'donation';
-      } else if (type === 'track_purchase') {
+      } else if (paymentType === 'track_purchase') {
          dbType = 'sale';
       }
 
-      let txArtistId = meta.artistId || null;
-      if (!txArtistId && type.includes('artist_')) {
-         txArtistId = meta.userId || user.id; // Attribute to artist 
+      let txArtistId = meta?.artistId || null;
+      if (!txArtistId && paymentType.includes('artist_')) {
+         txArtistId = meta?.userId || user.id;
       }
 
-      // Ensure the fan_id exists in user_profiles to satisfy foreign key constraints (since artists might not have a user_profile record)
-      const txFanId = meta.userId || user.id;
+      const txFanId = meta?.userId || user.id;
       const { data: existingFan } = await supabaseAdmin
         .from('user_profiles')
         .select('id')
@@ -331,27 +388,43 @@ async function startServer() {
         .maybeSingle();
 
       if (!existingFan) {
-        console.log(`Payer ${txFanId} not found in user_profiles. Creating shadow user_profile for transactions support.`);
         await supabaseAdmin.from('user_profiles').upsert({
           id: txFanId,
-          full_name: first_name || last_name ? `${first_name} ${last_name}`.trim() : "Smashify Artist",
+          full_name: first_name || last_name ? `${first_name} ${last_name}`.trim() : "Smashify User",
           email: email || user.email || "",
           user_type: 'listener',
           subscription_tier: 'free'
         });
       }
 
-      // Create or Update Pending Transaction (idempotent on paychangu_ref)
+      let platformFee = 0;
+      let netAmount = validatedAmount;
+
+      if (paymentType.includes('listener_') || paymentType.includes('artist_') || paymentType === 'artist_ad_campaign') {
+        platformFee = validatedAmount;
+        netAmount = 0;
+      } else if (paymentType === 'tip') {
+        platformFee = Math.round(validatedAmount * 0.05);
+        netAmount = validatedAmount - platformFee;
+      } else if (paymentType === 'track_purchase') {
+        platformFee = Math.round(validatedAmount * 0.20) + 50;
+        netAmount = Math.max(validatedAmount - platformFee, 0);
+      } else if (paymentType === 'fan_subscription') {
+        platformFee = Math.round(validatedAmount * 0.10);
+        netAmount = validatedAmount - platformFee;
+      }
+
       const { error: txError } = await supabaseAdmin.from('transactions').upsert({
         artist_id: txArtistId,
         fan_id: txFanId,
         type: dbType,
-        gross_amount: amount,
-        net_amount: amount * 0.85,
+        gross_amount: validatedAmount,
+        platform_fee: platformFee,
+        net_amount: netAmount,
         status: 'pending',
         paychangu_ref: tx_ref,
-        description: descriptions[type] || 'Smashify Payment',
-        metadata: { ...meta, payment_type: type }
+        description: descriptions[paymentType] || 'Smashify Payment',
+        metadata: { ...meta, payment_type: paymentType, userId: user.id }
       }, { onConflict: 'paychangu_ref' });
 
       if (txError && txError.code !== '23505') {
@@ -359,27 +432,23 @@ async function startServer() {
         throw txError;
       }
 
-      // Resolve return_url with robust fallback to prevent PayChangu validation errors if frontend passed undefined or invalid format
       let resolvedReturnUrl = return_url;
       if (!resolvedReturnUrl || typeof resolvedReturnUrl !== 'string' || !resolvedReturnUrl.startsWith('http')) {
-        console.warn(`[API] Invalid or missing return_url received: ${return_url}. Constructing fallback.`);
         const songId = meta?.songId || 'unknown';
         const artistId = meta?.artistId || 'unknown';
         const plan = meta?.plan || 'Premium';
         const tier = meta?.tier || 'RisingStar';
 
-        if (type === 'track_purchase') {
+        if (paymentType === 'track_purchase') {
           resolvedReturnUrl = `${APP_URL}/purchase-success?song_id=${songId}&tx_ref=`;
-        } else if (type === 'tip') {
+        } else if (paymentType === 'tip') {
           resolvedReturnUrl = `${APP_URL}/tip-success?artist_id=${artistId}&tx_ref=`;
-        } else if (type === 'fan_subscription') {
+        } else if (paymentType === 'fan_subscription') {
           resolvedReturnUrl = `${APP_URL}/subscribe-success?artist_id=${artistId}&tx_ref=`;
-        } else if (type.includes('listener_')) {
+        } else if (paymentType.includes('listener_')) {
           resolvedReturnUrl = `${APP_URL}/upgrade-success?plan=${plan}&tx_ref=`;
-        } else if (type.includes('artist_') && type !== 'artist_ad_campaign') {
+        } else if (paymentType.includes('artist_') && paymentType !== 'artist_ad_campaign') {
           resolvedReturnUrl = `${APP_URL}/tier-success?tier=${tier}&tx_ref=`;
-        } else if (type === 'artist_ad_campaign') {
-          resolvedReturnUrl = `${APP_URL}/ad-success?tx_ref=`;
         } else {
           resolvedReturnUrl = `${APP_URL}/purchase-success?tx_ref=`;
         }
@@ -390,8 +459,6 @@ async function startServer() {
         finalReturnUrl = `${finalReturnUrl}${tx_ref}`;
       }
 
-      // Initialize PayChangu
-      console.log('[API] Calling PayChangu /payment init with return_url:', finalReturnUrl);
       const response = await fetch('https://api.paychangu.com/payment', {
         method: 'POST',
         headers: {
@@ -400,8 +467,8 @@ async function startServer() {
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          amount,
-          currency: currency || 'MWK',
+          amount: validatedAmount,
+          currency: 'MWK',
           email,
           first_name,
           last_name,
@@ -410,45 +477,29 @@ async function startServer() {
           return_url: finalReturnUrl,
           customization: {
             title: 'Smashify',
-            description: descriptions[type] || 'Smashify Payment',
+            description: descriptions[paymentType] || 'Smashify Payment',
           }
         })
       });
 
       const responseText = await response.text();
-      console.log(`[API] PayChangu Response (${response.status}):`, responseText.substring(0, 200));
-
       let payload;
       try {
         payload = JSON.parse(responseText);
       } catch (err) {
-        throw new Error(`PayChangu returned non-JSON (${response.status}): ${responseText.substring(0, 100)}...`);
+        throw new Error(`PayChangu returned non-JSON (${response.status})`);
       }
 
       if (!response.ok) {
-        console.error('[API] PayChangu Failed:', payload);
-        await supabaseAdmin.from('transactions').delete().eq('paychangu_ref', tx_ref);
-        
+        await supabaseAdmin.from('transactions').update({ status: 'failed' }).eq('paychangu_ref', tx_ref);
         let errorMsg = 'PayChangu initialization failed';
         if (payload?.message) {
-          if (typeof payload.message === 'string') {
-            errorMsg = payload.message;
-          } else if (typeof payload.message === 'object') {
-            errorMsg = Object.entries(payload.message)
-              .map(([key, value]) => {
-                const formattedVal = Array.isArray(value) ? value.join(', ') : String(value);
-                return `${key}: ${formattedVal}`;
-              })
-              .join('; ');
-          }
-        } else if (payload?.error) {
-          errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
+          errorMsg = typeof payload.message === 'string' ? payload.message : JSON.stringify(payload.message);
         }
         throw new Error(errorMsg);
       }
 
       if (!payload.data?.checkout_url) {
-        console.error('[API] Missing checkout_url in payload:', payload);
         throw new Error('PayChangu did not return a checkout URL');
       }
 
@@ -929,11 +980,11 @@ async function startServer() {
         return res.status(403).json({ error: 'Unauthorized access to verify this transaction' });
       }
 
-      const isForceGrant = (req.body.force_grant === true || req.query.force_grant === 'true') && (isAdmin || isOwner);
+      const isForceGrant = (req.body.force_grant === true || req.query.force_grant === 'true') && isAdmin;
 
-      // Force Grant bypass: immediately fulfills rights without waiting on PayChangu gateway
+      // Force Grant bypass: admin-only override
       if (isForceGrant) {
-        console.log(`[API] User ${user.id} (${isAdmin ? 'Admin' : 'Owner'}) requested FORCE_GRANT for ref ${tx_ref}`);
+        console.log(`[API] Admin ${user.id} requested FORCE_GRANT for ref ${tx_ref}`);
         const fulfillment = await fulfillTransaction(dbTx, dbTx.gross_amount, scopedClient);
         const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`).maybeSingle();
         return res.json({ 
@@ -996,13 +1047,8 @@ async function startServer() {
               return res.json({ status: 'failed', transaction: dbTx, gateway_message: gatewayMessage });
             }
           } else if (pcResponse.status === 403 || payload?.message?.includes('Invalid secret key')) {
-            console.warn(`[API] PayChangu API returned 403 Invalid secret key (${PAYCHANGU_SECRET_KEY?.slice(0, 8)}...).`);
+            console.warn(`[API] PayChangu API returned 403 Invalid secret key.`);
             gatewayMessage = 'Invalid secret key configured on PayChangu gateway';
-            // If the user or admin is verifying an intentional payment:
-            if (isAdmin) {
-              console.log(`[API] Auto-authorizing transaction ${tx_ref} via Admin session`);
-              pcVerified = true;
-            }
           }
         } catch (pcErr: any) {
           console.warn('[API] PayChangu API query error:', pcErr?.message || pcErr);
@@ -1010,9 +1056,8 @@ async function startServer() {
         }
       }
 
-      // If verified by PayChangu, or if request confirms completed from checkout redirect:
-      const clientSaysSuccess = req.body.status === 'successful' || req.query.status === 'successful' || req.body.completed === true;
-      if (pcVerified || clientSaysSuccess) {
+      // Only fulfill if verified by gateway
+      if (pcVerified) {
         const fulfillment = await fulfillTransaction(dbTx, pcAmount, scopedClient);
         const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').eq('id', dbTx.id).maybeSingle();
         return res.json({ 
@@ -1029,7 +1074,7 @@ async function startServer() {
         transaction: dbTx, 
         gateway_message: gatewayMessage,
         gateway_status: gatewayStatus,
-        can_force_grant: isAdmin || isOwner 
+        can_force_grant: isAdmin 
       });
     } catch (error: any) {
       console.error('[API] Verify payment error:', error);
@@ -1054,7 +1099,7 @@ async function startServer() {
       // Prefer scopedClient to satisfy RLS
       let userTxs: any[] = [];
       if (scopedClient) {
-        let query = scopedClient.from('transactions').select('*');
+        let query = scopedClient.from('transactions').select('*').eq('status', 'completed');
         if (targetRef) {
           query = query.or(`paychangu_ref.eq.${targetRef},reference.eq.${targetRef}`);
         } else {
@@ -1065,7 +1110,7 @@ async function startServer() {
       }
 
       if (userTxs.length === 0 && supabaseAdmin) {
-        let query = supabaseAdmin.from('transactions').select('*');
+        let query = supabaseAdmin.from('transactions').select('*').eq('status', 'completed');
         if (targetRef) {
           query = query.or(`paychangu_ref.eq.${targetRef},reference.eq.${targetRef}`);
         } else {
