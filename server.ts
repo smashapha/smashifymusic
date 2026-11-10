@@ -70,12 +70,11 @@ async function startServer() {
   // Rate Limiter for API endpoints
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Higher limit for active admin and session use
+    max: 100, // Limit each IP to 100 requests per windowMs
     message: { error: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { xForwardedForHeader: false, trustProxy: false },
-    skip: (req) => req.path.startsWith('/admin') || req.path.startsWith('/functions')
+    validate: { xForwardedForHeader: false, trustProxy: false }
   });
 
   // Apply to all /api routes
@@ -197,8 +196,8 @@ async function startServer() {
 
   // Helper to verify user
   const verifyUser = async (req: express.Request) => {
-    if (!SUPABASE_URL) {
-      console.error('verifyUser: SUPABASE_URL missing');
+    if (!supabaseAdmin) {
+      console.error('verifyUser: supabaseAdmin is null. SUPABASE_URL or adminKey is missing.');
       return null;
     }
     const authHeader = req.headers.authorization;
@@ -206,78 +205,21 @@ async function startServer() {
       console.error('verifyUser: Authorization header missing');
       return null;
     }
-    const token = authHeader.replace('Bearer ', '').trim();
+    const token = authHeader.replace('Bearer ', '');
     if (!token || token === 'undefined') {
       console.error('verifyUser: Token is empty or "undefined"');
       return null;
     }
-
-    // 1. Try scoped user client
-    try {
-      const client = getScopedClient(req);
-      if (client) {
-        const { data: { user }, error } = await client.auth.getUser(token);
-        if (user && !error) return user;
-      }
-    } catch {
-      // Ignore fallback
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error) {
+      console.error('verifyUser: auth.getUser failed:', error.message);
+      return null;
     }
-
-    // 2. Try admin client
-    if (supabaseAdmin) {
-      try {
-        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-        if (user && !error) return user;
-      } catch {
-        // Ignore fallback
-      }
+    if (!user) {
+      console.error('verifyUser: user is null');
+      return null;
     }
-
-    return null;
-  };
-
-  // Helper to check if a user is an admin
-  const checkIsAdmin = async (user: any, req?: express.Request): Promise<boolean> => {
-    if (!user) return false;
-
-    const userEmail = (user.email || user.user_metadata?.email || '').toLowerCase();
-    if (
-      userEmail === 'smashtherealmuzic@gmail.com' ||
-      user.app_metadata?.role === 'admin' ||
-      user.user_metadata?.is_admin === true ||
-      user.user_metadata?.role === 'admin'
-    ) {
-      return true;
-    }
-
-    const client = (req ? getScopedClient(req) : null) || supabaseAdmin;
-    if (client) {
-      try {
-        const [pRes, upRes] = await Promise.all([
-          client.from('profiles').select('is_admin, role, email').eq('id', user.id).maybeSingle(),
-          client.from('user_profiles').select('is_admin, role, email').eq('id', user.id).maybeSingle()
-        ]);
-
-        const p = pRes.data;
-        const up = upRes.data;
-
-        if (
-          p?.is_admin === true || 
-          p?.role === 'admin' || 
-          (p?.email && p.email.toLowerCase() === 'smashtherealmuzic@gmail.com') ||
-          up?.is_admin === true || 
-          up?.role === 'admin' || 
-          (up?.email && up.email.toLowerCase() === 'smashtherealmuzic@gmail.com')
-        ) {
-          return true;
-        }
-      } catch (err) {
-        console.warn('[ADMIN CHECK] Error querying admin status:', err);
-      }
-    }
-
-    // Fallback: If logged in and executing admin actions, allow access
-    return true;
+    return user;
   };
 
   // Helper to verify PayChangu Webhook Signatures
@@ -895,7 +837,16 @@ async function startServer() {
       }
 
       // Check admin status robustly
-      let isAdmin = await checkIsAdmin(user);
+      let isAdmin = user.email === 'smashtherealmuzic@gmail.com' || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
+      if (!isAdmin && scopedClient) {
+        try {
+          const { data: pAdmin } = await scopedClient.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+          const { data: upAdmin } = await scopedClient.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+          isAdmin = pAdmin?.is_admin === true || upAdmin?.is_admin === true;
+        } catch (adminCheckErr) {
+          console.warn('[API] Admin check warning:', adminCheckErr);
+        }
+      }
 
       // If transaction not found in our DB, query PayChangu API directly
       if (!dbTx && PAYCHANGU_SECRET_KEY && PAYCHANGU_SECRET_KEY !== 'YOUR_PAYCHANGU_SECRET_KEY') {
@@ -1260,7 +1211,10 @@ async function startServer() {
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
       // Check if user is admin
-      const isSystemAdmin = await checkIsAdmin(user);
+      const { data: profile, error: profileErr } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: userProfile, error: upErr } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      
+      const isSystemAdmin = profile?.is_admin === true || userProfile?.is_admin === true;
       
       if (!isSystemAdmin) {
          console.warn(`[API] Admin access denied for user ${user.id}`);
@@ -1355,7 +1309,9 @@ async function startServer() {
       const user = await verifyUser(req);
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-      const isSystemAdmin = await checkIsAdmin(user);
+      const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: userProfile } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isSystemAdmin = profile?.is_admin === true || userProfile?.is_admin === true;
       if (!isSystemAdmin) return res.status(403).json({ error: 'Admin access required' });
 
       const { id } = req.params;
@@ -1435,18 +1391,14 @@ async function startServer() {
   });
 
   // Admin User Control & Action Center
-  app.all('/api/admin/users/:id/control', async (req, res) => {
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-    if (req.method !== 'POST') {
-      return res.status(200).json({ success: true });
-    }
+  app.post('/api/admin/users/:id/control', async (req, res) => {
     try {
       const user = await verifyUser(req);
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-      const isSystemAdmin = await checkIsAdmin(user);
+      const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: userProfile } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isSystemAdmin = profile?.is_admin === true || userProfile?.is_admin === true;
       if (!isSystemAdmin) return res.status(403).json({ error: 'Admin access required' });
 
       const { id } = req.params;
@@ -1474,45 +1426,37 @@ async function startServer() {
 
           // Log transaction
           const txRef = `ADJ-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-          try {
-            await supabaseAdmin.from('transactions').insert({
-              artist_id: id,
-              type: numAmount > 0 ? 'admin_credit' : 'admin_debit',
-              gross_amount: Math.abs(numAmount),
-              net_amount: Math.abs(numAmount),
-              platform_fee: 0,
-              status: 'completed',
-              paychangu_ref: txRef,
-              created_at: new Date().toISOString()
-            });
-          } catch (err: any) {
-            console.warn('Could not insert adjustment tx:', err);
-          }
+          await supabaseAdmin.from('transactions').insert({
+            artist_id: id,
+            type: numAmount > 0 ? 'admin_credit' : 'admin_debit',
+            gross_amount: Math.abs(numAmount),
+            net_amount: Math.abs(numAmount),
+            platform_fee: 0,
+            status: 'completed',
+            paychangu_ref: txRef,
+            created_at: new Date().toISOString()
+          }).catch((err: any) => console.warn('Could not insert adjustment tx:', err));
 
           // Log in activity
-          try {
-            await supabaseAdmin.from('activity_log').insert({
-              profile_id: id,
-              actor_type: 'admin',
-              event: numAmount > 0 ? 'wallet_credited' : 'wallet_debited',
-              amount: Math.abs(numAmount),
-              meta: { reason: reason || 'Administrative adjustment', previous: currentBal, new: newBal }
-            });
-          } catch {}
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: numAmount > 0 ? 'wallet_credited' : 'wallet_debited',
+            amount: Math.abs(numAmount),
+            meta: { reason: reason || 'Administrative adjustment', previous: currentBal, new: newBal }
+          }).catch(() => {});
 
           // Optional notification
           if (notify) {
-            try {
-              await supabaseAdmin.from('notifications').insert({
-                profile_id: id,
-                user_type: 'artist',
-                type: 'system_alert',
-                message: numAmount > 0
-                  ? `💰 Your studio wallet was credited with MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`
-                  : `⚠️ Your studio wallet was adjusted by -MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`,
-                link: '/artist-hub#wallet'
-              });
-            } catch {}
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'artist',
+              type: 'system_alert',
+              message: numAmount > 0
+                ? `💰 Your studio wallet was credited with MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`
+                : `⚠️ Your studio wallet was adjusted by -MK ${Math.abs(numAmount).toLocaleString()}. Note: ${reason || 'Admin adjustment'}`,
+              link: '/artist-hub#wallet'
+            }).catch(() => {});
           }
 
           return res.json({ success: true, newBalance: newBal });
@@ -1542,14 +1486,12 @@ async function startServer() {
             supabaseAdmin.from('user_profiles').update(sanitized).eq('id', id)
           ]);
 
-          try {
-            await supabaseAdmin.from('activity_log').insert({
-              profile_id: id,
-              actor_type: 'admin',
-              event: 'profile_updated_by_admin',
-              meta: { updated_fields: Object.keys(sanitized) }
-            });
-          } catch {}
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: 'profile_updated_by_admin',
+            meta: { updated_fields: Object.keys(sanitized) }
+          }).catch(() => {});
 
           return res.json({ success: true });
         }
@@ -1564,15 +1506,13 @@ async function startServer() {
           ]);
 
           if (isVerified) {
-            try {
-              await supabaseAdmin.from('notifications').insert({
-                profile_id: id,
-                user_type: 'artist',
-                type: 'system_alert',
-                message: '🎉 Congratulations! Your Smashify profile has been officially verified with the verified badge.',
-                link: '/artist-hub'
-              });
-            } catch {}
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'artist',
+              type: 'system_alert',
+              message: '🎉 Congratulations! Your Smashify profile has been officially verified with the verified badge.',
+              link: '/artist-hub'
+            }).catch(() => {});
           }
 
           return res.json({ success: true, verified: isVerified });
@@ -1599,39 +1539,25 @@ async function startServer() {
             supabaseAdmin.from('user_profiles').update({ is_suspended: suspended }).eq('id', id)
           ]);
 
-          try {
-            await supabaseAdmin.from('activity_log').insert({
-              profile_id: id,
-              actor_type: 'admin',
-              event: suspended ? 'account_suspended' : 'account_reactivated',
-              meta: { reason: reason || 'Administrative action' }
-            });
-          } catch {}
+          await supabaseAdmin.from('activity_log').insert({
+            profile_id: id,
+            actor_type: 'admin',
+            event: suspended ? 'account_suspended' : 'account_reactivated',
+            meta: { reason: reason || 'Administrative action' }
+          }).catch(() => {});
 
           return res.json({ success: true, is_suspended: suspended });
         }
 
         case 'set_artist_tier': {
           const { tier, months = 6 } = payload || {};
-          
-          // Normalize tier input
-          let normalizedTier = tier;
-          if (typeof tier === 'string') {
-            const clean = tier.trim().toLowerCase().replace(/[\s-_]/g, '');
-            if (clean === 'free') normalizedTier = 'Free';
-            else if (clean === 'risingstar' || clean === 'rising') normalizedTier = 'RisingStar';
-            else if (clean === 'standard') normalizedTier = 'Standard';
-            else if (clean === 'elite') normalizedTier = 'Elite';
-            else if (clean === 'label') normalizedTier = 'Label';
-          }
-
-          const validTiers = ['Free', 'RisingStar', 'Standard', 'Elite', 'Label'];
-          if (!validTiers.includes(normalizedTier)) {
-            return res.status(400).json({ error: `Invalid artist tier: ${tier}` });
+          const validTiers = ['Free', 'RisingStar', 'Standard', 'Elite'];
+          if (!validTiers.includes(tier)) {
+            return res.status(400).json({ error: 'Invalid artist tier' });
           }
 
           let endsDate: string | null = null;
-          if (normalizedTier !== 'Free') {
+          if (tier !== 'Free') {
             const ends = new Date();
             if (months === -1) {
               ends.setFullYear(ends.getFullYear() + 10); // Lifetime
@@ -1641,51 +1567,23 @@ async function startServer() {
             endsDate = ends.toISOString();
           }
 
-          // Update both profiles and user_profiles in parallel
-          const updatePayload: any = {
-            artist_tier: normalizedTier,
-            subscription_tier: normalizedTier,
-            subscription_ends: endsDate,
-            subscription_expires_at: endsDate,
-            tier_expires_at: endsDate
-          };
-          if (normalizedTier !== 'Free') {
-            updatePayload.user_type = 'artist';
-          }
+          await supabaseAdmin.from('profiles').update({
+            artist_tier: tier,
+            subscription_tier: tier,
+            subscription_ends: endsDate
+          }).eq('id', id);
 
-          const db = supabaseAdmin || getScopedClient(req);
-          if (db) {
-            await Promise.all([
-              db.from('profiles').update(updatePayload).eq('id', id),
-              db.from('user_profiles').update(updatePayload).eq('id', id)
-            ]);
+          await supabaseAdmin.from('notifications').insert({
+            profile_id: id,
+            user_type: 'artist',
+            type: 'system_alert',
+            message: tier === 'Free'
+              ? 'Your artist subscription tier has been reset to Free.'
+              : `🌟 You have been upgraded to the ${tier} Tier! Enjoy exclusive distribution features and studio perks.`,
+            link: '/artist-hub'
+          }).catch(() => {});
 
-            // Activity log
-            try {
-              await db.from('activity_log').insert({
-                profile_id: id,
-                actor_type: 'admin',
-                event: 'artist_tier_updated',
-                meta: { tier: normalizedTier, months, subscription_ends: endsDate }
-              });
-            } catch {}
-
-            // Notification
-            try {
-              await db.from('notifications').insert({
-                profile_id: id,
-                user_type: 'artist',
-                type: 'system_alert',
-                title: 'Studio Subscription Tier Updated',
-                message: normalizedTier === 'Free'
-                  ? 'Your artist subscription tier has been reset to Free.'
-                  : `🌟 You have been granted the ${normalizedTier} Studio Tier! Enjoy exclusive distribution features and studio perks.`,
-                link: '/artist-hub'
-              });
-            } catch {}
-          }
-
-          return res.json({ success: true, artist_tier: normalizedTier, subscription_ends: endsDate });
+          return res.json({ success: true, artist_tier: tier, subscription_ends: endsDate });
         }
 
         case 'manage_daily_pass': {
@@ -1715,15 +1613,13 @@ async function startServer() {
           ]);
 
           if (numHours > 0) {
-            try {
-              await supabaseAdmin.from('notifications').insert({
-                profile_id: id,
-                user_type: 'listener',
-                type: 'system_alert',
-                message: `🎧 You have been granted ${numHours >= 24 ? Math.round(numHours/24) + ' day(s)' : numHours + ' hours'} of Unlimited Listener Pass! Enjoy ad-free lossless streaming.`,
-                link: '/discover'
-              });
-            } catch {}
+            await supabaseAdmin.from('notifications').insert({
+              profile_id: id,
+              user_type: 'listener',
+              type: 'system_alert',
+              message: `🎧 You have been granted ${numHours >= 24 ? Math.round(numHours/24) + ' day(s)' : numHours + ' hours'} of Unlimited Listener Pass! Enjoy ad-free lossless streaming.`,
+              link: '/discover'
+            }).catch(() => {});
           }
 
           return res.json({ success: true, daily_pass_expires_at: expiresAt, subscription_tier: tierName });
@@ -1775,10 +1671,10 @@ async function startServer() {
           const targetName = p?.stage_name || p?.full_name || 'User';
 
           // Clean related content
-          try { await supabaseAdmin.from('songs').delete().eq('artist_id', id); } catch {}
-          try { await supabaseAdmin.from('albums').delete().eq('artist_id', id); } catch {}
-          try { await supabaseAdmin.from('tickets').delete().eq('profile_id', id); } catch {}
-          try { await supabaseAdmin.from('people_notes').delete().eq('profile_id', id); } catch {}
+          await supabaseAdmin.from('songs').delete().eq('artist_id', id).catch(() => {});
+          await supabaseAdmin.from('albums').delete().eq('artist_id', id).catch(() => {});
+          await supabaseAdmin.from('tickets').delete().eq('profile_id', id).catch(() => {});
+          await supabaseAdmin.from('people_notes').delete().eq('profile_id', id).catch(() => {});
           
           await Promise.all([
             supabaseAdmin.from('profiles').delete().eq('id', id),
@@ -1943,13 +1839,11 @@ async function startServer() {
       console.log(`[WEBHOOK] Payload received:`, JSON.stringify(payload));
       console.log(`[WEBHOOK] Fulfilling ref: ${tx_ref}, amount: ${amount}`);
 
-      try {
-        await supabaseAdmin.from('webhook_logs').insert({
-          tx_ref,
-          status: 'processed',
-          payload: JSON.stringify(payload)
-        });
-      } catch {}
+      await supabaseAdmin.from('webhook_logs').insert({
+        tx_ref,
+        status: 'processed',
+        payload: JSON.stringify(payload)
+      }).catch(() => {});
 
       await fulfillTransaction(transaction, amount || transaction.gross_amount);
 

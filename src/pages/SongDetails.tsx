@@ -36,7 +36,6 @@ import { musicService } from '../services/musicService';
 import { optimizeImage } from '../lib/imageUtils';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
 import { copyToClipboard } from '../lib/shareUtils';
-import { getArtistTier } from '../lib/tierUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, GRID_SONG_CARDS, SECTION_SPACING } from '../lib/layout';
 import SEO from '../components/common/SEO';
 import SongCard from '../components/common/SongCard';
@@ -157,10 +156,10 @@ const SongDetails: React.FC = () => {
 
         if (pData) {
           setArtistProfile(pData as any);
-          setArtistTier(getArtistTier(pData) || catArtist?.artist_tier || 'Free');
+          setArtistTier(pData.artist_tier || pData.subscription_tier || catArtist?.artist_tier || 'Free');
         } else if (catArtist) {
           setArtistProfile(catArtist as any);
-          setArtistTier(getArtistTier(catArtist) || 'Free');
+          setArtistTier(catArtist.artist_tier || 'Free');
         }
       }
 

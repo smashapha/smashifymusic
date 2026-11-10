@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
-import { syncExpiredSubscriptions, syncExpiredArtistTier, getArtistTier } from '../lib/tierUtils';
+import { syncExpiredSubscriptions, syncExpiredArtistTier } from '../lib/tierUtils';
 
 // Define separate profile types matching your actual tables
 export interface ArtistProfile {
@@ -386,9 +386,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (artistData) {
           let currentArtistData = artistData;
-          const activeTier = getArtistTier(artistData);
+          const subTier = (artistData.subscription_tier || 'free').toLowerCase();
+          const artTier = (artistData.artist_tier || 'free').toLowerCase();
           
-          if (activeTier === 'free' && artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && (artistData.artist_tier !== 'Free' || artistData.subscription_tier !== 'free')) {
+          if (artistData.subscription_ends && new Date(artistData.subscription_ends) < new Date() && (subTier !== 'free' || artTier !== 'free')) {
              const { data: updatedArtist } = await supabase
                .from('profiles')
                .update({ subscription_tier: 'free', artist_tier: 'Free' })

@@ -18,7 +18,6 @@ import { optimizeImage } from '../../lib/imageUtils';
 import { formatDisplayTitle, formatArtistName } from '../../lib/formatting';
 import { shareSong } from '../../lib/shareUtils';
 import toast from 'react-hot-toast';
-import { getArtistTier } from '../../lib/tierUtils';
 import LazyImage from './LazyImage';
 
 interface SongCardProps {
@@ -481,8 +480,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
 export const SongMenu = ({ song, onClose, onBuy, onDownload, onAddToPlaylist, artistCanSell }: any) => {
   const navigate = useNavigate();
   const { addToQueue, purchasedIds } = usePlayer();
-  const resolvedTier = getArtistTier(song.profiles || song || {}).toLowerCase();
-  const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['elite', 'label'].includes(resolvedTier);
+  const actualArtistCanSell = artistCanSell !== undefined ? artistCanSell : ['Elite', 'elite', 'Label', 'label'].includes((song.artist_tier || song.profiles?.artist_tier || song.profiles?.subscription_tier || '').toLowerCase());
   
   const handleShare = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

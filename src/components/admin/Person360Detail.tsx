@@ -4,7 +4,7 @@ import {
   Send, DollarSign, Activity, FileText, Ticket, Play, Pause, 
   Trash2, Edit3, UserCheck, UserX, Music, Disc, Wallet, 
   CreditCard, ExternalLink, Phone, MapPin, Sparkles, RefreshCw,
-  Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic, Loader2
+  Plus, Check, X, Bell, UserMinus, ShieldAlert, ListMusic
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
@@ -93,7 +93,6 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
     artistMonths: 6,
     listenerPassHours: 24
   });
-  const [submittingTier, setSubmittingTier] = useState(false);
 
   // Notification form
   const [notifForm, setNotifForm] = useState({
@@ -136,8 +135,7 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
       });
 
       if (res.ok) {
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : {};
+        const data = await res.json();
         setProfile(data.profile || {});
         setSongs(data.songs || []);
         setAlbums(data.albums || []);
@@ -237,21 +235,8 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
         body: JSON.stringify({ action, payload })
       });
 
-      const text = await res.text();
-      let data: any = {};
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
-        // Fallback if non-JSON body returned
-      }
-
-      if (!res.ok) {
-        let msg = data.error;
-        if (!msg && text) {
-          msg = text.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
-        }
-        throw new Error(msg || `Server error (${res.status})`);
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Action failed');
       return data;
     } catch (err: any) {
       console.error('Action error:', err);
@@ -347,27 +332,20 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
   // Manage Artist Tier / Listener Pass
   const handleManageTier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submittingTier) return;
-    setSubmittingTier(true);
     try {
-      const isArtist = person.type === 'artist' || profile.user_type === 'artist' || !!(profile.stage_name) || tierForm.artistTier !== 'Free';
-      if (isArtist) {
+      if (person.type === 'artist') {
         const res = await executeControl('set_artist_tier', {
           tier: tierForm.artistTier,
           months: tierForm.artistMonths
         });
         setProfile((prev: any) => ({ 
-          ...prev,
-          user_type: res.artist_tier !== 'Free' ? 'artist' : prev.user_type,
+          ...prev, 
           artist_tier: res.artist_tier, 
           subscription_tier: res.artist_tier,
-          subscription_ends: res.subscription_ends,
-          subscription_expires_at: res.subscription_ends,
-          tier_expires_at: res.subscription_ends
+          subscription_ends: res.subscription_ends 
         }));
         person.artist_tier = res.artist_tier;
         toast.success(`Artist updated to ${res.artist_tier} tier`);
-        fetchDeepDetails();
       } else {
         const res = await executeControl('manage_daily_pass', {
           hours: tierForm.listenerPassHours
@@ -378,14 +356,11 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
           subscription_tier: res.subscription_tier 
         }));
         toast.success(tierForm.listenerPassHours > 0 ? 'Listener Pass granted!' : 'Listener Pass revoked');
-        fetchDeepDetails();
       }
       setTierModalOpen(false);
       if (onRefresh) onRefresh();
     } catch (err: any) {
       toast.error('Tier update failed: ' + err.message);
-    } finally {
-      setSubmittingTier(false);
     }
   };
 
@@ -1779,11 +1754,9 @@ export const Person360Detail: React.FC<Person360DetailProps> = ({ person, onBack
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingTier}
-                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white font-semibold rounded-[10px] text-[13px] flex items-center gap-2"
+                  className="px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-[10px] text-[13px]"
                 >
-                  {submittingTier && <Loader2 size={14} className="animate-spin" />}
-                  {submittingTier ? 'Applying...' : 'Apply Tier'}
+                  Apply Tier
                 </button>
               </div>
             </form>

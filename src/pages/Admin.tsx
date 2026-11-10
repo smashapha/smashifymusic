@@ -837,7 +837,9 @@ const Admin = () => {
     const { data: artistsData, error } = await supabase
       .from('profiles')
       .select('*')
-      .or('user_type.eq.artist,artist_tier.neq.Free,subscription_tier.neq.Free,subscription_ends.not.is.null')
+      .eq('user_type', 'artist')
+      .not('stage_name', 'is', null)
+      .neq('stage_name', '')
       .order('created_at', { ascending: false });
     
     if (error) {
