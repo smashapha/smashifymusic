@@ -26,6 +26,14 @@ const PAYCHANGU_WEBHOOK_SECRET = Deno.env.get("PAYCHANGU_WEBHOOK_SECRET") || Den
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+function hexToBytes(hex: string) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
   if (req.method === "OPTIONS") {
@@ -33,22 +41,29 @@ serve(async (req) => {
   }
 
   try {
+    // CRITICAL: Always use privileged service client for fulfillment
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const url = new URL(req.url);
 
     // Handle browser redirects (GET requests)
     if (req.method === "GET") {
       const tx_ref = url.searchParams.get("tx_ref") || url.searchParams.get("reference");
+      const defaultRedirect = "https://smashifymusic.vercel.app";
 
       if (tx_ref) {
+        // Fetch transaction to know where to redirect based on original return_url
         const { data: transaction } = await supabase
           .from("transactions")
-          .select("metadata")
+          .select("metadata, return_url")
           .eq("paychangu_ref", tx_ref)
           .maybeSingle();
 
         const type = (transaction?.metadata?.payment_type || "").toUpperCase();
         let redirectPath = "/";
+
+        if (transaction?.return_url) {
+           return Response.redirect(transaction.return_url, 302);
+        }
 
         if (type === "TRACK_PURCHASE") {
           redirectPath = `/purchase-success?song_id=${transaction?.metadata?.songId || ""}&tx_ref=${tx_ref}`;
@@ -68,7 +83,7 @@ serve(async (req) => {
 
         return Response.redirect(`https://play-smashify.vercel.app${redirectPath}`, 302);
       }
-      return Response.redirect("https://play-smashify.vercel.app/", 302);
+      return Response.redirect(defaultRedirect, 302);
     }
 
     // --- Webhook POST processing ---
@@ -115,8 +130,8 @@ serve(async (req) => {
 
     const isSuccess = ["successful", "success", "paid"].includes(status);
     
-    if (isSuccess) {
-       // Use atomic RPC for fulfillment
+    if (isSuccess && tx_ref) {
+       // Invoke atomic RPC for fulfillment
        const { data: rpcRes, error: rpcErr } = await supabase.rpc('finalize_payment_order', {
           p_paychangu_ref: tx_ref,
           p_gateway_amount: amount
@@ -124,26 +139,22 @@ serve(async (req) => {
 
        if (rpcErr) {
           console.error(`RPC Error for ${tx_ref}:`, rpcErr);
-          // Don't return 500 so PayChangu stops retrying if it's a persistent DB error, 
-          // but logging it is crucial.
-       } else {
-          console.log(`RPC Success for ${tx_ref}:`, rpcRes);
+          return new Response(`Fulfillment Failed: ${rpcErr.message}`, { status: 500 });
        }
+       
+       if (!rpcRes?.success) {
+          console.error(`Business logic failure for ${tx_ref}:`, rpcRes?.error);
+          return new Response(`Business Error: ${rpcRes?.error}`, { status: 500 });
+       }
+
+       console.log(`RPC Success for ${tx_ref}:`, rpcRes);
     } else if (["failed", "cancelled", "expired"].includes(status)) {
        await supabase.from("transactions").update({ status: "failed" }).eq("paychangu_ref", tx_ref).eq("status", "pending");
     }
 
     return new Response("Success", { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Webhook processing error:", error);
-    return new Response("Internal error", { status: 200 });
+    return new Response(`Internal error: ${error?.message || error}`, { status: 200 });
   }
 });
-
-function hexToBytes(hex: string) {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-  }
-  return bytes;
-}

@@ -547,22 +547,26 @@ async function startServer() {
   app.post('/api/pay/create-payment', handleCreatePayment);
 
   // Shared robust fulfillment helper
-  const fulfillTransaction = async (dbTx: any, amount?: number, customClient?: any) => {
+  const fulfillTransaction = async (dbTx: any, amount?: number) => {
     const txAmount = amount || dbTx.gross_amount || 0;
-    const client = customClient || supabaseAdmin;
 
     console.log(`[FULFILL] Invoking atomic finalizer for ref: ${dbTx.paychangu_ref}`);
 
     // Use the atomic stored procedure for core logic (entitlements, wallet, sales, tx status)
-    const { data: finalResult, error: finalError } = await client.rpc('finalize_payment_order', {
+    // CRITICAL: Always use supabaseAdmin (privileged client) for this SECURITY DEFINER RPC.
+    const { data: finalResult, error: finalError } = await supabaseAdmin.rpc('finalize_payment_order', {
       p_paychangu_ref: dbTx.paychangu_ref,
       p_gateway_amount: txAmount
     });
 
     if (finalError) {
       console.error('[FULFILL] RPC Error:', finalError);
-      // Fallback to basic transaction update if RPC fails
-      await client.from('transactions').update({ status: 'completed', gross_amount: txAmount }).eq('id', dbTx.id);
+      throw new Error(`Fulfillment RPC failed: ${finalError.message}`);
+    }
+
+    if (!finalResult?.success) {
+      console.error('[FULFILL] Business Logic Failure:', finalResult?.error);
+      throw new Error(`Fulfillment failed: ${finalResult?.error || 'Unknown error'}`);
     }
 
     const type = (dbTx.metadata?.payment_type || dbTx.type || '').toUpperCase();
@@ -729,7 +733,7 @@ async function startServer() {
       // Force Grant bypass: admin-only override
       if (isForceGrant) {
         console.log(`[API] Admin ${user.id} requested FORCE_GRANT for ref ${tx_ref}`);
-        const fulfillment = await fulfillTransaction(dbTx, dbTx.gross_amount, scopedClient);
+        const fulfillment = await fulfillTransaction(dbTx, dbTx.gross_amount);
         const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`).maybeSingle();
         return res.json({ 
           status: 'completed', 
@@ -752,7 +756,7 @@ async function startServer() {
             .maybeSingle();
           if (!fpCheck) {
             console.log(`[API] Completed tx ${tx_ref} was missing fan_purchase record. Backfilling now...`);
-            await fulfillTransaction(dbTx, dbTx.gross_amount, scopedClient);
+            await fulfillTransaction(dbTx, dbTx.gross_amount);
           }
         }
         return res.json({ status: dbTx.status, granted: true, transaction: dbTx });
@@ -802,7 +806,7 @@ async function startServer() {
 
       // Only fulfill if verified by gateway
       if (pcVerified) {
-        const fulfillment = await fulfillTransaction(dbTx, pcAmount, scopedClient);
+        const fulfillment = await fulfillTransaction(dbTx, pcAmount);
         const { data: updated } = await (scopedClient || supabaseAdmin).from('transactions').select('*').eq('id', dbTx.id).maybeSingle();
         return res.json({ 
           status: 'completed', 
@@ -886,7 +890,7 @@ async function startServer() {
 
           if (!existing) {
             console.log(`[SYNC] Backfilling purchase for user ${user.id}, song ${songId}, tx ${tx.paychangu_ref}`);
-            await fulfillTransaction(tx, tx.gross_amount, scopedClient);
+            await fulfillTransaction(tx, tx.gross_amount);
             restored.push(songId);
           } else if (!existing.purchased_at) {
             await (scopedClient || supabaseAdmin)

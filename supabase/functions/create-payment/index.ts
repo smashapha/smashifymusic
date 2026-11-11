@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
       const { data: albumRow, error: albumErr } = await supabase
         .from('albums')
-        .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+        .select('id, price, is_for_sale, artist_id, discount_percent, sale_ends_at')
         .eq('id', meta.albumId)
         .single();
 
@@ -149,6 +149,22 @@ Deno.serve(async (req) => {
           status: 400,
         });
       }
+
+      // Snapshot Logic: Fetch track IDs at checkout time
+      const { data: albumSongs, error: songsErr } = await supabase
+        .from('songs')
+        .select('id')
+        .eq('album_id', albumRow.id);
+
+      if (songsErr || !albumSongs || albumSongs.length === 0) {
+        return new Response(JSON.stringify({ error: 'This album is empty and cannot be purchased' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const trackIds = albumSongs.map(s => s.id);
+      meta.trackIds = trackIds; // Store snapshot in order metadata
 
       const pct = albumRow.discount_percent || 0;
       const saleExpired = albumRow.sale_ends_at && new Date(albumRow.sale_ends_at).getTime() < Date.now();
@@ -231,6 +247,10 @@ Deno.serve(async (req) => {
       netAmount = Math.max(finalAmount - platformFee, 0);
     }
 
+    const resolvedReturnUrl = return_url.includes("?") 
+            ? `${return_url}&tx_ref=${tx_ref}`
+            : `${return_url}?tx_ref=${tx_ref}`;
+
     // 3. Create Transaction Record
     const { error: txError } = await supabase.from("transactions").insert({
       artist_id: artistId,
@@ -241,6 +261,7 @@ Deno.serve(async (req) => {
       net_amount: netAmount,
       status: "pending",
       paychangu_ref: tx_ref,
+      return_url: resolvedReturnUrl,
       description: descriptions[type] || "Smashify Payment",
       metadata: { ...meta, payment_type: type, userId: txFanId },
     });
@@ -266,9 +287,7 @@ Deno.serve(async (req) => {
         last_name,
         tx_ref,
         callback_url: `${SUPABASE_URL}/functions/v1/paychangu-webhook`,
-        return_url: return_url.includes("?") 
-            ? `${return_url}&tx_ref=${tx_ref}`
-            : `${return_url}?tx_ref=${tx_ref}`,
+        return_url: resolvedReturnUrl,
         customization: {
           title: "Smashify",
           description: descriptions[type] || "Smashify Payment",
