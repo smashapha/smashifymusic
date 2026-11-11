@@ -289,7 +289,7 @@ const AlbumDetails: React.FC = () => {
             <Play fill="white" size={18} /> Play Album
           </button>
 
-          {!allTracksPurchased && album.is_for_sale !== false && (
+          {!allTracksPurchased && album.is_for_sale !== false && albumPrice > 0 && (
             <button
               onClick={handleBuyAlbum}
               disabled={buyingAlbum}

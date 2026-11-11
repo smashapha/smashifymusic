@@ -1888,7 +1888,8 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
       .eq('artist_id', userProfile?.id);
 
     if (error) {
-      toast.error('Could not save album promotion');
+      console.error('saveAlbumPromo error:', error);
+      toast.error(`Could not save album promotion: ${error.message}`);
       return;
     }
     toast.success(`${promoPercent}% off promotion applied to album!`);
@@ -1931,7 +1932,8 @@ const AlbumsTab = ({ albums, songs, onRefresh, setActiveTab, userProfile }: any)
       .eq('artist_id', userProfile?.id);
 
     if (error) {
-      toast.error('Could not update album price');
+      console.error('saveAlbumPrice error:', error);
+      toast.error(`Could not update album price: ${error.message}`);
     } else {
       toast.success('Album pricing updated!');
       setEditPriceAlbum(null);

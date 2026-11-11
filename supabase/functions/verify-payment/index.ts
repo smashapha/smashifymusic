@@ -21,328 +21,6 @@ function getCorsHeaders(requestOrigin: string | null) {
   return headers;
 }
 
-async function processSuccessfulPayment(supabase: any, dbTx: any) {
-  const type = (dbTx.metadata?.payment_type || "").toUpperCase();
-  const { artistId, songId, plan, tier, plays, anonymous } = dbTx.metadata || {};
-  const userId = dbTx.metadata?.userId || dbTx.fan_id;
-  const grossAmount = Number(dbTx.gross_amount);
-  const netAmount = Number(dbTx.net_amount);
-
-  const { data: updatedTxs, error: updateError } = await supabase
-    .from("transactions")
-    .update({
-      status: "completed",
-      completed_at: new Date().toISOString(),
-    })
-    .eq("id", dbTx.id)
-    .eq("status", "pending")
-    .select();
-
-  if (updateError || !updatedTxs || updatedTxs.length === 0) {
-    console.log(`Transaction ${dbTx.id} already processed or no longer pending`);
-    return dbTx;
-  }
-
-  console.log(`Processing ${type} for user ${userId}`);
-
-  switch (type) {
-    case "TRACK_PURCHASE":
-      const { data: existingPurchase } = await supabase
-        .from("fan_purchases")
-        .select("id")
-        .eq("fan_id", userId)
-        .eq("song_id", songId)
-        .maybeSingle();
-
-      let fpError;
-      if (!existingPurchase) {
-        const { error } = await supabase
-          .from("fan_purchases")
-          .insert({
-            fan_id: userId,
-            song_id: songId,
-            transaction_id: dbTx.id,
-            amount: grossAmount,
-            status: "completed",
-            purchased_at: new Date().toISOString()
-          });
-        fpError = error;
-      }
-
-      if (fpError)
-        console.error(
-          "fan_purchases insert failed:",
-          fpError.message,
-          fpError.details,
-        );
-
-      await supabase.rpc("increment_wallet", {
-        artist_id: artistId,
-        amount: netAmount,
-      });
-
-      const { data: songData } = await supabase
-        .from("songs")
-        .select("sales")
-        .eq("id", songId)
-        .single();
-      const currentSales = Number(songData?.sales || 0);
-      await supabase
-        .from("songs")
-        .update({ sales: currentSales + 1 })
-        .eq("id", songId);
-      break;
-
-    case "TIP": {
-      const { error: walletErr } = await supabase.rpc("increment_wallet", {
-        artist_id: artistId,
-        amount: netAmount,
-      });
-      if (walletErr) console.error("increment_wallet error:", walletErr);
-
-      const { data: fanProfile } = await supabase
-        .from("user_profiles")
-        .select("full_name")
-        .eq("id", userId)
-        .maybeSingle();
-
-      const { data: artistFanProfile } = !fanProfile ? await supabase
-        .from("profiles")
-        .select("stage_name")
-        .eq("id", userId)
-        .maybeSingle() : { data: null };
-
-      const fanName = fanProfile?.full_name || artistFanProfile?.stage_name || "A fan";
-
-      await supabase.from("notifications").insert({
-        profile_id: artistId,
-        user_type: "artist",
-        type: "tip_received",
-        message: `${fanName} sent you a MWK ${grossAmount.toLocaleString()} tip! You earned MWK ${netAmount.toLocaleString()} after fees. 💸`,
-        link: "/artist-hub#dashboard",
-      });
-      break;
-    }
-    case "FAN_SUBSCRIPTION": {
-      const renewsAt = new Date();
-      renewsAt.setDate(renewsAt.getDate() + 30);
-      
-      const { data: existingSub } = await supabase
-        .from("fan_subscriptions")
-        .select("id")
-        .eq("fan_id", userId)
-        .eq("artist_id", artistId)
-        .maybeSingle();
-
-      if (existingSub) {
-        await supabase.from("fan_subscriptions").update({
-          status: "active",
-          next_billing_at: renewsAt.toISOString(),
-        }).eq("id", existingSub.id);
-      } else {
-        await supabase.from("fan_subscriptions").insert({
-          fan_id: userId,
-          artist_id: artistId,
-          status: "active",
-          next_billing_at: renewsAt.toISOString(),
-        });
-      }
-
-      await supabase.rpc("increment_wallet", {
-        artist_id: artistId,
-        amount: netAmount,
-      });
-
-      await supabase.from("notifications").insert({
-        profile_id: artistId,
-        user_type: "artist",
-        type: "subscription_started",
-        message: `A fan just started a monthly subscription! MWK ${grossAmount.toLocaleString()} 💖 (Net: MWK ${netAmount.toLocaleString()})`,
-        link: "/artist-hub#fans",
-      });
-      break;
-    }
-    case "LISTENER_DAILY_PASS":
-    case "LISTENER_WEEKLY_PASS":
-    case "LISTENER_PREMIUM":
-    case "LISTENER_FAMILY": {
-      const planDurations: Record<string, number> = {
-        LISTENER_DAILY_PASS:  1,
-        LISTENER_WEEKLY_PASS: 7,
-        LISTENER_PREMIUM:     30,
-        LISTENER_FAMILY:      30,
-      };
-      const tierNameMap: Record<string, string> = {
-        LISTENER_DAILY_PASS:  "DailyPass",
-        LISTENER_WEEKLY_PASS: "WeeklyPass",
-        LISTENER_PREMIUM:     "Premium",
-        LISTENER_FAMILY:      "Family",
-      };
-      const days = planDurations[type] || 30;
-      const subTierName = tierNameMap[type] || "Premium";
-      const subEnds = new Date();
-      subEnds.setDate(subEnds.getDate() + days);
-      const listenerId = userId || dbTx.metadata?.fan_id || dbTx.metadata?.userId;
-
-      const { error: listenerTierError } = await supabase
-        .from("user_profiles")
-        .upsert(
-          {
-            id: listenerId,
-            subscription_tier: subTierName,
-            subscription_expires_at: subEnds.toISOString(),
-          },
-          { onConflict: "id" },
-        );
-
-      if (listenerTierError) {
-        console.error("Listener tier update error:", listenerTierError);
-      } else {
-        console.log("Listener upgraded to", subTierName, "for", days, "days");
-      }
-      break;
-    }
-    case "ARTIST_RISING_STAR":
-    case "ARTIST_STANDARD":
-    case "ARTIST_ELITE":
-      const artistTierEnds = new Date();
-      artistTierEnds.setMonth(artistTierEnds.getMonth() + 6);
-      const tierMap: Record<string, string> = {
-        ARTIST_RISING_STAR: "RisingStar",
-        ARTIST_STANDARD: "Standard",
-        ARTIST_ELITE: "Elite",
-      };
-      const artistTierName = tierMap[type] || "Free";
-      await supabase
-        .from("profiles")
-        .update({
-          subscription_tier: artistTierName,
-          artist_tier: artistTierName,
-          subscription_ends: artistTierEnds.toISOString(),
-          approved: true,
-        })
-        .eq("id", userId);
-        
-      // Record Agent Commission
-      try {
-         const { data: profile } = await supabase.from("profiles").select("agent_reference").eq("id", userId).single();
-         if (profile && profile.agent_reference) {
-            let commission = 0;
-            if (artistTierName === "RisingStar") commission = 800;
-            if (artistTierName === "Standard") commission = 1600;
-            if (artistTierName === "Elite") commission = 2700;
-            
-            if (commission > 0) {
-               // Prevent duplicate commissions for same transaction by checking status (though verify-payment won't rerun if tx status is 'success')
-               const { error: commError } = await supabase.from("agent_commissions").insert({
-                 agent_id: profile.agent_reference,
-                 artist_id: userId,
-                 commission_amount: commission,
-                 tier: artistTierName,
-                 status: "pending"
-               });
-               if (!commError) {
-                  const { data: ag } = await supabase.from("agents").select("total_earned").eq("user_id", profile.agent_reference).single();
-                  if (ag) {
-                     await supabase.from("agents").update({ total_earned: (ag.total_earned || 0) + commission }).eq("user_id", profile.agent_reference);
-                  }
-               }
-            }
-         }
-      } catch (err) {
-         console.error("Error recording agent commission:", err);
-      }
-
-      await supabase.from("user_profiles").upsert(
-        {
-          id: userId,
-          subscription_tier: "Premium",
-          subscription_expires_at: artistTierEnds.toISOString(),
-        },
-        { onConflict: "id" },
-      );
-      break;
-    case "ARTIST_AD_CAMPAIGN": {
-      const { error: adError } = await supabase.from("audio_ads").insert({
-        artist_id:       userId,
-        type:            "promo",
-        title:           dbTx.metadata?.title || "Ad Campaign",
-        advertiser_name: dbTx.metadata?.advertiser_name || null,
-        audio_url:       dbTx.metadata?.audio_url || null,
-        target_city:     dbTx.metadata?.target_city || null,
-        target_genre:    dbTx.metadata?.target_genre || null,
-        plays_purchased: plays,
-        plays_used:      0,
-        active:          false, // Admin must approve before going live
-        approved:        false,
-        expires_at:      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-      if (adError) console.error("Audio ad insert error:", adError);
-      else console.log("Ad campaign created for artist:", userId);
-
-      await supabase.from("notifications").insert({
-        user_type: "admin",
-        type:      "ad_review",
-        message:   `New ad campaign submitted. Artist: ${userId}. Plays purchased: ${plays}. Needs approval before going live.`,
-        link:      "/admin#commercials",
-      });
-      break;
-    }
-  }
-
-  return dbTx;
-}
-
-async function reconcileStuckTransactions(supabase: any, PAYCHANGU_SECRET_KEY: string) {
-  // Find transactions stuck pending for more than 5 minutes
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-  const { data: stuckTxns } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("status", "pending")
-    .lt("created_at", fiveMinutesAgo)
-    .limit(20);
-
-  if (!stuckTxns || stuckTxns.length === 0) return { checked: 0, resolved: 0 };
-
-  let resolved = 0;
-  for (const txn of stuckTxns) {
-    try {
-      const verifyRes = await fetch(
-        `https://api.paychangu.com/verify-payment/${txn.paychangu_ref}`,
-        {
-          headers: {
-            Authorization: `Bearer ${PAYCHANGU_SECRET_KEY}`,
-            Accept: "application/json",
-          },
-        }
-      );
-      const verifyData = await verifyRes.json();
-      const realStatus = (verifyData?.data?.status || "").toLowerCase();
-
-      const successStatuses = ["successful", "success", "paid"];
-      const failedStatuses = ["failed", "cancelled", "canceled", "expired"];
-
-      if (successStatuses.includes(realStatus)) {
-        await processSuccessfulPayment(supabase, txn);
-        console.log(`Reconciled ${txn.paychangu_ref}: was pending, actually succeeded`);
-        resolved++;
-      } else if (failedStatuses.includes(realStatus)) {
-        await supabase
-          .from("transactions")
-          .update({ status: "failed" })
-          .eq("id", txn.id)
-          .eq("status", "pending");
-        console.log(`Reconciled ${txn.paychangu_ref}: was pending, confirmed failed`);
-        resolved++;
-      }
-    } catch (err) {
-      console.error(`Reconciliation check failed for ${txn.paychangu_ref}:`, err);
-    }
-  }
-  return { checked: stuckTxns.length, resolved };
-}
-
 const PAYCHANGU_SECRET_KEY = Deno.env.get("PAYCHANGU_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -377,19 +55,13 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     let tx_ref = url.searchParams.get("tx_ref");
+    let isForceGrant = false;
+
     if (req.method === "POST") {
       try {
         const body = await req.json();
-        
-        if (body.action === "reconcile_stuck") {
-          const result = await reconcileStuckTransactions(supabase, PAYCHANGU_SECRET_KEY!);
-          return new Response(JSON.stringify(result), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          });
-        }
-        
         if (body?.tx_ref) tx_ref = body.tx_ref;
+        if (body?.force_grant) isForceGrant = body.force_grant;
       } catch (_) {}
     }
 
@@ -414,9 +86,8 @@ serve(async (req) => {
       .single();
 
     if (dbError || !dbTx) {
-      console.error("verify-payment DB Error: ", dbError, "tx_ref:", tx_ref);
       return new Response(
-        JSON.stringify({ error: "Transaction not found in our database", details: dbError }),
+        JSON.stringify({ error: "Transaction not found" }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -424,36 +95,30 @@ serve(async (req) => {
       );
     }
 
-    // Role Ownership check: Only user, artist, or system admin can trigger this
-    if (dbTx.fan_id !== user.id && dbTx.artist_id !== user.id) {
-      const { data: adminProfile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const { data: adminUserProfile } = await supabase
-        .from("user_profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const isAdmin = adminProfile?.is_admin === true || adminUserProfile?.is_admin === true;
-
-      if (!isAdmin) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized access to verify this transaction" }),
-          {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
+    // Role Ownership check: Only fan, artist, or system admin can trigger this
+    const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id;
+    let isAdmin = user.email === 'smashtherealmuzic@gmail.com';
+    
+    if (!isAdmin) {
+       const { data: p } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+       const { data: up } = await supabase.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+       isAdmin = p?.is_admin || up?.is_admin;
     }
 
-    if (dbTx.status === "completed" || dbTx.status === "failed") {
+    if (!isOwner && !isAdmin) {
       return new Response(
-        JSON.stringify({ status: dbTx.status, transaction: dbTx }),
+        JSON.stringify({ error: "Unauthorized access to verify this transaction" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // If already completed, just return success
+    if (dbTx.status === "completed") {
+      return new Response(
+        JSON.stringify({ status: 'completed', granted: true, transaction: dbTx }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -461,40 +126,60 @@ serve(async (req) => {
       );
     }
 
-    // 2. Fetch from PayChangu API
-    const response = await fetch(
-      `https://api.paychangu.com/verify-payment/${tx_ref}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${PAYCHANGU_SECRET_KEY}`,
-          Accept: "application/json",
-        },
-      },
-    );
+    let pcVerified = false;
+    let pcAmount = dbTx.gross_amount;
 
-    const payload = await response.json();
-    console.log("PayChangu verification response:", payload);
+    // Admin can force grant without PayChangu verification
+    if (isForceGrant && isAdmin) {
+       pcVerified = true;
+    } else {
+       // 2. Fetch from PayChangu API
+       const response = await fetch(
+         `https://api.paychangu.com/verify-payment/${tx_ref}`,
+         {
+           method: "GET",
+           headers: {
+             Authorization: `Bearer ${PAYCHANGU_SECRET_KEY}`,
+             Accept: "application/json",
+           },
+         },
+       );
 
-    if (response.ok && payload.status === "success" && payload.data) {
-      const pcStatus = payload.data.status;
-      if (pcStatus === "successful" || pcStatus === "success") {
-        try {
-          await processSuccessfulPayment(supabase, dbTx);
-          dbTx.status = "completed";
-        } catch (e) {
-          console.error("Inline processing error", e);
-        }
-      } else if (pcStatus === "failed") {
-        const { data: failedTxs } = await supabase
-          .from("transactions")
-          .update({ status: "failed" })
-          .eq("id", dbTx.id)
-          .eq("status", "pending")
-          .select();
+       const payload = await response.json();
+       console.log("PayChangu verification response:", payload);
 
-        dbTx.status = "failed";
-      }
+       if (response.ok && payload.status === "success" && payload.data) {
+         const pcStatus = payload.data.status;
+         if (pcStatus === "successful" || pcStatus === "success") {
+           pcVerified = true;
+           pcAmount = payload.data.amount || dbTx.gross_amount;
+         } else if (pcStatus === "failed") {
+           await supabase.from("transactions").update({ status: "failed" }).eq("id", dbTx.id);
+           dbTx.status = "failed";
+         }
+       }
+    }
+
+    if (pcVerified) {
+       // Invoke atomic finalizer RPC
+       const { data: rpcRes, error: rpcErr } = await supabase.rpc('finalize_payment_order', {
+          p_paychangu_ref: tx_ref,
+          p_gateway_amount: pcAmount
+       });
+
+       if (rpcErr) {
+          console.error("RPC Error during verification:", rpcErr);
+          throw new Error(rpcErr.message);
+       }
+
+       const { data: updated } = await supabase.from('transactions').select('*').eq('id', dbTx.id).single();
+       return new Response(
+         JSON.stringify({ status: 'completed', granted: true, transaction: updated || dbTx, rpc: rpcRes }),
+         {
+           status: 200,
+           headers: { ...corsHeaders, "Content-Type": "application/json" },
+         },
+       );
     }
 
     return new Response(

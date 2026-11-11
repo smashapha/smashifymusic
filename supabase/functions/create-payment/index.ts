@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
       return_url,
       currency,
     } = body;
+
     const CANONICAL_PRICES: Record<string, number> = {
       LISTENER_DAILY_PASS: 150,
       LISTENER_WEEKLY_PASS: 700,
@@ -43,104 +44,24 @@ Deno.serve(async (req) => {
       ARTIST_STANDARD: 16000,
       ARTIST_ELITE: 27000,
     };
-    let finalAmount: number;
-    const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
 
-    if (type === 'track_purchase') {
-      if (!meta?.songId) {
-        return new Response(JSON.stringify({ error: 'Missing songId for track purchase' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
+    const descriptions: Record<string, string> = {
+      'track_purchase': `Purchase of music track on Smashify`,
+      'album_purchase': `Purchase of full music album on Smashify`,
+      'tip': `Tip to artist on Smashify`,
+      'fan_subscription': `Monthly fan subscription on Smashify`,
+      'listener_daily_pass': `Smashify Premium Daily Pass`,
+      'listener_weekly_pass': `Smashify Premium Weekly Pass`,
+      'listener_premium': `Smashify Premium Subscription`,
+      'listener_family': `Smashify Family Subscription`,
+      'artist_rising_star': `Smashify Rising Star Studio Tier`,
+      'artist_standard': `Smashify Standard Studio Tier`,
+      'artist_elite': `Smashify Elite Studio Tier`,
+      'artist_ad_campaign': `Promotion campaign on Smashify`,
+      'featured_placement': `Featured placement on Smashify`,
+    };
 
-      const { data: songRow, error: songError } = await supabase
-        .from('songs')
-        .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
-        .eq('id', meta.songId)
-        .single();
-
-      if (songError || !songRow || !songRow.is_for_sale) {
-        return new Response(JSON.stringify({ error: 'This track is not available for purchase' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-
-      // Mirror of getEffectivePrice() in src/lib/pricing.ts — kept in sync manually
-      // since Edge Functions run on Deno and can't import from src/.
-      const pct = songRow.discount_percent || 0;
-      const saleExpired = songRow.sale_ends_at && new Date(songRow.sale_ends_at).getTime() < Date.now();
-      finalAmount = (pct > 0 && !saleExpired)
-        ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
-        : songRow.price;
-
-      // meta.artistId must match the song's actual artist — prevents mismatched fee/payout routing
-      if (meta.artistId && meta.artistId !== songRow.artist_id) {
-        meta.artistId = songRow.artist_id;
-      }
-    } else if (type === 'fan_subscription') {
-      if (!meta?.artistId) {
-        return new Response(JSON.stringify({ error: 'Missing artistId for fan subscription' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-      const { data: artistProfile, error: profileErr } = await supabase
-        .from('profiles')
-        .select('subscription_price')
-        .eq('id', meta.artistId)
-        .single();
-      if (profileErr || !artistProfile) {
-        return new Response(JSON.stringify({ error: 'Artist not found' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-      finalAmount = artistProfile.subscription_price || 1500;
-    } else {
-      finalAmount = canonicalAmount ?? Number(amount);
-    }
-
-    if (isNaN(finalAmount) || finalAmount <= 0) {
-      return new Response(JSON.stringify({ error: "Invalid payment amount" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-
-    if (type === "tip") {
-      if (finalAmount < 100 || finalAmount > 50000) {
-        return new Response(
-          JSON.stringify({
-            error: "Tip amount must be between 100 and 50,000 MWK",
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          },
-        );
-      }
-    } else if (type === "track_purchase") {
-      if (finalAmount < 50 || finalAmount > 10000) {
-        return new Response(
-          JSON.stringify({
-            error: "Track purchase amount must be between 50 and 10,000 MWK",
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          },
-        );
-      }
-    }
-    console.log("Payment Function: Initiating:", {
-      type,
-      tx_ref,
-      amount: finalAmount,
-    });
-
-    // 1. Verify Authentication
+    // 1. Verify Authentication (Enforced)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error("Payment Function: Missing Authorization header");
@@ -167,146 +88,161 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Rate limiting: max 3 payment initiations per user per 60 seconds
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-    const { count } = await supabase
-      .from("transactions")
-      .select("*", { count: "exact", head: true })
-      .eq("fan_id", user.id)
-      .eq("status", "pending")
-      .gte("created_at", oneMinuteAgo);
+    // IDENTITY HARDENING: Always use verified user ID from JWT
+    const txFanId = user.id;
+    let finalAmount: number;
+    let artistId = meta?.artistId || null;
 
-    if ((count ?? 0) >= 3) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Too many payment attempts. Please wait a moment before trying again.",
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    if (type === 'track_purchase') {
+      if (!meta?.songId) {
+        return new Response(JSON.stringify({ error: 'Missing songId for track purchase' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const { data: songRow, error: songError } = await supabase
+        .from('songs')
+        .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+        .eq('id', meta.songId)
+        .single();
+
+      if (songError || !songRow || !songRow.is_for_sale) {
+        return new Response(JSON.stringify({ error: 'This track is not available for purchase' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const pct = songRow.discount_percent || 0;
+      const saleExpired = songRow.sale_ends_at && new Date(songRow.sale_ends_at).getTime() < Date.now();
+      finalAmount = (pct > 0 && !saleExpired)
+        ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
+        : songRow.price;
+
+      artistId = songRow.artist_id;
+    } else if (type === 'album_purchase') {
+      if (!meta?.albumId) {
+        return new Response(JSON.stringify({ error: 'Missing albumId for album purchase' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const { data: albumRow, error: albumErr } = await supabase
+        .from('albums')
+        .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+        .eq('id', meta.albumId)
+        .single();
+
+      if (albumErr || !albumRow || !albumRow.is_for_sale) {
+        return new Response(JSON.stringify({ error: 'This album is not available for purchase or does not exist' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const basePrice = Number(albumRow.price || 0);
+      if (basePrice <= 0) {
+        return new Response(JSON.stringify({ error: 'This album does not have a valid price set' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      const pct = albumRow.discount_percent || 0;
+      const saleExpired = albumRow.sale_ends_at && new Date(albumRow.sale_ends_at).getTime() < Date.now();
+      finalAmount = (pct > 0 && !saleExpired)
+        ? Math.max(Math.round(basePrice * (1 - pct / 100)), 1)
+        : basePrice;
+
+      artistId = albumRow.artist_id;
+    } else if (type === 'fan_subscription') {
+      if (!artistId) {
+        return new Response(JSON.stringify({ error: 'Missing artistId for fan subscription' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      const { data: artistProfile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('subscription_price')
+        .eq('id', artistId)
+        .single();
+      if (profileErr || !artistProfile) {
+        return new Response(JSON.stringify({ error: 'Artist not found' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      finalAmount = artistProfile.subscription_price || 1500;
+    } else {
+      const canonicalAmount = CANONICAL_PRICES[type?.toUpperCase()];
+      finalAmount = canonicalAmount ?? Number(amount);
     }
 
-    // 2. Map Payment Description
-    const descriptions: Record<string, string> = {
-      track_purchase: `Purchase of music track on Smashify`,
-      tip: `Tip to artist on Smashify`,
-      fan_subscription: `Monthly fan subscription on Smashify`,
-      listener_daily_pass: `Smashify Premium Daily Pass`,
-      listener_weekly_pass: `Smashify Premium Weekly Pass`,
-      listener_premium: `Smashify Premium Subscription`,
-      listener_family: `Smashify Family Subscription`,
-      artist_rising_star: `Smashify Rising Star Studio Tier`,
-      artist_standard: `Smashify Standard Studio Tier`,
-      artist_elite: `Smashify Elite Studio Tier`,
-      artist_ad_campaign: `Promotion campaign on Smashify`,
-      featured_placement: `Featured placement on Smashify`,
-    };
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid payment amount' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
-    // 3. Create Pending Transaction
-    console.log("Payment Function: Creating transaction in DB...");
-
-    const typeLower = type.toLowerCase();
+    // Determine dbType for accounting
     let dbType = 'other';
-    if (typeLower === 'track_purchase') dbType = 'sale';
-    else if (typeLower === 'tip') dbType = 'donation';
-    else if (typeLower.includes('subscription') || typeLower.startsWith('listener_') || typeLower.startsWith('artist_')) {
-      dbType = 'subscription';
-    }
-    if (typeLower === 'artist_ad_campaign' || typeLower === 'featured_placement') {
-      dbType = 'promotion';
+    const normalizedType = type.toLowerCase();
+    if (normalizedType.includes('listener_') || normalizedType.includes('artist_') || normalizedType.includes('subscription')) {
+      dbType = (normalizedType === 'artist_ad_campaign' || normalizedType === 'featured_placement') ? 'promotion' : 'subscription';
+    } else if (normalizedType === 'tip') {
+      dbType = 'donation';
+    } else if (normalizedType === 'track_purchase' || normalizedType === 'album_purchase') {
+      dbType = 'sale';
     }
 
-    // Fee calculation — different rules for tips, sales, and platform-pure payment types
-    const platformPures = [
-      "LISTENER_DAILY_PASS",
-      "LISTENER_WEEKLY_PASS",
-      "LISTENER_PREMIUM",
-      "LISTENER_FAMILY",
-      "ARTIST_RISING_STAR",
-      "ARTIST_STANDARD",
-      "ARTIST_ELITE",
-      "ARTIST_AD_CAMPAIGN",
-      "FEATURED_PLACEMENT",
-    ];
-
+    // Calculate Platform Fees & Net Amount
     let platformFee = 0;
     let netAmount = finalAmount;
 
-    if (platformPures.includes(type.toUpperCase())) {
-      // 100% goes to platform — these are subscription/promo payments, not artist earnings
+    if (dbType === 'subscription' || dbType === 'promotion') {
       platformFee = finalAmount;
       netAmount = 0;
-    } else if (typeLower === "tip") {
-      // Flat 5% on tips, every tier, no exceptions
-      const TIP_FEE_RATE = 0.05;
-      platformFee = Math.round(finalAmount * TIP_FEE_RATE);
+    } else if (normalizedType === 'tip') {
+      platformFee = Math.round(finalAmount * 0.05);
       netAmount = finalAmount - platformFee;
-    } else if (typeLower === "track_purchase") {
-      // Tiered commission + flat MK 50 fee — Elite/Label only, but apply rate based on tier regardless as a safety net
-      const SALE_FEE_RATES: Record<string, number> = {
-        Free: 0.20, free: 0.20,
-        RisingStar: 0.20, risingstar: 0.20,
-        Standard: 0.20, standard: 0.20,
-        Elite: 0.10, elite: 0.10,
-        Label: 0.05, label: 0.05,
-      };
-      const SALE_FLAT_FEE = 50;
-
-      let tierRate = 0.20;
-      if (meta.artistId) {
+    } else if (normalizedType === 'fan_subscription') {
+      platformFee = Math.round(finalAmount * 0.10);
+      netAmount = finalAmount - platformFee;
+    } else if (dbType === 'sale') {
+      // Tiered commission rates: Elite 10%, Label 5%, others 20%
+      let commissionRate = 0.20;
+      if (artistId) {
         const { data: artistProfile } = await supabase
-          .from("profiles")
-          .select("artist_tier")
-          .eq("id", meta.artistId)
-          .single();
-        tierRate = SALE_FEE_RATES[artistProfile?.artist_tier || "Standard"] ?? 0.20;
+          .from('profiles')
+          .select('artist_tier, subscription_tier')
+          .eq('id', artistId)
+          .maybeSingle();
+        
+        const tier = (artistProfile?.artist_tier || artistProfile?.subscription_tier || 'free').toLowerCase();
+        if (tier === 'elite') commissionRate = 0.10;
+        else if (tier === 'label') commissionRate = 0.05;
       }
-      const percentageFee = Math.round(finalAmount * tierRate);
-      platformFee = percentageFee + SALE_FLAT_FEE;
+      
+      platformFee = Math.round(finalAmount * commissionRate) + 50; // +50 for mobile money fixed fee
       netAmount = Math.max(finalAmount - platformFee, 0);
-    } else if (typeLower.includes("subscription") || typeLower === "fan_subscription") {
-      // Fan subscriptions — 10% Smashify fee, rest to artist
-      const SUB_FEE_RATE = 0.10;
-      platformFee = Math.round(finalAmount * SUB_FEE_RATE);
-      netAmount = finalAmount - platformFee;
-    } else {
-      // Fallback — should rarely hit, default to 15% to be safe
-      platformFee = Math.round(finalAmount * 0.15);
-      netAmount = finalAmount - platformFee;
     }
 
-    if (typeLower === "track_purchase" && meta.artistId) {
-      const { data: sellerProfile } = await supabase
-        .from("profiles")
-        .select("artist_tier")
-        .eq("id", meta.artistId)
-        .single();
-    
-      const eligibleTiers = ["Elite", "elite", "Label", "label"];
-      if (!sellerProfile || !eligibleTiers.includes(sellerProfile.artist_tier)) {
-        return new Response(
-          JSON.stringify({ error: "This artist's plan does not support track sales. Only Elite and Label tier artists can sell tracks." }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-        );
-      }
-    }
-
-    const txFanId = meta.userId || user.id;
-
+    // 3. Create Transaction Record
     const { error: txError } = await supabase.from("transactions").insert({
-      artist_id: meta.artistId || null,
+      artist_id: artistId,
       fan_id: txFanId,
       type: dbType,
       gross_amount: finalAmount,
+      platform_fee: platformFee,
+      net_amount: netAmount,
       status: "pending",
       paychangu_ref: tx_ref,
       description: descriptions[type] || "Smashify Payment",
-      metadata: { ...meta, payment_type: type },
-      platform_fee: platformFee,
-      net_amount: netAmount,
+      metadata: { ...meta, payment_type: type, userId: txFanId },
     });
 
     if (txError) {
@@ -315,7 +251,6 @@ Deno.serve(async (req) => {
     }
 
     // 4. Initialize PayChangu Payment
-    console.log("Payment Function: Calling PayChangu API...");
     const response = await fetch("https://api.paychangu.com/payment", {
       method: "POST",
       headers: {
@@ -337,7 +272,7 @@ Deno.serve(async (req) => {
         customization: {
           title: "Smashify",
           description: descriptions[type] || "Smashify Payment",
-          logo: "https://ais-pre-mqanea5thkwbq6cnhd3hxr-828774785557.europe-west2.run.app/logo.png",
+          logo: "https://smashifymusic.vercel.app/logo.png",
         },
       }),
     });
@@ -346,7 +281,6 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error("Payment Function: PayChangu Error:", payload);
-      // Mark as failed instead of deleting — keeps an honest record for the user and for reconciliation
       await supabase
         .from("transactions")
         .update({ status: "failed", metadata: { ...meta, payment_type: type, failure_reason: "paychangu_init_failed", paychangu_error: payload.message || "Unknown error" } })
@@ -354,7 +288,6 @@ Deno.serve(async (req) => {
       throw new Error(payload.message || "PayChangu initialization failed");
     }
 
-    console.log("Payment Function: Success, returning checkout URL");
     return new Response(
       JSON.stringify({ checkout_url: payload.data.checkout_url }),
       {
@@ -364,12 +297,7 @@ Deno.serve(async (req) => {
     );
   } catch (error: any) {
     console.error("Payment Function Global Error:", error);
-    const errorMessage = error instanceof Error 
-       ? error.message 
-       : typeof error === 'object' && error !== null 
-          ? JSON.stringify(error) 
-          : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });

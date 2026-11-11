@@ -22,7 +22,6 @@ function getCorsHeaders(requestOrigin: string | null) {
   return headers;
 }
 
-
 const PAYCHANGU_WEBHOOK_SECRET = Deno.env.get("PAYCHANGU_WEBHOOK_SECRET") || Deno.env.get("PAYCHANGU_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -32,75 +31,59 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const url = new URL(req.url);
 
     // Handle browser redirects (GET requests)
     if (req.method === "GET") {
-      const tx_ref =
-        url.searchParams.get("tx_ref") || url.searchParams.get("reference");
+      const tx_ref = url.searchParams.get("tx_ref") || url.searchParams.get("reference");
 
       if (tx_ref) {
-        // Fetch transaction to know where to redirect
         const { data: transaction } = await supabase
           .from("transactions")
           .select("metadata")
           .eq("paychangu_ref", tx_ref)
-          .single();
+          .maybeSingle();
 
-        const type = (transaction?.metadata?.payment_type || tx_ref.split("-")[1] || "").toUpperCase();
+        const type = (transaction?.metadata?.payment_type || "").toUpperCase();
         let redirectPath = "/";
 
         if (type === "TRACK_PURCHASE") {
           redirectPath = `/purchase-success?song_id=${transaction?.metadata?.songId || ""}&tx_ref=${tx_ref}`;
+        } else if (type === "ALBUM_PURCHASE") {
+          redirectPath = `/purchase-success?album_id=${transaction?.metadata?.albumId || ""}&type=album_purchase&tx_ref=${tx_ref}`;
         } else if (type === "TIP") {
           redirectPath = `/tip-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
         } else if (type === "FAN_SUBSCRIPTION") {
           redirectPath = `/subscribe-success?artist_id=${transaction?.metadata?.artistId || ""}&tx_ref=${tx_ref}`;
-        } else if (
-          type === "LISTENER_DAILY_PASS" ||
-          type === "LISTENER_WEEKLY_PASS" ||
-          type === "LISTENER_PREMIUM" ||
-          type === "LISTENER_FAMILY"
-        ) {
+        } else if (type.includes("LISTENER_")) {
           redirectPath = `/upgrade-success?plan=${transaction?.metadata?.plan || "Premium"}&tx_ref=${tx_ref}`;
-        } else if (type?.startsWith("ARTIST_") && type !== "ARTIST_AD_CAMPAIGN") {
-          const tierNameMap: Record<string, string> = {
-            ARTIST_RISING_STAR: "RisingStar",
-            ARTIST_STANDARD: "Standard",
-            ARTIST_ELITE: "Elite",
-          };
-          const tierName = tierNameMap[type] || "RisingStar";
-          redirectPath = `/tier-success?tier=${tierName}&tx_ref=${tx_ref}`;
-        } else if (type === "ARTIST_AD_CAMPAIGN") {
-          redirectPath = `/ad-success?tx_ref=${tx_ref}`;
+        } else if (type.startsWith("ARTIST_") && type !== "ARTIST_AD_CAMPAIGN") {
+          redirectPath = `/tier-success?tx_ref=${tx_ref}`;
         } else {
           redirectPath = `/?payment_success=true&tx_ref=${tx_ref}`;
         }
 
-        // Redirect back to the SMA frontend
-        return Response.redirect(
-          `https://play-smashify.vercel.app${redirectPath}`,
-          302,
-        );
+        return Response.redirect(`https://play-smashify.vercel.app${redirectPath}`, 302);
       }
       return Response.redirect("https://play-smashify.vercel.app/", 302);
     }
 
     // --- Webhook POST processing ---
     const bodyText = await req.text();
-
-    // 1. Verify Webhook Signature
-    if (!PAYCHANGU_WEBHOOK_SECRET) {
-      console.error("WEBHOOK_SECRET is not configured — rejecting request");
-      return new Response("Webhook secret not configured", { status: 500 });
-    }
-    // signature verification (always runs)
     const signature = req.headers.get("x-paychangu-signature");
+
+    if (!PAYCHANGU_WEBHOOK_SECRET) {
+      console.error("WEBHOOK_SECRET not configured");
+      return new Response("Config Error", { status: 500 });
+    }
+
     if (!signature) {
       return new Response("Missing signature", { status: 401 });
     }
+
     const key = await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(PAYCHANGU_WEBHOOK_SECRET),
@@ -108,6 +91,7 @@ serve(async (req) => {
       false,
       ["verify"],
     );
+
     const signatureBytes = hexToBytes(signature);
     const isValid = await crypto.subtle.verify(
       "HMAC",
@@ -115,447 +99,46 @@ serve(async (req) => {
       signatureBytes,
       new TextEncoder().encode(bodyText),
     );
+
     if (!isValid) {
       console.error("Invalid webhook signature");
       return new Response("Invalid signature", { status: 401 });
     }
 
     const payload = JSON.parse(bodyText);
-    // PayChangu sends data in multiple possible structures
     const eventData = payload.data || payload;
-    const tx_ref =
-      eventData.tx_ref ||
-      payload.tx_ref ||
-      eventData.reference ||
-      payload.reference;
-    const status = eventData.status || payload.status;
+    const tx_ref = eventData.tx_ref || payload.tx_ref || eventData.reference || payload.reference;
+    const status = (eventData.status || payload.status || "").toLowerCase();
     const amount = Number(eventData.amount || payload.amount || 0);
 
-    // 2. Fetch Transaction
-    const { data: transaction, error: txError } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("paychangu_ref", tx_ref)
-      .single();
+    console.log(`Webhook received for ${tx_ref}, status: ${status}`);
 
-    const { data: existingTx } = await supabase
-      .from("transactions")
-      .select("status")
-      .eq("paychangu_ref", tx_ref)
-      .single();
+    const isSuccess = ["successful", "success", "paid"].includes(status);
+    
+    if (isSuccess) {
+       // Use atomic RPC for fulfillment
+       const { data: rpcRes, error: rpcErr } = await supabase.rpc('finalize_payment_order', {
+          p_paychangu_ref: tx_ref,
+          p_gateway_amount: amount
+       });
 
-    if (existingTx?.status === "completed") {
-      console.log(
-        `Duplicate webhook received for ${tx_ref} — already processed, skipping`,
-      );
-      return new Response("Already processed", { status: 200 });
-    }
-
-    // payment_type in metadata is stored as lowercase e.g. 'listener_premium'
-    // Convert it to uppercase for switch matching. If not in metadata, use regex fallback immune to UUID hyphens.
-    const metaType = transaction?.metadata?.payment_type;
-    const type = metaType
-      ? metaType.toUpperCase()
-      : (
-          tx_ref.match(/^SMASH-([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)-/)?.[1] || ""
-        ).toUpperCase();
-
-    console.log("Resolved type:", type);
-    console.log("Meta payment_type:", metaType);
-    const meta = transaction?.metadata || eventData.meta || payload.meta || {};
-
-    console.log("Full payload:", bodyText);
-    console.log("Parsed tx_ref:", tx_ref);
-    console.log("Parsed status:", status);
-    console.log("Transaction found:", transaction?.id);
-    console.log("Type:", type);
-    console.log("Metadata:", JSON.stringify(transaction?.metadata));
-
-    if (txError || !transaction) {
-      console.error(`Transaction not found: ${tx_ref}`);
-      return new Response("Ok", { status: 200 }); // Return 200 to stop retries
-    }
-
-    // 3. Handle Failed Payment
-    const isSuccess = [
-      "successful",
-      "success",
-      "SUCCESSFUL",
-      "SUCCESS",
-      "paid",
-      "PAID",
-    ].includes(status);
-    if (!isSuccess) {
-      await supabase
-        .from("transactions")
-        .update({ status: "failed" })
-        .eq("id", transaction.id)
-        .eq("status", "pending");
-      return new Response("Ok", { status: 200 });
-    }
-
-    // 4. Process Successful Payment based on Type
-    const { artistId, songId, plan, tier, plays, anonymous } =
-      transaction.metadata || {};
-    const userId = transaction.metadata?.userId || transaction.fan_id;
-    const netAmount = Number(transaction.net_amount);
-    const grossAmount = Number(transaction.gross_amount);
-
-    // Update transaction to completed first (to prevent races) using atomic update
-    const { data: updatedTxs, error: updateError } = await supabase
-      .from("transactions")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", transaction.id)
-      .eq("status", "pending")
-      .select();
-
-    if (updateError || !updatedTxs || updatedTxs.length === 0) {
-      console.log(
-        `Transaction ${transaction.id} already processed or no longer pending`,
-      );
-      return new Response("Ok", { status: 200 });
-    }
-
-    // Log the webhook
-    await supabase.from("webhook_logs").insert({
-      tx_ref,
-      type: type,
-      status: "processed",
-      payload: bodyText,
-    });
-
-    // HANDLERS
-    switch (type) {
-      case "TRACK_PURCHASE": {
-        // Record purchase - Using select then insert to bypass constraint error
-        const { data: existingFanPurchase } = await supabase
-          .from("fan_purchases")
-          .select("id")
-          .eq("fan_id", userId)
-          .eq("song_id", songId)
-          .maybeSingle();
-
-        if (!existingFanPurchase) {
-          const { error: fanError } = await supabase.from("fan_purchases").insert({
-            fan_id: userId,
-            song_id: songId,
-            transaction_id: transaction.id,
-            amount: grossAmount,
-            status: "completed",
-            purchased_at: new Date().toISOString(),
-          });
-          if (fanError) console.error("fan_purchases insert error:", fanError);
-        }
-        // Increment sales count safely
-        const { data: songData } = await supabase
-          .from("songs")
-          .select("sales")
-          .eq("id", songId)
-          .single();
-        const currentSales = Number(songData?.sales || 0);
-        await supabase
-          .from("songs")
-          .update({ sales: currentSales + 1 })
-          .eq("id", songId);
-
-        const { error: walletError } = await supabase.rpc("increment_wallet", {
-          artist_id: artistId,
-          amount: netAmount,
-        });
-        if (walletError) console.error("increment_wallet error:", walletError);
-        else
-          console.log(
-            "Artist wallet credited:",
-            netAmount,
-            "for artist:",
-            artistId,
-          );
-
-        await supabase.from("notifications").insert({
-          profile_id: artistId,
-          user_type: "artist",
-          type: "track_sold",
-          message: `You sold a track! MWK ${grossAmount.toLocaleString()} earned. 💿`,
-          link: "/artist-hub#dashboard",
-        });
-        break;
-      }
-
-      case "TIP": {
-        const { error: walletErr } = await supabase.rpc("increment_wallet", {
-          artist_id: artistId,
-          amount: netAmount,
-        });
-        if (walletErr) console.error("increment_wallet error:", walletErr);
-
-        // Fetch fan name for notification
-        const { data: fanProfile } = await supabase
-          .from("user_profiles")
-          .select("full_name")
-          .eq("id", userId)
-          .maybeSingle();
-
-        const { data: artistFanProfile } = !fanProfile ? await supabase
-          .from("profiles")
-          .select("stage_name")
-          .eq("id", userId)
-          .maybeSingle() : { data: null };
-
-        const fanName = fanProfile?.full_name || artistFanProfile?.stage_name || "A fan";
-
-        await supabase.from("notifications").insert({
-          profile_id: artistId,
-          user_type: "artist",
-          type: "tip_received",
-          message: `${fanName} sent you a MWK ${grossAmount.toLocaleString()} tip! You earned MWK ${netAmount.toLocaleString()} after fees. 💸`,
-          link: "/artist-hub#dashboard",
-        });
-        break;
-      }
-
-      case "FAN_SUBSCRIPTION": {
-        const renewsAt = new Date();
-        renewsAt.setDate(renewsAt.getDate() + 30);
-        
-        const { data: existingSub } = await supabase
-          .from("fan_subscriptions")
-          .select("id")
-          .eq("fan_id", userId)
-          .eq("artist_id", artistId)
-          .maybeSingle();
-
-        let subError;
-        if (existingSub) {
-          const { error } = await supabase.from("fan_subscriptions").update({
-            status: "active",
-            amount: grossAmount,
-            next_billing_at: renewsAt.toISOString(),
-          }).eq("id", existingSub.id);
-          subError = error;
-        } else {
-          const { error } = await supabase.from("fan_subscriptions").insert({
-            fan_id: userId,
-            artist_id: artistId,
-            status: "active",
-            amount: grossAmount,
-            started_at: new Date().toISOString(),
-            next_billing_at: renewsAt.toISOString(),
-          });
-          subError = error;
-        }
-
-        if (subError) {
-          console.error("fan_subscriptions insert error:", subError);
-        } else {
-          console.log("Fan subscription activated for artist:", artistId);
-        }
-
-        // Credit artist wallet with net amount
-        const { error: walletError } = await supabase.rpc("increment_wallet", {
-          artist_id: artistId,
-          amount: netAmount,
-        });
-
-        if (walletError)
-          console.error("Artist wallet credit error:", walletError);
-        else console.log("Artist wallet credited:", netAmount);
-
-        await supabase.from("notifications").insert({
-          profile_id: artistId,
-          user_type: "artist",
-          type: "subscription_started",
-          message: `A fan just started a monthly subscription! MWK ${grossAmount.toLocaleString()} 💖 (Net: MWK ${netAmount.toLocaleString()})`,
-          link: "/artist-hub#fans",
-        });
-        break;
-      }
-
-      case "LISTENER_DAILY_PASS":
-      case "LISTENER_WEEKLY_PASS":
-      case "LISTENER_PREMIUM":
-      case "LISTENER_FAMILY": {
-        const planDurations: Record<string, number> = {
-          LISTENER_DAILY_PASS:  1,
-          LISTENER_WEEKLY_PASS: 7,
-          LISTENER_PREMIUM:     30,
-          LISTENER_FAMILY:      30,
-        };
-        const tierNameMap: Record<string, string> = {
-          LISTENER_DAILY_PASS:  "DailyPass",
-          LISTENER_WEEKLY_PASS: "WeeklyPass",
-          LISTENER_PREMIUM:     "Premium",
-          LISTENER_FAMILY:      "Family",
-        };
-        const days = planDurations[type] || 30;
-        const subTierName = tierNameMap[type] || "Premium";
-        const subEnds = new Date();
-        subEnds.setDate(subEnds.getDate() + days);
-        const listenerId = userId || meta.fan_id || meta.userId;
-
-        const { error: listenerTierError } = await supabase
-          .from("user_profiles")
-          .upsert(
-            {
-              id: listenerId,
-              subscription_tier: subTierName,
-              subscription_expires_at: subEnds.toISOString(),
-            },
-            { onConflict: "id" },
-          );
-
-        if (listenerTierError) {
-          console.error("Listener tier update error:", listenerTierError);
-        } else {
-          console.log("Listener upgraded to", subTierName, "for", days, "days");
-        }
-        break;
-      }
-
-      case "ARTIST_RISING_STAR":
-      case "ARTIST_STANDARD":
-      case "ARTIST_ELITE":
-        const artistTierEnds = new Date();
-        artistTierEnds.setMonth(artistTierEnds.getMonth() + 6); // Artist tiers are billed every 6 months
-        const tierMap: Record<string, string> = {
-          ARTIST_RISING_STAR: "RisingStar",
-          ARTIST_STANDARD: "Standard",
-          ARTIST_ELITE: "Elite",
-        };
-        const artistTierName = tierMap[type] || "Free";
-        const { error: tierError } = await supabase
-          .from("profiles")
-          .update({
-            subscription_tier: artistTierName,
-            artist_tier: artistTierName,
-            subscription_ends: artistTierEnds.toISOString(),
-            approved: true,
-          })
-          .eq("id", userId);
-        if (tierError) {
-          console.error("Artist tier update error:", tierError);
-        } else {
-          console.log(
-            "Artist tier updated to:",
-            artistTierName,
-            "for user:",
-            userId,
-          );
-
-          // Record Agent Commission
-          try {
-             const { data: profile } = await supabase.from("profiles").select("agent_reference").eq("id", userId).single();
-             if (profile && profile.agent_reference) {
-                let commission = 0;
-                if (artistTierName === "RisingStar") commission = 800;
-                if (artistTierName === "Standard") commission = 1600;
-                if (artistTierName === "Elite") commission = 2700;
-                
-                if (commission > 0) {
-                   const { error: commError } = await supabase.from("agent_commissions").insert({
-                     agent_id: profile.agent_reference,
-                     artist_id: userId,
-                     commission_amount: commission,
-                     tier: artistTierName,
-                     status: "pending"
-                   });
-                   if (!commError) {
-                      const { data: ag } = await supabase.from("agents").select("total_earned").eq("user_id", profile.agent_reference).single();
-                      if (ag) {
-                         await supabase.from("agents").update({ total_earned: (ag.total_earned || 0) + commission }).eq("user_id", profile.agent_reference);
-                      }
-                      console.log(`Commission of ${commission} recorded for agent ${profile.agent_reference}`);
-                   } else {
-                      console.error("Failed to insert commission:", commError);
-                   }
-                }
-             }
-          } catch (err) {
-             console.error("Error recording agent commission:", err);
-          }
-
-          // Also grant premium listener features
-          // Crucial fix: Use upsert with onConflict: 'id' so that new artist users who do not have
-          // a row in user_profiles yet will successfully have it created, rather than a silent failure.
-          const { error: listenerUpsertError } = await supabase
-            .from("user_profiles")
-            .upsert(
-              {
-                id: userId,
-                subscription_tier: "Premium",
-                subscription_expires_at: artistTierEnds.toISOString(),
-              },
-              { onConflict: "id" },
-            );
-
-          if (listenerUpsertError) {
-            console.error(
-              "Failed to upsert Premium listener features for artist:",
-              listenerUpsertError,
-            );
-          } else {
-            console.log(
-              "Successfully upserted Premium listener features for artist:",
-              userId,
-            );
-          }
-        }
-        break;
-
-      case "ARTIST_AD_CAMPAIGN": {
-        const { error: adError } = await supabase.from("audio_ads").insert({
-          artist_id:       userId,
-          type:            "promo",
-          title:           meta.title || "Ad Campaign",
-          advertiser_name: meta.advertiser_name || null,
-          audio_url:       meta.audio_url || null,
-          target_city:     meta.target_city || null,
-          target_genre:    meta.target_genre || null,
-          plays_purchased: plays,
-          plays_used:      0,
-          active:          false, // Admin must approve before going live
-          approved:        false,
-          expires_at:      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        });
-        if (adError) console.error("Audio ad insert error:", adError);
-        else console.log("Ad campaign created for artist:", userId);
-
-        await supabase.from("notifications").insert({
-          user_type: "admin",
-          type:      "ad_review",
-          message:   `New ad campaign submitted. Artist: ${userId}. Plays purchased: ${plays}. Needs approval before going live.`,
-          link:      "/admin#commercials",
-        });
-        break;
-      }
+       if (rpcErr) {
+          console.error(`RPC Error for ${tx_ref}:`, rpcErr);
+          // Don't return 500 so PayChangu stops retrying if it's a persistent DB error, 
+          // but logging it is crucial.
+       } else {
+          console.log(`RPC Success for ${tx_ref}:`, rpcRes);
+       }
+    } else if (["failed", "cancelled", "expired"].includes(status)) {
+       await supabase.from("transactions").update({ status: "failed" }).eq("paychangu_ref", tx_ref).eq("status", "pending");
     }
 
     return new Response("Success", { status: 200 });
   } catch (error) {
     console.error("Webhook processing error:", error);
-    return new Response("Internal error", { status: 200 }); // Return 200 to prevent PayChangu retrying broken code
+    return new Response("Internal error", { status: 200 });
   }
 });
-
-async function computeHmac(secret: string, data: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signatureBuffer = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(data),
-  );
-  return Array.from(new Uint8Array(signatureBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 function hexToBytes(hex: string) {
   const bytes = new Uint8Array(hex.length / 2);

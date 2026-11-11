@@ -173,7 +173,18 @@ export async function purchaseTrack({ song, user }: { song: Song; user: UserProf
  * Buy a full album at once
  */
 export async function purchaseAlbum({ album, user }: { album: Album; user: UserProfile }) {
-  const price = getEffectiveAlbumPrice(album) || 1500;
+  const price = getEffectiveAlbumPrice(album);
+  
+  if (!album.is_for_sale) {
+    toast.error('This album is not available for purchase');
+    throw new Error('Album not for sale');
+  }
+
+  if (!price || price <= 0) {
+    toast.error('Invalid album price. Please contact the artist.');
+    throw new Error('Invalid album price');
+  }
+
   return initiatePayment({
     amount: price,
     email: user.email,
