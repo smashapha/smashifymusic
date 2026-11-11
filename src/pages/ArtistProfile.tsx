@@ -321,7 +321,13 @@ const ArtistProfile: React.FC = () => {
                   .select('*')
                   .in('id', validAlbumIds)
                   .order('release_year', { ascending: false });
-               setAlbums(albumsData || []);
+               
+               if (albumsData) {
+                  const enriched = await musicService.enrichAlbumsWithPurchases(albumsData, userProfile?.id);
+                  setAlbums(enriched);
+               } else {
+                  setAlbums([]);
+               }
             } else {
                setAlbums([]);
             }

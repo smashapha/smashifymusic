@@ -11,6 +11,7 @@ export interface Album {
   description?: string;
   genre?: string;
   sales?: number;
+  is_purchased?: boolean;
   created_at?: string;
   profiles?: { 
     full_name: string; 

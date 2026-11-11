@@ -404,11 +404,14 @@ const Home: React.FC = () => {
               .in('id', albumArtistIds);
             (aData || []).forEach((a: any) => { artistsMap[a.id] = a; });
           }
+
           const formattedAlbums = albumsData.map((a: any) => ({
             ...a,
             profiles: artistsMap[a.artist_id] || null
           }));
-          setAlbums(formattedAlbums as any);
+
+          const enrichedAlbums = await musicService.enrichAlbumsWithPurchases(formattedAlbums, userProfile?.id);
+          setAlbums(enrichedAlbums as any);
         } else {
           setAlbums([]);
         }

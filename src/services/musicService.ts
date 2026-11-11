@@ -18,11 +18,46 @@ export const musicService = {
 
       return songs.map(song => ({
         ...song,
-        is_purchased: purchasedIds.has(song.id)
+        is_purchased: purchasedIds.has(song.id) || (userId && song.artist_id === userId)
       }));
     } catch (err) {
       console.warn('Failed to enrich songs with purchases', err);
       return songs;
+    }
+  },
+
+  /**
+   * Enriches a list of albums with purchase status for a specific user
+   */
+  async enrichAlbumsWithPurchases(albums: any[], userId?: string): Promise<any[]> {
+    if (!userId || albums.length === 0) return albums;
+    try {
+      // 1. Get album-specific transactions
+      const { data: purchaseData } = await supabase
+        .from('transactions')
+        .select('metadata')
+        .eq('fan_id', userId)
+        .eq('status', 'completed');
+      
+      const purchasedAlbumIds = new Set<string>();
+      (purchaseData || []).forEach((tx: any) => {
+        let meta = tx.metadata;
+        if (typeof meta === 'string') {
+          try { meta = JSON.parse(meta); } catch (e) { meta = {}; }
+        }
+        meta = meta || {};
+        const albumId = meta.albumId || meta.album_id;
+        if (albumId) purchasedAlbumIds.add(albumId);
+      });
+
+      // 2. Map and check artist ownership as well
+      return albums.map(album => ({
+        ...album,
+        is_purchased: purchasedAlbumIds.has(album.id) || (userId && album.artist_id === userId)
+      }));
+    } catch (err) {
+      console.warn('Failed to enrich albums with purchases', err);
+      return albums;
     }
   },
 

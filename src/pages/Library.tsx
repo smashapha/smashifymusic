@@ -28,8 +28,10 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { syncUserPurchases, verifyPayment } from '../lib/paychangu';
 import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
-import { Song } from '../types';
+import { Song, Album } from '../types';
 import SongCard from '../components/common/SongCard';
+import AlbumCard from '../components/common/AlbumCard';
+import { musicService } from '../services/musicService';
 import { handleTrackDownload } from '../lib/downloads';
 import { fetchSavedSongIds, removeSavedSong } from '../lib/offlineSync';
 import { getStorageInfo, getOfflineLimit, clearAllCached, cacheSong, removeCachedSong, isCached, migrateLegacyDownloads } from '../lib/offlineCache';
@@ -118,22 +120,66 @@ const Library: React.FC = () => {
     fetchLikesCount();
   }, [userProfile?.id]);
 
+  const [purchasedAlbums, setPurchasedAlbums] = useState<Album[]>([]);
+
   useEffect(() => {
     const fetchPurchased = async () => {
       if (!effectiveUserId) return;
       try {
-        const { data } = await supabase
+        const { data: purchaseData } = await supabase
           .from('fan_purchases')
-          .select('song_id, purchased_at, songs(id, title, cover_url, audio_url, duration_seconds, artist_id, profiles!artist_id(full_name, stage_name))')
+          .select('song_id, purchased_at, songs(*, profiles!artist_id(full_name, stage_name))')
           .eq('fan_id', effectiveUserId)
           .order('purchased_at', { ascending: false });
-        if (data) {
-          setPurchasedSongs(data.map((p: any) => ({
+        
+        if (purchaseData) {
+          setPurchasedSongs(purchaseData.map((p: any) => ({
             ...(p.songs || {}),
             id: p.song_id,
             artist_name: p.songs?.profiles?.stage_name || p.songs?.profiles?.full_name || 'Artist',
-            purchasedAt: p.purchased_at
+            purchasedAt: p.purchased_at,
+            is_purchased: true
           })));
+        }
+
+        // Fetch purchased albums
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('fan_id', effectiveUserId)
+          .eq('status', 'completed')
+          .ilike('type', '%album%');
+        
+        const albumIds = new Set<string>();
+        (txData || []).forEach((tx: any) => {
+          const meta = tx.metadata || {};
+          const albumId = meta.albumId || meta.album_id;
+          if (albumId) albumIds.add(albumId);
+        });
+
+        if (albumIds.size > 0) {
+          const { data: albumsData } = await supabase
+            .from('albums')
+            .select('*')
+            .in('id', Array.from(albumIds));
+          
+          if (albumsData) {
+            const enriched = await musicService.enrichAlbumsWithPurchases(albumsData, effectiveUserId);
+            // Fetch artist profiles for albums
+            const artistIds = Array.from(new Set(enriched.map(a => a.artist_id).filter(Boolean)));
+            let artistsMap: Record<string, any> = {};
+            if (artistIds.length > 0) {
+              const { data: aData } = await supabase
+                .from('artist_catalog')
+                .select('id, full_name, stage_name')
+                .in('id', artistIds);
+              (aData || []).forEach((a: any) => { artistsMap[a.id] = a; });
+            }
+            setPurchasedAlbums(enriched.map(a => ({
+              ...a,
+              profiles: artistsMap[a.artist_id] || null
+            })));
+          }
         }
       } catch (err) {
         console.warn('fetchPurchased error:', err);
@@ -1206,40 +1252,73 @@ const Library: React.FC = () => {
               )}
             </div>
           </div>
-        ) : filteredSongs.length > 0 ? (
+        ) : (
           /* d) PURCHASED / LIKED TABS — List Rows */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
-                  {activeTab === 'purchased' ? 'PURCHASED' : 'LIKES'}
-                </p>
-                <h3 className="text-xl font-studio font-bold text-white">
-                  {activeTab === 'purchased' ? 'Purchased Tracks' : 'Liked Songs'}
-                </h3>
+          <div className="space-y-10">
+            {activeTab === 'purchased' && purchasedAlbums.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                      COLLECTION
+                    </p>
+                    <h3 className="text-xl font-studio font-bold text-white">
+                      Purchased Albums
+                    </h3>
+                  </div>
+                  <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                    {purchasedAlbums.length} album{purchasedAlbums.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className={GRID_SONG_CARDS}>
+                  {purchasedAlbums.map((album) => (
+                    <AlbumCard key={album.id} album={album} />
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {activeTab === 'purchased' && (
-                  <button
-                    onClick={handleManualSync}
-                    disabled={syncingPurchases}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-[10px] border border-white/10 text-[12px] font-medium transition-all disabled:opacity-50"
-                    title="Sync and refresh your purchased tracks from payments"
-                  >
-                    <RefreshCw size={13} className={syncingPurchases ? 'animate-spin text-[#00A3FF]' : 'text-[#B0B0B0]'} />
-                    <span>{syncingPurchases ? 'Syncing...' : 'Sync Purchases'}</span>
-                  </button>
-                )}
-                <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-                  {filteredSongs.length} track{filteredSongs.length === 1 ? '' : 's'}
-                </span>
+            )}
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00A3FF] mb-0.5">
+                    {activeTab === 'purchased' ? 'TRACKS' : 'LIKES'}
+                  </p>
+                  <h3 className="text-xl font-studio font-bold text-white">
+                    {activeTab === 'purchased' ? 'Purchased Tracks' : 'Liked Songs'}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activeTab === 'purchased' && (
+                    <button
+                      onClick={handleManualSync}
+                      disabled={syncingPurchases}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-[10px] border border-white/10 text-[12px] font-medium transition-all disabled:opacity-50"
+                      title="Sync and refresh your purchased tracks from payments"
+                    >
+                      <RefreshCw size={13} className={syncingPurchases ? 'animate-spin text-[#00A3FF]' : 'text-[#B0B0B0]'} />
+                      <span>{syncingPurchases ? 'Syncing...' : 'Sync Purchases'}</span>
+                    </button>
+                  )}
+                  <span className="text-[12px] font-mono text-[#B0B0B0] bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                    {filteredSongs.length} track{filteredSongs.length === 1 ? '' : 's'}
+                  </span>
+                </div>
               </div>
+              
+              {filteredSongs.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {(activeTab === 'likes' ? filteredSongs.slice(0, likesLimit) : filteredSongs).map((song, i) => (
+                    <SongCard key={`library-song-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                   <p className="text-[#B0B0B0] text-[13px]">No {activeTab === 'purchased' ? 'purchased tracks' : 'liked songs'} yet.</p>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col gap-2">
-              {(activeTab === 'likes' ? filteredSongs.slice(0, likesLimit) : filteredSongs).map((song, i) => (
-                <SongCard key={`library-song-${song.id}-${i}`} song={song} queue={filteredSongs} layout="list" />
-              ))}
-            </div>
+            
             {activeTab === 'likes' && filteredSongs.length > likesLimit && (
               <div className="flex justify-center mt-6">
                 <button
@@ -1250,50 +1329,6 @@ const Library: React.FC = () => {
                 </button>
               </div>
             )}
-          </div>
-        ) : (
-          /* EMPTY STATE */
-          <div className="p-12 md:p-16 bg-[#1A1A1A] border border-white/10 rounded-[16px] text-center space-y-4 max-w-lg mx-auto">
-            <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-[#B0B0B0]">
-              {activeTab === 'purchased' ? <ShoppingBag size={28} /> : <Heart size={28} />}
-            </div>
-            <div>
-              <h3 className="text-xl font-studio font-bold text-white">
-                {activeTab === 'purchased' ? 'No purchases found' : 'No liked songs yet'}
-              </h3>
-              <p className="text-[#B0B0B0] text-[13px] mt-1.5 leading-relaxed">
-                {activeTab === 'purchased'
-                  ? 'If you recently bought a song, click Sync Purchases below to refresh, or enter your payment reference.'
-                  : 'Tap the heart icon on any song to save it to your collection for quick access.'}
-              </p>
-            </div>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-              {activeTab === 'purchased' && (
-                <>
-                  <button
-                    onClick={handleManualSync}
-                    disabled={syncingPurchases}
-                    className="px-5 py-2.5 bg-[#00A3FF] text-white hover:brightness-110 rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2 shadow-lg shadow-[#00A3FF]/20"
-                  >
-                    <RefreshCw size={14} className={syncingPurchases ? 'animate-spin' : ''} />
-                    <span>{syncingPurchases ? 'Checking...' : 'Sync Purchases'}</span>
-                  </button>
-                  <button
-                    onClick={() => setShowRestoreModal(true)}
-                    className="px-5 py-2.5 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2"
-                  >
-                    <span>Restore by Reference</span>
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => navigate('/discover')}
-                className="px-6 py-2.5 bg-white/5 border border-white/10 hover:border-[#00A3FF]/40 text-white hover:text-[#00A3FF] rounded-[10px] text-[13px] font-semibold transition-all inline-flex items-center gap-2"
-              >
-                <Compass size={15} />
-                <span>Explore catalogue</span>
-              </button>
-            </div>
           </div>
         )}
       </div>

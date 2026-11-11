@@ -19,10 +19,11 @@ interface AlbumCardProps {
 export const AlbumCard: React.FC<AlbumCardProps> = ({
   album,
   songsCount,
-  isPurchased = false,
+  isPurchased: isPurchasedProp,
   onBuyClick,
   layout = 'grid'
 }) => {
+  const isPurchased = isPurchasedProp ?? album.is_purchased ?? false;
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const [buying, setBuying] = useState(false);

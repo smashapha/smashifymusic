@@ -16,8 +16,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { Song, UserProfile } from "../types";
+import { Song, UserProfile, Album } from "../types";
 import SongCard from "../components/common/SongCard";
+import AlbumCard from "../components/common/AlbumCard";
 import Avatar from "../components/common/Avatar";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -49,13 +50,14 @@ const Discover: React.FC = () => {
   const [results, setResults] = useState<{
     songs: Song[];
     artists: UserProfile[];
-  }>({ songs: [], artists: [] });
+    albums: Album[];
+  }>({ songs: [], artists: [], albums: [] });
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Song[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
   const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"songs" | "artists">("songs");
+  const [activeTab, setActiveTab] = useState<"songs" | "artists" | "albums">("songs");
 
   // Pagination state for all songs
   const [songs, setSongs] = useState<Song[]>([]);
@@ -386,12 +388,43 @@ const Discover: React.FC = () => {
 
       const { data: artistsData } = await artistsQuery.limit(10);
 
+      let albumsQuery = supabase
+        .from("albums")
+        .select("*");
+
+      if (searchQuery) {
+        albumsQuery = albumsQuery.ilike("title", `%${searchQuery}%`);
+      }
+      if (selectedGenre) {
+        albumsQuery = albumsQuery.eq("genre", selectedGenre);
+      }
+
+      const { data: albumsData } = await albumsQuery.limit(10);
+      let enrichedAlbums: Album[] = [];
+      if (albumsData && albumsData.length > 0) {
+        const withProfiles = await musicService.enrichAlbumsWithPurchases(albumsData, userProfile?.id);
+        const artistIds = Array.from(new Set(withProfiles.map(a => a.artist_id).filter(Boolean)));
+        let artistsMap: Record<string, any> = {};
+        if (artistIds.length > 0) {
+          const { data: aData } = await supabase
+            .from('artist_catalog')
+            .select('id, full_name, stage_name')
+            .in('id', artistIds);
+          (aData || []).forEach((a: any) => { artistsMap[a.id] = a; });
+        }
+        enrichedAlbums = withProfiles.map((a: any) => ({
+          ...a,
+          profiles: artistsMap[a.artist_id] || null
+        }));
+      }
+
       setResults({
         songs: enrichedSongs as any,
         artists: (artistsData || []).map((a) => ({
           ...a,
           display_name: a.stage_name || a.full_name,
         })) as any,
+        albums: enrichedAlbums
       });
     } catch (err) {
       console.error(err);
@@ -579,6 +612,16 @@ const Discover: React.FC = () => {
                   >
                     Artists ({results.artists.length})
                   </button>
+                  <button
+                    onClick={() => setActiveTab("albums")}
+                    className={`text-[13px] font-semibold py-1.5 px-4 rounded-full transition-all ${
+                      activeTab === "albums"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[#B0B0B0] hover:text-white"
+                    }`}
+                  >
+                    Albums ({results.albums.length})
+                  </button>
                 </div>
 
                 {activeTab === "songs" && (
@@ -641,6 +684,25 @@ const Discover: React.FC = () => {
                   <h3 className="text-white font-semibold text-[15px]">No tracks found</h3>
                   <p className="text-[#B0B0B0] text-[13px] mt-1">
                     Try searching for a different keyword or genre.
+                  </p>
+                </div>
+              )
+            ) : activeTab === "albums" ? (
+              results.albums.length > 0 ? (
+                <div className={GRID_SONG_CARDS}>
+                  {results.albums.map((album, i) => (
+                    <AlbumCard
+                      key={`search-album-${album.id}-${i}`}
+                      album={album}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 bg-[#1A1A1A] rounded-[16px] border border-white/10 text-center">
+                  <Disc size={32} className="mx-auto mb-3 text-[#737373]" />
+                  <h3 className="text-white font-semibold text-[15px]">No albums found</h3>
+                  <p className="text-[#B0B0B0] text-[13px] mt-1">
+                    Try searching for a different keyword or browse artists.
                   </p>
                 </div>
               )
