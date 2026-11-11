@@ -301,7 +301,7 @@ async function startServer() {
         'artist_elite': 27000,
       };
 
-      let validatedAmount = Number(requestedAmount);
+      let validatedAmount: number;
       let artistId = meta?.artistId || null;
 
       if (paymentType === 'track_purchase') {
@@ -314,16 +314,27 @@ async function startServer() {
           .eq('id', meta.songId)
           .maybeSingle();
 
-        if (songErr || !songRow || !songRow.is_for_sale) {
+        if (songErr || !songRow) {
+          return res.status(400).json({ error: 'Track not found' });
+        }
+        if (!songRow.is_for_sale) {
           return res.status(400).json({ error: 'This track is not available for purchase' });
         }
 
         const pct = songRow.discount_percent || 0;
         const saleExpired = songRow.sale_ends_at && new Date(songRow.sale_ends_at).getTime() < Date.now();
-        validatedAmount = (pct > 0 && !saleExpired)
+        const serverCalculated = (pct > 0 && !saleExpired)
           ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
           : songRow.price;
 
+        if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+          return res.status(409).json({ 
+            error: 'Price has changed. Please refresh the page to see the latest pricing.',
+            current_price: serverCalculated,
+            requested_price: requestedAmount
+          });
+        }
+        validatedAmount = serverCalculated;
         artistId = songRow.artist_id;
         meta.artistId = artistId;
       } else if (paymentType === 'album_purchase') {
@@ -344,6 +355,26 @@ async function startServer() {
           return res.status(400).json({ error: 'This album is not available for purchase' });
         }
 
+        const pct = albumRow.discount_percent || 0;
+        const saleExpired = albumRow.sale_ends_at && new Date(albumRow.sale_ends_at).getTime() < Date.now();
+        const basePrice = Number(albumRow.price || 0);
+        
+        if (basePrice <= 0) {
+          return res.status(400).json({ error: 'This album does not have a valid price set' });
+        }
+
+        const serverCalculated = (pct > 0 && !saleExpired)
+          ? Math.max(Math.round(basePrice * (1 - pct / 100)), 1)
+          : basePrice;
+
+        if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+          return res.status(409).json({ 
+            error: 'Album price has changed. Please refresh and try again.',
+            current_price: serverCalculated,
+            requested_price: requestedAmount
+          });
+        }
+
         // Snapshot Logic: Fetch track IDs at checkout time
         const { data: tracks } = await supabaseAdmin
           .from('songs')
@@ -355,18 +386,7 @@ async function startServer() {
         }
 
         meta.trackIds = tracks.map(t => t.id);
-
-        const basePrice = Number(albumRow.price || 0);
-        if (basePrice <= 0) {
-          return res.status(400).json({ error: 'This album does not have a valid price set by the artist' });
-        }
-
-        const pct = albumRow.discount_percent || 0;
-        const saleExpired = albumRow.sale_ends_at && new Date(albumRow.sale_ends_at).getTime() < Date.now();
-        validatedAmount = (pct > 0 && !saleExpired)
-          ? Math.max(Math.round(basePrice * (1 - pct / 100)), 1)
-          : basePrice;
-
+        validatedAmount = serverCalculated;
         artistId = albumRow.artist_id;
         meta.artistId = artistId;
       } else if (paymentType === 'fan_subscription') {
@@ -379,11 +399,24 @@ async function startServer() {
           .eq('id', meta.artistId)
           .maybeSingle();
 
-        validatedAmount = artistProfile?.subscription_price || 1500;
+        const serverCalculated = artistProfile?.subscription_price || 1500;
+        if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+          return res.status(409).json({ error: 'Subscription price has changed.' });
+        }
+        validatedAmount = serverCalculated;
         artistId = meta.artistId;
       } else if (CANONICAL_PRICES[paymentType]) {
         validatedAmount = CANONICAL_PRICES[paymentType];
+        if (Math.abs(validatedAmount - Number(requestedAmount)) > 1) {
+           return res.status(409).json({ error: 'Plan price has changed.' });
+        }
         artistId = user.id;
+      } else if (paymentType === 'tip') {
+        validatedAmount = Math.max(Number(requestedAmount), 500);
+      } else if (paymentType === 'artist_ad_campaign') {
+        validatedAmount = Number(requestedAmount);
+      } else {
+        return res.status(400).json({ error: `Unsupported payment type: ${paymentType}` });
       }
 
       if (isNaN(validatedAmount) || validatedAmount <= 0) {
@@ -421,12 +454,29 @@ async function startServer() {
          dbType = 'sale';
       }
 
-      let txArtistId = meta?.artistId || null;
+      let txArtistId = meta?.artistId || artistId;
       if (!txArtistId && paymentType.includes('artist_')) {
          txArtistId = meta?.userId || user.id;
       }
 
       const txFanId = meta?.userId || user.id;
+
+      // Check for existing transaction before saving
+      const { data: existingTx } = await supabaseAdmin
+        .from('transactions')
+        .select('status, fan_id')
+        .eq('paychangu_ref', tx_ref)
+        .maybeSingle();
+
+      if (existingTx) {
+        if (existingTx.status === 'completed') {
+           return res.status(400).json({ error: 'This transaction reference is already completed. Please initiate a new payment.' });
+        }
+        if (existingTx.fan_id !== txFanId) {
+           return res.status(403).json({ error: 'Transaction reference collision detected. Please try again.' });
+        }
+      }
+
       const { data: existingFan } = await supabaseAdmin
         .from('user_profiles')
         .select('id')
@@ -473,7 +523,7 @@ async function startServer() {
         metadata: { ...meta, payment_type: paymentType, userId: user.id }
       }, { onConflict: 'paychangu_ref' });
 
-      if (txError && txError.code !== '23505') {
+      if (txError) {
         console.error('[API] txError:', txError.message);
         throw txError;
       }
@@ -481,16 +531,16 @@ async function startServer() {
       let resolvedReturnUrl = return_url;
       if (!resolvedReturnUrl || typeof resolvedReturnUrl !== 'string' || !resolvedReturnUrl.startsWith('http')) {
         const songId = meta?.songId || 'unknown';
-        const artistId = meta?.artistId || 'unknown';
+        const artistIdForUrl = meta?.artistId || 'unknown';
         const plan = meta?.plan || 'Premium';
         const tier = meta?.tier || 'RisingStar';
 
         if (paymentType === 'track_purchase') {
           resolvedReturnUrl = `${APP_URL}/purchase-success?song_id=${songId}&tx_ref=`;
         } else if (paymentType === 'tip') {
-          resolvedReturnUrl = `${APP_URL}/tip-success?artist_id=${artistId}&tx_ref=`;
+          resolvedReturnUrl = `${APP_URL}/tip-success?artist_id=${artistIdForUrl}&tx_ref=`;
         } else if (paymentType === 'fan_subscription') {
-          resolvedReturnUrl = `${APP_URL}/subscribe-success?artist_id=${artistId}&tx_ref=`;
+          resolvedReturnUrl = `${APP_URL}/subscribe-success?artist_id=${artistIdForUrl}&tx_ref=`;
         } else if (paymentType.includes('listener_')) {
           resolvedReturnUrl = `${APP_URL}/upgrade-success?plan=${plan}&tx_ref=`;
         } else if (paymentType.includes('artist_') && paymentType !== 'artist_ad_campaign') {
@@ -776,24 +826,50 @@ async function startServer() {
 
       // If already completed and NOT a force_grant, verify if rights are granted, then return
       if (dbTx.status === 'completed') {
-        // If it's a song purchase, ensure fan_purchases actually exists
-        if (dbTx.metadata?.songId && (dbTx.metadata?.userId || dbTx.fan_id)) {
-          const payerId = dbTx.metadata?.userId || dbTx.fan_id;
+        const meta = dbTx.metadata || {};
+        const payerId = meta.userId || dbTx.fan_id || dbTx.user_id;
+        const isSongPurchase = meta.songId && (dbTx.type === 'sale' || meta.payment_type === 'track_purchase');
+        const isAlbumPurchase = meta.albumId && (dbTx.type === 'sale' || meta.payment_type === 'album_purchase');
+
+        let needsFulfillment = false;
+
+        if (isSongPurchase && payerId) {
           const { data: fpCheck } = await (scopedClient || supabaseAdmin)
             .from('fan_purchases')
             .select('id')
             .eq('fan_id', payerId)
-            .eq('song_id', dbTx.metadata.songId)
+            .eq('song_id', meta.songId)
             .maybeSingle();
-          if (!fpCheck) {
-            console.log(`[API] Completed tx ${tx_ref} was missing fan_purchase record. Backfilling now...`);
-            await fulfillTransaction(dbTx, dbTx.gross_amount);
+          if (!fpCheck) needsFulfillment = true;
+        } else if (isAlbumPurchase && payerId) {
+          const trackIds = meta.trackIds || [];
+          if (trackIds.length > 0) {
+            const { data: fpCheck } = await (scopedClient || supabaseAdmin)
+              .from('fan_purchases')
+              .select('id')
+              .eq('fan_id', payerId)
+              .eq('song_id', trackIds[0])
+              .maybeSingle();
+            if (!fpCheck) needsFulfillment = true;
+          } else {
+            needsFulfillment = true;
           }
         }
+
+        if (needsFulfillment) {
+          console.log(`[API] Completed tx ${tx_ref} was missing entitlements. Backfilling now...`);
+          // Use RPC with p_force_repair via admin client
+          await supabaseAdmin.rpc('finalize_payment_order', {
+             p_paychangu_ref: tx_ref,
+             p_gateway_amount: dbTx.gross_amount,
+             p_force_repair: true
+          });
+        }
+        
         return res.json({ status: dbTx.status, granted: true, transaction: dbTx });
       }
 
-      // 2. Fetch status from PayChangu API
+      // 2. Fetch status from PayChangu API (Pending Case)
       let pcVerified = false;
       let pcAmount = dbTx.gross_amount;
       let gatewayMessage: string | null = null;
@@ -817,10 +893,10 @@ async function startServer() {
           if (pcResponse.ok && payload.status === 'success' && payload.data) {
             const pcStatus = payload.data.status;
             gatewayStatus = pcStatus;
-            if (pcStatus === 'successful' || pcStatus === 'success') {
+            if (pcStatus === 'successful' || pcStatus === 'success' || pcStatus === 'paid') {
               pcVerified = true;
               pcAmount = payload.data.amount || dbTx.gross_amount;
-            } else if (pcStatus === 'failed') {
+            } else if (pcStatus === 'failed' || pcStatus === 'cancelled' || pcStatus === 'expired') {
               await (scopedClient || supabaseAdmin).from('transactions').update({ status: 'failed' }).eq('id', dbTx.id);
               dbTx.status = 'failed';
               return res.json({ status: 'failed', transaction: dbTx, gateway_message: gatewayMessage });
@@ -857,7 +933,7 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error('[API] Verify payment error:', error);
-      res.status(400).json({ error: error.message });
+      res.status(500).json({ error: error.message || 'Internal server error' });
     }
   };
 

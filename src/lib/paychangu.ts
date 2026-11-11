@@ -452,6 +452,7 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
       tx_ref: sanitizedRef,
       force_grant: !!options?.force_grant,
       songId: options?.songId,
+      albumId: new URLSearchParams(window.location.search).get('albumId'),
       amount: options?.amount
     });
 
@@ -462,7 +463,7 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
     ].filter(Boolean) as string[];
 
     let response: Response | null = null;
-    let lastError: any = null;
+    let lastFetchError: any = null;
 
     for (const endpoint of endpoints) {
       try {
@@ -471,18 +472,26 @@ export async function verifyPayment(tx_ref: string, options?: { force_grant?: bo
           headers,
           body
         });
-        if (res.ok || res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404) {
-          response = res;
-          if (res.ok) break;
+        
+        // If we get any valid HTTP response, capture it
+        response = res;
+        
+        // If successful, stop here
+        if (res.ok) break;
+        
+        // If it's a client error (4xx), it's likely authoritative, but we might try others
+        if (res.status >= 400 && res.status < 500) {
+           // Continue loop if we want to try a potentially working secondary endpoint
+           continue; 
         }
       } catch (e: any) {
-        lastError = e;
+        lastFetchError = e;
         console.warn(`[VerifyPayment] Fetch to ${endpoint} failed:`, e?.message || e);
       }
     }
 
     if (!response) {
-      throw lastError || new Error('Network error: Unable to reach payment verification service.');
+      throw lastFetchError || new Error('Network error: Unable to reach payment verification service. Please check your connection.');
     }
     
     const resText = await response.text();

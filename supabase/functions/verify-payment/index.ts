@@ -11,11 +11,14 @@ function getCorsHeaders(requestOrigin: string | null) {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Credentials": "true",
   };
-  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+  
+  if (requestOrigin && (ALLOWED_ORIGINS.includes(requestOrigin) || requestOrigin.endsWith(".vercel.app") || requestOrigin.endsWith(".run.app"))) {
     headers["Access-Control-Allow-Origin"] = requestOrigin;
   } else {
-    headers["Access-Control-Allow-Origin"] = "*";
+    // Fallback but browsers might block if credentials are sent
+    headers["Access-Control-Allow-Origin"] = requestOrigin || "*";
   }
   return headers;
 }
@@ -57,6 +60,13 @@ Deno.serve(async (req) => {
       tx_ref = tx_ref.trim().replace(/\/$/, "").replace(/^["']|["']$/g, "");
     }
 
+    if (!tx_ref) {
+       return new Response(JSON.stringify({ error: "Missing transaction reference" }), {
+         status: 400,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+    }
+
     // 1. Fetch transaction from DB
     const { data: dbTx, error: dbError } = await supabase
       .from("transactions")
@@ -72,6 +82,7 @@ Deno.serve(async (req) => {
     }
 
     if (!dbTx) {
+       // If not found in DB, we could try live lookup here, but let's assume it should exist
        return new Response(JSON.stringify({ error: "Transaction not found" }), {
          status: 404,
          headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -79,7 +90,7 @@ Deno.serve(async (req) => {
     }
 
     // --- Authorization Check ---
-    const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id;
+    const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id || dbTx.metadata?.userId === user.id;
     let isAdmin = user.email === 'smashtherealmuzic@gmail.com';
     if (!isAdmin) {
        const { data: p } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
@@ -93,14 +104,43 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Entitlement Check (Self-Healing) ---
+    const isSongPurchase = (dbTx.metadata?.songId && (dbTx.type === 'sale' || dbTx.metadata?.payment_type === 'track_purchase'));
+    const isAlbumPurchase = (dbTx.metadata?.albumId && (dbTx.type === 'sale' || dbTx.metadata?.payment_type === 'album_purchase'));
+
     if (dbTx.status === 'completed') {
+       let needsFulfillment = false;
+       
+       if (isSongPurchase) {
+          const { data: purchase } = await supabase.from('fan_purchases').select('id').eq('fan_id', user.id).eq('song_id', dbTx.metadata.songId).maybeSingle();
+          if (!purchase) needsFulfillment = true;
+       } else if (isAlbumPurchase) {
+          // Check if at least one track is purchased (simple check)
+          const trackIds = dbTx.metadata.trackIds || [];
+          if (trackIds.length > 0) {
+             const { data: purchase } = await supabase.from('fan_purchases').select('id').eq('fan_id', user.id).eq('song_id', trackIds[0]).maybeSingle();
+             if (!purchase) needsFulfillment = true;
+          } else {
+             needsFulfillment = true;
+          }
+       }
+
+       if (needsFulfillment) {
+          console.log(`Self-healing fulfillment for completed tx: ${tx_ref}`);
+          await supabase.rpc('finalize_payment_order', {
+             p_paychangu_ref: tx_ref,
+             p_gateway_amount: dbTx.gross_amount,
+             p_force_repair: true
+          });
+       }
+
        return new Response(JSON.stringify({ status: 'completed', granted: true, transaction: dbTx }), {
          status: 200,
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
     }
 
-    // 2. Fetch from PayChangu API
+    // 2. Fetch from PayChangu API (Pending Transaction)
     const pcRes = await fetch(`https://api.paychangu.com/verify-payment/${tx_ref}`, {
       headers: {
         Authorization: `Bearer ${PAYCHANGU_SECRET_KEY}`,
@@ -114,7 +154,7 @@ Deno.serve(async (req) => {
     if (pcRes.ok && payload.status === "success" && payload.data) {
       const pcStatus = (payload.data.status || "").toLowerCase();
       if (pcStatus === "successful" || pcStatus === "success" || pcStatus === "paid") {
-         // Invoke the atomic fulfillment RPC via privileged client
+         // Invoke the atomic fulfillment RPC
          const { data: rpcRes, error: rpcErr } = await supabase.rpc('finalize_payment_order', {
             p_paychangu_ref: tx_ref,
             p_gateway_amount: Number(payload.data.amount)

@@ -72,48 +72,59 @@ const PaymentRedirect = () => {
     try {
       const res = await verifyPayment(txRef);
       const verifiedStatus = res?.status || res?.transaction?.status || '';
+      const isGranted = res?.granted === true;
 
-      if (verifiedStatus === 'completed' || res?.granted) {
-        toast.success('Payment verified & completed! ✅', { id: 'payment-confirm', duration: 4000 });
-        setStatus('Payment confirmed! Updating your account...');
-        setIsPending(false);
+      if (verifiedStatus === 'completed') {
+        if (isGranted) {
+          toast.success('Payment verified & access granted! ✅', { id: 'payment-confirm', duration: 4000 });
+          setStatus('Payment confirmed! Your music is now unlocked.');
+          setIsPending(false);
 
-        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
-        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+          window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
+          window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
 
-        await syncUserPurchases();
-        await new Promise(r => setTimeout(r, 1500));
+          await syncUserPurchases();
+          await new Promise(r => setTimeout(r, 1500));
 
-        const params = new URLSearchParams(window.location.search);
-        const songId = params.get('song_id') || params.get('songId') || res?.transaction?.metadata?.songId;
-        const tier = params.get('tier');
-        const plan = params.get('plan');
+          const params = new URLSearchParams(window.location.search);
+          const songId = params.get('song_id') || params.get('songId') || res?.transaction?.metadata?.songId;
+          const albumId = params.get('albumId') || res?.transaction?.metadata?.albumId;
+          const tier = params.get('tier');
+          const plan = params.get('plan');
 
-        if (songId) {
-          navigate('/library?tab=purchased', { replace: true });
-        } else if (tier) {
-          navigate('/artist-hub', { replace: true });
-        } else if (plan) {
-          navigate('/profile', { replace: true });
+          if (songId || albumId) {
+            navigate('/library?tab=purchased', { replace: true });
+          } else if (tier) {
+            navigate('/artist-hub', { replace: true });
+          } else if (plan) {
+            navigate('/profile', { replace: true });
+          } else {
+            navigate('/home', { replace: true });
+          }
         } else {
-          navigate('/home', { replace: true });
+          setStatus('Payment confirmed, but access is still being processed. Please wait...');
+          toast('Payment confirmed! We are just finishing unlocking your music.', { id: 'payment-confirm', icon: '💿' });
+          setIsPending(true);
         }
       } else if (verifiedStatus === 'pending') {
         if (!isManual) {
-          setStatus('Payment is still pending confirmation from the bank.');
+          setStatus('Payment is still pending confirmation from the gateway.');
           toast('Still pending. The gateway is processing your transaction.', { id: 'payment-confirm', icon: '⏳', duration: 5000 });
         } else {
-          toast.error('Transaction is still pending at the gateway.', { id: 'payment-confirm' });
+          toast.error('Transaction is still pending at the gateway. Please try again in a moment.', { id: 'payment-confirm' });
         }
         setIsPending(true);
       } else {
-        toast.error(`Payment status: ${verifiedStatus || 'Failed'}.`, { id: 'payment-confirm', duration: 5000 });
+        const errorDetail = res?.gateway_message || verifiedStatus || 'Failed';
+        toast.error(`Payment status: ${errorDetail}.`, { id: 'payment-confirm', duration: 5000 });
         setStatus(`Payment ${verifiedStatus || 'failed'}`);
         setIsPending(false);
       }
     } catch (err: any) {
-      toast.error(`Verification error: ${err?.message || 'Gateway error'}`, { id: 'payment-confirm', duration: 5000 });
-      setStatus('Verification error. Please try clicking the button below.');
+      const errMsg = err?.message || 'Connection error';
+      console.error('Verification failed:', errMsg);
+      toast.error(`Verification error: ${errMsg}`, { id: 'payment-confirm', duration: 5000 });
+      setStatus(`Verification service issue. Ref: ${txRef}`);
       setIsPending(true);
     }
   };
@@ -126,13 +137,13 @@ const PaymentRedirect = () => {
 
     handleVerification();
     
-    // Auto-retry once after 10 seconds if still pending
+    // Auto-retry after 12 seconds if still pending
     const timer = setTimeout(() => {
       if (isPending && retryCount === 0) {
         setRetryCount(1);
         handleVerification();
       }
-    }, 10000);
+    }, 12000);
 
     return () => clearTimeout(timer);
   }, [loading, txRef]);
@@ -140,8 +151,9 @@ const PaymentRedirect = () => {
   if (!txRef) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white p-6 text-center">
-        <h2 className="text-xl font-bold mb-4">No Payment Reference</h2>
-        <button onClick={() => navigate('/home')} className="px-6 py-2 bg-white text-black rounded-lg font-bold">Back to Home</button>
+        <h2 className="text-xl font-bold mb-4">No Payment Reference Found</h2>
+        <p className="text-[#B0B0B0] mb-8">We couldn't find a transaction reference in the URL.</p>
+        <button onClick={() => navigate('/home')} className="px-8 h-12 bg-white text-black rounded-xl font-bold transition-transform active:scale-95">Back to Home</button>
       </div>
     );
   }
@@ -154,30 +166,55 @@ const PaymentRedirect = () => {
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 flex flex-col items-center gap-4 max-w-md"
+          className="mt-8 flex flex-col items-center gap-4 max-w-md w-full"
         >
-          <p className="text-[#B0B0B0] text-sm leading-relaxed">
-            Sometimes confirmations take a minute. You can safely close this page; your music will be unlocked automatically once the bank confirms your payment.
-          </p>
+          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl w-full text-left">
+            <p className="text-[#B0B0B0] text-sm leading-relaxed mb-3">
+              Payment processing can sometimes take a minute depending on your bank.
+            </p>
+            <p className="text-[#888] text-xs leading-relaxed">
+              If your payment is confirmed but music isn't unlocked, click "Check Status Again". You can safely close this page once the status shows "Completed".
+            </p>
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <button 
               onClick={() => handleVerification(true)}
-              className="flex-1 h-11 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all border border-white/10"
+              className="flex-1 h-12 bg-white text-black hover:bg-white/90 rounded-xl font-bold text-sm transition-all active:scale-95"
             >
               Check Status Again
             </button>
             <button 
               onClick={() => navigate('/home')}
-              className="flex-1 h-11 bg-[#00A3FF] hover:bg-[#0084D6] text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-[#00A3FF]/20"
+              className="flex-1 h-12 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all border border-white/10 active:scale-95"
             >
               Return to App
             </button>
           </div>
           
-          <p className="text-[10px] text-[#555] uppercase tracking-widest mt-2">
-            Ref: {txRef}
-          </p>
+          <div className="mt-4 flex flex-col items-center">
+            <p className="text-[10px] text-[#555] uppercase tracking-widest mb-1">
+              Transaction Reference
+            </p>
+            <code className="text-[#00A3FF] text-[11px] font-mono break-all bg-[#00A3FF]/5 px-2 py-1 rounded">
+              {txRef}
+            </code>
+          </div>
+        </motion.div>
+      )}
+
+      {!isPending && status.toLowerCase().includes('failed') && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mt-8"
+        >
+          <button 
+            onClick={() => navigate('/home')}
+            className="px-8 h-12 bg-[#00A3FF] text-white rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-[#00A3FF]/20"
+          >
+            Go to Library
+          </button>
         </motion.div>
       )}
     </div>

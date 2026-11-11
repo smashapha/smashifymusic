@@ -50,38 +50,68 @@ Deno.serve(async (req) => {
     if (authError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { headers: corsHeaders, status: 401 });
 
     const txFanId = user.id;
-    let validatedAmount = Number(requestedAmount);
+    let validatedAmount: number;
     let artistId = meta?.artistId || null;
 
     // 2. Validate Pricing & Snapshot (Server-Authoritative)
     if (paymentType === 'track_purchase') {
       const { data: song } = await supabase.from('songs').select('price, is_for_sale, artist_id, discount_percent, sale_ends_at').eq('id', meta.songId).single();
-      if (!song?.is_for_sale) throw new Error('Track not for sale');
+      if (!song) throw new Error('Track not found');
+      if (!song.is_for_sale) throw new Error('Track not for sale');
+      
       const pct = song.discount_percent || 0;
       const saleActive = pct > 0 && (!song.sale_ends_at || new Date(song.sale_ends_at).getTime() > Date.now());
-      validatedAmount = saleActive ? Math.max(Math.round(song.price * (1 - pct / 100)), 1) : song.price;
+      const serverCalculated = saleActive ? Math.max(Math.round(song.price * (1 - pct / 100)), 1) : song.price;
+      
+      if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+        return new Response(JSON.stringify({ 
+          error: "Price has changed. Please refresh the page.",
+          current_price: serverCalculated,
+          requested_price: requestedAmount
+        }), { headers: corsHeaders, status: 409 });
+      }
+      validatedAmount = serverCalculated;
       artistId = song.artist_id;
     } else if (paymentType === 'album_purchase') {
       const { data: album } = await supabase.from('albums').select('id, price, is_for_sale, artist_id, discount_percent, sale_ends_at').eq('id', meta.albumId).single();
-      if (!album?.is_for_sale) throw new Error('Album not for sale');
+      if (!album) throw new Error('Album not found');
+      if (!album.is_for_sale) throw new Error('Album not for sale');
       
+      const pct = album.discount_percent || 0;
+      const saleActive = pct > 0 && (!album.sale_ends_at || new Date(album.sale_ends_at).getTime() > Date.now());
+      const basePrice = Number(album.price || 0);
+      const serverCalculated = saleActive ? Math.max(Math.round(basePrice * (1 - pct / 100)), 1) : basePrice;
+
+      if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+        return new Response(JSON.stringify({ 
+          error: "Album price has changed. Please refresh.",
+          current_price: serverCalculated,
+          requested_price: requestedAmount
+        }), { headers: corsHeaders, status: 409 });
+      }
+
       // Mandatory Snapshot
       const { data: tracks } = await supabase.from('songs').select('id').eq('album_id', album.id);
       if (!tracks?.length) throw new Error('Cannot buy empty album');
       meta.trackIds = tracks.map(t => t.id);
 
-      const pct = album.discount_percent || 0;
-      const saleActive = pct > 0 && (!album.sale_ends_at || new Date(album.sale_ends_at).getTime() > Date.now());
-      validatedAmount = saleActive ? Math.max(Math.round(album.price * (1 - pct / 100)), 1) : album.price;
+      validatedAmount = serverCalculated;
       artistId = album.artist_id;
     } else if (CANONICAL_PRICES[paymentType]) {
       validatedAmount = CANONICAL_PRICES[paymentType];
+      if (Math.abs(validatedAmount - Number(requestedAmount)) > 1) {
+        return new Response(JSON.stringify({ error: "Plan price has changed." }), { headers: corsHeaders, status: 409 });
+      }
       artistId = user.id;
     } else if (paymentType === 'tip') {
       validatedAmount = Math.max(Number(requestedAmount), 500); 
     } else if (paymentType === 'fan_subscription') {
       const { data: artProfile } = await supabase.from('profiles').select('subscription_price').eq('id', artistId).maybeSingle();
-      validatedAmount = artProfile?.subscription_price || 1500;
+      const serverCalculated = artProfile?.subscription_price || 1500;
+      if (Math.abs(serverCalculated - Number(requestedAmount)) > 1) {
+        return new Response(JSON.stringify({ error: "Subscription price has changed." }), { headers: corsHeaders, status: 409 });
+      }
+      validatedAmount = serverCalculated;
     } else if (paymentType === 'artist_ad_campaign') {
       validatedAmount = Number(requestedAmount); 
     } else {
@@ -92,7 +122,18 @@ Deno.serve(async (req) => {
       throw new Error('Invalid payment amount');
     }
 
-    // 3. Fee Logic (Consistent with server.ts)
+    // 3. Prevent Overwriting Completed Transactions
+    const { data: existingTx } = await supabase.from('transactions').select('status, fan_id').eq('paychangu_ref', tx_ref).maybeSingle();
+    if (existingTx) {
+      if (existingTx.status === 'completed') {
+        return new Response(JSON.stringify({ error: "Transaction already completed" }), { headers: corsHeaders, status: 400 });
+      }
+      if (existingTx.fan_id !== user.id) {
+        return new Response(JSON.stringify({ error: "Transaction reference collision" }), { headers: corsHeaders, status: 403 });
+      }
+    }
+
+    // 4. Fee Logic (Consistent with server.ts)
     let dbType = 'other';
     if (paymentType.includes('listener_') || paymentType.includes('artist_') || paymentType.includes('subscription')) {
        dbType = (paymentType === 'artist_ad_campaign' || paymentType === 'featured_placement') ? 'promotion' : 'subscription';
@@ -116,7 +157,7 @@ Deno.serve(async (req) => {
 
     const resolvedReturnUrl = return_url.includes("?") ? `${return_url}&tx_ref=${tx_ref}` : `${return_url}?tx_ref=${tx_ref}`;
 
-    // 4. Record Transaction
+    // 5. Record Transaction
     const { error: txError } = await supabase.from("transactions").upsert({
       artist_id: artistId,
       fan_id: txFanId,
@@ -132,7 +173,7 @@ Deno.serve(async (req) => {
 
     if (txError) throw txError;
 
-    // 5. Init PayChangu
+    // 6. Init PayChangu
     const descriptions: Record<string, string> = {
       'track_purchase': `Purchase of music track on Smashify`,
       'album_purchase': `Purchase of full music album on Smashify`,
