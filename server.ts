@@ -302,6 +302,7 @@ async function startServer() {
       };
 
       let validatedAmount = Number(requestedAmount);
+      let artistId = meta?.artistId || null;
 
       if (paymentType === 'track_purchase') {
         if (!meta?.songId) {
@@ -323,16 +324,15 @@ async function startServer() {
           ? Math.max(Math.round(songRow.price * (1 - pct / 100)), 1)
           : songRow.price;
 
-        if (meta.artistId && meta.artistId !== songRow.artist_id) {
-          meta.artistId = songRow.artist_id;
-        }
+        artistId = songRow.artist_id;
+        meta.artistId = artistId;
       } else if (paymentType === 'album_purchase') {
         if (!meta?.albumId) {
           return res.status(400).json({ error: 'Missing albumId for album purchase' });
         }
         const { data: albumRow, error: albumErr } = await supabaseAdmin
           .from('albums')
-          .select('price, is_for_sale, artist_id, discount_percent, sale_ends_at')
+          .select('id, price, is_for_sale, artist_id, discount_percent, sale_ends_at')
           .eq('id', meta.albumId)
           .maybeSingle();
 
@@ -343,6 +343,18 @@ async function startServer() {
         if (!albumRow.is_for_sale) {
           return res.status(400).json({ error: 'This album is not available for purchase' });
         }
+
+        // Snapshot Logic: Fetch track IDs at checkout time
+        const { data: tracks } = await supabaseAdmin
+          .from('songs')
+          .select('id')
+          .eq('album_id', albumRow.id);
+
+        if (!tracks || tracks.length === 0) {
+          return res.status(400).json({ error: 'This album is empty and cannot be purchased' });
+        }
+
+        meta.trackIds = tracks.map(t => t.id);
 
         const basePrice = Number(albumRow.price || 0);
         if (basePrice <= 0) {
@@ -355,8 +367,8 @@ async function startServer() {
           ? Math.max(Math.round(basePrice * (1 - pct / 100)), 1)
           : basePrice;
 
-        // Force correct artistId from DB
-        meta.artistId = albumRow.artist_id;
+        artistId = albumRow.artist_id;
+        meta.artistId = artistId;
       } else if (paymentType === 'fan_subscription') {
         if (!meta?.artistId) {
           return res.status(400).json({ error: 'Missing artistId for fan subscription' });
@@ -368,8 +380,10 @@ async function startServer() {
           .maybeSingle();
 
         validatedAmount = artistProfile?.subscription_price || 1500;
+        artistId = meta.artistId;
       } else if (CANONICAL_PRICES[paymentType]) {
         validatedAmount = CANONICAL_PRICES[paymentType];
+        artistId = user.id;
       }
 
       if (isNaN(validatedAmount) || validatedAmount <= 0) {
@@ -1617,7 +1631,8 @@ async function startServer() {
 
       if (txError || !transaction) {
         console.error(`Transaction not found: ${tx_ref}`);
-        return res.sendStatus(200);
+        // Return 500 so the gateway retries. The transaction record might just be delayed in creation.
+        return res.status(500).send('Transaction not found in database. Retrying...');
       }
 
       if (transaction.status === 'completed') {
@@ -1641,9 +1656,11 @@ async function startServer() {
       await fulfillTransaction(transaction, amount || transaction.gross_amount);
 
       res.sendStatus(200);
-    } catch (error) {
-      console.error('Webhook error:', error);
-      res.sendStatus(200);
+    } catch (error: any) {
+      console.error('[WEBHOOK] Processing Error:', error);
+      // Return 500 to signal failure to the gateway so it retries delivery.
+      // This prevents permanent loss of paid orders due to transient DB issues.
+      res.status(500).send(`Webhook fulfillment failed: ${error?.message || error}`);
     }
   });
 

@@ -57,21 +57,43 @@ Deno.serve(async (req) => {
       tx_ref = tx_ref.trim().replace(/\/$/, "").replace(/^["']|["']$/g, "");
     }
 
-    if (!tx_ref) {
-      return new Response(JSON.stringify({ error: "Missing tx_ref" }), {
-        status: 400,
+    // 1. Fetch transaction from DB
+    const { data: dbTx, error: dbError } = await supabase
+      .from("transactions")
+      .select("*")
+      .or(`paychangu_ref.eq.${tx_ref},reference.eq.${tx_ref}`)
+      .maybeSingle();
+
+    if (dbError) {
+       return new Response(JSON.stringify({ error: "Database error querying transaction" }), {
+         status: 500,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+    }
+
+    if (!dbTx) {
+       return new Response(JSON.stringify({ error: "Transaction not found" }), {
+         status: 404,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+    }
+
+    // --- Authorization Check ---
+    const isOwner = dbTx.fan_id === user.id || dbTx.artist_id === user.id;
+    let isAdmin = user.email === 'smashtherealmuzic@gmail.com';
+    if (!isAdmin) {
+       const { data: p } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+       isAdmin = !!p?.is_admin;
+    }
+
+    if (!isOwner && !isAdmin) {
+      return new Response(JSON.stringify({ error: "Unauthorized access to this transaction" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 1. Check DB first
-    const { data: dbTx } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("paychangu_ref", tx_ref)
-      .maybeSingle();
-
-    if (dbTx?.status === 'completed') {
+    if (dbTx.status === 'completed') {
        return new Response(JSON.stringify({ status: 'completed', granted: true, transaction: dbTx }), {
          status: 200,
          headers: { ...corsHeaders, "Content-Type": "application/json" },

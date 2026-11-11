@@ -132,6 +132,7 @@ serve(async (req) => {
     
     if (isSuccess && tx_ref) {
        // Invoke atomic RPC for fulfillment
+       // CRITICAL: We use a privileged service-role client for the finalizer RPC
        const { data: rpcRes, error: rpcErr } = await supabase.rpc('finalize_payment_order', {
           p_paychangu_ref: tx_ref,
           p_gateway_amount: amount
@@ -155,6 +156,6 @@ serve(async (req) => {
     return new Response("Success", { status: 200 });
   } catch (error: any) {
     console.error("Webhook processing error:", error);
-    return new Response(`Internal error: ${error?.message || error}`, { status: 200 });
+    return new Response(`Internal error: ${error?.message || error}`, { status: 500 });
   }
 });

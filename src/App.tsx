@@ -54,72 +54,132 @@ const PaymentRedirect = () => {
   const navigate = useNavigate();
   const { userProfile, user, loading } = useAuth();
   const [status, setStatus] = useState('Verifying your payment...');
+  const [isPending, setIsPending] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const hasKickedOff = useRef(false);
 
-  useEffect(() => {
-    if (loading) return; // Wait for auth to initialize
+  const txRef = new URLSearchParams(window.location.search).get('tx_ref') || new URLSearchParams(window.location.search).get('reference');
+
+  const handleVerification = async (isManual = false) => {
+    if (!txRef) return;
     
-    const params = new URLSearchParams(window.location.search);
-    const txRef = params.get('tx_ref') || params.get('reference');
-    const songId = params.get('song_id') || params.get('songId');
-    const paymentType = params.get('type');
-    const plan = params.get('plan');
-    const tier = params.get('tier');
-    const artistId = params.get('artistId');
-    
-    if (!txRef) {
-      toast.error('No payment reference found.');
-      navigate('/home', { replace: true });
-      return;
+    if (isManual) {
+      toast.loading('Checking latest status...', { id: 'payment-confirm' });
+    } else {
+      toast.loading('Confirming payment with gateway...', { id: 'payment-confirm' });
     }
 
+    try {
+      const res = await verifyPayment(txRef);
+      const verifiedStatus = res?.status || res?.transaction?.status || '';
+
+      if (verifiedStatus === 'completed' || res?.granted) {
+        toast.success('Payment verified & completed! ✅', { id: 'payment-confirm', duration: 4000 });
+        setStatus('Payment confirmed! Updating your account...');
+        setIsPending(false);
+
+        window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
+        window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
+
+        await syncUserPurchases();
+        await new Promise(r => setTimeout(r, 1500));
+
+        const params = new URLSearchParams(window.location.search);
+        const songId = params.get('song_id') || params.get('songId') || res?.transaction?.metadata?.songId;
+        const tier = params.get('tier');
+        const plan = params.get('plan');
+
+        if (songId) {
+          navigate('/library?tab=purchased', { replace: true });
+        } else if (tier) {
+          navigate('/artist-hub', { replace: true });
+        } else if (plan) {
+          navigate('/profile', { replace: true });
+        } else {
+          navigate('/home', { replace: true });
+        }
+      } else if (verifiedStatus === 'pending') {
+        if (!isManual) {
+          setStatus('Payment is still pending confirmation from the bank.');
+          toast('Still pending. The gateway is processing your transaction.', { id: 'payment-confirm', icon: '⏳', duration: 5000 });
+        } else {
+          toast.error('Transaction is still pending at the gateway.', { id: 'payment-confirm' });
+        }
+        setIsPending(true);
+      } else {
+        toast.error(`Payment status: ${verifiedStatus || 'Failed'}.`, { id: 'payment-confirm', duration: 5000 });
+        setStatus(`Payment ${verifiedStatus || 'failed'}`);
+        setIsPending(false);
+      }
+    } catch (err: any) {
+      toast.error(`Verification error: ${err?.message || 'Gateway error'}`, { id: 'payment-confirm', duration: 5000 });
+      setStatus('Verification error. Please try clicking the button below.');
+      setIsPending(true);
+    }
+  };
+
+  useEffect(() => {
+    if (loading || !txRef) return;
+    
     if (hasKickedOff.current) return;
     hasKickedOff.current = true;
 
-    const handleVerification = async () => {
-      toast.loading('Confirming payment with gateway...', { id: 'payment-confirm' });
-      try {
-        const res = await verifyPayment(txRef);
-        const verifiedStatus = res?.status || res?.transaction?.status || '';
-
-        if (verifiedStatus === 'completed' || res?.granted) {
-          toast.success('Payment verified & completed! ✅', { id: 'payment-confirm', duration: 4000 });
-          setStatus('Payment confirmed! Updating your account...');
-
-          window.dispatchEvent(new CustomEvent('smashify:payment-success', { detail: { txRef, data: res } }));
-          window.dispatchEvent(new CustomEvent('smashify:purchases-synced'));
-
-          await syncUserPurchases();
-          await new Promise(r => setTimeout(r, 1000));
-
-          const targetSongId = songId || res?.transaction?.metadata?.songId;
-          if (targetSongId) {
-            navigate('/library?tab=purchased', { replace: true });
-          } else if (tier) {
-            navigate('/artist-hub', { replace: true });
-          } else if (plan) {
-            navigate('/profile', { replace: true });
-          } else {
-            navigate('/home', { replace: true });
-          }
-        } else if (verifiedStatus === 'pending') {
-          toast('Payment is still processing by gateway. Please check back shortly.', { id: 'payment-confirm', icon: '⏳', duration: 5000 });
-          setStatus('Payment processing in background...');
-        } else {
-          toast.error(`Payment status: ${verifiedStatus || 'Failed'}.`, { id: 'payment-confirm', duration: 5000 });
-          setStatus(`Payment ${verifiedStatus || 'failed'}`);
-        }
-      } catch (err: any) {
-        toast.error(`Payment verification failed: ${err?.message || 'Gateway error'}`, { id: 'payment-confirm', duration: 5000 });
-        setStatus('Payment verification error');
-      }
-    };
     handleVerification();
-  }, [navigate, userProfile, user, loading]);
+    
+    // Auto-retry once after 10 seconds if still pending
+    const timer = setTimeout(() => {
+      if (isPending && retryCount === 0) {
+        setRetryCount(1);
+        handleVerification();
+      }
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [loading, txRef]);
+
+  if (!txRef) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white p-6 text-center">
+        <h2 className="text-xl font-bold mb-4">No Payment Reference</h2>
+        <button onClick={() => navigate('/home')} className="px-6 py-2 bg-white text-black rounded-lg font-bold">Back to Home</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white">
-      <BrandLoader label={status || 'Verifying transaction'} />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0A0A0A] text-white p-6 text-center">
+      <BrandLoader label={status} />
+      
+      {isPending && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 flex flex-col items-center gap-4 max-w-md"
+        >
+          <p className="text-[#B0B0B0] text-sm leading-relaxed">
+            Sometimes confirmations take a minute. You can safely close this page; your music will be unlocked automatically once the bank confirms your payment.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button 
+              onClick={() => handleVerification(true)}
+              className="flex-1 h-11 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all border border-white/10"
+            >
+              Check Status Again
+            </button>
+            <button 
+              onClick={() => navigate('/home')}
+              className="flex-1 h-11 bg-[#00A3FF] hover:bg-[#0084D6] text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-[#00A3FF]/20"
+            >
+              Return to App
+            </button>
+          </div>
+          
+          <p className="text-[10px] text-[#555] uppercase tracking-widest mt-2">
+            Ref: {txRef}
+          </p>
+        </motion.div>
+      )}
     </div>
   );
 };
