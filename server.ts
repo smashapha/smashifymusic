@@ -717,11 +717,13 @@ async function startServer() {
       }
 
       // Check admin status robustly
-      let isAdmin = user.email === 'smashtherealmuzic@gmail.com' || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
+      const userEmail = user.email?.toLowerCase();
+      let isAdmin = userEmail === 'smashtherealmuzic@gmail.com' || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
+      
       if (!isAdmin && scopedClient) {
         try {
-          const { data: pAdmin } = await scopedClient.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
-          const { data: upAdmin } = await scopedClient.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+          const { data: pAdmin } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+          const { data: upAdmin } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
           isAdmin = pAdmin?.is_admin === true || upAdmin?.is_admin === true;
         } catch (adminCheckErr) {
           console.warn('[API] Admin check warning:', adminCheckErr);
