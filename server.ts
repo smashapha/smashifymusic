@@ -586,8 +586,9 @@ async function startServer() {
     const type = (dbTx.metadata?.payment_type || dbTx.type || '').toUpperCase();
     const artistId = dbTx.metadata?.artistId || dbTx.artist_id;
 
-    // Handle non-DB side effects (notifications)
+    // Handle non-DB side effects (notifications & promotions)
     if (artistId && finalResult?.success && !finalResult?.already_processed) {
+       // A. Notifications
        const msgMap: Record<string, string> = {
          'TRACK_PURCHASE': `You sold a track! MWK ${txAmount.toLocaleString()} earned. 💿`,
          'ALBUM_PURCHASE': `You sold a full album! MWK ${txAmount.toLocaleString()} earned. 💿🔥`,
@@ -603,6 +604,22 @@ async function startServer() {
            message: msgMap[type],
            link: '/artist-hub#dashboard'
          }).catch(() => {});
+       }
+
+       // B. Promotion Activation
+       if (type === 'ARTIST_AD_CAMPAIGN') {
+          const meta = dbTx.metadata || {};
+          await supabaseAdmin.from('audio_ads').insert({
+             artist_id: artistId,
+             type: 'promo',
+             title: meta.title || 'Paid Promotion',
+             advertiser_name: meta.advertiser_name || 'Smashify Artist',
+             audio_url: meta.audio_url,
+             plays_purchased: Number(meta.plays || 1000),
+             plays_used: 0,
+             active: false, // Pending admin review
+             expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          }).catch((e: any) => console.error('[FULFILL] Promo activation error:', e));
        }
     }
 

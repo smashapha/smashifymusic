@@ -148,6 +148,42 @@ serve(async (req) => {
           return new Response(`Business Error: ${rpcRes?.error}`, { status: 500 });
        }
 
+       // SIDE EFFECTS: Notifications & Promotions
+       if (!rpcRes.already_processed) {
+          const { data: tx } = await supabase.from('transactions').select('*').eq('paychangu_ref', tx_ref).single();
+          if (tx) {
+             const type = (tx.metadata?.payment_type || tx.type || '').toUpperCase();
+             const artistId = tx.metadata?.artistId || tx.artist_id;
+             const txAmount = tx.gross_amount || 0;
+
+             if (artistId) {
+                // A. Notifications
+                const msgMap: Record<string, string> = {
+                  'TRACK_PURCHASE': `You sold a track! MWK ${txAmount.toLocaleString()} earned. 💿`,
+                  'ALBUM_PURCHASE': `You sold a full album! MWK ${txAmount.toLocaleString()} earned. 💿🔥`,
+                  'TIP': `You received a MWK ${txAmount.toLocaleString()} tip! 💸`,
+                  'FAN_SUBSCRIPTION': `A fan has subscribed to you! MWK ${txAmount.toLocaleString()} earned. 💖`
+                };
+                if (msgMap[type]) {
+                  await supabase.from('notifications').insert({
+                    profile_id: artistId, user_type: 'artist', type: type.toLowerCase(), message: msgMap[type], link: '/artist-hub#dashboard'
+                  }).catch(() => {});
+                }
+
+                // B. Promotion Activation
+                if (type === 'ARTIST_AD_CAMPAIGN') {
+                   const meta = tx.metadata || {};
+                   await supabase.from('audio_ads').insert({
+                      artist_id: artistId, type: 'promo', title: meta.title || 'Paid Promotion',
+                      advertiser_name: meta.advertiser_name || 'Smashify Artist', audio_url: meta.audio_url,
+                      plays_purchased: Number(meta.plays || 1000), plays_used: 0, active: false,
+                      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                   }).catch(() => {});
+                }
+             }
+          }
+       }
+
        console.log(`RPC Success for ${tx_ref}:`, rpcRes);
     } else if (["failed", "cancelled", "expired"].includes(status)) {
        await supabase.from("transactions").update({ status: "failed" }).eq("paychangu_ref", tx_ref).eq("status", "pending");

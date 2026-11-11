@@ -196,6 +196,55 @@ export async function downloadPurchasedSong(
   }
 }
 
+import JSZip from 'jszip';
+
+/**
+ * Downloads all songs in an album as a single ZIP file.
+ * Handles Blobs sequentially to avoid overloading browser memory.
+ */
+export async function downloadFullAlbum(
+  album: any,
+  songs: any[],
+  userProfile: any,
+  onProgress?: (current: number, total: number) => void
+): Promise<void> {
+  if (!userProfile?.id || !songs.length) return;
+
+  const zip = new JSZip();
+  const folderName = `${album.artist_name || 'Artist'} - ${album.title || 'Album'}`.replace(/[<>:"/\\|?*]/g, '');
+  const albumFolder = zip.folder(folderName);
+  
+  if (!albumFolder) throw new Error('Could not create ZIP folder');
+
+  for (let i = 0; i < songs.length; i++) {
+    const song = songs[i];
+    if (onProgress) onProgress(i + 1, songs.length);
+    
+    try {
+      const response = await fetch(song.audio_url);
+      if (!response.ok) throw new Error(`Failed to fetch ${song.title}`);
+      
+      const blob = await response.blob();
+      const fileName = `${i + 1}. ${song.title}.mp3`.replace(/[<>:"/\\|?*]/g, '');
+      albumFolder.file(fileName, blob);
+    } catch (err) {
+      console.warn(`Skipping song ${song.title} due to error:`, err);
+    }
+  }
+
+  const content = await zip.generateAsync({ type: 'blob' });
+  const objectUrl = URL.createObjectURL(content);
+  
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = `${folderName}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+}
+
 export async function checkSongPurchased(
   songId: string,
   userId: string | undefined

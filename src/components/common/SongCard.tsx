@@ -298,12 +298,12 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                )}
              </button>
            )}
-           {(song.is_purchased || purchasedIds?.has(song.id)) && artistCanSell && (
+           {(song.is_purchased || purchasedIds?.has(song.id)) && (
              <button
                onClick={handleDownload}
                disabled={isDownloading}
                title="Download purchased track"
-               className="absolute top-2 left-2 flex items-center justify-center p-2 rounded-xl bg-smash-green text-white shadow-lg disabled:opacity-50 transition-all z-10"
+               className={`absolute top-2 left-2 flex items-center justify-center p-2 rounded-xl bg-smash-green text-white shadow-lg disabled:opacity-50 transition-all z-10`}
              >
                {isDownloading ? (
                  <Loader2 size={12} className="animate-spin" />
@@ -430,7 +430,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, queue, className = '', layout
                )}
              </button>
            )}
-           {(song.is_purchased || purchasedIds?.has(song.id)) && artistCanSell && (
+           {(song.is_purchased || purchasedIds?.has(song.id)) && (
              <button
                onClick={handleDownload}
                disabled={isDownloading}

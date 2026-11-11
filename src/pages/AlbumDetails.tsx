@@ -1,7 +1,7 @@
 import { optimizeImage } from "../lib/imageUtils";
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, HelpCircle, ShoppingCart, CheckCircle, Tag, Sparkles } from 'lucide-react';
+import { Play, ArrowLeft, Heart, Share2, Clock, Music, Headphones, TrendingUp, MoreVertical, PlayCircle, PauseCircle, HelpCircle, ShoppingCart, CheckCircle, Tag, Sparkles, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
@@ -10,6 +10,7 @@ import { attachArtistProfilesToSongs } from '../lib/publicCatalog';
 import { Song, Album, Artist } from '../types';
 import { getEffectivePrice, isOnSale, getEffectiveAlbumPrice, isAlbumOnSale, getAlbumSaleTimeRemaining } from '../lib/pricing';
 import { purchaseAlbum } from '../lib/paychangu';
+import { downloadFullAlbum } from '../lib/downloads';
 import { formatDisplayTitle, formatArtistName } from '../lib/formatting';
 import { copyToClipboard } from '../lib/shareUtils';
 import { PAGE_CONTAINER, PAGE_BOTTOM_PADDING, SECTION_SPACING } from '../lib/layout';
@@ -305,8 +306,31 @@ const AlbumDetails: React.FC = () => {
           )}
 
           {allTracksPurchased && (
-            <div className="h-11 px-5 bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] rounded-[10px] flex items-center gap-2 font-bold text-sm">
-              <CheckCircle size={18} /> Purchased & Unlocked
+            <div className="flex items-center gap-3">
+              <div className="h-11 px-5 bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] rounded-[10px] flex items-center gap-2 font-bold text-sm">
+                <CheckCircle size={18} /> Purchased & Unlocked
+              </div>
+              <button
+                onClick={async () => {
+                  if (!album || !songs.length || !userProfile) return;
+                  const toastId = toast.loading('Preparing album ZIP...');
+                  try {
+                    await downloadFullAlbum(
+                      { ...album, artist_name: artist?.stage_name || artist?.full_name },
+                      songs.filter(s => s.is_purchased || (purchasedIds && purchasedIds.has(s.id))),
+                      userProfile,
+                      (curr, tot) => toast.loading(`Downloading tracks (${curr}/${tot})...`, { id: toastId })
+                    );
+                    toast.success('Album download started!', { id: toastId });
+                  } catch (err: any) {
+                    toast.error('Download failed: ' + err.message, { id: toastId });
+                  }
+                }}
+                className="h-11 px-6 bg-[#00A3FF] hover:bg-[#0084D6] active:scale-95 text-white font-bold text-sm rounded-[10px] flex items-center justify-center gap-2 shadow-lg shadow-[#00A3FF]/20 transition-all"
+                id="download_full_album"
+              >
+                <Download size={18} /> Download Full Album
+              </button>
             </div>
           )}
           
