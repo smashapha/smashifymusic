@@ -196,9 +196,22 @@ const PaymentRedirect = () => {
             <p className="text-[10px] text-[#555] uppercase tracking-widest mb-1">
               Transaction Reference
             </p>
-            <code className="text-[#00A3FF] text-[11px] font-mono break-all bg-[#00A3FF]/5 px-2 py-1 rounded">
-              {txRef}
-            </code>
+            <div className="flex items-center gap-2 bg-[#00A3FF]/5 px-2 py-1 rounded">
+              <code className="text-[#00A3FF] text-[11px] font-mono break-all">
+                {txRef}
+              </code>
+              <button 
+                onClick={async () => {
+                  const { copyToClipboard } = await import('./lib/shareUtils');
+                  const success = await copyToClipboard(txRef || '');
+                  if (success) toast.success('Reference copied!');
+                }}
+                className="p-1 hover:bg-white/10 rounded transition-colors"
+                title="Copy reference"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#00A3FF]"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              </button>
+            </div>
           </div>
         </motion.div>
       )}

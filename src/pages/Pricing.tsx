@@ -343,7 +343,7 @@ const Pricing = () => {
               onAction={() => handleAction('RisingStar')}
               features={[
                 "10 uploads per 6 months",
-                "Tips & fan subscriptions",
+                "Sell tracks (10% + MK 50 fee)",
                 "Accept fan subscriptions",
                 "5% fee on tips",
                 "Fan messaging enabled",
@@ -363,7 +363,7 @@ const Pricing = () => {
               onAction={() => handleAction('Standard')}
               features={[
                 "15 uploads per 6 months",
-                "Tips & fan subscriptions",
+                "Sell tracks (10% + MK 50 fee)",
                 "Accept fan subscriptions",
                 "5% fee on tips",
                 "1 free featured placement/month",
@@ -384,7 +384,7 @@ const Pricing = () => {
               features={[
                 "25 uploads per 6 months",
                 "Sell tracks with fan downloads",
-                "10% + MK 50 per track sale",
+                "10% + MK 50 flat fee per sale",
                 "5% fee on tips",
                 "3 free featured placements/month",
                 "Full analytics with CSV export",
@@ -485,7 +485,7 @@ const Pricing = () => {
           </h3>
           <div className="space-y-2.5 text-[13px] text-[#B0B0B0] leading-relaxed">
             <p><strong className="text-white">Tips:</strong> 5% all-in, every tier. You keep 95%.</p>
-            <p><strong className="text-white">Track sales (Elite only):</strong> 10% + MK 50 flat fee per sale.</p>
+            <p><strong className="text-white">Track sales:</strong> 10% + MK 50 flat fee per sale.</p>
             <p><strong className="text-white">Fan subscriptions:</strong> Our 10% fee is included in the listed price.</p>
             <p><strong className="text-white">Withdrawals:</strong> Smashify takes 0%. Only the mobile money network’s 3% transfer fee applies.</p>
             <p><strong className="text-white">Studio subscriptions:</strong> Fixed and transparent — no surprises at checkout.</p>
@@ -495,7 +495,7 @@ const Pricing = () => {
         <div className="space-y-3">
           {[
             { q: "How do I get paid?", a: "When your wallet reaches the minimum withdrawal amount for your tier, you can cash out directly to your registered Airtel Money or TNM Mpamba number." },
-            { q: "Are there hidden fees?", a: "No. Tips have a flat 5% fee for every artist. Track sales (Elite only) have a tiered commission plus a small MK 50 processing fee. Withdrawals: Smashify charges 0%, you only pay the standard mobile money network transfer fee (3%), which goes to Airtel/TNM, not us." },
+            { q: "Are there hidden fees?", a: "No. Tips have a flat 5% fee for every artist. Track sales have a standard 10% commission plus a small MK 50 processing fee. Withdrawals: Smashify charges 0%, you only pay the standard mobile money network transfer fee (3%), which goes to Airtel/TNM, not us." },
             { q: "What's the minimum withdrawal amount?", a: "MK 10,000. This ensures efficient processing and keeps payout speeds fast." },
             { q: "Can I upgrade or downgrade anytime?", a: "Yes. Listener plans are billed monthly. Artist Studio plans are billed every 6 months. You can upgrade at any time — the new plan takes effect immediately." },
             { q: "Do listeners have to pay to hear my music?", a: "No, listeners can stream approved music. Fans can also tip you or subscribe for exclusive perks." }

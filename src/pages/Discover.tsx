@@ -297,7 +297,7 @@ const Discover: React.FC = () => {
       if (searchQuery || selectedGenre) {
         handleSearch();
       } else {
-        setResults({ songs: [], artists: [] });
+        setResults({ songs: [], artists: [], albums: [] });
       }
     }, 400);
 
@@ -585,6 +585,8 @@ const Discover: React.FC = () => {
                 <p className="text-[13px] text-[#B0B0B0] mt-0.5">
                   {activeTab === "songs"
                     ? `${results.songs.length} track${results.songs.length === 1 ? "" : "s"} found`
+                    : activeTab === "albums"
+                    ? `${results.albums.length} album${results.albums.length === 1 ? "" : "s"} found`
                     : `${results.artists.length} artist${results.artists.length === 1 ? "" : "s"} found`}
                 </p>
               </div>

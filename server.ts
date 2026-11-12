@@ -494,7 +494,7 @@ async function startServer() {
       }
 
       let platformFee = 0;
-      let netAmount = validatedAmount;
+      let netAmount = 0;
 
       if (paymentType.includes('listener_') || paymentType.includes('artist_') || paymentType === 'artist_ad_campaign') {
         platformFee = validatedAmount;
@@ -503,8 +503,9 @@ async function startServer() {
         platformFee = Math.round(validatedAmount * 0.05);
         netAmount = validatedAmount - platformFee;
       } else if (paymentType === 'track_purchase' || paymentType === 'album_purchase') {
-        platformFee = Math.round(validatedAmount * 0.20) + 50;
-        netAmount = Math.max(validatedAmount - platformFee, 0);
+        // Correct Rule: 10% + MK 50 flat fee, capped at gross amount
+        platformFee = Math.min(validatedAmount, Math.round(validatedAmount * 0.10) + 50);
+        netAmount = validatedAmount - platformFee;
       } else if (paymentType === 'fan_subscription') {
         platformFee = Math.round(validatedAmount * 0.10);
         netAmount = validatedAmount - platformFee;

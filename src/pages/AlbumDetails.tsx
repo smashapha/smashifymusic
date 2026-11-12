@@ -46,7 +46,9 @@ const AlbumDetails: React.FC = () => {
         .single();
         
       if (albumErr) throw albumErr;
-      setAlbum(albumData);
+      
+      const [enrichedAlbum] = await musicService.enrichAlbumsWithPurchases([albumData], userProfile?.id);
+      setAlbum(enrichedAlbum);
 
       const { data: artistData } = await supabase
         .from('artist_catalog')
@@ -113,7 +115,7 @@ const AlbumDetails: React.FC = () => {
     }
   };
 
-  const allTracksPurchased = songs.length > 0 && songs.every(s => s.is_purchased || (purchasedIds && purchasedIds.has(s.id)));
+  const allTracksPurchased = album?.is_purchased || (songs.length > 0 && songs.every(s => s.is_purchased || (purchasedIds && purchasedIds.has(s.id))));
   const albumPrice = album ? getEffectiveAlbumPrice(album) : 0;
   const onSale = album ? isAlbumOnSale(album) : false;
   const saleTime = album ? getAlbumSaleTimeRemaining(album) : null;

@@ -142,19 +142,22 @@ const Library: React.FC = () => {
           })));
         }
 
-        // Fetch purchased albums
+        // Fetch purchased albums from transactions metadata
         const { data: txData } = await supabase
           .from('transactions')
-          .select('*')
+          .select('metadata, type')
           .eq('fan_id', effectiveUserId)
-          .eq('status', 'completed')
-          .ilike('type', '%album%');
+          .eq('status', 'completed');
         
         const albumIds = new Set<string>();
         (txData || []).forEach((tx: any) => {
+          const type = (tx.type || '').toLowerCase();
           const meta = tx.metadata || {};
           const albumId = meta.albumId || meta.album_id;
-          if (albumId) albumIds.add(albumId);
+          
+          if (albumId || type.includes('album')) {
+            if (albumId) albumIds.add(albumId);
+          }
         });
 
         if (albumIds.size > 0) {

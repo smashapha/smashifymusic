@@ -149,7 +149,8 @@ Deno.serve(async (req) => {
     } else if (paymentType === 'tip') {
       platformFee = Math.round(validatedAmount * 0.05); // 5% Tip fee
     } else if (paymentType === 'track_purchase' || paymentType === 'album_purchase') {
-      platformFee = Math.round(validatedAmount * 0.20) + 50; // 20% + 50 MK
+      // Standard Rule: 10% + MK 50 flat fee, capped at gross amount
+      platformFee = Math.min(validatedAmount, Math.round(validatedAmount * 0.10) + 50);
     } else if (paymentType === 'fan_subscription') {
       platformFee = Math.round(validatedAmount * 0.10); // 10% Sub fee
     }

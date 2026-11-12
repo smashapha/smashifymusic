@@ -32,10 +32,10 @@ export const musicService = {
   async enrichAlbumsWithPurchases(albums: any[], userId?: string): Promise<any[]> {
     if (!userId || albums.length === 0) return albums;
     try {
-      // 1. Get album-specific transactions
+      // 1. Get direct album-specific transactions
       const { data: purchaseData } = await supabase
         .from('transactions')
-        .select('metadata')
+        .select('metadata, type')
         .eq('fan_id', userId)
         .eq('status', 'completed');
       
@@ -50,11 +50,36 @@ export const musicService = {
         if (albumId) purchasedAlbumIds.add(albumId);
       });
 
-      // 2. Map and check artist ownership as well
-      return albums.map(album => ({
-        ...album,
-        is_purchased: purchasedAlbumIds.has(album.id) || (userId && album.artist_id === userId)
-      }));
+      // 2. Fetch all songs for these albums to check track-level ownership
+      const { data: albumSongs } = await supabase
+        .from('songs')
+        .select('id, album_id')
+        .in('album_id', albums.map(a => a.id));
+
+      // 3. Fetch user's purchased songs
+      const { data: userPurchases } = await supabase
+        .from('fan_purchases')
+        .select('song_id')
+        .eq('fan_id', userId);
+      
+      const purchasedSongIds = new Set((userPurchases || []).map(p => p.song_id));
+
+      // 4. Determine ownership
+      return albums.map(album => {
+        // Direct purchase check
+        if (purchasedAlbumIds.has(album.id) || (userId && album.artist_id === userId)) {
+          return { ...album, is_purchased: true };
+        }
+
+        // Track-level check: if album has tracks and user owns all of them, mark as purchased
+        const songsInAlbum = (albumSongs || []).filter(s => s.album_id === album.id);
+        if (songsInAlbum.length > 0) {
+          const allOwned = songsInAlbum.every(s => purchasedSongIds.has(s.id));
+          if (allOwned) return { ...album, is_purchased: true };
+        }
+
+        return { ...album, is_purchased: false };
+      });
     } catch (err) {
       console.warn('Failed to enrich albums with purchases', err);
       return albums;

@@ -434,7 +434,7 @@ const ArtistLanding: React.FC = () => {
                 <ul className="space-y-4 flex-1">
                    {[
                      "10 uploads per 6 months",
-                     "Tips & fan subscriptions only",
+                     "Sell tracks (10% + MK 50 fee)",
                      "Accept fan subscriptions",
                      "5% fee on tips",
                      "Standard analytics",
@@ -466,7 +466,7 @@ const ArtistLanding: React.FC = () => {
                 <ul className="space-y-4 flex-1">
                    {[
                      "15 uploads per 6 months",
-                     "Tips & fan subscriptions only",
+                     "Sell tracks (10% + MK 50 fee)",
                      "5% fee on tips",
                      "1 free featured placement/month",
                      "Advanced analytics",
